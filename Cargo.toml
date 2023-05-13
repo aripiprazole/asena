@@ -8,4 +8,5 @@ version = "0.1.0"
 [dependencies]
 ariadne = "0.2.0"
 chumsky = "0.9.2"
+clap = { version = "4.2.7", features = ["derive"] }
 salsa = "0.16.1"
