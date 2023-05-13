@@ -1,4 +1,5 @@
 pub mod ast;
+pub mod parser;
 
 use clap::{Args, Parser, Subcommand};
 
