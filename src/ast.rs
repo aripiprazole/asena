@@ -271,8 +271,8 @@ pub struct Command {
     pub arguments: Vec<Expr>,
 }
 
-/// A class is a ddeclaration that creates a record, that can be used as a Type Class.
-/// 
+/// A class is a declaration that creates a record, that can be used as a Type Class.
+///
 /// The syntax should like exactly:
 /// ```haskell
 /// class Person {
@@ -294,12 +294,30 @@ pub struct Class {
     pub properties: Vec<Property>,
 }
 
+/// An instance is a declaration that instantiates a record with default values, all the values
+/// should be methods.
+///
+/// The syntax should like exactly:
+/// ```haskell
+/// instance Monad m : Functor m {
+///   pure (a) {
+///     ...
+///   }
+/// }
+/// ```
+pub struct Instance {
+    pub name: GlobalId,
+    pub constraints: Vec<Constraint>,
+    pub properties: Vec<Method>,
+}
+
 #[derive(Debug, Clone)]
 pub enum DeclKind {
     Signature(Signature),
     Assign(Assign),
     Command(Command),
     Class(Class),
+    Method(Method)
 }
 //<<<Declarations
 
@@ -338,7 +356,7 @@ pub struct Field {
 //    printf "Hello, I'm {}" self.name
 //  }
 /// ```
-/// 
+///
 /// The method node is a simple sugar for declaring it on the top level with the class name concatenated,
 /// like: `sayHello`, in the `Person` class, should be simply `Person.sayHello`.
 #[derive(Debug, Clone)]

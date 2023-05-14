@@ -7,10 +7,6 @@ class Monad m <: Functor m {
 class Person {
   name: String;
 
-  new(name: String): Self {
-    Self { name }
-  }
-
   sayHello(self): IO () {
     printf "Hello, I'm {}" self.name
   }
