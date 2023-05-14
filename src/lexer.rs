@@ -73,26 +73,30 @@ pub fn lexer<'a>() -> impl Parser<'a, &'a str, TokenSet, LexError<'a>> {
         .slice()
         .from_str()
         .unwrapped()
-        .map(Token::Float64); // TODO: implement another float/integer variants
+        .map(Token::Float64)
+        .labelled("number"); // TODO: implement another float/integer variants
 
     let string = just('"')
         .ignore_then(none_of('"').repeated())
         .then_ignore(just('"'))
-        .map_slice(|string: &str| Token::String(string.into()));
+        .map_slice(|string: &str| Token::String(string.into()))
+        .labelled("string literal");
 
     let symbol = one_of(SYMBOLS.join(""))
         .repeated()
         .at_least(1)
-        .map_slice(|content: &str| Token::Symbol(content.into()));
+        .map_slice(|content: &str| Token::Symbol(content.into()))
+        .labelled("symbol");
 
     let comment = just("//")
         .then(any().and_is(just('\n').not()).repeated())
-        .padded();
+        .padded()
+        .labelled("comment");
 
-    let token = symbol
+    let token = control_lexer()
+        .or(symbol)
         .or(num)
         .or(string)
-        .or(control_lexer())
         .or(ident_lexer());
 
     token
@@ -106,40 +110,44 @@ pub fn lexer<'a>() -> impl Parser<'a, &'a str, TokenSet, LexError<'a>> {
 }
 
 fn control_lexer<'a>() -> impl Parser<'a, &'a str, Token, LexError<'a>> {
-    one_of("()[]{};,").map(|control: char| match control {
-        '[' => Token::LeftBracket,
-        ']' => Token::RightBracket,
-        '{' => Token::LeftBrace,
-        '}' => Token::RightBrace,
-        '(' => Token::LeftParen,
-        ')' => Token::RightParen,
-        ';' => Token::Semi,
-        ',' => Token::Comma,
-        ':' => Token::Colon,
-        '.' => Token::Dot,
-        // This code is unreachable, because its matched by the [one_of]
-        // functions
-        _ => panic!("unreachable"),
-    })
+    one_of("()[]{};,")
+        .map(|control: char| match control {
+            '[' => Token::LeftBracket,
+            ']' => Token::RightBracket,
+            '{' => Token::LeftBrace,
+            '}' => Token::RightBrace,
+            '(' => Token::LeftParen,
+            ')' => Token::RightParen,
+            ';' => Token::Semi,
+            ',' => Token::Comma,
+            ':' => Token::Colon,
+            '.' => Token::Dot,
+            // This code is unreachable, because its matched by the [one_of]
+            // functions
+            _ => panic!("unreachable"),
+        })
+        .labelled("control flow symbol")
 }
 
 fn ident_lexer<'a>() -> impl Parser<'a, &'a str, Token, LexError<'a>> {
-    text::ident().map(|ident: &str| match ident {
-        "let" => Token::Let,
-        "true" => Token::True,
-        "false" => Token::False,
-        "if" => Token::If,
-        "else" => Token::Else,
-        "then" => Token::Then,
-        "type" => Token::Type,
-        "record" => Token::Record,
-        "enum" => Token::Enum,
-        "trait" => Token::Trait,
-        "class" => Token::Class,
-        "case" => Token::Case,
-        "where" => Token::Where,
-        "match" => Token::Match,
-        "use" => Token::Use,
-        _ => Token::Ident(ident.into()),
-    })
+    text::ident()
+        .map(|ident: &str| match ident {
+            "let" => Token::Let,
+            "true" => Token::True,
+            "false" => Token::False,
+            "if" => Token::If,
+            "else" => Token::Else,
+            "then" => Token::Then,
+            "type" => Token::Type,
+            "record" => Token::Record,
+            "enum" => Token::Enum,
+            "trait" => Token::Trait,
+            "class" => Token::Class,
+            "case" => Token::Case,
+            "where" => Token::Where,
+            "match" => Token::Match,
+            "use" => Token::Use,
+            _ => Token::Ident(ident.into()),
+        })
+        .labelled("keyword")
 }
