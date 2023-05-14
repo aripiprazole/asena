@@ -1,5 +1,6 @@
 pub mod ast;
 pub mod graph;
+pub mod lexer;
 pub mod parser;
 
 use clap::{Args, Parser, Subcommand};

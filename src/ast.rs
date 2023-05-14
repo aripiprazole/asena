@@ -1,5 +1,7 @@
 use std::fmt::{Display, Formatter};
 
+use crate::lexer::Signed;
+
 //>>>Identifiers
 /// Identifier's key to a function (everything on the language), this can be abstracted in another
 /// identifiers. Serves as a key on a graph, or the abstract syntax tree representation.
@@ -22,15 +24,6 @@ pub struct GlobalId(FunctionId);
 pub struct LocalId(FunctionId);
 //<<<Identifiers
 
-//>>>Literals
-/// Represents a true-false value, just like an wrapper to [bool], this represents if an integer
-/// value is signed, or unsigned.
-#[derive(Debug, Clone)]
-pub enum Signed {
-    Signed,
-    Unsigned,
-}
-
 /// Represents a language literal construct, can hold numbers, strings, booleans, etc.
 #[derive(Debug, Clone)]
 pub enum Literal {
@@ -52,7 +45,6 @@ pub enum Literal {
     True,
     False,
 }
-//<<<Literals
 
 //>>>Expressions
 /// Binary expression, is an expression that is a call between two operands, and is infix. The
