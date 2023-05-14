@@ -271,13 +271,92 @@ pub struct Command {
     pub arguments: Vec<Expr>,
 }
 
+/// A class is a ddeclaration that creates a record, that can be used as a Type Class.
+/// 
+/// The syntax should like exactly:
+/// ```haskell
+/// class Person {
+///   name: String;
+///
+///   new(name: String): Self {
+///     Self { name }
+///   }
+///
+///   sayHello(self): IO () {
+///     printf "Hello, I'm {}" self.name
+///   }
+/// }
+/// ```
+#[derive(Debug, Clone)]
+pub struct Class {
+    pub name: GlobalId,
+    pub constraints: Vec<Constraint>,
+    pub properties: Vec<Property>,
+}
+
 #[derive(Debug, Clone)]
 pub enum DeclKind {
     Signature(Signature),
     Assign(Assign),
     Command(Command),
+    Class(Class),
 }
 //<<<Declarations
+
+//>>>Properties
+/// A constraint is a part of the abstract syntax tree, that represents an unnamed implicit [Parameter].
+///
+/// The syntax is like:
+/// ```haskell
+/// class Monad m : Functor m { ... }
+/// ```
+///
+/// The constraint node can be used on `where` clauses.
+#[derive(Debug, Clone)]
+pub struct Constraint(pub Expr);
+
+/// A field node is a record node's field.
+///
+/// The syntax is like:
+/// ```haskell
+/// name : String;
+/// ```
+///
+/// The constraint node should be wrote in a class context.
+#[derive(Debug, Clone)]
+pub struct Field {
+    pub name: LocalId,
+    pub field_type: Expr,
+}
+
+/// A method node is a record function associated to a record, this can be used in implementation
+/// declarations too.
+///
+/// The syntax is like:
+/// ```haskell
+/// sayHello(self): IO () {
+//    printf "Hello, I'm {}" self.name
+//  }
+/// ```
+/// 
+/// The method node is a simple sugar for declaring it on the top level with the class name concatenated,
+/// like: `sayHello`, in the `Person` class, should be simply `Person.sayHello`.
+#[derive(Debug, Clone)]
+pub struct Method {
+    pub name: LocalId,
+    pub implicit_parameters: Vec<Parameter>, // \<<implicit parameter*>\>
+    pub explicit_parameters: Vec<Parameter>, // (<explicit parameter*>)
+    pub where_clauses: Vec<Constraint>,      // where <constraint*>
+    pub return_type: Option<Expr>,           // <: <expr>?>
+    pub method_body: Body,
+}
+
+#[derive(Debug, Clone)]
+pub enum Property {
+    Field(Field),
+    Method(Method),
+}
+//<<<Properties
 
 #[derive(Debug, Clone)]
 pub enum OptionalType {
