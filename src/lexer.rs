@@ -1,7 +1,7 @@
 use chumsky::prelude::*;
 
 pub const SYMBOLS: &[&str] = &[
-    "=", "!", ">", "<", "$", "#", "+", "-", "*", "/", "&", "|", "@", "^", ".",
+    "=", "!", ">", "<", "$", "#", "+", "-", "*", "/", "&", "|", "@", "^", ".", ":",
 ];
 
 pub type Span = SimpleSpan<usize>;
@@ -35,6 +35,7 @@ pub enum Token {
     Case,   // case
     Where,  // where
     Match,  // match
+    Use,    // use
 
     // control symbols
     LeftBracket,  // [
@@ -45,6 +46,8 @@ pub enum Token {
     RightParen,   // )
     Comma,        // ,
     Semi,         // ;
+    Colon,        // :
+    Dot,          // .
 
     // integers
     Int8(u8, Signed),     // <n>u8
@@ -112,6 +115,8 @@ fn control_lexer<'a>() -> impl Parser<'a, &'a str, Token, LexError<'a>> {
         ')' => Token::RightParen,
         ';' => Token::Semi,
         ',' => Token::Comma,
+        ':' => Token::Colon,
+        '.' => Token::Dot,
         // This code is unreachable, because its matched by the [one_of]
         // functions
         _ => panic!("unreachable"),
@@ -134,6 +139,7 @@ fn ident_lexer<'a>() -> impl Parser<'a, &'a str, Token, LexError<'a>> {
         "case" => Token::Case,
         "where" => Token::Where,
         "match" => Token::Match,
+        "use" => Token::Use,
         _ => Token::Ident(ident.into()),
     })
 }

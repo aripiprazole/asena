@@ -6,7 +6,7 @@ version = "0.1.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-ariadne = "0.2.0"
+ariadne = "0.2"
 chumsky = "1.0.0-alpha.4"
 clap = {version = "4.2.7", features = ["derive"]}
 salsa = "0.16.1"

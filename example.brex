@@ -1,0 +1,23 @@
+use IO
+
+class Monad m <: Functor m {
+  pure: a -> m a;
+}
+
+class Person {
+  name: String;
+
+  new(name: String): Self {
+    Self { name }
+  }
+
+  sayHello(self): IO () {
+    printf "Hello, I'm {}" self.name
+  }
+}
+
+main {
+  val person = Person.new "Sofia amor da minha vida";
+  person.sayHello;
+  println "Hello, world!";
+}
