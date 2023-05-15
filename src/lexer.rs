@@ -6,7 +6,9 @@ pub const SYMBOLS: &[&str] = &[
 
 pub type Span = SimpleSpan<usize>;
 
-pub type TokenSet = Vec<(Token, Span)>;
+pub type LexToken = (Token, Span);
+
+pub type TokenSet = Vec<LexToken>;
 
 pub type LexError<'a> = extra::Err<Rich<'a, char, Span>>;
 

@@ -4,6 +4,10 @@ class Monad m <: Functor m {
   pure: a -> m a;
 }
 
+if : Bool -> Lazy a -> Lazy b
+if true  then _    = then
+if false _    else = else
+
 class Person {
   name: String;
 
@@ -12,8 +16,14 @@ class Person {
   }
 }
 
+instance Monad m : Functor m {
+  pure (a) {
+    Applicative.pure(a)
+  }
+}
+
 main {
-  let person = Person.new "Sofia amor da minha vida";
+  let person = Person.new "Sofis eu amo vc vc é a pessoa mais importante da minha vida";
   person.sayHello;
   println "Hello, world!";
 }

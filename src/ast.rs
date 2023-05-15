@@ -32,7 +32,7 @@ pub enum Literal {
 
     // integers
     Int8(u8, Signed),     // <n>u8
-    Int16(u32, Signed),   // <n>u32
+    Int16(u16, Signed),   // <n>u32
     Int32(u32, Signed),   // <n>u32
     Int64(u64, Signed),   // <n>u64
     Int128(u128, Signed), // <n>u128
@@ -305,6 +305,7 @@ pub struct Class {
 ///   }
 /// }
 /// ```
+#[derive(Debug, Clone)]
 pub struct Instance {
     pub name: GlobalId,
     pub constraints: Vec<Constraint>,
@@ -317,8 +318,10 @@ pub enum DeclKind {
     Assign(Assign),
     Command(Command),
     Class(Class),
-    Method(Method)
+    Instance(Instance),
 }
+
+pub type Decl = Box<DeclKind>;
 //<<<Declarations
 
 //>>>Properties
@@ -437,3 +440,349 @@ impl LocalId {
     }
 }
 //<<<Identifiers implementation
+
+//>>>Expressions implementation
+impl ExprKind {
+    /// Creates a new [Binary] expression wrapped by an [Expr].
+    pub fn binary(lhs: Expr, fn_id: FunctionId, rhs: Expr) -> Expr {
+        Expr::new(ExprKind::Binary(Binary { lhs, fn_id, rhs }))
+    }
+
+    /// Creates a new [App] expression wrapped by an [Expr].
+    pub fn app(callee: Expr, argument: Expr) -> Expr {
+        Expr::new(ExprKind::App(App { callee, argument }))
+    }
+
+    /// Creates a new [Lam] expression wrapped by an [Expr].
+    pub fn lam(parameters: Vec<LocalId>, value: Expr) -> Expr {
+        Expr::new(ExprKind::Lam(Lam { parameters, value }))
+    }
+
+    /// Creates a new single [Let] expression wrapped by an [Expr].
+    pub fn single_binding(binding: Binding, in_value: Expr) -> Expr {
+        Expr::new(ExprKind::Let(Let {
+            bindings: vec![binding],
+            in_value,
+        }))
+    }
+
+    /// Creates a new [Let] expression wrapped by an [Expr].
+    pub fn let_binding(bindings: Vec<Binding>, in_value: Expr) -> Expr {
+        Expr::new(ExprKind::Let(Let { bindings, in_value }))
+    }
+
+    /// Creates a new [Pi] expression wrapped by an [Expr].
+    pub fn pi(parameter_name: Option<LocalId>, parameter_type: Expr, return_type: Expr) -> Expr {
+        Expr::new(ExprKind::Pi(Pi {
+            parameter_name,
+            parameter_type,
+            return_type,
+        }))
+    }
+
+    /// Creates a new named [Pi] expression wrapped by an [Expr].
+    pub fn named_pi(parameter_name: LocalId, parameter_type: Expr, return_type: Expr) -> Expr {
+        Expr::new(ExprKind::Pi(Pi {
+            parameter_name: Some(parameter_name),
+            parameter_type,
+            return_type,
+        }))
+    }
+
+    /// Creates a new unnamed [Pi] expression wrapped by an [Expr].
+    pub fn unnamed_pi(parameter_type: Expr, return_type: Expr) -> Expr {
+        Expr::new(ExprKind::Pi(Pi {
+            parameter_name: None,
+            parameter_type,
+            return_type,
+        }))
+    }
+
+    /// Creates a new [ExprKind::Help] expression.
+    pub fn help(value: Expr) -> Expr {
+        Expr::new(ExprKind::Help(value))
+    }
+
+    /// Creates a new [ExprKind::Global] expression.
+    pub fn global(global_id: GlobalId) -> Expr {
+        Expr::new(ExprKind::Global(global_id))
+    }
+
+    /// Creates a new [ExprKind::Local] expression.
+    pub fn local(local_id: LocalId) -> Expr {
+        Expr::new(ExprKind::Local(local_id))
+    }
+
+    /// Creates a new [ExprKind::Literal] expression.
+    pub fn literal(literal: Literal) -> Expr {
+        Expr::new(ExprKind::Literal(literal))
+    }
+}
+
+impl BindingKind {
+    /// Creates new [Binding]
+    pub fn new(assign_pat: Pat, value: Expr) -> Binding {
+        Binding::new(BindingKind { assign_pat, value })
+    }
+}
+//<<<Expressions implementation
+
+//>>>Literal implementation
+impl Literal {
+    /// Creates a new [Literal::Nat]
+    pub fn nat(value: u128) -> Literal {
+        Literal::Nat(value)
+    }
+
+    /// Creates a new [Literal::String]
+    pub fn string(value: String) -> Literal {
+        Literal::String(value)
+    }
+
+    /// Creates a new signed [Literal::Int8]
+    pub fn i8(value: i8) -> Literal {
+        Literal::Int8(value as u8, Signed::Signed)
+    }
+
+    /// Creates a new unsigned [Literal::Int8]
+    pub fn u8(value: u8) -> Literal {
+        Literal::Int8(value, Signed::Unsigned)
+    }
+
+    /// Creates a new signed [Literal::Int16]
+    pub fn i16(value: i16) -> Literal {
+        Literal::Int16(value as u16, Signed::Signed)
+    }
+
+    /// Creates a new unsigned [Literal::Int16]
+    pub fn u16(value: u16) -> Literal {
+        Literal::Int16(value, Signed::Unsigned)
+    }
+
+    /// Creates a new signed [Literal::Int32]
+    pub fn i32(value: i32) -> Literal {
+        Literal::Int32(value as u32, Signed::Signed)
+    }
+
+    /// Creates a new unsigned [Literal::Int32]
+    pub fn u32(value: u32) -> Literal {
+        Literal::Int32(value, Signed::Unsigned)
+    }
+
+    /// Creates a new signed [Literal::Int64]
+    pub fn i64(value: i64) -> Literal {
+        Literal::Int64(value as u64, Signed::Signed)
+    }
+
+    /// Creates a new unsigned [Literal::Int64]
+    pub fn u64(value: u64) -> Literal {
+        Literal::Int64(value, Signed::Unsigned)
+    }
+
+    /// Creates a new signed [Literal::Int128]
+    pub fn i128(value: i128) -> Literal {
+        Literal::Int128(value as u128, Signed::Signed)
+    }
+
+    /// Creates a new unsigned [Literal::Int128]
+    pub fn u128(value: u128) -> Literal {
+        Literal::Int128(value, Signed::Unsigned)
+    }
+
+    /// Creates a new floating point [Literal::Float32]
+    pub fn f32(value: f32) -> Literal {
+        Literal::Float32(value)
+    }
+
+    /// Creates a new floating point [Literal::Float64]
+    pub fn f64(value: f64) -> Literal {
+        Literal::Float64(value)
+    }
+
+    /// Creates a new boolean [Literal::True] or [Literal::False]
+    pub fn bool(value: bool) -> Literal {
+        if value {
+            Literal::True
+        } else {
+            Literal::False
+        }
+    }
+}
+//<<<Literal implementation
+
+//>>>Pattern implementation
+impl PatKind {
+    /// Creates a new [PatKind::Wildcard] pattern
+    pub fn wildcard() -> Pat {
+        Pat::new(PatKind::Wildcard)
+    }
+
+    /// Creates a new [PatKind::Literal] pattern
+    pub fn literal(literal: Literal) -> Pat {
+        Pat::new(PatKind::Literal(literal))
+    }
+
+    /// Creates a new [PatKind::Local] pattern
+    pub fn local(local_id: LocalId) -> Pat {
+        Pat::new(PatKind::Local(local_id))
+    }
+
+    /// Creates a new [Constructor] pattern wrapped by a [Pat].
+    pub fn constructor(name: ConstructorId, arguments: Vec<Pat>) -> Pat {
+        Pat::new(PatKind::Constructor(Constructor { name, arguments }))
+    }
+}
+//<<<Pattern implementation
+
+//>>>Statements implementation
+impl StmtKind {
+    /// Creates a new [StmtKind::Ask]
+    pub fn ask(pat: Pat, value: Expr) -> Stmt {
+        Stmt::new(StmtKind::Ask(pat, value))
+    }
+
+    /// Creates a new unit [StmtKind::Return]
+    pub fn pure(value: Option<Expr>) -> Stmt {
+        Stmt::new(StmtKind::Return(value))
+    }
+
+    /// Creates a new unit [StmtKind::Return]
+    pub fn return_unit() -> Stmt {
+        Stmt::new(StmtKind::Return(None))
+    }
+
+    /// Creates a new valued [StmtKind::Return]
+    pub fn return_value(value: Expr) -> Stmt {
+        Stmt::new(StmtKind::Return(Some(value)))
+    }
+}
+//<<<Statements implementation
+
+//>>>Declarations implementation
+impl DeclKind {
+    /// Creates a new [Signature] declaration wrapped by a [Decl].
+    pub fn signature(
+        name: GlobalId,
+        parameters: Vec<Expr>,
+        return_type: OptionalType,
+        body: Body,
+    ) -> Decl {
+        Decl::new(DeclKind::Signature(Signature {
+            name,
+            parameters,
+            return_type,
+            body,
+        }))
+    }
+
+    /// Creates a new [Assign] declaration wrapped by a [Decl].
+    pub fn assign(name: GlobalId, patterns: Vec<Pat>, body: Body) -> Decl {
+        Decl::new(DeclKind::Assign(Assign {
+            name,
+            patterns,
+            body,
+        }))
+    }
+
+    /// Creates a new [Command] declaration wrapped by a [Decl].
+    pub fn command(command_name: String, arguments: Vec<Expr>) -> Decl {
+        Decl::new(DeclKind::Command(Command {
+            command_name,
+            arguments,
+        }))
+    }
+
+    /// Creates a new [Class] declaration wrapped by a [Decl].
+    pub fn class(name: GlobalId, constraints: Vec<Constraint>, properties: Vec<Property>) -> Decl {
+        Decl::new(DeclKind::Class(Class {
+            name,
+            constraints,
+            properties,
+        }))
+    }
+
+    /// Creates a new [Instance] declaration wrapped by a [Decl].
+    pub fn instance(name: GlobalId, constraints: Vec<Constraint>, properties: Vec<Method>) -> Decl {
+        Decl::new(DeclKind::Instance(Instance {
+            name,
+            constraints,
+            properties,
+        }))
+    }
+}
+
+impl Constraint {
+    /// Creates a new [Constraint] with an [Expr].
+    pub fn new(value: Expr) -> Self {
+        Self(value)
+    }
+}
+
+impl Field {
+    /// Creates a new [Field]
+    pub fn new(name: LocalId, field_type: Expr) -> Self {
+        Self { name, field_type }
+    }
+}
+
+impl Method {
+    /// Creates a new [Method]
+    pub fn new(
+        name: LocalId,
+        implicit_parameters: Vec<Parameter>,
+        explicit_parameters: Vec<Parameter>,
+        where_clauses: Vec<Constraint>,
+        return_type: Option<Expr>,
+        method_body: Body,
+    ) -> Self {
+        Self {
+            name,
+            implicit_parameters,
+            explicit_parameters,
+            where_clauses,
+            return_type,
+            method_body,
+        }
+    }
+}
+
+impl Body {
+    /// Creates a new [Body::Value]
+    pub fn value(value: Expr) -> Self {
+        Self::Value(value)
+    }
+
+    /// Creates a new [Body::Do]
+    pub fn do_notation(statements: Vec<Stmt>) -> Self {
+        Self::Do(statements)
+    }
+}
+
+impl Parameter {
+    /// Creates a new [Parameter]
+    pub fn new(name: Option<LocalId>, parameter_type: Expr, explicit: bool) -> Self {
+        Self {
+            name,
+            parameter_type,
+            explicit,
+        }
+    }
+    /// Creates a new explicit [Parameter]
+    pub fn explicit(name: LocalId, parameter_type: Expr) -> Self {
+        Self {
+            name: Some(name),
+            parameter_type,
+            explicit: true,
+        }
+    }
+
+    /// Creates a new implicit [Parameter]
+    pub fn implicit(name: Option<LocalId>, parameter_type: Expr) -> Self {
+        Self {
+            name,
+            parameter_type,
+            explicit: false,
+        }
+    }
+}
+//<<<Declarations implementation
