@@ -14,13 +14,13 @@ pub type LexError<'a> = extra::Err<Rich<'a, char, Span>>;
 
 /// Represents a true-false value, just like an wrapper to [bool], this represents if an integer
 /// value is signed, or unsigned.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Signed {
     Signed,
     Unsigned,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Token {
     // keywords
     Let,    // let

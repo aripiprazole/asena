@@ -67,9 +67,9 @@ pub enum Literal {
 ///   Being the most important the first items.
 #[derive(Debug, Clone)]
 pub struct Binary {
-    pub lhs: Expr,
+    pub lhs: ExprRef,
     pub fn_id: FunctionId,
-    pub rhs: Expr,
+    pub rhs: ExprRef,
 }
 
 /// Application expression, is an expression that is simply a function application (or a call),
@@ -84,8 +84,8 @@ pub struct Binary {
 /// this can be recursed until the infinite, like `something a b c ...`
 #[derive(Debug, Clone)]
 pub struct App {
-    pub callee: Expr,
-    pub argument: Primary,
+    pub callee: ExprRef,
+    pub argument: PrimaryRef,
 }
 
 /// Lambda expression, is an abstraction expression, that is simply a local function definition,
@@ -102,7 +102,7 @@ pub struct App {
 #[derive(Debug, Clone)]
 pub struct Lam {
     pub parameters: Vec<LocalId>,
-    pub value: Expr,
+    pub value: ExprRef,
 }
 
 /// Let expression, is a let polymorphism binding expression, that abstracts throughough a value,
@@ -115,8 +115,8 @@ pub struct Lam {
 /// ```
 #[derive(Debug, Clone)]
 pub struct Let {
-    pub bindings: Vec<Binding>,
-    pub in_value: Expr,
+    pub bindings: Vec<BindingRef>,
+    pub in_value: ExprRef,
 }
 
 /// Pi expression, is a dependent type expression, that abstracts a type into another return type.
@@ -128,17 +128,17 @@ pub struct Let {
 #[derive(Debug, Clone)]
 pub struct Pi {
     pub parameter_name: Option<LocalId>,
-    pub parameter_type: Expr,
-    pub return_type: Expr,
+    pub parameter_type: ExprRef,
+    pub return_type: ExprRef,
 }
 
 #[derive(Debug, Clone)]
-pub enum ExprKind {
+pub enum Expr {
     Binary(Binary),
     App(App),
     Lam(Lam),
     Let(Let),
-    Help(Expr),
+    Help(ExprRef),
     Global(GlobalId),
     Local(LocalId),
     Literal(Literal),
@@ -148,9 +148,9 @@ pub enum ExprKind {
 /// Primary terms are terms that can be only be created without parenthesis, and does not contain
 /// spaces. So if, match expressions, for example, aren't accepted here, only if they are grouped
 /// by parenthesis, like: `(if a then b else c)`
-pub type Primary = Box<ExprKind>;
+pub type PrimaryRef = Box<Expr>;
 
-pub type Expr = Box<ExprKind>;
+pub type ExprRef = Box<Expr>;
 //<<<Expressions
 
 //>>>Patterns
@@ -163,45 +163,45 @@ pub type Expr = Box<ExprKind>;
 #[derive(Debug, Clone)]
 pub struct Constructor {
     pub name: ConstructorId,
-    pub arguments: Vec<Pat>,
+    pub arguments: Vec<PatRef>,
 }
 
 #[derive(Debug, Clone)]
-pub enum PatKind {
+pub enum Pat {
     Wildcard,                 // _
     Literal(Literal),         // <literal>
     Local(LocalId),           // <local>
     Constructor(Constructor), // <global_id> <pattern...>
 }
 
-pub type Pat = Box<PatKind>;
+pub type PatRef = Box<Pat>;
 //<<<Patterns
 
 //>>>Statements
 #[derive(Debug, Clone)]
-pub enum StmtKind {
-    Ask(Pat, Expr),       // <local_id> <- <expr>
-    Return(Option<Expr>), // <return> <expr?>
-    Eval(Expr),           // <expr?>
+pub enum Stmt {
+    Ask(PatRef, ExprRef),    // <local_id> <- <expr>
+    Return(Option<ExprRef>), // <return> <expr?>
+    Eval(ExprRef),           // <expr?>
 }
 
-pub type Stmt = Box<StmtKind>;
+pub type StmtRef = Box<Stmt>;
 //<<<Statements
 
 //>>>Binding
 #[derive(Debug, Clone)]
 pub struct BindingKind {
-    pub assign_pat: Pat,
-    pub value: Expr,
+    pub assign_pat: PatRef,
+    pub value: ExprRef,
 }
 
-pub type Binding = Box<BindingKind>;
+pub type BindingRef = Box<BindingKind>;
 //<<<Binding
 
 #[derive(Debug, Clone)]
 pub enum Body {
-    Value(Expr),
-    Do(Vec<Stmt>),
+    Value(ExprRef),
+    Do(Vec<StmtRef>),
 }
 
 #[derive(Debug, Clone)]
@@ -210,7 +210,7 @@ pub struct Parameter {
     pub name: Option<LocalId>,
 
     /// Parameter's type
-    pub parameter_type: Expr,
+    pub parameter_type: ExprRef,
 
     /// If the parameter is explicit, or if it's a constraint or a type that can have the hole filled
     /// in the compile time, like a generic.
@@ -233,7 +233,7 @@ pub struct Parameter {
 #[derive(Debug, Clone)]
 pub struct Signature {
     pub name: GlobalId,
-    pub parameters: Vec<Expr>,
+    pub parameters: Vec<ExprRef>,
     pub return_type: OptionalType,
 
     /// Holds, optionally the value of the [Signature], this is an sugar to [Assign].
@@ -252,7 +252,7 @@ pub struct Signature {
 #[derive(Debug, Clone)]
 pub struct Assign {
     pub name: GlobalId,
-    pub patterns: Vec<Pat>,
+    pub patterns: Vec<PatRef>,
 
     /// Holds the value of the [Assign].
     pub body: Body,
@@ -268,7 +268,7 @@ pub struct Assign {
 #[derive(Debug, Clone)]
 pub struct Command {
     pub command_name: String,
-    pub arguments: Vec<Expr>,
+    pub arguments: Vec<ExprRef>,
 }
 
 /// A class is a declaration that creates a record, that can be used as a Type Class.
@@ -313,7 +313,7 @@ pub struct Instance {
 }
 
 #[derive(Debug, Clone)]
-pub enum DeclKind {
+pub enum Decl {
     Signature(Signature),
     Assign(Assign),
     Command(Command),
@@ -321,7 +321,7 @@ pub enum DeclKind {
     Instance(Instance),
 }
 
-pub type Decl = Box<DeclKind>;
+pub type DeclRef = Box<Decl>;
 //<<<Declarations
 
 //>>>Properties
@@ -334,7 +334,7 @@ pub type Decl = Box<DeclKind>;
 ///
 /// The constraint node can be used on `where` clauses.
 #[derive(Debug, Clone)]
-pub struct Constraint(pub Expr);
+pub struct Constraint(pub ExprRef);
 
 /// A field node is a record node's field.
 ///
@@ -347,7 +347,7 @@ pub struct Constraint(pub Expr);
 #[derive(Debug, Clone)]
 pub struct Field {
     pub name: LocalId,
-    pub field_type: Expr,
+    pub field_type: ExprRef,
 }
 
 /// A method node is a record function associated to a record, this can be used in implementation
@@ -368,7 +368,7 @@ pub struct Method {
     pub implicit_parameters: Vec<Parameter>, // \<<implicit parameter*>\>
     pub explicit_parameters: Vec<Parameter>, // (<explicit parameter*>)
     pub where_clauses: Vec<Constraint>,      // where <constraint*>
-    pub return_type: Option<Expr>,           // <: <expr>?>
+    pub return_type: Option<ExprRef>,        // <: <expr>?>
     pub method_body: Body,
 }
 
@@ -382,7 +382,7 @@ pub enum Property {
 #[derive(Debug, Clone)]
 pub enum OptionalType {
     Infer, // _
-    Explicit(Expr),
+    Explicit(ExprRef),
 }
 
 impl Display for FunctionId {
@@ -442,38 +442,42 @@ impl LocalId {
 //<<<Identifiers implementation
 
 //>>>Expressions implementation
-impl ExprKind {
+impl Expr {
     /// Creates a new [Binary] expression wrapped by an [Expr].
-    pub fn binary(lhs: Expr, fn_id: FunctionId, rhs: Expr) -> Expr {
-        Expr::new(ExprKind::Binary(Binary { lhs, fn_id, rhs }))
+    pub fn binary(lhs: ExprRef, fn_id: FunctionId, rhs: ExprRef) -> ExprRef {
+        ExprRef::new(Expr::Binary(Binary { lhs, fn_id, rhs }))
     }
 
     /// Creates a new [App] expression wrapped by an [Expr].
-    pub fn app(callee: Expr, argument: Expr) -> Expr {
-        Expr::new(ExprKind::App(App { callee, argument }))
+    pub fn app(callee: ExprRef, argument: ExprRef) -> ExprRef {
+        ExprRef::new(Expr::App(App { callee, argument }))
     }
 
     /// Creates a new [Lam] expression wrapped by an [Expr].
-    pub fn lam(parameters: Vec<LocalId>, value: Expr) -> Expr {
-        Expr::new(ExprKind::Lam(Lam { parameters, value }))
+    pub fn lam(parameters: Vec<LocalId>, value: ExprRef) -> ExprRef {
+        ExprRef::new(Expr::Lam(Lam { parameters, value }))
     }
 
     /// Creates a new single [Let] expression wrapped by an [Expr].
-    pub fn single_binding(binding: Binding, in_value: Expr) -> Expr {
-        Expr::new(ExprKind::Let(Let {
+    pub fn single_binding(binding: BindingRef, in_value: ExprRef) -> ExprRef {
+        ExprRef::new(Expr::Let(Let {
             bindings: vec![binding],
             in_value,
         }))
     }
 
     /// Creates a new [Let] expression wrapped by an [Expr].
-    pub fn let_binding(bindings: Vec<Binding>, in_value: Expr) -> Expr {
-        Expr::new(ExprKind::Let(Let { bindings, in_value }))
+    pub fn let_binding(bindings: Vec<BindingRef>, in_value: ExprRef) -> ExprRef {
+        ExprRef::new(Expr::Let(Let { bindings, in_value }))
     }
 
     /// Creates a new [Pi] expression wrapped by an [Expr].
-    pub fn pi(parameter_name: Option<LocalId>, parameter_type: Expr, return_type: Expr) -> Expr {
-        Expr::new(ExprKind::Pi(Pi {
+    pub fn pi(
+        parameter_name: Option<LocalId>,
+        parameter_type: ExprRef,
+        return_type: ExprRef,
+    ) -> ExprRef {
+        ExprRef::new(Expr::Pi(Pi {
             parameter_name,
             parameter_type,
             return_type,
@@ -481,8 +485,12 @@ impl ExprKind {
     }
 
     /// Creates a new named [Pi] expression wrapped by an [Expr].
-    pub fn named_pi(parameter_name: LocalId, parameter_type: Expr, return_type: Expr) -> Expr {
-        Expr::new(ExprKind::Pi(Pi {
+    pub fn named_pi(
+        parameter_name: LocalId,
+        parameter_type: ExprRef,
+        return_type: ExprRef,
+    ) -> ExprRef {
+        ExprRef::new(Expr::Pi(Pi {
             parameter_name: Some(parameter_name),
             parameter_type,
             return_type,
@@ -490,8 +498,8 @@ impl ExprKind {
     }
 
     /// Creates a new unnamed [Pi] expression wrapped by an [Expr].
-    pub fn unnamed_pi(parameter_type: Expr, return_type: Expr) -> Expr {
-        Expr::new(ExprKind::Pi(Pi {
+    pub fn unnamed_pi(parameter_type: ExprRef, return_type: ExprRef) -> ExprRef {
+        ExprRef::new(Expr::Pi(Pi {
             parameter_name: None,
             parameter_type,
             return_type,
@@ -499,30 +507,30 @@ impl ExprKind {
     }
 
     /// Creates a new [ExprKind::Help] expression.
-    pub fn help(value: Expr) -> Expr {
-        Expr::new(ExprKind::Help(value))
+    pub fn help(value: ExprRef) -> ExprRef {
+        ExprRef::new(Expr::Help(value))
     }
 
     /// Creates a new [ExprKind::Global] expression.
-    pub fn global(global_id: GlobalId) -> Expr {
-        Expr::new(ExprKind::Global(global_id))
+    pub fn global(global_id: GlobalId) -> ExprRef {
+        ExprRef::new(Expr::Global(global_id))
     }
 
     /// Creates a new [ExprKind::Local] expression.
-    pub fn local(local_id: LocalId) -> Expr {
-        Expr::new(ExprKind::Local(local_id))
+    pub fn local(local_id: LocalId) -> ExprRef {
+        ExprRef::new(Expr::Local(local_id))
     }
 
     /// Creates a new [ExprKind::Literal] expression.
-    pub fn literal(literal: Literal) -> Expr {
-        Expr::new(ExprKind::Literal(literal))
+    pub fn literal(literal: Literal) -> ExprRef {
+        ExprRef::new(Expr::Literal(literal))
     }
 }
 
 impl BindingKind {
     /// Creates new [Binding]
-    pub fn new(assign_pat: Pat, value: Expr) -> Binding {
-        Binding::new(BindingKind { assign_pat, value })
+    pub fn new(assign_pat: PatRef, value: ExprRef) -> BindingRef {
+        BindingRef::new(BindingKind { assign_pat, value })
     }
 }
 //<<<Expressions implementation
@@ -611,63 +619,63 @@ impl Literal {
 //<<<Literal implementation
 
 //>>>Pattern implementation
-impl PatKind {
+impl Pat {
     /// Creates a new [PatKind::Wildcard] pattern
-    pub fn wildcard() -> Pat {
-        Pat::new(PatKind::Wildcard)
+    pub fn wildcard() -> PatRef {
+        PatRef::new(Pat::Wildcard)
     }
 
     /// Creates a new [PatKind::Literal] pattern
-    pub fn literal(literal: Literal) -> Pat {
-        Pat::new(PatKind::Literal(literal))
+    pub fn literal(literal: Literal) -> PatRef {
+        PatRef::new(Pat::Literal(literal))
     }
 
     /// Creates a new [PatKind::Local] pattern
-    pub fn local(local_id: LocalId) -> Pat {
-        Pat::new(PatKind::Local(local_id))
+    pub fn local(local_id: LocalId) -> PatRef {
+        PatRef::new(Pat::Local(local_id))
     }
 
     /// Creates a new [Constructor] pattern wrapped by a [Pat].
-    pub fn constructor(name: ConstructorId, arguments: Vec<Pat>) -> Pat {
-        Pat::new(PatKind::Constructor(Constructor { name, arguments }))
+    pub fn constructor(name: ConstructorId, arguments: Vec<PatRef>) -> PatRef {
+        PatRef::new(Pat::Constructor(Constructor { name, arguments }))
     }
 }
 //<<<Pattern implementation
 
 //>>>Statements implementation
-impl StmtKind {
+impl Stmt {
     /// Creates a new [StmtKind::Ask]
-    pub fn ask(pat: Pat, value: Expr) -> Stmt {
-        Stmt::new(StmtKind::Ask(pat, value))
+    pub fn ask(pat: PatRef, value: ExprRef) -> StmtRef {
+        StmtRef::new(Stmt::Ask(pat, value))
     }
 
     /// Creates a new unit [StmtKind::Return]
-    pub fn pure(value: Option<Expr>) -> Stmt {
-        Stmt::new(StmtKind::Return(value))
+    pub fn pure(value: Option<ExprRef>) -> StmtRef {
+        StmtRef::new(Stmt::Return(value))
     }
 
     /// Creates a new unit [StmtKind::Return]
-    pub fn return_unit() -> Stmt {
-        Stmt::new(StmtKind::Return(None))
+    pub fn return_unit() -> StmtRef {
+        StmtRef::new(Stmt::Return(None))
     }
 
     /// Creates a new valued [StmtKind::Return]
-    pub fn return_value(value: Expr) -> Stmt {
-        Stmt::new(StmtKind::Return(Some(value)))
+    pub fn return_value(value: ExprRef) -> StmtRef {
+        StmtRef::new(Stmt::Return(Some(value)))
     }
 }
 //<<<Statements implementation
 
 //>>>Declarations implementation
-impl DeclKind {
+impl Decl {
     /// Creates a new [Signature] declaration wrapped by a [Decl].
     pub fn signature(
         name: GlobalId,
-        parameters: Vec<Expr>,
+        parameters: Vec<ExprRef>,
         return_type: OptionalType,
         body: Body,
-    ) -> Decl {
-        Decl::new(DeclKind::Signature(Signature {
+    ) -> DeclRef {
+        DeclRef::new(Decl::Signature(Signature {
             name,
             parameters,
             return_type,
@@ -676,8 +684,8 @@ impl DeclKind {
     }
 
     /// Creates a new [Assign] declaration wrapped by a [Decl].
-    pub fn assign(name: GlobalId, patterns: Vec<Pat>, body: Body) -> Decl {
-        Decl::new(DeclKind::Assign(Assign {
+    pub fn assign(name: GlobalId, patterns: Vec<PatRef>, body: Body) -> DeclRef {
+        DeclRef::new(Decl::Assign(Assign {
             name,
             patterns,
             body,
@@ -685,16 +693,20 @@ impl DeclKind {
     }
 
     /// Creates a new [Command] declaration wrapped by a [Decl].
-    pub fn command(command_name: String, arguments: Vec<Expr>) -> Decl {
-        Decl::new(DeclKind::Command(Command {
+    pub fn command(command_name: String, arguments: Vec<ExprRef>) -> DeclRef {
+        DeclRef::new(Decl::Command(Command {
             command_name,
             arguments,
         }))
     }
 
     /// Creates a new [Class] declaration wrapped by a [Decl].
-    pub fn class(name: GlobalId, constraints: Vec<Constraint>, properties: Vec<Property>) -> Decl {
-        Decl::new(DeclKind::Class(Class {
+    pub fn class(
+        name: GlobalId,
+        constraints: Vec<Constraint>,
+        properties: Vec<Property>,
+    ) -> DeclRef {
+        DeclRef::new(Decl::Class(Class {
             name,
             constraints,
             properties,
@@ -702,8 +714,12 @@ impl DeclKind {
     }
 
     /// Creates a new [Instance] declaration wrapped by a [Decl].
-    pub fn instance(name: GlobalId, constraints: Vec<Constraint>, properties: Vec<Method>) -> Decl {
-        Decl::new(DeclKind::Instance(Instance {
+    pub fn instance(
+        name: GlobalId,
+        constraints: Vec<Constraint>,
+        properties: Vec<Method>,
+    ) -> DeclRef {
+        DeclRef::new(Decl::Instance(Instance {
             name,
             constraints,
             properties,
@@ -713,14 +729,14 @@ impl DeclKind {
 
 impl Constraint {
     /// Creates a new [Constraint] with an [Expr].
-    pub fn new(value: Expr) -> Self {
+    pub fn new(value: ExprRef) -> Self {
         Self(value)
     }
 }
 
 impl Field {
     /// Creates a new [Field]
-    pub fn new(name: LocalId, field_type: Expr) -> Self {
+    pub fn new(name: LocalId, field_type: ExprRef) -> Self {
         Self { name, field_type }
     }
 }
@@ -732,7 +748,7 @@ impl Method {
         implicit_parameters: Vec<Parameter>,
         explicit_parameters: Vec<Parameter>,
         where_clauses: Vec<Constraint>,
-        return_type: Option<Expr>,
+        return_type: Option<ExprRef>,
         method_body: Body,
     ) -> Self {
         Self {
@@ -748,19 +764,19 @@ impl Method {
 
 impl Body {
     /// Creates a new [Body::Value]
-    pub fn value(value: Expr) -> Self {
+    pub fn value(value: ExprRef) -> Self {
         Self::Value(value)
     }
 
     /// Creates a new [Body::Do]
-    pub fn do_notation(statements: Vec<Stmt>) -> Self {
+    pub fn do_notation(statements: Vec<StmtRef>) -> Self {
         Self::Do(statements)
     }
 }
 
 impl Parameter {
     /// Creates a new [Parameter]
-    pub fn new(name: Option<LocalId>, parameter_type: Expr, explicit: bool) -> Self {
+    pub fn new(name: Option<LocalId>, parameter_type: ExprRef, explicit: bool) -> Self {
         Self {
             name,
             parameter_type,
@@ -768,7 +784,7 @@ impl Parameter {
         }
     }
     /// Creates a new explicit [Parameter]
-    pub fn explicit(name: LocalId, parameter_type: Expr) -> Self {
+    pub fn explicit(name: LocalId, parameter_type: ExprRef) -> Self {
         Self {
             name: Some(name),
             parameter_type,
@@ -777,7 +793,7 @@ impl Parameter {
     }
 
     /// Creates a new implicit [Parameter]
-    pub fn implicit(name: Option<LocalId>, parameter_type: Expr) -> Self {
+    pub fn implicit(name: Option<LocalId>, parameter_type: ExprRef) -> Self {
         Self {
             name,
             parameter_type,
