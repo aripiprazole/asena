@@ -1,6 +1,6 @@
 use std::fmt::{Display, Formatter};
 
-use crate::lexer::Signed;
+use crate::lexer::{Loc, Signed, Spanned};
 
 //>>>Identifiers
 /// Identifier's key to a function (everything on the language), this can be abstracted in another
@@ -134,6 +134,7 @@ pub struct Pi {
 
 #[derive(Debug, Clone)]
 pub enum Expr {
+    Group(ExprRef),
     Binary(Binary),
     App(App),
     Lam(Lam),
@@ -148,9 +149,9 @@ pub enum Expr {
 /// Primary terms are terms that can be only be created without parenthesis, and does not contain
 /// spaces. So if, match expressions, for example, aren't accepted here, only if they are grouped
 /// by parenthesis, like: `(if a then b else c)`
-pub type PrimaryRef = Box<Expr>;
+pub type PrimaryRef = Spanned<Expr>;
 
-pub type ExprRef = Box<Expr>;
+pub type ExprRef = Spanned<Expr>;
 //<<<Expressions
 
 //>>>Patterns
@@ -174,7 +175,7 @@ pub enum Pat {
     Constructor(Constructor), // <global_id> <pattern...>
 }
 
-pub type PatRef = Box<Pat>;
+pub type PatRef = Spanned<Pat>;
 //<<<Patterns
 
 //>>>Statements
@@ -185,17 +186,17 @@ pub enum Stmt {
     Eval(ExprRef),           // <expr?>
 }
 
-pub type StmtRef = Box<Stmt>;
+pub type StmtRef = Spanned<Stmt>;
 //<<<Statements
 
 //>>>Binding
 #[derive(Debug, Clone)]
-pub struct BindingKind {
+pub struct Binding {
     pub assign_pat: PatRef,
     pub value: ExprRef,
 }
 
-pub type BindingRef = Box<BindingKind>;
+pub type BindingRef = Spanned<Binding>;
 //<<<Binding
 
 #[derive(Debug, Clone)]
@@ -321,7 +322,7 @@ pub enum Decl {
     Instance(Instance),
 }
 
-pub type DeclRef = Box<Decl>;
+pub type DeclRef = Spanned<Decl>;
 //<<<Declarations
 
 //>>>Properties
@@ -443,32 +444,40 @@ impl LocalId {
 
 //>>>Expressions implementation
 impl Expr {
+    /// Creates a new [Expr::Group] expression
+    pub fn group(expr: ExprRef, span: Loc) -> ExprRef {
+        ExprRef::new(span, Expr::Group(expr))
+    }
+
     /// Creates a new [Binary] expression wrapped by an [Expr].
-    pub fn binary(lhs: ExprRef, fn_id: FunctionId, rhs: ExprRef) -> ExprRef {
-        ExprRef::new(Expr::Binary(Binary { lhs, fn_id, rhs }))
+    pub fn binary(lhs: ExprRef, fn_id: FunctionId, rhs: ExprRef, span: Loc) -> ExprRef {
+        ExprRef::new(span, Expr::Binary(Binary { lhs, fn_id, rhs }))
     }
 
     /// Creates a new [App] expression wrapped by an [Expr].
-    pub fn app(callee: ExprRef, argument: ExprRef) -> ExprRef {
-        ExprRef::new(Expr::App(App { callee, argument }))
+    pub fn app(callee: ExprRef, argument: ExprRef, span: Loc) -> ExprRef {
+        ExprRef::new(span, Expr::App(App { callee, argument }))
     }
 
     /// Creates a new [Lam] expression wrapped by an [Expr].
-    pub fn lam(parameters: Vec<LocalId>, value: ExprRef) -> ExprRef {
-        ExprRef::new(Expr::Lam(Lam { parameters, value }))
+    pub fn lam(parameters: Vec<LocalId>, value: ExprRef, span: Loc) -> ExprRef {
+        ExprRef::new(span, Expr::Lam(Lam { parameters, value }))
     }
 
     /// Creates a new single [Let] expression wrapped by an [Expr].
-    pub fn single_binding(binding: BindingRef, in_value: ExprRef) -> ExprRef {
-        ExprRef::new(Expr::Let(Let {
-            bindings: vec![binding],
-            in_value,
-        }))
+    pub fn single_binding(binding: BindingRef, in_value: ExprRef, span: Loc) -> ExprRef {
+        ExprRef::new(
+            span,
+            Expr::Let(Let {
+                bindings: vec![binding],
+                in_value,
+            }),
+        )
     }
 
     /// Creates a new [Let] expression wrapped by an [Expr].
-    pub fn let_binding(bindings: Vec<BindingRef>, in_value: ExprRef) -> ExprRef {
-        ExprRef::new(Expr::Let(Let { bindings, in_value }))
+    pub fn let_binding(bindings: Vec<BindingRef>, in_value: ExprRef, span: Loc) -> ExprRef {
+        ExprRef::new(span, Expr::Let(Let { bindings, in_value }))
     }
 
     /// Creates a new [Pi] expression wrapped by an [Expr].
@@ -476,12 +485,16 @@ impl Expr {
         parameter_name: Option<LocalId>,
         parameter_type: ExprRef,
         return_type: ExprRef,
+        span: Loc,
     ) -> ExprRef {
-        ExprRef::new(Expr::Pi(Pi {
-            parameter_name,
-            parameter_type,
-            return_type,
-        }))
+        ExprRef::new(
+            span,
+            Expr::Pi(Pi {
+                parameter_name,
+                parameter_type,
+                return_type,
+            }),
+        )
     }
 
     /// Creates a new named [Pi] expression wrapped by an [Expr].
@@ -489,48 +502,55 @@ impl Expr {
         parameter_name: LocalId,
         parameter_type: ExprRef,
         return_type: ExprRef,
+        span: Loc,
     ) -> ExprRef {
-        ExprRef::new(Expr::Pi(Pi {
-            parameter_name: Some(parameter_name),
-            parameter_type,
-            return_type,
-        }))
+        ExprRef::new(
+            span,
+            Expr::Pi(Pi {
+                parameter_name: Some(parameter_name),
+                parameter_type,
+                return_type,
+            }),
+        )
     }
 
     /// Creates a new unnamed [Pi] expression wrapped by an [Expr].
-    pub fn unnamed_pi(parameter_type: ExprRef, return_type: ExprRef) -> ExprRef {
-        ExprRef::new(Expr::Pi(Pi {
-            parameter_name: None,
-            parameter_type,
-            return_type,
-        }))
+    pub fn unnamed_pi(parameter_type: ExprRef, return_type: ExprRef, span: Loc) -> ExprRef {
+        ExprRef::new(
+            span,
+            Expr::Pi(Pi {
+                parameter_name: None,
+                parameter_type,
+                return_type,
+            }),
+        )
     }
 
     /// Creates a new [ExprKind::Help] expression.
-    pub fn help(value: ExprRef) -> ExprRef {
-        ExprRef::new(Expr::Help(value))
+    pub fn help(value: ExprRef, span: Loc) -> ExprRef {
+        ExprRef::new(span, Expr::Help(value))
     }
 
     /// Creates a new [ExprKind::Global] expression.
-    pub fn global(global_id: GlobalId) -> ExprRef {
-        ExprRef::new(Expr::Global(global_id))
+    pub fn global(global_id: GlobalId, span: Loc) -> ExprRef {
+        ExprRef::new(span, Expr::Global(global_id))
     }
 
     /// Creates a new [ExprKind::Local] expression.
-    pub fn local(local_id: LocalId) -> ExprRef {
-        ExprRef::new(Expr::Local(local_id))
+    pub fn local(local_id: LocalId, span: Loc) -> ExprRef {
+        ExprRef::new(span, Expr::Local(local_id))
     }
 
     /// Creates a new [ExprKind::Literal] expression.
-    pub fn literal(literal: Literal) -> ExprRef {
-        ExprRef::new(Expr::Literal(literal))
+    pub fn literal(literal: Literal, span: Loc) -> ExprRef {
+        ExprRef::new(span, Expr::Literal(literal))
     }
 }
 
-impl BindingKind {
+impl Binding {
     /// Creates new [Binding]
-    pub fn new(assign_pat: PatRef, value: ExprRef) -> BindingRef {
-        BindingRef::new(BindingKind { assign_pat, value })
+    pub fn new(assign_pat: PatRef, value: ExprRef, span: Loc) -> BindingRef {
+        BindingRef::new(span, Binding { assign_pat, value })
     }
 }
 //<<<Expressions implementation
@@ -621,23 +641,23 @@ impl Literal {
 //>>>Pattern implementation
 impl Pat {
     /// Creates a new [PatKind::Wildcard] pattern
-    pub fn wildcard() -> PatRef {
-        PatRef::new(Pat::Wildcard)
+    pub fn wildcard(span: Loc) -> PatRef {
+        PatRef::new(span, Pat::Wildcard)
     }
 
     /// Creates a new [PatKind::Literal] pattern
-    pub fn literal(literal: Literal) -> PatRef {
-        PatRef::new(Pat::Literal(literal))
+    pub fn literal(literal: Literal, span: Loc) -> PatRef {
+        PatRef::new(span, Pat::Literal(literal))
     }
 
     /// Creates a new [PatKind::Local] pattern
-    pub fn local(local_id: LocalId) -> PatRef {
-        PatRef::new(Pat::Local(local_id))
+    pub fn local(local_id: LocalId, span: Loc) -> PatRef {
+        PatRef::new(span, Pat::Local(local_id))
     }
 
     /// Creates a new [Constructor] pattern wrapped by a [Pat].
-    pub fn constructor(name: ConstructorId, arguments: Vec<PatRef>) -> PatRef {
-        PatRef::new(Pat::Constructor(Constructor { name, arguments }))
+    pub fn constructor(name: ConstructorId, arguments: Vec<PatRef>, span: Loc) -> PatRef {
+        PatRef::new(span, Pat::Constructor(Constructor { name, arguments }))
     }
 }
 //<<<Pattern implementation
@@ -645,23 +665,23 @@ impl Pat {
 //>>>Statements implementation
 impl Stmt {
     /// Creates a new [StmtKind::Ask]
-    pub fn ask(pat: PatRef, value: ExprRef) -> StmtRef {
-        StmtRef::new(Stmt::Ask(pat, value))
+    pub fn ask(pat: PatRef, value: ExprRef, span: Loc) -> StmtRef {
+        StmtRef::new(span, Stmt::Ask(pat, value))
     }
 
     /// Creates a new unit [StmtKind::Return]
-    pub fn pure(value: Option<ExprRef>) -> StmtRef {
-        StmtRef::new(Stmt::Return(value))
+    pub fn pure(value: Option<ExprRef>, span: Loc) -> StmtRef {
+        StmtRef::new(span, Stmt::Return(value))
     }
 
     /// Creates a new unit [StmtKind::Return]
-    pub fn return_unit() -> StmtRef {
-        StmtRef::new(Stmt::Return(None))
+    pub fn return_unit(span: Loc) -> StmtRef {
+        StmtRef::new(span, Stmt::Return(None))
     }
 
     /// Creates a new valued [StmtKind::Return]
-    pub fn return_value(value: ExprRef) -> StmtRef {
-        StmtRef::new(Stmt::Return(Some(value)))
+    pub fn return_value(value: ExprRef, span: Loc) -> StmtRef {
+        StmtRef::new(span, Stmt::Return(Some(value)))
     }
 }
 //<<<Statements implementation
@@ -674,30 +694,40 @@ impl Decl {
         parameters: Vec<ExprRef>,
         return_type: OptionalType,
         body: Body,
+        span: Loc,
     ) -> DeclRef {
-        DeclRef::new(Decl::Signature(Signature {
-            name,
-            parameters,
-            return_type,
-            body,
-        }))
+        DeclRef::new(
+            span,
+            Decl::Signature(Signature {
+                name,
+                parameters,
+                return_type,
+                body,
+            }),
+        )
     }
 
     /// Creates a new [Assign] declaration wrapped by a [Decl].
-    pub fn assign(name: GlobalId, patterns: Vec<PatRef>, body: Body) -> DeclRef {
-        DeclRef::new(Decl::Assign(Assign {
-            name,
-            patterns,
-            body,
-        }))
+    pub fn assign(name: GlobalId, patterns: Vec<PatRef>, body: Body, span: Loc) -> DeclRef {
+        DeclRef::new(
+            span,
+            Decl::Assign(Assign {
+                name,
+                patterns,
+                body,
+            }),
+        )
     }
 
     /// Creates a new [Command] declaration wrapped by a [Decl].
-    pub fn command(command_name: String, arguments: Vec<ExprRef>) -> DeclRef {
-        DeclRef::new(Decl::Command(Command {
-            command_name,
-            arguments,
-        }))
+    pub fn command(command_name: String, arguments: Vec<ExprRef>, span: Loc) -> DeclRef {
+        DeclRef::new(
+            span,
+            Decl::Command(Command {
+                command_name,
+                arguments,
+            }),
+        )
     }
 
     /// Creates a new [Class] declaration wrapped by a [Decl].
@@ -705,12 +735,16 @@ impl Decl {
         name: GlobalId,
         constraints: Vec<Constraint>,
         properties: Vec<Property>,
+        span: Loc,
     ) -> DeclRef {
-        DeclRef::new(Decl::Class(Class {
-            name,
-            constraints,
-            properties,
-        }))
+        DeclRef::new(
+            span,
+            Decl::Class(Class {
+                name,
+                constraints,
+                properties,
+            }),
+        )
     }
 
     /// Creates a new [Instance] declaration wrapped by a [Decl].
@@ -718,12 +752,16 @@ impl Decl {
         name: GlobalId,
         constraints: Vec<Constraint>,
         properties: Vec<Method>,
+        span: Loc,
     ) -> DeclRef {
-        DeclRef::new(Decl::Instance(Instance {
-            name,
-            constraints,
-            properties,
-        }))
+        DeclRef::new(
+            span,
+            Decl::Instance(Instance {
+                name,
+                constraints,
+                properties,
+            }),
+        )
     }
 }
 

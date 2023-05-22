@@ -1,8 +1,12 @@
+use std::{fmt::Debug, ops::Range};
+
 use chumsky::prelude::*;
 
 pub const SYMBOLS: &[&str] = &[
     "=", "!", ">", "<", "$", "#", "+", "-", "*", "/", "&", "|", "@", "^", ".", ":",
 ];
+
+pub type Loc = Range<usize>;
 
 pub type Span = SimpleSpan<usize>;
 
@@ -11,6 +15,12 @@ pub type LexToken = (Token, Span);
 pub type TokenSet = Vec<LexToken>;
 
 pub type LexError<'a> = extra::Err<Rich<'a, char, Span>>;
+
+#[derive(Debug, Clone)]
+pub struct Spanned<T> {
+    pub span: Range<usize>,
+    pub value: Box<T>,
+}
 
 /// Represents a true-false value, just like an wrapper to [bool], this represents if an integer
 /// value is signed, or unsigned.
@@ -152,4 +162,21 @@ fn ident_lexer<'a>() -> impl Parser<'a, &'a str, Token, LexError<'a>> {
             _ => Token::Ident(ident.into()),
         })
         .labelled("keyword")
+}
+
+impl<T: Debug + Clone> Spanned<T> {
+    pub fn new(span: Range<usize>, value: T) -> Self {
+        Self {
+            span,
+            value: Box::new(value),
+        }
+    }
+
+    pub fn span(&self) -> &Range<usize> {
+        &self.span
+    }
+
+    pub fn value(&self) -> &T {
+        &self.value
+    }
 }
