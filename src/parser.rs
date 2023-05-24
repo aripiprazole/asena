@@ -23,6 +23,8 @@ pub fn expr_parser<'a>() -> impl Parser<'a, ParserInput<'a>, ExprRef, ParseError
             .delimited_by(just(Token::LeftParen), just(Token::RightParen))
             .map(Expr::Group);
 
+        let symbol = any().filter(|token| matches!(token, Token::Symbol(..)));
+
         primary.or(group)
     })
     .map_with_span(|expr, span| ExprRef::new(span.into(), expr))
