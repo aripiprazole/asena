@@ -164,6 +164,12 @@ fn ident_lexer<'a>() -> impl Parser<'a, &'a str, Token, LexError<'a>> {
         .labelled("keyword")
 }
 
+impl Token {
+    pub fn sym(s: &str) -> Token {
+        Token::Symbol(s.into())
+    }
+}
+
 impl<T: Debug + Clone> Spanned<T> {
     pub fn new(span: Range<usize>, value: T) -> Self {
         Self {

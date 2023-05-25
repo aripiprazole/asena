@@ -56,8 +56,8 @@ pub enum Literal {
 /// ```
 ///
 /// The binary expressions can have precedence, and they have the following precedence order:
-///   - `^`, `>>`, `<<`,
-///   - `>`, `>=`, `<=`, `<=`
+///   - `^`, `>>`, `<<`, `|`, `&`
+///   - `>`, `>=`, `<=`, `<`
 ///   - `==`, `!=`
 ///   - `||`, `&&`
 ///   - `$`, `%`, `->`, `=>`, `=>>`, `@`
@@ -139,11 +139,13 @@ pub enum Expr {
     App(App),
     Lam(Lam),
     Let(Let),
-    Help(ExprRef),
     Global(GlobalId),
     Local(LocalId),
     Literal(Literal),
     Pi(Pi),
+
+    /// Help syntax sugar to the debugger.
+    Help(ExprRef),
 }
 
 /// Primary terms are terms that can be only be created without parenthesis, and does not contain
