@@ -1,31 +1,19 @@
 use std::iter::Peekable;
 
-use thiserror::Error;
-
-use crate::ast::{
-    Accessor, Ann, App, Binary, Expr, ExprRef, FunctionId, GlobalId, Literal, LocalId,
-};
-use crate::span::{Loc, Spanned};
+use crate::ast::*;
+use crate::parser::error::ParseError;
+use crate::span::Spanned;
 use crate::token::Token;
+
+use self::error::Result;
 
 pub type TokenRef = Spanned<Token>;
 
 pub type StringRef = Spanned<String>;
 
-pub type Result<T, E = Spanned<ParseError>> = std::result::Result<T, E>;
+pub mod error;
 
-/// Parsing errors, it can be indexed to the code using a [Spanned<ParseError>].
-#[derive(Error, Debug, Clone)]
-pub enum ParseError {
-    #[error("Unexpected token at this position.")]
-    UnexpectedToken,
-
-    #[error("Expected token: {0}. But got this instead.")]
-    Expected(Token),
-
-    #[error("Could not parse primary, but expected it.")]
-    CantParsePrimary,
-}
+pub mod report;
 
 /// The language parser struct, it takes a [Token] iterator, that can be lazy or eager initialized
 /// to advance and identify tokens on the programming language.
@@ -205,7 +193,11 @@ impl<'a, S: Iterator<Item = Spanned<Token>>> Parser<'a, S> {
 
                 return Ok(current.swap(Expr::Help(expr)));
             }
-            _ => return self.end_diagnostic(ParseError::CantParsePrimary),
+            _ => {
+                return self
+                    .end_diagnostic(ParseError::CantParsePrimary)
+                    .map_err(|error| error.with_error(ParseError::UnexpectedToken))
+            }
         };
 
         self.next(); // Skips if hadn't any error
@@ -241,7 +233,7 @@ impl<'a, S: Iterator<Item = Spanned<Token>>> Parser<'a, S> {
                 None
             }
         })
-        .map_err(|error| error.swap(ParseError::Expected(token)))
+        .map_err(|error| error.with_error(ParseError::Expected(token)))
     }
 
     /// Tries to parse using a function [F], but it can't, the index would not be increased, so the
@@ -291,33 +283,6 @@ impl<'a, S: Iterator<Item = Spanned<Token>>> Parser<'a, S> {
     fn peek(&mut self) -> Spanned<Token> {
         self.stream.peek().unwrap().clone()
     }
-
-    /// Runs the parser, and if it fails, prints the error using a report crate. Returns Some(value)
-    /// if the parsing is correct.
-    pub fn run_diagnostic<F, T>(&mut self, f: F) -> Option<T>
-    where
-        F: Fn(&mut Self) -> Result<T>,
-    {
-        use ariadne::{Color, Label, Report, ReportKind, Source};
-
-        match f(self) {
-            Ok(value) => Some(value),
-            Err(err) => {
-                Report::<Loc>::build(ReportKind::Error, (), 0)
-                    .with_message(err.value().to_string())
-                    .with_label(
-                        Label::new(err.span().clone())
-                            .with_message(err.value().to_string())
-                            .with_color(Color::Red),
-                    )
-                    .finish()
-                    .print(Source::from(self.source.clone()))
-                    .unwrap();
-
-                None
-            }
-        }
-    }
 }
 
 #[cfg(test)]
@@ -328,7 +293,7 @@ mod tests {
 
     #[test]
     fn it_works() {
-        let code = "a |> b";
+        let code = "|> a b";
 
         let stream = Lexer::new(code);
         let mut parser = Parser::new(code, stream.peekable());

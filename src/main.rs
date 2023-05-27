@@ -9,8 +9,6 @@ pub mod token;
 
 use clap::{Args, Parser, Subcommand};
 
-use crate::lexer::Lexer;
-
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 #[command(propagate_version = true)]
