@@ -8,13 +8,14 @@ pub type TokenRef = Spanned<Token>;
 
 pub type StringRef = Spanned<String>;
 
+pub type Result<T, E = Spanned<ParseError>> = std::result::Result<T, E>;
+
+/// Parsing errors, it can be indexed to the code using a [Spanned<ParseError>].
 #[derive(Debug, Clone, Copy)]
 pub enum ParseError {
     UnexpectedToken,
     CantParsePrimary,
 }
-
-pub type Result<T, E = Spanned<ParseError>> = std::result::Result<T, E>;
 
 /// The language parser struct, it takes a [Token] iterator, that can be lazy or eager initialized
 /// to advance and identify tokens on the programming language.
@@ -25,6 +26,10 @@ pub struct Parser<'a, S: Iterator<Item = Spanned<Token>>> {
 }
 
 impl<'a, S: Iterator<Item = Spanned<Token>>> Parser<'a, S> {
+    /// Creates a new instance of the Parser, it takes the source code reference, and a lexer stream
+    /// peekable.
+    ///
+    /// It does require a lazy parser.
     pub fn new(source: &'a str, stream: Peekable<S>) -> Self {
         Self {
             index: 0,
@@ -34,10 +39,12 @@ impl<'a, S: Iterator<Item = Spanned<Token>>> Parser<'a, S> {
     }
 
     //>>>Parser functions
+    /// Parses a reference to [Expr]
     pub fn expr(&mut self) -> Result<ExprRef> {
         self.binary()
     }
 
+    /// Parses a reference to [Binary]
     pub fn binary(&mut self) -> Result<ExprRef> {
         let mut lhs = self.app()?;
 
@@ -60,6 +67,7 @@ impl<'a, S: Iterator<Item = Spanned<Token>>> Parser<'a, S> {
         Ok(lhs)
     }
 
+    /// Parses a reference to [App]
     pub fn app(&mut self) -> Result<ExprRef> {
         let mut callee = self.primary()?;
 
@@ -73,6 +81,7 @@ impl<'a, S: Iterator<Item = Spanned<Token>>> Parser<'a, S> {
         Ok(callee)
     }
 
+    /// Parses a reference to [Literal] or primary [Expr]
     pub fn primary(&mut self) -> Result<ExprRef> {
         use Token::*;
 
@@ -151,6 +160,7 @@ impl<'a, S: Iterator<Item = Spanned<Token>>> Parser<'a, S> {
         Ok(current.swap(value))
     }
 
+    /// Pares a valid identifier, and return it's content.
     fn identifier(&mut self) -> Result<StringRef> {
         self.eat(|next| match next.value() {
             Token::Ident(content) => Some(next.replace(content.clone())),
@@ -161,6 +171,7 @@ impl<'a, S: Iterator<Item = Spanned<Token>>> Parser<'a, S> {
         })
     }
 
+    /// Eat a matching token, and return it if matching correctly.
     fn expect(&mut self, token: Token) -> Result<TokenRef> {
         self.eat(|next| {
             if next.value() == &token {
@@ -171,6 +182,9 @@ impl<'a, S: Iterator<Item = Spanned<Token>>> Parser<'a, S> {
         })
     }
 
+    /// Tries to parse using a function [F], but it can't, the index would not be increased, so the
+    /// result of the function is going to be Ok(None); but if everything is ok, the result is going
+    /// to be the parsed value.
     fn catch<T, F>(&mut self, mut f: F) -> Result<Option<T>>
     where
         F: FnMut(&mut Self) -> Result<T>,
@@ -184,6 +198,7 @@ impl<'a, S: Iterator<Item = Spanned<Token>>> Parser<'a, S> {
         }
     }
 
+    /// Peeks the current token using a function [F], and jumps to the next token.
     fn eat<T, F>(&mut self, f: F) -> Result<T>
     where
         F: Fn(&TokenRef) -> Option<T>,
@@ -198,16 +213,19 @@ impl<'a, S: Iterator<Item = Spanned<Token>>> Parser<'a, S> {
         }
     }
 
+    /// Jumps to the next token, and increases the current token index.
     fn next(&mut self) -> TokenRef {
         self.index += 1;
 
         self.stream.next().unwrap()
     }
 
+    /// End the diagnostic with an error of [ParseError], spanned with the current token location.
     fn end_diagnostic<T>(&mut self, error: ParseError) -> Result<T, Spanned<ParseError>> {
         Err(self.stream.peek().unwrap().replace(error))
     }
 
+    /// Sees the current token, and return it cloned.
     fn peek(&mut self) -> Spanned<Token> {
         self.stream.peek().unwrap().clone()
     }
