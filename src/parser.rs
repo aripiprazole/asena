@@ -1,12 +1,8 @@
 use std::iter::Peekable;
 
-use chumsky::span::SimpleSpan;
-
 use crate::ast::{App, Binary, Expr, ExprRef, FunctionId, GlobalId, Literal};
 use crate::lexer::Token;
 use crate::span::Spanned;
-
-pub type ParseableToken = (Token, SimpleSpan);
 
 pub type TokenRef = Spanned<Token>;
 
@@ -22,13 +18,13 @@ pub type Result<T, E = Spanned<ParseError>> = std::result::Result<T, E>;
 
 /// The language parser struct, it takes a [Token] iterator, that can be lazy or eager initialized
 /// to advance and identify tokens on the programming language.
-pub struct Parser<'a, S: Iterator<Item = ParseableToken>> {
+pub struct Parser<'a, S: Iterator<Item = Spanned<Token>>> {
     pub source: &'a str,
     pub index: usize,
     pub stream: Peekable<S>,
 }
 
-impl<'a, S: Iterator<Item = ParseableToken>> Parser<'a, S> {
+impl<'a, S: Iterator<Item = Spanned<Token>>> Parser<'a, S> {
     pub fn new(source: &'a str, stream: Peekable<S>) -> Self {
         Self {
             index: 0,
@@ -205,25 +201,15 @@ impl<'a, S: Iterator<Item = ParseableToken>> Parser<'a, S> {
     fn next(&mut self) -> TokenRef {
         self.index += 1;
 
-        self.stream
-            .next()
-            .map(|(token, span)| Spanned::new(span.into_range(), token))
-            .unwrap()
+        self.stream.next().unwrap()
     }
 
     fn end_diagnostic<T>(&mut self, error: ParseError) -> Result<T, Spanned<ParseError>> {
-        Err(self
-            .stream
-            .peek()
-            .map(|(_, span)| Spanned::new(span.into_range(), error))
-            .unwrap())
+        Err(self.stream.peek().unwrap().replace(error))
     }
 
     fn peek(&mut self) -> Spanned<Token> {
-        self.stream
-            .peek()
-            .map(|(value, span)| Spanned::new(span.into_range(), value.clone()))
-            .unwrap()
+        self.stream.peek().unwrap().clone()
     }
 }
 

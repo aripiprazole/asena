@@ -2,6 +2,8 @@ use std::fmt::Debug;
 
 use chumsky::prelude::*;
 
+use crate::span::Spanned;
+
 pub const SYMBOLS: &[&str] = &[
     "=", "!", ">", "<", "$", "#", "+", "-", "*", "/", "&", "|", "@", "^", ":",
 ];
@@ -71,11 +73,11 @@ pub enum Token {
     String(String),
 
     // end of file TODO
-    EOF,
+    Eof,
 }
 
 pub struct Lexer<'a> {
-    pub source: Box<dyn Iterator<Item = (Token, SimpleSpan)>>,
+    pub source: Box<dyn Iterator<Item = Spanned<Token>>>,
     pub errs: Vec<Rich<'a, char>>,
 }
 
@@ -171,19 +173,24 @@ impl<'a> Lexer<'a> {
         let (tokens, errs) = lexer().parse(code).into_output_errors();
 
         Self {
-            source: Box::new(tokens.unwrap_or_default().into_iter()),
+            source: Box::new(
+                tokens
+                    .unwrap_or_default()
+                    .into_iter()
+                    .map(|(value, span)| Spanned::new(span.into_range(), value)),
+            ),
             errs,
         }
     }
 }
 
 impl<'a> Iterator for Lexer<'a> {
-    type Item = (Token, SimpleSpan);
+    type Item = Spanned<Token>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.source
             .next()
-            .or_else(|| Some((Token::EOF, SimpleSpan::new(0, 0))))
+            .or_else(|| Some(Spanned::new(0..0, Token::Eof)))
     }
 }
 
