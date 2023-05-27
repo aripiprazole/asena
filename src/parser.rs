@@ -2,7 +2,9 @@ use std::iter::Peekable;
 
 use thiserror::Error;
 
-use crate::ast::{Accessor, App, Binary, Expr, ExprRef, FunctionId, GlobalId, Literal, LocalId};
+use crate::ast::{
+    Accessor, Ann, App, Binary, Expr, ExprRef, FunctionId, GlobalId, Literal, LocalId,
+};
 use crate::lexer::Token;
 use crate::span::Spanned;
 
@@ -54,11 +56,11 @@ impl<'a, S: Iterator<Item = Spanned<Token>>> Parser<'a, S> {
 
     /// Parses a reference to [Binary]
     pub fn binary(&mut self) -> Result<ExprRef> {
-        let mut lhs = self.accessor()?;
+        let mut lhs = self.ann()?;
 
         while let Ok(fn_id) = self.operator() {
             let fn_id = fn_id.map(FunctionId);
-            let rhs = self.accessor()?;
+            let rhs = self.ann()?;
 
             // Combines two locations
             let span = lhs.span.start..rhs.span.end;
@@ -67,6 +69,29 @@ impl<'a, S: Iterator<Item = Spanned<Token>>> Parser<'a, S> {
         }
 
         Ok(lhs)
+    }
+
+    /// Parses a reference to [Ann]
+    pub fn ann(&mut self) -> Result<ExprRef> {
+        let mut value = self.accessor()?;
+
+        while let Token::Symbol(fn_id) = self.peek().value() {
+            // Currently, is impossible to pattern match agains't a [String], so it's the workaround
+            if fn_id != ":" {
+                break;
+            }
+
+            self.next(); // skips ':'
+
+            let against = self.accessor()?;
+
+            // Combines two locations
+            let span = value.span.start..against.span.end;
+
+            value = ExprRef::new(span, Expr::Ann(Ann { value, against }))
+        }
+
+        Ok(value)
     }
 
     /// Parses a reference to [Accessor]
@@ -274,7 +299,7 @@ mod tests {
 
     #[test]
     fn it_works() {
-        let code = "(person a).sayHello";
+        let code = "a.b : String";
 
         let stream = Lexer::new(code);
         let mut parser = Parser::new(code, stream.peekable());

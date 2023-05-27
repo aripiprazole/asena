@@ -134,15 +134,15 @@ pub struct Let {
     pub in_value: ExprRef,
 }
 
-/// Check expression, is a epxression that checks a value agains't a type and make possible to type
-/// stuff, like a cast, but not unsafe.
+/// Annotation expression, is a epxression that checks a value agains't a type and make possible to
+/// type stuff, like a cast, but not unsafe.
 ///
 /// The syntax is like:
 /// ```haskell
 /// 10 : Int
 /// ```
 #[derive(Debug, Clone)]
-pub struct Check {
+pub struct Ann {
     pub value: ExprRef,
     pub against: ExprRef,
 }
@@ -171,7 +171,7 @@ pub enum Expr {
     Global(GlobalId),
     Local(LocalId),
     Literal(Literal),
-    Check(Check),
+    Ann(Ann),
     Pi(Pi),
 
     /// Help syntax sugar to the debugger.
@@ -490,7 +490,7 @@ impl Debug for Expr {
             Self::Let(expr) => write!(f, "{:#?}", expr),
             Self::Global(expr) => write!(f, "{:#?}", expr),
             Self::Local(expr) => write!(f, "{:#?}", expr),
-            Self::Check(expr) => write!(f, "{:#?}", expr),
+            Self::Ann(expr) => write!(f, "{:#?}", expr),
             Self::Pi(expr) => write!(f, "{:#?}", expr),
             Self::Literal(expr) => write!(f, "Literal({:#?})", expr),
             Self::Help(help) => f.debug_struct("Help").field("expr", help).finish(),
