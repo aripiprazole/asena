@@ -14,6 +14,7 @@ pub type StringRef = Spanned<String>;
 pub mod error;
 
 pub mod report;
+pub mod support;
 
 /// The language parser struct, it takes a [Token] iterator, that can be lazy or eager initialized
 /// to advance and identify tokens on the programming language.
@@ -36,7 +37,6 @@ impl<'a, S: Iterator<Item = Spanned<Token>>> Parser<'a, S> {
         }
     }
 
-    //>>>Parser functions
     /// Parses a reference to [Expr]
     pub fn expr(&mut self) -> Result<ExprRef> {
         self.binary()
@@ -118,6 +118,25 @@ impl<'a, S: Iterator<Item = Spanned<Token>>> Parser<'a, S> {
         }
 
         Ok(callee)
+    }
+
+    /// Parses a valid identifier, and return it's content.
+    fn identifier(&mut self) -> Result<StringRef> {
+        self.eat(|next| match next.value() {
+            Token::Ident(content) => Some(next.replace(content.clone())),
+
+            // Accepts symbol, so the parser is able to parse something like `Functor.<$>`
+            Token::Symbol(content) => Some(next.replace(content.clone())),
+            _ => None,
+        })
+    }
+
+    /// Parses a valid binary operator, and return it's content.
+    fn operator(&mut self) -> Result<StringRef> {
+        self.eat(|next| match next.value() {
+            Token::Symbol(content) => Some(next.replace(content.clone())),
+            _ => None,
+        })
     }
 
     /// Parses a reference to [Literal] or primary [Expr]
@@ -203,85 +222,6 @@ impl<'a, S: Iterator<Item = Spanned<Token>>> Parser<'a, S> {
         self.next(); // Skips if hadn't any error
 
         Ok(current.swap(value))
-    }
-
-    /// Pares a valid identifier, and return it's content.
-    fn identifier(&mut self) -> Result<StringRef> {
-        self.eat(|next| match next.value() {
-            Token::Ident(content) => Some(next.replace(content.clone())),
-
-            // Accepts symbol, so the parser is able to parse something like `Functor.<$>`
-            Token::Symbol(content) => Some(next.replace(content.clone())),
-            _ => None,
-        })
-    }
-
-    /// Pares a valid binary operator, and return it's content.
-    fn operator(&mut self) -> Result<StringRef> {
-        self.eat(|next| match next.value() {
-            Token::Symbol(content) => Some(next.replace(content.clone())),
-            _ => None,
-        })
-    }
-
-    /// Eat a matching token, and return it if matching correctly.
-    fn expect(&mut self, token: Token) -> Result<TokenRef> {
-        self.eat(|next| {
-            if next.value() == &token {
-                Some(next.clone())
-            } else {
-                None
-            }
-        })
-        .map_err(|error| error.with_error(ParseError::Expected(token)))
-    }
-
-    /// Tries to parse using a function [F], but it can't, the index would not be increased, so the
-    /// result of the function is going to be Ok(None); but if everything is ok, the result is going
-    /// to be the parsed value.
-    fn catch<T, F>(&mut self, mut f: F) -> Result<Option<T>>
-    where
-        F: FnMut(&mut Self) -> Result<T>,
-    {
-        let current_index = self.index;
-
-        match f(self) {
-            Ok(value) => Ok(Some(value)),
-            Err(..) if self.index == current_index => Ok(None),
-            Err(err) => Err(err),
-        }
-    }
-
-    /// Peeks the current token using a function [F], and jumps to the next token.
-    fn eat<T, F>(&mut self, f: F) -> Result<T>
-    where
-        F: Fn(&TokenRef) -> Option<T>,
-    {
-        let next = self.peek();
-        match f(&next) {
-            Some(value) => {
-                self.next();
-                Ok(value)
-            }
-            None => Err(next.swap(ParseError::UnexpectedToken)),
-        }
-    }
-
-    /// Jumps to the next token, and increases the current token index.
-    fn next(&mut self) -> TokenRef {
-        self.index += 1;
-
-        self.stream.next().unwrap()
-    }
-
-    /// End the diagnostic with an error of [ParseError], spanned with the current token location.
-    fn end_diagnostic<T>(&mut self, error: ParseError) -> Result<T, Spanned<ParseError>> {
-        Err(self.stream.peek().unwrap().replace(error))
-    }
-
-    /// Sees the current token, and return it cloned.
-    fn peek(&mut self) -> Spanned<Token> {
-        self.stream.peek().unwrap().clone()
     }
 }
 
