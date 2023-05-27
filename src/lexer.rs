@@ -1,11 +1,11 @@
-use std::fmt::Debug;
+use std::fmt::{Debug, Display};
 
 use chumsky::prelude::*;
 
 use crate::span::Spanned;
 
 pub const SYMBOLS: &[&str] = &[
-    "=", "!", ">", "<", "$", "#", "+", "-", "*", "/", "&", "|", "@", "^", ":",
+    "=", "!", ">", "<", "$", "#", "+", "-", "*", "/", "&", "|", ".", "@", "^", ":",
 ];
 
 pub type Span = SimpleSpan<usize>;
@@ -197,5 +197,54 @@ impl<'a> Iterator for Lexer<'a> {
 impl Token {
     pub fn sym(s: &str) -> Token {
         Token::Symbol(s.into())
+    }
+}
+
+impl Display for Token {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Token::Let => write!(f, "let"),
+            Token::True => write!(f, "true"),
+            Token::False => write!(f, "false"),
+            Token::If => write!(f, "if"),
+            Token::Else => write!(f, "else"),
+            Token::Then => write!(f, "then"),
+            Token::Type => write!(f, "type"),
+            Token::Record => write!(f, "record"),
+            Token::Enum => write!(f, "enum"),
+            Token::Trait => write!(f, "trait"),
+            Token::Class => write!(f, "class"),
+            Token::Case => write!(f, "case"),
+            Token::Where => write!(f, "where"),
+            Token::Match => write!(f, "match"),
+            Token::Use => write!(f, "use"),
+            Token::LeftBracket => write!(f, "{{"),
+            Token::RightBracket => write!(f, "}}"),
+            Token::LeftBrace => write!(f, "["),
+            Token::RightBrace => write!(f, "]"),
+            Token::LeftParen => write!(f, "("),
+            Token::RightParen => write!(f, ")"),
+            Token::Comma => write!(f, ","),
+            Token::Semi => write!(f, ";"),
+            Token::Colon => write!(f, ":"),
+            Token::Dot => write!(f, "."),
+            Token::Help => write!(f, "?"),
+            Token::Int8(n, Signed::Signed) => write!(f, "{n}i8"),
+            Token::Int8(n, Signed::Unsigned) => write!(f, "{n}u8"),
+            Token::Int16(n, Signed::Signed) => write!(f, "{n}i16"),
+            Token::Int16(n, Signed::Unsigned) => write!(f, "{n}u16"),
+            Token::Int32(n, Signed::Signed) => write!(f, "{n}i32"),
+            Token::Int32(n, Signed::Unsigned) => write!(f, "{n}u32"),
+            Token::Int64(n, Signed::Signed) => write!(f, "{n}i64"),
+            Token::Int64(n, Signed::Unsigned) => write!(f, "{n}u64"),
+            Token::Int128(n, Signed::Signed) => write!(f, "{n}i128"),
+            Token::Int128(n, Signed::Unsigned) => write!(f, "{n}u128"),
+            Token::Float32(n) => write!(f, "{n}f32"),
+            Token::Float64(n) => write!(f, "{n}f64"),
+            Token::Symbol(symbol) => write!(f, "`{symbol}"),
+            Token::Ident(ident) => write!(f, "'{ident}"),
+            Token::String(string) => write!(f, "\"{string}\""),
+            Token::Eof => write!(f, "<<EOF>>"),
+        }
     }
 }

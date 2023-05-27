@@ -13,10 +13,13 @@ pub type StringRef = Spanned<String>;
 pub type Result<T, E = Spanned<ParseError>> = std::result::Result<T, E>;
 
 /// Parsing errors, it can be indexed to the code using a [Spanned<ParseError>].
-#[derive(Error, Debug, Clone, Copy)]
+#[derive(Error, Debug, Clone)]
 pub enum ParseError {
     #[error("Unexpected token at this position.")]
     UnexpectedToken,
+
+    #[error("Expected token: {0}. But got this instead.")]
+    Expected(Token),
 
     #[error("Could not parse primary, but expected it.")]
     CantParsePrimary,
@@ -56,11 +59,13 @@ impl<'a, S: Iterator<Item = Spanned<Token>>> Parser<'a, S> {
         loop {
             let next = self.next();
 
-            let Token::Symbol(symbol) = next.value() else {
-                break;
+            let fn_id = match next.value() {
+                Token::Symbol(symbol) => FunctionId::new(symbol),
+                Token::Dot => FunctionId::new("."),
+                _ => break,
             };
 
-            let fn_id = Spanned::new(next.span().clone(), FunctionId::new(symbol));
+            let fn_id = Spanned::new(next.span().clone(), fn_id);
             let rhs = self.app()?;
 
             // Combines two locations
@@ -185,6 +190,7 @@ impl<'a, S: Iterator<Item = Spanned<Token>>> Parser<'a, S> {
                 None
             }
         })
+        .map_err(|error| error.swap(ParseError::Expected(token)))
     }
 
     /// Tries to parse using a function [F], but it can't, the index would not be increased, so the
@@ -244,7 +250,7 @@ mod tests {
 
     #[test]
     fn it_works() {
-        let code = "(person + 10).batata 10 10";
+        let code = "(person a) + a";
 
         let stream = Lexer::new(code);
         let mut parser = Parser::new(code, stream.peekable());
