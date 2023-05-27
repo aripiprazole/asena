@@ -238,17 +238,44 @@ impl<'a, S: Iterator<Item = Spanned<Token>>> Parser<'a, S> {
 
 #[cfg(test)]
 mod tests {
-    use crate::lexer::Lexer;
+    use crate::{lexer::Lexer, span::Loc};
 
     use super::*;
 
     #[test]
     fn it_works() {
-        let code = "Nat.+ 10 10";
+        let code = "(person + 10).batata 10 10";
 
         let stream = Lexer::new(code);
         let mut parser = Parser::new(code, stream.peekable());
 
-        println!("{:#?}", parser.expr().unwrap())
+        println!("{:#?}", parser.run_diagnostic(Parser::expr))
+    }
+
+    impl<'a, S: Iterator<Item = Spanned<Token>>> Parser<'a, S> {
+        fn run_diagnostic<F, T>(&mut self, f: F) -> T
+        where
+            F: Fn(&mut Self) -> Result<T>,
+        {
+            use ariadne::{Color, Label, Report, ReportKind, Source};
+
+            match f(self) {
+                Ok(value) => value,
+                Err(err) => {
+                    Report::<Loc>::build(ReportKind::Error, (), 0)
+                        .with_message(err.value().to_string())
+                        .with_label(
+                            Label::new(err.span().clone())
+                                .with_message(err.value().to_string())
+                                .with_color(Color::Red),
+                        )
+                        .finish()
+                        .print(Source::from(self.source.clone()))
+                        .unwrap();
+
+                    panic!("Running diagnostic");
+                }
+            }
+        }
     }
 }
