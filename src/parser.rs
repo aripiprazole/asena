@@ -57,13 +57,15 @@ impl<'a, S: Iterator<Item = Spanned<Token>>> Parser<'a, S> {
         let mut lhs = self.app()?;
 
         loop {
-            let next = self.next();
+            let next = self.peek();
 
             let fn_id = match next.value() {
                 Token::Symbol(symbol) => FunctionId::new(symbol),
                 Token::Dot => FunctionId::new("."),
                 _ => break,
             };
+
+            self.next();
 
             let fn_id = Spanned::new(next.span().clone(), fn_id);
             let rhs = self.app()?;
@@ -250,7 +252,7 @@ mod tests {
 
     #[test]
     fn it_works() {
-        let code = "(person a) + a";
+        let code = "(person a).sayHello";
 
         let stream = Lexer::new(code);
         let mut parser = Parser::new(code, stream.peekable());
