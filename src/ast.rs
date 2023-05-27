@@ -103,6 +103,26 @@ pub struct App {
     pub argument: PrimaryRef,
 }
 
+/// Dsl expression, is an expression that is simply a function application (or a call),
+/// they're both expression, but the last is a lambda, that receives arguments, and usually will use
+/// a do-notation.
+///
+/// The syntax is like:
+/// ```haskell
+/// something 10 42 { a, .. ->
+///   
+/// }
+/// ```
+///
+/// The application expression is right associative, and can hold primary terms on the argument,
+/// this can be recursed until the infinite, like `something a b c ...`
+#[derive(Debug, Clone)]
+pub struct Dsl {
+    pub callee: ExprRef,
+    pub parameters: Vec<Parameter>,
+    pub block: Vec<Stmt>,
+}
+
 /// Lambda expression, is an abstraction expression, that is simply a local function definition,
 /// they can hold multiple parameters just for syntax sugar.
 ///
@@ -166,6 +186,7 @@ pub enum Expr {
     Binary(Binary),
     Accessor(Accessor),
     App(App),
+    Dsl(Dsl),
     Lam(Lam),
     Let(Let),
     Global(GlobalId),
@@ -486,6 +507,7 @@ impl Debug for Expr {
             Self::Binary(expr) => write!(f, "{:#?}", expr),
             Self::Accessor(expr) => write!(f, "{:#?}", expr),
             Self::App(expr) => write!(f, "{:#?}", expr),
+            Self::Dsl(expr) => write!(f, "{:#?}", expr),
             Self::Lam(expr) => write!(f, "{:#?}", expr),
             Self::Let(expr) => write!(f, "{:#?}", expr),
             Self::Global(expr) => write!(f, "{:#?}", expr),
