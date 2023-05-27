@@ -123,7 +123,7 @@ pub fn lexer<'a>() -> impl Parser<'a, &'a str, TokenSet, LexError<'a>> {
 }
 
 fn control_lexer<'a>() -> impl Parser<'a, &'a str, Token, LexError<'a>> {
-    one_of("()[]{};,")
+    one_of("()[]{};,.")
         .map(|control: char| match control {
             '[' => Token::LeftBracket,
             ']' => Token::RightBracket,
