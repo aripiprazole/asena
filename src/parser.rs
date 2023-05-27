@@ -45,8 +45,14 @@ impl<'a, S: Iterator<Item = ParseableToken>> Parser<'a, S> {
     pub fn binary(&mut self) -> Result<ExprRef> {
         let mut lhs = self.app()?;
 
-        while let Token::Symbol(symbol) = self.next().value() {
-            let fn_id = FunctionId::new(symbol);
+        loop {
+            let next = self.next();
+
+            let Token::Symbol(symbol) = next.value() else {
+                break;
+            };
+
+            let fn_id = Spanned::new(next.span().clone(), FunctionId::new(symbol));
             let rhs = self.app()?;
 
             // Combines two locations
@@ -102,16 +108,26 @@ impl<'a, S: Iterator<Item = ParseableToken>> Parser<'a, S> {
 
             // Starts with a Global expression, and its needed to be resolved in a further step, it
             // can be either a [Global] or a [Local].
-            Ident(ident) => {
-                self.next(); // skip <identifier>
-                let mut path = vec![FunctionId::new(ident)];
+            Ident(..) => {
+                // skip <identifier>
+                //
+                // It does not uses the Ident(..) pattern, because of the location, we need locality
+                // of the ast.
+                let ident = self.identifier()?.map(|s| FunctionId::new(&s));
+
+                // Creates a new path.
+                let mut path = vec![ident];
                 while let Token::Dot = self.peek().value() {
                     self.next(); // skip `.`
-                    let identifier = self.identifier()?;
-                    path.push(FunctionId::new(identifier.value())); // adds new `.` <identifier>
+                    let fn_id = self.identifier()?.map(|s| FunctionId::new(&s));
+                    path.push(fn_id); // adds new `.` <identifier>
                 }
 
-                return Ok(current.swap(Expr::Global(GlobalId(path))));
+                // Creates a new location combining the first, and the last points in the source code
+                let a = path.first().unwrap().span();
+                let b = path.last().map(Spanned::span).unwrap_or(a);
+
+                return Ok(ExprRef::new(a.start..b.end, Expr::Global(GlobalId(path))));
             }
 
             //>>>Composed tokens
@@ -137,13 +153,6 @@ impl<'a, S: Iterator<Item = ParseableToken>> Parser<'a, S> {
         self.next(); // Skips if hadn't any error
 
         Ok(current.swap(value))
-    }
-
-    fn symbol(&mut self) -> Result<StringRef> {
-        self.eat(|next| match next.value() {
-            Token::Symbol(content) => Some(next.replace(content.clone())),
-            _ => None,
-        })
     }
 
     fn identifier(&mut self) -> Result<StringRef> {
@@ -183,9 +192,12 @@ impl<'a, S: Iterator<Item = ParseableToken>> Parser<'a, S> {
     where
         F: Fn(&TokenRef) -> Option<T>,
     {
-        let next = self.next();
+        let next = self.peek();
         match f(&next) {
-            Some(value) => Ok(value),
+            Some(value) => {
+                self.next();
+                Ok(value)
+            }
             None => Err(next.swap(ParseError::UnexpectedToken)),
         }
     }

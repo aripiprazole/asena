@@ -11,18 +11,18 @@ pub struct FunctionId(pub String);
 
 /// Identifier's key to a type constructor.
 #[derive(Clone)]
-pub struct ConstructorId(pub FunctionId);
+pub struct ConstructorId(pub Vec<Spanned<FunctionId>>);
 
 /// Identifier's key to a global identifier, that's not declared locally, almost everything with
 /// Pascal Case, as a language pattern. This can contain symbols like: `Person.new`, as it can
 /// contain `.`.
 #[derive(Clone)]
-pub struct GlobalId(pub Vec<FunctionId>);
+pub struct GlobalId(pub Vec<Spanned<FunctionId>>);
 
 /// Identifier's key to local identifier, that's not declared globally, almost everything with
 /// snake case, as a language pattern.
 #[derive(Clone)]
-pub struct LocalId(pub FunctionId);
+pub struct LocalId(pub Spanned<FunctionId>);
 //<<<Identifiers
 
 /// Represents a language literal construct, can hold numbers, strings, booleans, etc.
@@ -69,7 +69,7 @@ pub enum Literal {
 #[derive(Debug, Clone)]
 pub struct Binary {
     pub lhs: ExprRef,
-    pub fn_id: FunctionId,
+    pub fn_id: Spanned<FunctionId>,
     pub rhs: ExprRef,
 }
 
@@ -414,18 +414,6 @@ impl Debug for FunctionId {
     }
 }
 
-impl ConstructorId {
-    /// Creates a new [ConstructorId] by a string
-    pub fn new(id: &str) -> Self {
-        Self(FunctionId::new(id))
-    }
-
-    /// Gets the local's identifier as string borrow
-    pub fn as_str(&self) -> &str {
-        self.0.as_str()
-    }
-}
-
 impl Debug for ConstructorId {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "ConstructorId {:#?}", self.0)
@@ -434,8 +422,8 @@ impl Debug for ConstructorId {
 
 impl GlobalId {
     /// Creates a new [GlobalId] by a string
-    pub fn new(id: &str) -> Self {
-        Self(vec![FunctionId::new(id)])
+    pub fn new(span: Loc, id: &str) -> Self {
+        Self(vec![Spanned::new(span, FunctionId::new(id))])
     }
 }
 
@@ -447,19 +435,19 @@ impl Debug for GlobalId {
 
 impl LocalId {
     /// Creates a new [LocalId] by a string
-    pub fn new(id: &str) -> Self {
-        Self(FunctionId::new(id))
+    pub fn new(span: Loc, id: &str) -> Self {
+        Self(Spanned::new(span, FunctionId::new(id)))
     }
 
     /// Gets the local's identifier as string borrow
     pub fn as_str(&self) -> &str {
-        self.0.as_str()
+        self.0.value().as_str()
     }
 }
 
 impl Debug for LocalId {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "LocalId {}", self.0)
+        write!(f, "LocalId {:#?}", self.0)
     }
 }
 //<<<Identifiers implementation
@@ -472,7 +460,7 @@ impl Expr {
     }
 
     /// Creates a new [Binary] expression wrapped by an [Expr].
-    pub fn binary(lhs: ExprRef, fn_id: FunctionId, rhs: ExprRef, span: Loc) -> ExprRef {
+    pub fn binary(lhs: ExprRef, fn_id: Spanned<FunctionId>, rhs: ExprRef, span: Loc) -> ExprRef {
         ExprRef::new(span, Expr::Binary(Binary { lhs, fn_id, rhs }))
     }
 
