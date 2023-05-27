@@ -1,9 +1,9 @@
 use std::iter::Peekable;
 
 use crate::ast::*;
+use crate::lexer::span::Spanned;
+use crate::lexer::token::Token;
 use crate::parser::error::ParseError;
-use crate::span::Spanned;
-use crate::token::Token;
 
 use self::error::Result;
 

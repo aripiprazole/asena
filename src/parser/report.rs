@@ -1,6 +1,6 @@
+use crate::lexer::span::{Loc, Spanned};
+use crate::lexer::token::Token;
 use crate::parser::error::{ParseError, Tip};
-use crate::span::{Loc, Spanned};
-use crate::token::Token;
 
 use super::error::Result;
 use super::Parser;

@@ -1,7 +1,7 @@
 use thiserror::Error;
 
-use crate::span::Spanned;
-use crate::token::Token;
+use crate::lexer::span::Spanned;
+use crate::lexer::token::Token;
 
 pub type Result<T, E = Spanned<ParseError>> = std::result::Result<T, E>;
 

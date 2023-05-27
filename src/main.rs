@@ -4,8 +4,6 @@ pub mod ast;
 pub mod graph;
 pub mod lexer;
 pub mod parser;
-pub mod span;
-pub mod token;
 
 use clap::{Args, Parser, Subcommand};
 

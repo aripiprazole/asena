@@ -1,7 +1,10 @@
 use chumsky::prelude::*;
 
-use crate::span::Spanned;
-use crate::token::Token;
+use span::Spanned;
+use token::Token;
+
+pub mod span;
+pub mod token;
 
 pub const SYMBOLS: &[&str] = &[
     "=", "!", ">", "<", "$", "#", "+", "-", "*", "/", "&", "|", ".", "@", "^", ":",
