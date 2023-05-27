@@ -2,10 +2,9 @@ use std::iter::Peekable;
 
 use chumsky::span::SimpleSpan;
 
-use crate::{
-    ast::{App, Binary, Expr, ExprRef, FunctionId, GlobalId, Literal},
-    lexer::{Loc, Spanned, Token},
-};
+use crate::ast::{App, Binary, Expr, ExprRef, FunctionId, GlobalId, Literal};
+use crate::lexer::Token;
+use crate::span::Spanned;
 
 pub type ParseableToken = (Token, SimpleSpan);
 
@@ -224,7 +223,7 @@ mod tests {
 
     #[test]
     fn it_works() {
-        let code = "10 + 10";
+        let code = "Nat.+ 10 10";
 
         let stream = Lexer::new(code);
         let mut parser = Parser::new(code, stream.peekable());

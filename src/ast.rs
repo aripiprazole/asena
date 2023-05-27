@@ -1,6 +1,7 @@
 use std::fmt::{Display, Formatter};
 
-use crate::lexer::{Loc, Signed, Spanned};
+use crate::lexer::Signed;
+use crate::span::{Loc, Spanned};
 
 //>>>Identifiers
 /// Identifier's key to a function (everything on the language), this can be abstracted in another

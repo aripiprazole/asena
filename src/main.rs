@@ -2,6 +2,8 @@ pub mod ast;
 pub mod graph;
 pub mod lexer;
 pub mod parser;
+pub mod span;
+
 use std::ops::Range;
 
 use clap::{Args, Parser, Subcommand};
