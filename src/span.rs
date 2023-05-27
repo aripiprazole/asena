@@ -1,9 +1,9 @@
-use std::ops::Range;
+use std::{fmt::Debug, ops::Range};
 
 pub type Loc = Range<usize>;
 
 /// Localized reference in the heap, using [Box], and [Loc], to localize stuff in the source code
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Spanned<T> {
     pub span: Loc,
     pub value: Box<T>,
@@ -42,5 +42,13 @@ impl<T> Spanned<T> {
         T: Clone,
     {
         Spanned::new(self.span, f(*self.value))
+    }
+}
+
+impl<T: Debug> Debug for Spanned<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:#?}", self.value())?;
+        write!(f, " @ ")?;
+        write!(f, "{:?}", self.span())
     }
 }

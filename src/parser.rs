@@ -223,11 +223,11 @@ mod tests {
 
     #[test]
     fn it_works() {
-        let code = "Nat.+ 10 10";
+        let code = "Nat + 10 10";
 
         let stream = Lexer::new(code);
         let mut parser = Parser::new(code, stream.peekable());
 
-        println!("{:#?}", parser.expr())
+        println!("{:#?}", parser.expr().unwrap())
     }
 }

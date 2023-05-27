@@ -1,4 +1,4 @@
-use std::fmt::{Display, Formatter};
+use std::fmt::{Debug, Display, Formatter};
 
 use crate::lexer::Signed;
 use crate::span::{Loc, Spanned};
@@ -6,27 +6,27 @@ use crate::span::{Loc, Spanned};
 //>>>Identifiers
 /// Identifier's key to a function (everything on the language), this can be abstracted in another
 /// identifiers. Serves as a key on a graph, or the abstract syntax tree representation.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct FunctionId(pub String);
 
 /// Identifier's key to a type constructor.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct ConstructorId(pub FunctionId);
 
 /// Identifier's key to a global identifier, that's not declared locally, almost everything with
 /// Pascal Case, as a language pattern. This can contain symbols like: `Person.new`, as it can
 /// contain `.`.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct GlobalId(pub Vec<FunctionId>);
 
 /// Identifier's key to local identifier, that's not declared globally, almost everything with
 /// snake case, as a language pattern.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct LocalId(pub FunctionId);
 //<<<Identifiers
 
 /// Represents a language literal construct, can hold numbers, strings, booleans, etc.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub enum Literal {
     Nat(u128), // <n>n
     String(String),
@@ -133,7 +133,7 @@ pub struct Pi {
     pub return_type: ExprRef,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub enum Expr {
     Group(ExprRef),
     Binary(Binary),
@@ -408,6 +408,12 @@ impl FunctionId {
     }
 }
 
+impl Debug for FunctionId {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "'{}", self.0)
+    }
+}
+
 impl ConstructorId {
     /// Creates a new [ConstructorId] by a string
     pub fn new(id: &str) -> Self {
@@ -420,10 +426,22 @@ impl ConstructorId {
     }
 }
 
+impl Debug for ConstructorId {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "ConstructorId {:#?}", self.0)
+    }
+}
+
 impl GlobalId {
     /// Creates a new [GlobalId] by a string
     pub fn new(id: &str) -> Self {
         Self(vec![FunctionId::new(id)])
+    }
+}
+
+impl Debug for GlobalId {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "GlobalId {:#?}", self.0)
     }
 }
 
@@ -436,6 +454,12 @@ impl LocalId {
     /// Gets the local's identifier as string borrow
     pub fn as_str(&self) -> &str {
         self.0.as_str()
+    }
+}
+
+impl Debug for LocalId {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "LocalId {}", self.0)
     }
 }
 //<<<Identifiers implementation
@@ -551,6 +575,23 @@ impl Binding {
         BindingRef::new(span, Binding { assign_pat, value })
     }
 }
+
+impl Debug for Expr {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Group(expr) => write!(f, "{:#?}", expr),
+            Self::Binary(expr) => write!(f, "{:#?}", expr),
+            Self::App(expr) => write!(f, "{:#?}", expr),
+            Self::Lam(expr) => write!(f, "{:#?}", expr),
+            Self::Let(expr) => write!(f, "{:#?}", expr),
+            Self::Global(expr) => write!(f, "{:#?}", expr),
+            Self::Local(expr) => write!(f, "{:#?}", expr),
+            Self::Pi(expr) => write!(f, "{:#?}", expr),
+            Self::Literal(expr) => write!(f, "Literal({:#?})", expr),
+            Self::Help(help) => f.debug_struct("Help").field("expr", help).finish(),
+        }
+    }
+}
 //<<<Expressions implementation
 
 //>>>Literal implementation
@@ -631,6 +672,29 @@ impl Literal {
             Literal::True
         } else {
             Literal::False
+        }
+    }
+}
+
+impl Debug for Literal {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Nat(n) => write!(f, "{n}n"),
+            Self::String(string) => write!(f, "\"{string}\""),
+            Self::Int8(i8, Signed::Signed) => write!(f, "{i8}i8"),
+            Self::Int8(u8, Signed::Unsigned) => write!(f, "{u8}u8"),
+            Self::Int16(i16, Signed::Signed) => write!(f, "{i16}i16"),
+            Self::Int16(u16, Signed::Unsigned) => write!(f, "{u16}u16"),
+            Self::Int32(i32, Signed::Signed) => write!(f, "{i32}i32"),
+            Self::Int32(u32, Signed::Unsigned) => write!(f, "{u32}u32"),
+            Self::Int64(i64, Signed::Signed) => write!(f, "{i64}i64"),
+            Self::Int64(u64, Signed::Unsigned) => write!(f, "{u64}u64"),
+            Self::Int128(i128, Signed::Signed) => write!(f, "{i128}i128"),
+            Self::Int128(u128, Signed::Unsigned) => write!(f, "{u128}u128"),
+            Self::Float32(f32) => write!(f, "{f32}f32"),
+            Self::Float64(f64) => write!(f, "{f64}f64"),
+            Self::True => write!(f, "true"),
+            Self::False => write!(f, "false"),
         }
     }
 }
