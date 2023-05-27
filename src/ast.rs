@@ -54,6 +54,7 @@ pub enum Literal {
 /// The syntax is like:
 /// ```haskell
 /// a + 1 + 2 + 3
+///
 /// ```
 ///
 /// The binary expressions can have precedence, and they have the following precedence order:
@@ -71,6 +72,19 @@ pub struct Binary {
     pub lhs: ExprRef,
     pub fn_id: Spanned<FunctionId>,
     pub rhs: ExprRef,
+}
+
+/// Accessor expression, is an expression that is an accessor to a field in a struct, it can be
+/// represented by [GlobalId], since it can hold `.` too.
+///
+/// The syntax is like:
+/// ```haskell
+/// person.data
+/// ```
+#[derive(Debug, Clone)]
+pub struct Accessor {
+    pub receiver: ExprRef,
+    pub accessor: LocalId,
 }
 
 /// Application expression, is an expression that is simply a function application (or a call),
@@ -150,6 +164,7 @@ pub struct Pi {
 pub enum Expr {
     Group(ExprRef),
     Binary(Binary),
+    Accessor(Accessor),
     App(App),
     Lam(Lam),
     Let(Let),
@@ -469,6 +484,7 @@ impl Debug for Expr {
         match self {
             Self::Group(expr) => write!(f, "{:#?}", expr),
             Self::Binary(expr) => write!(f, "{:#?}", expr),
+            Self::Accessor(expr) => write!(f, "{:#?}", expr),
             Self::App(expr) => write!(f, "{:#?}", expr),
             Self::Lam(expr) => write!(f, "{:#?}", expr),
             Self::Let(expr) => write!(f, "{:#?}", expr),
