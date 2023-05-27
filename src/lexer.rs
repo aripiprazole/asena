@@ -24,7 +24,7 @@ pub struct Spanned<T> {
 
 /// Represents a true-false value, just like an wrapper to [bool], this represents if an integer
 /// value is signed, or unsigned.
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum Signed {
     Signed,
     Unsigned,
@@ -60,10 +60,11 @@ pub enum Token {
     Semi,         // ;
     Colon,        // :
     Dot,          // .
+    Help,         // ?
 
     // integers
     Int8(u8, Signed),     // <n>u8
-    Int16(u32, Signed),   // <n>u32
+    Int16(u16, Signed),   // <n>u16
     Int32(u32, Signed),   // <n>u32
     Int64(u64, Signed),   // <n>u64
     Int128(u128, Signed), // <n>u128
@@ -76,6 +77,9 @@ pub enum Token {
     Symbol(String),
     Ident(String),
     String(String),
+
+    // end of file TODO
+    EOF,
 }
 
 /// It's the programming language, lexer, that transforms the string, into a set of [Token].
@@ -170,7 +174,7 @@ impl Token {
     }
 }
 
-impl<T: Debug + Clone> Spanned<T> {
+impl<T> Spanned<T> {
     pub fn new(span: Range<usize>, value: T) -> Self {
         Self {
             span,
@@ -184,5 +188,21 @@ impl<T: Debug + Clone> Spanned<T> {
 
     pub fn value(&self) -> &T {
         &self.value
+    }
+
+    pub fn map<U, F>(self, f: F) -> Spanned<U>
+    where
+        F: Fn(T) -> U,
+        T: Clone,
+    {
+        Spanned::new(self.span, f(*self.value))
+    }
+
+    pub fn swap<U>(self, value: U) -> Spanned<U> {
+        Spanned::new(self.span, value)
+    }
+
+    pub fn replace<U>(&self, value: U) -> Spanned<U> {
+        Spanned::new(self.span.clone(), value)
     }
 }

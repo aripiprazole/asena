@@ -6,22 +6,22 @@ use crate::lexer::{Loc, Signed, Spanned};
 /// Identifier's key to a function (everything on the language), this can be abstracted in another
 /// identifiers. Serves as a key on a graph, or the abstract syntax tree representation.
 #[derive(Debug, Clone)]
-pub struct FunctionId(String);
+pub struct FunctionId(pub String);
 
 /// Identifier's key to a type constructor.
 #[derive(Debug, Clone)]
-pub struct ConstructorId(FunctionId);
+pub struct ConstructorId(pub FunctionId);
 
 /// Identifier's key to a global identifier, that's not declared locally, almost everything with
 /// Pascal Case, as a language pattern. This can contain symbols like: `Person.new`, as it can
 /// contain `.`.
 #[derive(Debug, Clone)]
-pub struct GlobalId(FunctionId);
+pub struct GlobalId(pub Vec<FunctionId>);
 
 /// Identifier's key to local identifier, that's not declared globally, almost everything with
 /// snake case, as a language pattern.
 #[derive(Debug, Clone)]
-pub struct LocalId(FunctionId);
+pub struct LocalId(pub FunctionId);
 //<<<Identifiers
 
 /// Represents a language literal construct, can hold numbers, strings, booleans, etc.
@@ -422,12 +422,7 @@ impl ConstructorId {
 impl GlobalId {
     /// Creates a new [GlobalId] by a string
     pub fn new(id: &str) -> Self {
-        Self(FunctionId::new(id))
-    }
-
-    /// Gets the local's identifier as string borrow
-    pub fn as_str(&self) -> &str {
-        self.0.as_str()
+        Self(vec![FunctionId::new(id)])
     }
 }
 
