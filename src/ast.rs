@@ -140,12 +140,17 @@ pub struct Array {
 ///
 /// The syntax is like:
 /// ```haskell
-/// (a, b) => c
+/// \a b. c
 /// ```
 ///
-/// The lambda expression can be like: `(a, b) => c`, in javascript pseudo-code, but the behavior
+/// The lambda expression can be like: `\a b. c`, in javascript pseudo-code, but the behavior
 /// is currying the lambda expression, until it doesn't have more than 1 parameter, basically, it
-/// does transforms the example, into: `(a) => (b) => c`
+/// does transforms the example, into: `\a. \b. c`
+///
+/// It would be pretty printed to:
+/// ```haskell
+/// λa b. c
+/// ```
 #[derive(Debug, Clone)]
 pub struct Lam {
     pub parameters: Vec<LocalId>,

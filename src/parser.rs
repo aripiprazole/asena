@@ -187,7 +187,9 @@ impl<'a, S: Iterator<Item = Spanned<Token>>> Parser<'a, S> {
             }
 
             //>>>Composed tokens
-            // Group expression
+            // Can parse the following expressions
+            // * [Group]
+            // * [Pi]
             LeftParen => {
                 self.next(); // skip '('
                 let expr = self.expr()?;
@@ -299,7 +301,7 @@ mod tests {
 
     #[test]
     fn it_works() {
-        let code = "a.b : String";
+        let code = "a |> b";
 
         let stream = Lexer::new(code);
         let mut parser = Parser::new(code, stream.peekable());
