@@ -5,8 +5,8 @@ use thiserror::Error;
 use crate::ast::{
     Accessor, Ann, App, Binary, Expr, ExprRef, FunctionId, GlobalId, Literal, LocalId,
 };
-use crate::lexer::Token;
 use crate::span::Spanned;
+use crate::token::Token;
 
 pub type TokenRef = Spanned<Token>;
 

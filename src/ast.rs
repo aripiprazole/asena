@@ -1,7 +1,7 @@
 use std::fmt::{Debug, Display, Formatter};
 
-use crate::lexer::Signed;
 use crate::span::{Loc, Spanned};
+use crate::token::Signed;
 
 //>>>Identifiers
 /// Identifier's key to a function (everything on the language), this can be abstracted in another

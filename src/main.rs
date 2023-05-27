@@ -5,6 +5,7 @@ pub mod graph;
 pub mod lexer;
 pub mod parser;
 pub mod span;
+pub mod token;
 
 use std::ops::Range;
 
