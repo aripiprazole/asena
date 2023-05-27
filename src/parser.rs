@@ -172,6 +172,7 @@ impl<'a, S: Iterator<Item = ParseableToken>> Parser<'a, S> {
         F: FnMut(&mut Self) -> Result<T>,
     {
         let current_index = self.index;
+
         match f(self) {
             Ok(value) => Ok(Some(value)),
             Err(..) if self.index == current_index => Ok(None),
@@ -217,19 +218,16 @@ impl<'a, S: Iterator<Item = ParseableToken>> Parser<'a, S> {
 
 #[cfg(test)]
 mod tests {
+    use crate::lexer::Lexer;
+
     use super::*;
 
     #[test]
     fn it_works() {
-        let code = "10";
-        let (tokens, ..) = {
-            use chumsky::Parser; // use parser locally
+        let code = "10 + 10";
 
-            crate::lexer::lexer().parse(code).into_output_errors()
-        };
-
-        let stream = tokens.unwrap_or_default().into_iter().peekable();
-        let mut parser = Parser::new(code, stream);
+        let stream = Lexer::new(code);
+        let mut parser = Parser::new(code, stream.peekable());
 
         println!("{:#?}", parser.expr())
     }

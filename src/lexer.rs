@@ -1,4 +1,4 @@
-use std::{fmt::Debug, ops::Range};
+use std::{array::IntoIter, fmt::Debug, ops::Range};
 
 use chumsky::prelude::*;
 
@@ -80,6 +80,11 @@ pub enum Token {
 
     // end of file TODO
     EOF,
+}
+
+pub struct Lexer<'a> {
+    pub source: Box<dyn Iterator<Item = (Token, SimpleSpan)>>,
+    pub errs: Vec<Rich<'a, char>>,
 }
 
 /// It's the programming language, lexer, that transforms the string, into a set of [Token].
@@ -166,6 +171,28 @@ fn ident_lexer<'a>() -> impl Parser<'a, &'a str, Token, LexError<'a>> {
             _ => Token::Ident(ident.into()),
         })
         .labelled("keyword")
+}
+
+impl<'a> Lexer<'a> {
+    /// Creates a new [Lexer] based in a source code
+    pub fn new(code: &'a str) -> Self {
+        let (tokens, errs) = lexer().parse(code).into_output_errors();
+
+        Self {
+            source: Box::new(tokens.unwrap_or_default().into_iter()),
+            errs,
+        }
+    }
+}
+
+impl<'a> Iterator for Lexer<'a> {
+    type Item = (Token, SimpleSpan);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.source
+            .next()
+            .or_else(|| Some((Token::EOF, SimpleSpan::new(0, 0))))
+    }
 }
 
 impl Token {
