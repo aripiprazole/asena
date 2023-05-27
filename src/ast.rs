@@ -123,6 +123,18 @@ pub struct Dsl {
     pub block: Vec<Stmt>,
 }
 
+/// Array expression, is an expression that can be checked agains't a `Vect n a`, a `List`, or an
+/// `Array`.
+///
+/// The syntax is like:
+/// ```haskell
+/// [a, b, c]
+/// ```
+#[derive(Debug, Clone)]
+pub struct Array {
+    pub items: Vec<ExprRef>,
+}
+
 /// Lambda expression, is an abstraction expression, that is simply a local function definition,
 /// they can hold multiple parameters just for syntax sugar.
 ///
@@ -171,11 +183,35 @@ pub struct Ann {
 ///
 /// The syntax is like:
 /// ```haskell
-/// (a: Type) -> b
+/// (a: t) -> b
+/// ```
+///
+/// It would be pretty printed to:
+/// ```haskell
+/// Π a: t. b
 /// ```
 #[derive(Debug, Clone)]
 pub struct Pi {
     pub parameter_name: Option<LocalId>,
+    pub parameter_type: ExprRef,
+    pub return_type: ExprRef,
+}
+
+/// Sigma expression, is a dependent pair expression, receives a type and a function that returns a
+/// type.
+///
+/// The syntax is like:
+/// ```haskell
+/// [a: Type] -> b
+/// ```
+///
+/// It would be pretty printed to:
+/// ```haskell
+/// Σ a: t. b
+/// ```
+#[derive(Debug, Clone)]
+pub struct Sigma {
+    pub parameter_name: LocalId,
     pub parameter_type: ExprRef,
     pub return_type: ExprRef,
 }
@@ -186,6 +222,7 @@ pub enum Expr {
     Binary(Binary),
     Accessor(Accessor),
     App(App),
+    Array(Array),
     Dsl(Dsl),
     Lam(Lam),
     Let(Let),
@@ -194,6 +231,7 @@ pub enum Expr {
     Literal(Literal),
     Ann(Ann),
     Pi(Pi),
+    Sigma(Sigma),
 
     /// Help syntax sugar to the debugger.
     Help(ExprRef),
@@ -507,6 +545,7 @@ impl Debug for Expr {
             Self::Binary(expr) => write!(f, "{:#?}", expr),
             Self::Accessor(expr) => write!(f, "{:#?}", expr),
             Self::App(expr) => write!(f, "{:#?}", expr),
+            Self::Array(expr) => write!(f, "{:#?}", expr),
             Self::Dsl(expr) => write!(f, "{:#?}", expr),
             Self::Lam(expr) => write!(f, "{:#?}", expr),
             Self::Let(expr) => write!(f, "{:#?}", expr),
@@ -514,6 +553,7 @@ impl Debug for Expr {
             Self::Local(expr) => write!(f, "{:#?}", expr),
             Self::Ann(expr) => write!(f, "{:#?}", expr),
             Self::Pi(expr) => write!(f, "{:#?}", expr),
+            Self::Sigma(expr) => write!(f, "{:#?}", expr),
             Self::Literal(expr) => write!(f, "Literal({:#?})", expr),
             Self::Help(help) => f.debug_struct("Help").field("expr", help).finish(),
         }
