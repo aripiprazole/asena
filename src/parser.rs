@@ -3,7 +3,7 @@ use std::iter::Peekable;
 use chumsky::span::SimpleSpan;
 
 use crate::{
-    ast::{Expr, ExprRef, FunctionId, GlobalId, Literal},
+    ast::{App, Binary, Expr, ExprRef, FunctionId, GlobalId, Literal},
     lexer::{Loc, Spanned, Token},
 };
 
@@ -25,27 +25,57 @@ pub type Result<T, E = Spanned<ParseError>> = std::result::Result<T, E>;
 /// to advance and identify tokens on the programming language.
 pub struct Parser<'a, S: Iterator<Item = ParseableToken>> {
     pub source: &'a str,
-    pub index: Vec<Loc>,
+    pub index: usize,
     pub stream: Peekable<S>,
 }
 
 impl<'a, S: Iterator<Item = ParseableToken>> Parser<'a, S> {
     pub fn new(source: &'a str, stream: Peekable<S>) -> Self {
         Self {
-            index: Default::default(),
+            index: 0,
             source,
             stream,
         }
     }
 
+    //>>>Parser functions
     pub fn expr(&mut self) -> Result<ExprRef> {
-        todo!()
+        self.binary()
+    }
+
+    pub fn binary(&mut self) -> Result<ExprRef> {
+        let mut lhs = self.app()?;
+
+        while let Token::Symbol(symbol) = self.next().value() {
+            let fn_id = FunctionId::new(symbol);
+            let rhs = self.app()?;
+
+            // Combines two locations
+            let span = lhs.span.start..rhs.span.end;
+
+            lhs = ExprRef::new(span, Expr::Binary(Binary { lhs, fn_id, rhs }))
+        }
+
+        Ok(lhs)
+    }
+
+    pub fn app(&mut self) -> Result<ExprRef> {
+        let mut callee = self.primary()?;
+
+        while let Some(argument) = self.catch(Parser::primary)? {
+            // Combines two locations
+            let span = callee.span.start..argument.span.end;
+
+            callee = ExprRef::new(span, Expr::App(App { callee, argument }))
+        }
+
+        Ok(callee)
     }
 
     pub fn primary(&mut self) -> Result<ExprRef> {
         use Token::*;
 
-        let current = self.next();
+        let current = self.peek();
         let value = match current.value() {
             // Booleans
             True => Expr::Literal(Literal::True),
@@ -67,12 +97,14 @@ impl<'a, S: Iterator<Item = ParseableToken>> Parser<'a, S> {
                 // Remove the `"` tokens of the string, they start with 1 gap in the start and in
                 // the end of the content.
                 let content = content[1..(content.len() - 1)].to_string();
+
                 Expr::Literal(Literal::String(content))
             }
 
             // Starts with a Global expression, and its needed to be resolved in a further step, it
             // can be either a [Global] or a [Local].
             Ident(ident) => {
+                self.next(); // skip <identifier>
                 let mut path = vec![FunctionId::new(ident)];
                 while let Token::Dot = self.peek().value() {
                     self.next(); // skip `.`
@@ -80,28 +112,30 @@ impl<'a, S: Iterator<Item = ParseableToken>> Parser<'a, S> {
                     path.push(FunctionId::new(identifier.value())); // adds new `.` <identifier>
                 }
 
-                Expr::Global(GlobalId(path))
+                return Ok(current.swap(Expr::Global(GlobalId(path))));
             }
 
             //>>>Composed tokens
             // Group expression
             LeftParen => {
-                // skip '('
+                self.next(); // skip '('
                 let expr = self.expr()?;
                 self.expect(Token::RightParen)?; // consumes ')'
 
-                Expr::Group(expr)
+                return Ok(current.swap(Expr::Group(expr)));
             }
 
             // Help expression
             Help => {
-                // skip '?'
+                self.next(); // skip '?'
                 let expr = self.expr()?;
 
-                Expr::Help(expr)
+                return Ok(current.swap(Expr::Help(expr)));
             }
             _ => return self.end_diagnostic(ParseError::CantParsePrimary),
         };
+
+        self.next(); // Skips if hadn't any error
 
         Ok(current.swap(value))
     }
@@ -133,6 +167,18 @@ impl<'a, S: Iterator<Item = ParseableToken>> Parser<'a, S> {
         })
     }
 
+    fn catch<T, F>(&mut self, mut f: F) -> Result<Option<T>>
+    where
+        F: FnMut(&mut Self) -> Result<T>,
+    {
+        let current_index = self.index;
+        match f(self) {
+            Ok(value) => Ok(Some(value)),
+            Err(..) if self.index == current_index => Ok(None),
+            Err(err) => Err(err),
+        }
+    }
+
     fn eat<T, F>(&mut self, f: F) -> Result<T>
     where
         F: Fn(&TokenRef) -> Option<T>,
@@ -145,6 +191,8 @@ impl<'a, S: Iterator<Item = ParseableToken>> Parser<'a, S> {
     }
 
     fn next(&mut self) -> TokenRef {
+        self.index += 1;
+
         self.stream
             .next()
             .map(|(token, span)| Spanned::new(span.into_range(), token))
@@ -173,7 +221,7 @@ mod tests {
 
     #[test]
     fn it_works() {
-        let code = "x + 10";
+        let code = "10";
         let (tokens, ..) = {
             use chumsky::Parser; // use parser locally
 
@@ -181,6 +229,8 @@ mod tests {
         };
 
         let stream = tokens.unwrap_or_default().into_iter().peekable();
-        let parser = Parser::new(code, stream);
+        let mut parser = Parser::new(code, stream);
+
+        println!("{:#?}", parser.expr())
     }
 }
