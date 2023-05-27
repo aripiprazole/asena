@@ -184,6 +184,24 @@ pub struct Ann {
     pub against: ExprRef,
 }
 
+/// Qualifier expression, is a dependent type expression, that constrains a type with a type class.
+/// Or just a proof in this language.
+///
+/// The syntax is like:
+/// ```haskell
+/// MonadIO m => (a: t) -> m b
+/// ```
+///
+/// It would be pretty printed to:
+/// ```haskell
+/// ∀ MonadIO m. Π a: t. m b
+/// ```
+#[derive(Debug, Clone)]
+pub struct Qualifier {
+    pub constraints: Vec<Constraint>,
+    pub return_type: ExprRef,
+}
+
 /// Pi expression, is a dependent type expression, that abstracts a type into another return type.
 ///
 /// The syntax is like:
@@ -235,6 +253,7 @@ pub enum Expr {
     Local(LocalId),
     Literal(Literal),
     Ann(Ann),
+    Qualifier(Qualifier),
     Pi(Pi),
     Sigma(Sigma),
 
@@ -557,6 +576,7 @@ impl Debug for Expr {
             Self::Global(expr) => write!(f, "{:#?}", expr),
             Self::Local(expr) => write!(f, "{:#?}", expr),
             Self::Ann(expr) => write!(f, "{:#?}", expr),
+            Self::Qualifier(expr) => write!(f, "{:#?}", expr),
             Self::Pi(expr) => write!(f, "{:#?}", expr),
             Self::Sigma(expr) => write!(f, "{:#?}", expr),
             Self::Literal(expr) => write!(f, "Literal({:#?})", expr),
