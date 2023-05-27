@@ -7,11 +7,9 @@ pub mod parser;
 pub mod span;
 pub mod token;
 
-use std::ops::Range;
-
 use clap::{Args, Parser, Subcommand};
 
-use crate::lexer::lexer;
+use crate::lexer::Lexer;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -52,27 +50,12 @@ pub fn run_cli() {
         Command::Rename(..) => todo!(),
         Command::Search(..) => todo!(),
         Command::Eval(args) => {
-            use ariadne::{Color, Label, Report, ReportKind, Source};
-            use chumsky::Parser;
-
             let path = args.file;
             let file = std::fs::read_to_string(path).unwrap();
-            let (tokens, errs) = lexer().parse(&file).into_output_errors();
+            let lexer = lexer::Lexer::new(&file);
+            let mut parser = parser::Parser::new(&file, lexer.peekable());
 
-            for err in errs {
-                Report::<Range<usize>>::build(ReportKind::Error, (), 0)
-                    .with_message(err.to_string())
-                    .with_label(
-                        Label::new(err.span().into_range())
-                            .with_message(err.reason().to_string())
-                            .with_color(Color::Red),
-                    )
-                    .finish()
-                    .print(Source::from(file.clone()))
-                    .unwrap();
-            }
-
-            println!("{:?}", tokens);
+            println!("{:?}", parser.run_diagnostic(parser::Parser::expr));
         }
     }
 }
