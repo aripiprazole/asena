@@ -1,5 +1,7 @@
 use std::iter::Peekable;
 
+use thiserror::Error;
+
 use crate::ast::{App, Binary, Expr, ExprRef, FunctionId, GlobalId, Literal};
 use crate::lexer::Token;
 use crate::span::Spanned;
@@ -11,9 +13,12 @@ pub type StringRef = Spanned<String>;
 pub type Result<T, E = Spanned<ParseError>> = std::result::Result<T, E>;
 
 /// Parsing errors, it can be indexed to the code using a [Spanned<ParseError>].
-#[derive(Debug, Clone, Copy)]
+#[derive(Error, Debug, Clone, Copy)]
 pub enum ParseError {
+    #[error("Unexpected token at this position.")]
     UnexpectedToken,
+
+    #[error("Could not parse primary, but expected it.")]
     CantParsePrimary,
 }
 
