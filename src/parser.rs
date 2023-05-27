@@ -2,7 +2,7 @@ use std::iter::Peekable;
 
 use thiserror::Error;
 
-use crate::ast::{App, Binary, Expr, ExprRef, FunctionId, GlobalId, Literal};
+use crate::ast::{Accessor, App, Binary, Expr, ExprRef, FunctionId, GlobalId, Literal, LocalId};
 use crate::lexer::Token;
 use crate::span::Spanned;
 
@@ -54,21 +54,11 @@ impl<'a, S: Iterator<Item = Spanned<Token>>> Parser<'a, S> {
 
     /// Parses a reference to [Binary]
     pub fn binary(&mut self) -> Result<ExprRef> {
-        let mut lhs = self.app()?;
+        let mut lhs = self.accessor()?;
 
-        loop {
-            let next = self.peek();
-
-            let fn_id = match next.value() {
-                Token::Symbol(symbol) => FunctionId::new(symbol),
-                Token::Dot => FunctionId::new("."),
-                _ => break,
-            };
-
-            self.next();
-
-            let fn_id = Spanned::new(next.span().clone(), fn_id);
-            let rhs = self.app()?;
+        while let Ok(fn_id) = self.operator() {
+            let fn_id = fn_id.map(FunctionId);
+            let rhs = self.accessor()?;
 
             // Combines two locations
             let span = lhs.span.start..rhs.span.end;
@@ -77,6 +67,30 @@ impl<'a, S: Iterator<Item = Spanned<Token>>> Parser<'a, S> {
         }
 
         Ok(lhs)
+    }
+
+    /// Parses a reference to [Accessor]
+    pub fn accessor(&mut self) -> Result<ExprRef> {
+        let mut receiver = self.app()?;
+
+        while let Token::Dot = self.peek().value() {
+            self.next(); // skips '.'
+
+            let accessor = self.identifier()?.map(FunctionId);
+
+            // Combines two locations
+            let span = receiver.span.start..accessor.span.end;
+
+            receiver = ExprRef::new(
+                span,
+                Expr::Accessor(Accessor {
+                    receiver,
+                    accessor: LocalId(accessor),
+                }),
+            )
+        }
+
+        Ok(receiver)
     }
 
     /// Parses a reference to [App]
@@ -178,6 +192,14 @@ impl<'a, S: Iterator<Item = Spanned<Token>>> Parser<'a, S> {
             Token::Ident(content) => Some(next.replace(content.clone())),
 
             // Accepts symbol, so the parser is able to parse something like `Functor.<$>`
+            Token::Symbol(content) => Some(next.replace(content.clone())),
+            _ => None,
+        })
+    }
+
+    /// Pares a valid binary operator, and return it's content.
+    fn operator(&mut self) -> Result<StringRef> {
+        self.eat(|next| match next.value() {
             Token::Symbol(content) => Some(next.replace(content.clone())),
             _ => None,
         })
