@@ -54,7 +54,14 @@ pub fn lexer<'a>() -> impl Parser<'a, &'a str, TokenSet, LexError<'a>> {
         .padded()
         .labelled("comment");
 
+    let unicode = just("λ")
+        .to(Token::Lambda)
+        .or(just("∀").to(Token::Forall))
+        .or(just("Π").to(Token::Pi))
+        .or(just("Σ").to(Token::Sigma));
+
     let token = control_lexer()
+        .or(unicode)
         .or(symbol)
         .or(num)
         .or(string)

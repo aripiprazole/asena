@@ -18,6 +18,9 @@ pub enum ParseError {
     #[error("Could not parse primary")]
     CantParsePrimary,
 
+    #[error("Could not parse anything, found end of file")]
+    CantParseDueToEof,
+
     #[error("Unfinished parenthesis, expected `)`")]
     UnfinishedParenthesis,
 

@@ -194,11 +194,11 @@ pub struct Ann {
 ///
 /// It would be pretty printed to:
 /// ```haskell
-/// ∀ MonadIO m. Π a: t. m b
+/// ∀ (MonadIO m) -> Π (a: t) -> m b
 /// ```
 #[derive(Debug, Clone)]
 pub struct Qualifier {
-    pub constraint: Constraint,
+    pub constraint: Vec<Constraint>,
     pub return_type: ExprRef,
 }
 
@@ -211,7 +211,7 @@ pub struct Qualifier {
 ///
 /// It would be pretty printed to:
 /// ```haskell
-/// Π a: t. b
+/// Π (a: t) -> b
 /// ```
 #[derive(Debug, Clone)]
 pub struct Pi {
@@ -230,7 +230,7 @@ pub struct Pi {
 ///
 /// It would be pretty printed to:
 /// ```haskell
-/// Σ a: t. b
+/// Σ (a: t) -> b
 /// ```
 #[derive(Debug, Clone)]
 pub struct Sigma {

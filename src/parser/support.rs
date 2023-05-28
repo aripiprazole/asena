@@ -84,6 +84,10 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
         F: Fn(&TokenRef) -> Option<T>,
     {
         let next = self.peek();
+        if let Token::Eof = next.value() {
+            return Err(next.swap(ParseError::CantParseDueToEof));
+        }
+
         match f(&next) {
             Some(value) => {
                 self.next();
@@ -102,7 +106,7 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
 
     /// End the diagnostic with an error of [ParseError], spanned with the current token location.
     pub(crate) fn end_diagnostic<T>(&mut self, error: ParseError) -> Result<T> {
-        Err(self.stream.peek().unwrap().replace(error))
+        Err(self.peek().replace(error))
     }
 
     /// Sees the current token, and return it cloned.

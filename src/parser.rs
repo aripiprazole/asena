@@ -46,6 +46,10 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
             Token::Let => return self.let_(),
             Token::If => {}
             Token::Symbol(n) if n == "\\" => return self.lam(),
+            Token::Lambda => return self.unicode_lam(),
+            Token::Forall => return self.unicode_qualifier(),
+            Token::Pi => return self.unicode_pi(),
+            Token::Sigma => return self.unicode_sigma(),
             _ => {}
         }
 
@@ -111,6 +115,83 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
         ))
     }
 
+    /// Parses a reference to [Lam] using unicode characters: λ
+    pub fn unicode_lam(&mut self) -> Result<ExprRef> {
+        self.lam()
+    }
+
+    /// Parses a [Qualifier] expression [Expr] using unicode characters: ∀
+    pub fn unicode_qualifier(&mut self) -> Result<ExprRef> {
+        let a = self.peek();
+
+        self.next(); //                                 skip '∀'
+        self.expect(Token::LeftParen)?; //              consumes '('
+        let constraints = self.comma(Parser::expr)?; // consumes <constraint*>
+        self.expect(Token::RightParen)?; //             consumes ')'
+        self.expect(Token::sym("->"))?; //              consumes '->'
+        let return_type = self.expr()?; //              consumes <expr>
+
+        let b = self.peek();
+
+        Ok(ExprRef::new(
+            a.span.start..b.span.end,
+            Expr::Qualifier(Qualifier {
+                constraint: constraints.into_iter().map(Constraint).collect(),
+                return_type,
+            }),
+        ))
+    }
+
+    /// Parses a [Pi] expression [Expr] using unicode characters: Π
+    pub fn unicode_pi(&mut self) -> Result<ExprRef> {
+        let a = self.peek();
+
+        self.next(); //                       skip 'Π'
+        self.expect(Token::LeftParen)?; //    consumes '('
+        let parameter_name = self.name()?; // consumes <identifier>
+        self.expect(Token::sym(":"))?; //     consumes ':'
+        let parameter_type = self.expr()?; // consumes <expr>
+        self.expect(Token::RightParen)?; //   consumes ')'
+        self.expect(Token::sym("->"))?; //    consumes '->'
+        let return_type = self.expr()?; //    consumes <expr>
+
+        let b = self.peek();
+
+        Ok(ExprRef::new(
+            a.span.start..b.span.end,
+            Expr::Pi(Pi {
+                parameter_name: Some(LocalId(parameter_name.map(FunctionId))),
+                parameter_type,
+                return_type,
+            }),
+        ))
+    }
+
+    /// Parses a [Sigma] expression [Expr] using unicode characters: Σ
+    pub fn unicode_sigma(&mut self) -> Result<ExprRef> {
+        let a = self.peek();
+
+        self.next(); //                       skip 'Σ'
+        self.expect(Token::LeftParen)?; //    consumes '('
+        let parameter_name = self.name()?; // consumes <identifier>
+        self.expect(Token::sym(":"))?; //     consumes ':'
+        let parameter_type = self.expr()?; // consumes <expr>
+        self.expect(Token::RightParen)?; //   consumes ')'
+        self.expect(Token::sym("->"))?; //    consumes '->'
+        let return_type = self.expr()?; //    consumes <expr>
+
+        let b = self.peek();
+
+        Ok(ExprRef::new(
+            a.span.start..b.span.end,
+            Expr::Sigma(Sigma {
+                parameter_name: LocalId(parameter_name.map(FunctionId)),
+                parameter_type,
+                return_type,
+            }),
+        ))
+    }
+
     /// Parses a reference to [Binary]
     pub fn binary(&mut self) -> Result<ExprRef> {
         let mut lhs = self.ann()?;
@@ -171,7 +252,7 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
             constraint = ExprRef::new(
                 span,
                 Expr::Qualifier(Qualifier {
-                    constraint: Constraint(constraint),
+                    constraint: vec![Constraint(constraint)],
                     return_type,
                 }),
             )
@@ -292,7 +373,7 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
     /// Parses a [Array] expression [Expr]
     pub fn array(&mut self) -> Result<Expr> {
         let mut items = vec![];
-        self.next(); //         skip '['
+        self.next(); //                       skip '['
 
         if !self.match_token(Token::RightBracket) {
             items = self.comma(Parser::expr)?;
@@ -405,6 +486,9 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
 
                 return Ok(current.swap(Expr::Help(expr)));
             }
+
+            Eof => return self.end_diagnostic(ParseError::CantParseDueToEof),
+
             _ => {
                 return self
                     .end_diagnostic(ParseError::CantParsePrimary)
@@ -436,7 +520,7 @@ mod tests {
 
     #[test]
     fn lam_expr() {
-        let code = "\\a b. c";
+        let code = "\\a b -> c";
 
         let stream = Lexer::new(code);
         let mut parser = Parser::new(code, stream.peekable());
@@ -449,6 +533,17 @@ mod tests {
         let code = "[a: t] -> b";
 
         let stream = Lexer::new(code);
+        let mut parser = Parser::new(code, stream.peekable());
+
+        println!("{:#?}", parser.run_diagnostic(Parser::expr))
+    }
+
+    #[test]
+    fn unicode_expr() {
+        let code = "Π (d: t) -> e";
+
+        let stream = Lexer::new(code);
+        println!("{:#?}", stream);
         let mut parser = Parser::new(code, stream.peekable());
 
         println!("{:#?}", parser.run_diagnostic(Parser::expr))
