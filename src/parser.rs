@@ -130,7 +130,7 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
 
     /// Parses a reference to [Ann]
     pub fn ann(&mut self) -> Result<ExprRef> {
-        let mut value = self.accessor()?;
+        let mut value = self.qualifier()?;
 
         while let Token::Symbol(fn_id) = self.peek().value() {
             // Currently, is impossible to pattern match agains't a [String], so it's the workaround
@@ -140,7 +140,7 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
 
             self.next(); // skips ':'
 
-            let against = self.accessor()?;
+            let against = self.qualifier()?;
 
             // Combines two locations
             let span = value.span.start..against.span.end;
@@ -149,6 +149,35 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
         }
 
         Ok(value)
+    }
+
+    /// Parses a reference to [Qualifier]
+    pub fn qualifier(&mut self) -> Result<ExprRef> {
+        let mut constraint = self.accessor()?;
+
+        while let Token::Symbol(fn_id) = self.peek().value() {
+            // Currently, is impossible to pattern match agains't a [String], so it's the workaround
+            if fn_id != "=>" {
+                break;
+            }
+
+            self.next(); // skips '=>'
+
+            let return_type = self.accessor()?;
+
+            // Combines two locations
+            let span = constraint.span.start..return_type.span.end;
+
+            constraint = ExprRef::new(
+                span,
+                Expr::Qualifier(Qualifier {
+                    constraint: Constraint(constraint),
+                    return_type,
+                }),
+            )
+        }
+
+        Ok(constraint)
     }
 
     /// Parses a reference to [Accessor]
@@ -397,7 +426,7 @@ mod tests {
 
     #[test]
     fn it_works() {
-        let code = "let combine = (a: m a) -> [b: m b] -> m c in todo";
+        let code = "let combine = MonadIO m => (a: m a) -> [b: m b] -> m c in todo";
 
         let stream = Lexer::new(code);
         let mut parser = Parser::new(code, stream.peekable());

@@ -198,7 +198,7 @@ pub struct Ann {
 /// ```
 #[derive(Debug, Clone)]
 pub struct Qualifier {
-    pub constraints: Vec<Constraint>,
+    pub constraint: Constraint,
     pub return_type: ExprRef,
 }
 
