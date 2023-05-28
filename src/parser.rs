@@ -235,35 +235,20 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
             // * [Pi]
             LeftParen => {
                 let mut errors = vec![];
-                let mut new_state = self.save_state();
-                match new_state.catch(Parser::pi) {
-                    Ok(None) => {}
-                    Ok(Some(pi)) => {
-                        self.index = new_state.index;
-                        self.stream = new_state.stream;
-                        return Ok(current.swap(pi));
-                    }
-                    Err(error) => errors.push(error),
-                }
 
-                let mut new_state = self.save_state();
-                match new_state.catch(Parser::group) {
-                    Ok(None) => {}
-                    Ok(Some(group)) => {
-                        self.index = new_state.index;
-                        self.stream = new_state.stream;
-                        return Ok(current.swap(group));
-                    }
-                    Err(error) => errors.push(error),
-                }
-
-                return self
-                    .end_diagnostic(ParseError::ExpectedParenthesisExpr)
-                    .map_err(|error| {
-                        errors
-                            .into_iter()
-                            .fold(error, |acc, next| acc.with_spanned(next))
-                    });
+                return match self
+                    .recover(&mut errors, Parser::pi)
+                    .or_else(|| self.recover(&mut errors, Parser::group))
+                {
+                    Some(expr) => Ok(current.swap(expr)),
+                    None => self
+                        .end_diagnostic(ParseError::ExpectedParenthesisExpr)
+                        .map_err(|error| {
+                            errors
+                                .into_iter()
+                                .fold(error, |acc, next| acc.with_spanned(next))
+                        }),
+                };
             }
 
             // Help expression
@@ -303,8 +288,18 @@ mod tests {
     }
 
     #[test]
+    fn array_expr() {
+        let code = "[a]";
+
+        let stream = Lexer::new(code);
+        let mut parser = Parser::new(code, stream.peekable());
+
+        println!("{:#?}", parser.run_diagnostic(Parser::expr))
+    }
+
+    #[test]
     fn group_expr() {
-        let code = "(a";
+        let code = "(a)";
 
         let stream = Lexer::new(code);
         let mut parser = Parser::new(code, stream.peekable());

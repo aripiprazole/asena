@@ -5,9 +5,30 @@ use crate::parser::error::ParseError;
 use super::error::Result;
 use super::{Parser, TokenRef};
 
+pub type Diagnostic = Vec<Spanned<ParseError>>;
+
 impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
     pub(crate) fn save_state(&mut self) -> Self {
         self.clone()
+    }
+
+    pub(crate) fn recover<F, T>(&mut self, diagnostic: &mut Diagnostic, f: F) -> Option<T>
+    where
+        F: FnMut(&mut Self) -> Result<T>,
+    {
+        let mut new_state = self.save_state();
+        match new_state.catch(f) {
+            Ok(None) => None,
+            Ok(Some(expr)) => {
+                self.index = new_state.index;
+                self.stream = new_state.stream;
+                Some(expr)
+            }
+            Err(error) => {
+                diagnostic.push(error);
+                None
+            }
+        }
     }
 
     /// Eat a matching token, and return it if matching correctly.
