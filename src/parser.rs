@@ -40,7 +40,51 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
 
     /// Parses a reference to [Expr]
     pub fn expr(&mut self) -> Result<ExprRef> {
+        let current = self.peek();
+
+        match current.value() {
+            Token::Let => return self.let_(),
+            Token::If => {}
+            _ => {}
+        }
+
         self.binary()
+    }
+
+    /// Parses a reference to [Let]
+    pub fn let_(&mut self) -> Result<ExprRef> {
+        let a = self.peek();
+
+        self.next(); // skip 'let'
+        let bindings = self.comma(Parser::binding)?;
+        self.expect(Token::In)?;
+        let in_value = self.expr()?;
+
+        let b = self.peek();
+
+        Ok(ExprRef::new(
+            a.span.start..b.span.end,
+            Expr::Let(Let { bindings, in_value }),
+        ))
+    }
+
+    /// Parses a reference to [Binding]
+    pub fn binding(&mut self) -> Result<BindingRef> {
+        let a = self.peek();
+
+        let name = self.name()?.map(FunctionId);
+        self.expect(Token::sym("="))?;
+        let value = self.expr()?;
+
+        let b = self.peek();
+
+        Ok(BindingRef::new(
+            a.span.start..b.span.end,
+            Binding {
+                name: LocalId(name),
+                value,
+            },
+        ))
     }
 
     /// Parses a reference to [Binary]
@@ -195,16 +239,10 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
     /// Parses a [Array] expression [Expr]
     pub fn array(&mut self) -> Result<Expr> {
         let mut items = vec![];
-        self.next(); //                     skip '['
+        self.next(); //         skip '['
 
         if !self.match_token(Token::RightBracket) {
-            items.push(self.expr()?);
-
-            while let Token::Comma = self.peek().value() {
-                self.next(); // skips ','
-
-                items.push(self.expr()?);
-            }
+            items = self.comma(Parser::expr)?;
         }
 
         self.expect(Token::RightBracket) //   consumes ']'
@@ -274,19 +312,18 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
             LeftParen => {
                 let mut errors = vec![];
 
-                return match self
+                return self
                     .recover(&mut errors, Parser::pi)
                     .or_else(|| self.recover(&mut errors, Parser::group))
-                {
-                    Some(expr) => Ok(current.swap(expr)),
-                    None => self
-                        .end_diagnostic(ParseError::ExpectedParenthesisExpr)
-                        .map_err(|error| {
-                            errors
-                                .into_iter()
-                                .fold(error, |acc, next| acc.with_spanned(next))
-                        }),
-                };
+                    .map(|expr| Ok(current.swap(expr)))
+                    .unwrap_or_else(|| {
+                        self.end_diagnostic(ParseError::ExpectedParenthesisExpr)
+                            .map_err(|error| {
+                                errors
+                                    .into_iter()
+                                    .fold(error, |acc, next| acc.with_spanned(next))
+                            })
+                    });
             }
 
             // * [Sigma]
@@ -294,19 +331,18 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
             LeftBracket => {
                 let mut errors = vec![];
 
-                return match self
+                return self
                     .recover(&mut errors, Parser::sigma)
                     .or_else(|| self.recover(&mut errors, Parser::array))
-                {
-                    Some(expr) => Ok(current.swap(expr)),
-                    None => self
-                        .end_diagnostic(ParseError::ExpectedBracketExpr)
-                        .map_err(|error| {
-                            errors
-                                .into_iter()
-                                .fold(error, |acc, next| acc.with_spanned(next))
-                        }),
-                };
+                    .map(|expr| Ok(current.swap(expr)))
+                    .unwrap_or_else(|| {
+                        self.end_diagnostic(ParseError::ExpectedBracketExpr)
+                            .map_err(|error| {
+                                errors
+                                    .into_iter()
+                                    .fold(error, |acc, next| acc.with_spanned(next))
+                            })
+                    });
             }
 
             // Help expression
@@ -337,7 +373,7 @@ mod tests {
 
     #[test]
     fn it_works() {
-        let code = "|> a b";
+        let code = "let combine = (a: m a) -> [b: m b] -> m c in todo";
 
         let stream = Lexer::new(code);
         let mut parser = Parser::new(code, stream.peekable());

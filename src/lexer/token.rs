@@ -26,6 +26,7 @@ pub enum Token {
     Where,  // where
     Match,  // match
     Use,    // use
+    In,     // in
 
     // control symbols
     LeftBracket,  // [
@@ -84,6 +85,7 @@ impl Display for Token {
             Token::Where => write!(f, "where"),
             Token::Match => write!(f, "match"),
             Token::Use => write!(f, "use"),
+            Token::In => write!(f, "in"),
             Token::LeftBracket => write!(f, "{{"),
             Token::RightBracket => write!(f, "}}"),
             Token::LeftBrace => write!(f, "["),

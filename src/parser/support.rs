@@ -16,6 +16,21 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
         self.peek().value() == &token
     }
 
+    pub(crate) fn comma<F, T>(&mut self, mut f: F) -> Result<Vec<T>>
+    where
+        F: FnMut(&mut Self) -> Result<T>,
+    {
+        let mut items = vec![f(self)?];
+
+        while let Token::Comma = self.peek().value() {
+            self.next(); // skips ','
+
+            items.push(f(self)?);
+        }
+
+        Ok(items)
+    }
+
     pub(crate) fn recover<F, T>(&mut self, diagnostic: &mut Diagnostic, f: F) -> Option<T>
     where
         F: FnMut(&mut Self) -> Result<T>,

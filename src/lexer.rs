@@ -108,6 +108,7 @@ fn ident_lexer<'a>() -> impl Parser<'a, &'a str, Token, LexError<'a>> {
             "where" => Token::Where,
             "match" => Token::Match,
             "use" => Token::Use,
+            "in" => Token::In,
             _ => Token::Ident(ident.into()),
         })
         .labelled("keyword")

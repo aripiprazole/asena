@@ -307,7 +307,7 @@ pub type StmtRef = Spanned<Stmt>;
 //>>>Binding
 #[derive(Debug, Clone)]
 pub struct Binding {
-    pub assign_pat: PatRef,
+    pub name: LocalId,
     pub value: ExprRef,
 }
 
