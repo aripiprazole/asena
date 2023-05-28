@@ -175,6 +175,44 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
         Ok(Expr::Group(expr))
     }
 
+    /// Parses a [Sigma] expression [Expr]
+    pub fn sigma(&mut self) -> Result<Expr> {
+        self.next(); //                       skip '['
+        let parameter_name = self.name()?; // consumes <identifier>
+        self.expect(Token::sym(":"))?; //     consumes ':'
+        let parameter_type = self.expr()?; // consumes <expr>
+        self.expect(Token::RightBracket)?; // consumes ']'
+        self.expect(Token::sym("->"))?; //    consumes '->'
+        let return_type = self.expr()?; //    consumes <expr>
+
+        Ok(Expr::Sigma(Sigma {
+            parameter_name: LocalId(parameter_name.map(FunctionId)),
+            parameter_type,
+            return_type,
+        }))
+    }
+
+    /// Parses a [Array] expression [Expr]
+    pub fn array(&mut self) -> Result<Expr> {
+        let mut items = vec![];
+        self.next(); //                     skip '['
+
+        if !self.match_token(Token::RightBracket) {
+            items.push(self.expr()?);
+
+            while let Token::Comma = self.peek().value() {
+                self.next(); // skips ','
+
+                items.push(self.expr()?);
+            }
+        }
+
+        self.expect(Token::RightBracket) //   consumes ']'
+            .map_err(|error| error.swap(ParseError::UnfinishedBrackets))?;
+
+        Ok(Expr::Array(Array { items }))
+    }
+
     /// Parses a reference to [Literal] or primary [Expr]
     pub fn primary(&mut self) -> Result<ExprRef> {
         use Token::*;
@@ -251,6 +289,26 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
                 };
             }
 
+            // * [Sigma]
+            // * [Array]
+            LeftBracket => {
+                let mut errors = vec![];
+
+                return match self
+                    .recover(&mut errors, Parser::sigma)
+                    .or_else(|| self.recover(&mut errors, Parser::array))
+                {
+                    Some(expr) => Ok(current.swap(expr)),
+                    None => self
+                        .end_diagnostic(ParseError::ExpectedBracketExpr)
+                        .map_err(|error| {
+                            errors
+                                .into_iter()
+                                .fold(error, |acc, next| acc.with_spanned(next))
+                        }),
+                };
+            }
+
             // Help expression
             Help => {
                 self.next(); // skip '?'
@@ -290,6 +348,16 @@ mod tests {
     #[test]
     fn array_expr() {
         let code = "[a]";
+
+        let stream = Lexer::new(code);
+        let mut parser = Parser::new(code, stream.peekable());
+
+        println!("{:#?}", parser.run_diagnostic(Parser::expr))
+    }
+
+    #[test]
+    fn sigma_expr() {
+        let code = "[a: t] -> b";
 
         let stream = Lexer::new(code);
         let mut parser = Parser::new(code, stream.peekable());

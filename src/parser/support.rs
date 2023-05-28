@@ -12,6 +12,10 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
         self.clone()
     }
 
+    pub(crate) fn match_token(&mut self, token: Token) -> bool {
+        self.peek().value() == &token
+    }
+
     pub(crate) fn recover<F, T>(&mut self, diagnostic: &mut Diagnostic, f: F) -> Option<T>
     where
         F: FnMut(&mut Self) -> Result<T>,

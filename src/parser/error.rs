@@ -21,6 +21,12 @@ pub enum ParseError {
     #[error("Unfinished parenthesis, expected `)`")]
     UnfinishedParenthesis,
 
+    #[error("Unfinished brackets, expected `]`")]
+    UnfinishedBrackets,
+
+    #[error("Expected Σ expression or [<expr>] array expression")]
+    ExpectedBracketExpr,
+
     #[error("Expected Π expression or (<expr>) group expression")]
     ExpectedParenthesisExpr,
 
