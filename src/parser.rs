@@ -45,6 +45,7 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
         match current.value() {
             Token::Let => return self.let_(),
             Token::If => {}
+            Token::Symbol(n) if n == "\\" => return self.lam(),
             _ => {}
         }
 
@@ -84,6 +85,29 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
                 name: LocalId(name),
                 value,
             },
+        ))
+    }
+
+    /// Parses a reference to [Lam]
+    pub fn lam(&mut self) -> Result<ExprRef> {
+        let mut parameters = vec![];
+        let a = self.peek();
+
+        self.next(); // skip '\'
+
+        while let Token::Ident(..) = self.peek().value() {
+            let ident = self.identifier()?.map(FunctionId);
+
+            parameters.push(LocalId(ident));
+        }
+        self.expect(Token::Dot)?;
+        let value = self.expr()?;
+
+        let b = self.peek();
+
+        Ok(ExprRef::new(
+            a.span.start..b.span.end,
+            Expr::Lam(Lam { parameters, value }),
         ))
     }
 
@@ -382,8 +406,8 @@ mod tests {
     }
 
     #[test]
-    fn array_expr() {
-        let code = "[a]";
+    fn lam_expr() {
+        let code = "\\a b. c";
 
         let stream = Lexer::new(code);
         let mut parser = Parser::new(code, stream.peekable());
