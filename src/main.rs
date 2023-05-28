@@ -29,7 +29,7 @@ pub struct EvalArgs {
 
     /// A "file.brex" to evaluate
     #[clap(short = 'f', long)]
-    file: String,
+    pub file: String,
 }
 
 #[derive(Subcommand, Debug, Clone)]

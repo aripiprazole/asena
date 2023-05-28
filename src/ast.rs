@@ -565,7 +565,6 @@ impl Debug for LocalId {
 impl Debug for Expr {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Group(expr) => write!(f, "{:#?}", expr),
             Self::Binary(expr) => write!(f, "{:#?}", expr),
             Self::Accessor(expr) => write!(f, "{:#?}", expr),
             Self::App(expr) => write!(f, "{:#?}", expr),
@@ -580,6 +579,7 @@ impl Debug for Expr {
             Self::Pi(expr) => write!(f, "{:#?}", expr),
             Self::Sigma(expr) => write!(f, "{:#?}", expr),
             Self::Literal(expr) => write!(f, "Literal({:#?})", expr),
+            Self::Group(expr) => write!(f, "Group({:#?})", expr),
             Self::Help(help) => f.debug_struct("Help").field("expr", help).finish(),
         }
     }

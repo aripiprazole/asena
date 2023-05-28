@@ -107,7 +107,7 @@ impl Display for Token {
             Token::Int128(n, Signed::Unsigned) => write!(f, "{n}u128"),
             Token::Float32(n) => write!(f, "{n}f32"),
             Token::Float64(n) => write!(f, "{n}f64"),
-            Token::Symbol(symbol) => write!(f, "`{symbol}"),
+            Token::Symbol(symbol) => write!(f, "{symbol}"),
             Token::Ident(ident) => write!(f, "'{ident}"),
             Token::String(string) => write!(f, "\"{string}\""),
             Token::Eof => write!(f, "<<EOF>>"),

@@ -18,13 +18,14 @@ pub mod support;
 
 /// The language parser struct, it takes a [Token] iterator, that can be lazy or eager initialized
 /// to advance and identify tokens on the programming language.
-pub struct Parser<'a, S: Iterator<Item = Spanned<Token>>> {
+#[derive(Clone)]
+pub struct Parser<'a, S: Iterator<Item = Spanned<Token>> + Clone> {
     pub source: &'a str,
     pub index: usize,
     pub stream: Peekable<S>,
 }
 
-impl<'a, S: Iterator<Item = Spanned<Token>>> Parser<'a, S> {
+impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
     /// Creates a new instance of the Parser, it takes the source code reference, and a lexer stream
     /// peekable.
     ///
@@ -121,6 +122,14 @@ impl<'a, S: Iterator<Item = Spanned<Token>>> Parser<'a, S> {
     }
 
     /// Parses a valid identifier, and return it's content.
+    fn name(&mut self) -> Result<StringRef> {
+        self.eat(|next| match next.value() {
+            Token::Ident(content) => Some(next.replace(content.clone())),
+            _ => None,
+        })
+    }
+
+    /// Parses a valid identifier, and return it's content.
     fn identifier(&mut self) -> Result<StringRef> {
         self.eat(|next| match next.value() {
             Token::Ident(content) => Some(next.replace(content.clone())),
@@ -137,6 +146,33 @@ impl<'a, S: Iterator<Item = Spanned<Token>>> Parser<'a, S> {
             Token::Symbol(content) => Some(next.replace(content.clone())),
             _ => None,
         })
+    }
+
+    /// Parses a [Pi] expression [Expr]
+    pub fn pi(&mut self) -> Result<Expr> {
+        self.next(); //                       skip '('
+        let parameter_name = self.name()?; // consumes <identifier>
+        self.expect(Token::sym(":"))?; //     consumes ':'
+        let parameter_type = self.expr()?; // consumes <expr>
+        self.expect(Token::RightParen)?; //   consumes ')'
+        self.expect(Token::sym("->"))?; //    consumes '->'
+        let return_type = self.expr()?; //    consumes <expr>
+
+        Ok(Expr::Pi(Pi {
+            parameter_name: Some(LocalId(parameter_name.map(FunctionId))),
+            parameter_type,
+            return_type,
+        }))
+    }
+
+    /// Parses a [Expr::Group]
+    pub fn group(&mut self) -> Result<Expr> {
+        self.next(); //                     skip '('
+        let expr = self.expr()?; //         consumes <expr>
+        self.expect(Token::RightParen) //   consumes ')'
+            .map_err(|error| error.swap(ParseError::UnfinishedParenthesis))?;
+
+        Ok(Expr::Group(expr))
     }
 
     /// Parses a reference to [Literal] or primary [Expr]
@@ -176,13 +212,13 @@ impl<'a, S: Iterator<Item = Spanned<Token>>> Parser<'a, S> {
                 //
                 // It does not uses the Ident(..) pattern, because of the location, we need locality
                 // of the ast.
-                let ident = self.identifier()?.map(|s| FunctionId::new(&s));
+                let ident = self.identifier()?.map(FunctionId);
 
                 // Creates a new path.
                 let mut path = vec![ident];
                 while let Token::Dot = self.peek().value() {
                     self.next(); // skip `.`
-                    let fn_id = self.identifier()?.map(|s| FunctionId::new(&s));
+                    let fn_id = self.identifier()?.map(FunctionId);
                     path.push(fn_id); // adds new `.` <identifier>
                 }
 
@@ -198,11 +234,36 @@ impl<'a, S: Iterator<Item = Spanned<Token>>> Parser<'a, S> {
             // * [Group]
             // * [Pi]
             LeftParen => {
-                self.next(); // skip '('
-                let expr = self.expr()?;
-                self.expect(Token::RightParen)?; // consumes ')'
+                let mut errors = vec![];
+                let mut new_state = self.save_state();
+                match new_state.catch(Parser::pi) {
+                    Ok(None) => {}
+                    Ok(Some(pi)) => {
+                        self.index = new_state.index;
+                        self.stream = new_state.stream;
+                        return Ok(current.swap(pi));
+                    }
+                    Err(error) => errors.push(error),
+                }
 
-                return Ok(current.swap(Expr::Group(expr)));
+                let mut new_state = self.save_state();
+                match new_state.catch(Parser::group) {
+                    Ok(None) => {}
+                    Ok(Some(group)) => {
+                        self.index = new_state.index;
+                        self.stream = new_state.stream;
+                        return Ok(current.swap(group));
+                    }
+                    Err(error) => errors.push(error),
+                }
+
+                return self
+                    .end_diagnostic(ParseError::ExpectedParenthesisExpr)
+                    .map_err(|error| {
+                        errors
+                            .into_iter()
+                            .fold(error, |acc, next| acc.with_spanned(next))
+                    });
             }
 
             // Help expression
@@ -238,6 +299,26 @@ mod tests {
         let stream = Lexer::new(code);
         let mut parser = Parser::new(code, stream.peekable());
 
+        println!("{:#?}", parser.run_diagnostic(Parser::expr))
+    }
+
+    #[test]
+    fn group_expr() {
+        let code = "(a";
+
+        let stream = Lexer::new(code);
+        let mut parser = Parser::new(code, stream.peekable());
+
+        println!("{:#?}", parser.run_diagnostic(Parser::expr))
+    }
+
+    #[test]
+    fn pi_expr() {
+        let code = "(a: t) -> b";
+
+        let lexer = Lexer::new(code);
+
+        let mut parser = Parser::new(code, lexer.peekable());
         println!("{:#?}", parser.run_diagnostic(Parser::expr))
     }
 }

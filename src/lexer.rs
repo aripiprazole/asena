@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use chumsky::prelude::*;
 
 use span::Spanned;
@@ -18,8 +20,10 @@ pub type TokenSet = Vec<LexToken>;
 
 pub type LexError<'a> = extra::Err<Rich<'a, char, Span>>;
 
+#[derive(Debug, Clone)]
 pub struct Lexer<'a> {
-    pub source: Box<dyn Iterator<Item = Spanned<Token>>>,
+    index: usize,
+    source: Vec<Spanned<Token>>,
     pub errs: Vec<Rich<'a, char>>,
 }
 
@@ -115,12 +119,12 @@ impl<'a> Lexer<'a> {
         let (tokens, errs) = lexer().parse(code).into_output_errors();
 
         Self {
-            source: Box::new(
-                tokens
-                    .unwrap_or_default()
-                    .into_iter()
-                    .map(|(value, span)| Spanned::new(span.into_range(), value)),
-            ),
+            index: 0,
+            source: tokens
+                .unwrap_or_default()
+                .into_iter()
+                .map(|(value, span)| Spanned::new(span.into_range(), value))
+                .collect(),
             errs,
         }
     }
@@ -130,8 +134,13 @@ impl<'a> Iterator for Lexer<'a> {
     type Item = Spanned<Token>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.source
-            .next()
-            .or_else(|| Some(Spanned::new(0..0, Token::Eof)))
+        match self.source.get(self.index) {
+            Some(value) => {
+                self.index += 1;
+
+                Some(value.clone())
+            }
+            None => Some(Spanned::new(0..0, Token::Eof)),
+        }
     }
 }

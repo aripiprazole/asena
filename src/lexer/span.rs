@@ -3,7 +3,7 @@ use std::{fmt::Debug, ops::Range};
 pub type Loc = Range<usize>;
 
 /// Localized reference in the heap, using [Box], and [Loc], to localize stuff in the source code
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct Spanned<T> {
     pub span: Loc,
     pub value: Box<T>,

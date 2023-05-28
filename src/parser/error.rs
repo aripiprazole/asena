@@ -1,31 +1,40 @@
 use thiserror::Error;
 
-use crate::lexer::span::Spanned;
+use crate::lexer::span::{Loc, Spanned};
 use crate::lexer::token::Token;
 
 pub type Result<T, E = Spanned<ParseError>> = std::result::Result<T, E>;
 
 /// Parsing errors, it can be indexed to the code using a [Spanned<ParseError>].
-#[derive(Error, Debug, Clone)]
+#[derive(Error, Debug, Clone, PartialEq)]
 #[repr(u8)]
 pub enum ParseError {
     #[error("Unexpected token at this position")]
     UnexpectedToken,
 
-    #[error("Expected token: {0}. But got this instead")]
+    #[error("Expected token: `{}`. But got this instead", .0.to_string())]
     Expected(Token),
 
     #[error("Could not parse primary")]
     CantParsePrimary,
 
+    #[error("Unfinished parenthesis, expected `)`")]
+    UnfinishedParenthesis,
+
+    #[error("Expected Π expression or (<expr>) group expression")]
+    ExpectedParenthesisExpr,
+
     #[error("{0}")]
     Many(Box<ParseError>, Vec<Tip>),
 }
 
-#[derive(Error, Debug, Clone)]
+#[derive(Error, Debug, Clone, PartialEq)]
 pub enum Tip {
     #[error("{0}")]
     Error(ParseError),
+
+    #[error("{}", .0.value())]
+    Spanned(Spanned<ParseError>),
 
     #[error("No tips")]
     NoTips,
@@ -34,6 +43,29 @@ pub enum Tip {
 impl Spanned<ParseError> {
     pub fn with_error(&self, new_error: ParseError) -> Self {
         self.with_tip(Tip::Error(new_error))
+    }
+
+    pub fn many(&self) -> Vec<Tip> {
+        match self.value() {
+            ParseError::Many(_, errors) => errors
+                .iter()
+                .cloned()
+                .flat_map(|error| match error {
+                    Tip::Spanned(error) => error.many(),
+                    _ => vec![error],
+                })
+                .collect(),
+            _ => vec![Tip::Spanned(self.clone())],
+        }
+    }
+
+    pub fn with_spanned(&self, new_error: Spanned<ParseError>) -> Self {
+        // If the structure is the same, there's no need to duplicate the tip.
+        if self == &new_error {
+            return self.clone();
+        }
+
+        self.with_tip(Tip::Spanned(new_error))
     }
 
     pub fn with_tip(&self, new_tip: Tip) -> Self {
@@ -47,6 +79,15 @@ impl Spanned<ParseError> {
             }
             _ => Many(error.into(), vec![new_tip.clone()]),
         })
+    }
+}
+
+impl Tip {
+    pub fn span(&self, default: Loc) -> Loc {
+        match self {
+            Tip::Spanned(spanned) => spanned.span().clone(),
+            _ => default,
+        }
     }
 }
 

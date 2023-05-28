@@ -5,7 +5,11 @@ use crate::parser::error::ParseError;
 use super::error::Result;
 use super::{Parser, TokenRef};
 
-impl<'a, S: Iterator<Item = Spanned<Token>>> Parser<'a, S> {
+impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
+    pub(crate) fn save_state(&mut self) -> Self {
+        self.clone()
+    }
+
     /// Eat a matching token, and return it if matching correctly.
     pub(crate) fn expect(&mut self, token: Token) -> Result<TokenRef> {
         self.eat(|next| {
