@@ -46,6 +46,11 @@ pub enum Token {
     Colon,        // :
     Dot,          // .
     Help,         // ?
+    Equal,        // =
+
+    DoubleArrow,  // =>
+    Arrow,        // ->
+    InverseArrow, // <-
 
     // integers
     Int8(u8, Signed),     // <n>u8
@@ -107,6 +112,10 @@ impl Display for Token {
             Token::Colon => write!(f, ":"),
             Token::Dot => write!(f, "."),
             Token::Help => write!(f, "?"),
+            Token::Equal => write!(f, "="),
+            Token::DoubleArrow => write!(f, "=>"),
+            Token::Arrow => write!(f, "->"),
+            Token::InverseArrow => write!(f, "<-"),
             Token::Int8(n, Signed::Signed) => write!(f, "{n}i8"),
             Token::Int8(n, Signed::Unsigned) => write!(f, "{n}u8"),
             Token::Int16(n, Signed::Signed) => write!(f, "{n}i16"),

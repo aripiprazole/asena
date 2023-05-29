@@ -54,9 +54,8 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
             parameters.push(self.parameter()?);
         }
 
-        let return_type = if self.match_token(Token::symbol(":")) {
+        let return_type = if let Token::Colon = self.peek().value() {
             self.next(); // skip ':'
-
             self.type_expr()?
         } else {
             Type::Infer
@@ -124,7 +123,7 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
     /// Parses a reference to named parameter [Parameter]
     pub fn named_parameter(&mut self) -> Result<(Option<LocalId>, Type)> {
         let parameter_name = self.name()?.map(FunctionId);
-        self.expect(Token::symbol(":"))?;
+        self.expect(Token::Colon)?;
         let parameter_type = self.type_expr()?;
 
         Ok((Some(LocalId(parameter_name)), parameter_type))
@@ -188,7 +187,7 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
         let a = self.peek();
 
         let name = self.name()?.map(FunctionId);
-        self.expect(Token::symbol("="))?;
+        self.expect(Token::Equal)?;
         let value = self.expr()?;
 
         let b = self.peek();
@@ -214,7 +213,7 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
 
             parameters.push(LocalId(ident));
         }
-        self.expect(Token::symbol("->"))?;
+        self.expect(Token::Arrow)?;
         let value = self.expr()?;
 
         let b = self.peek();
@@ -238,7 +237,7 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
         self.expect(Token::LeftParen)?; //              consumes '('
         let constraints = self.comma(Parser::expr)?; // consumes <constraint*>
         self.expect(Token::RightParen)?; //             consumes ')'
-        self.expect(Token::symbol("->"))?; //           consumes '->'
+        self.expect(Token::Arrow)?; //                  consumes '->'
         let return_type = self.type_expr()?; //         consumes <expr>
 
         let b = self.peek();
@@ -259,10 +258,10 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
         self.next(); //                            skip 'Π'
         self.expect(Token::LeftParen)?; //         consumes '('
         let parameter_name = self.name()?; //      consumes <identifier>
-        self.expect(Token::symbol(":"))?; //       consumes ':'
+        self.expect(Token::Colon)?; //             consumes ':'
         let parameter_type = self.type_expr()?; // consumes <expr>
         self.expect(Token::RightParen)?; //        consumes ')'
-        self.expect(Token::symbol("->"))?; //      consumes '->'
+        self.expect(Token::Arrow)?; //             consumes '->'
         let return_type = self.type_expr()?; //    consumes <expr>
 
         let b = self.peek();
@@ -284,10 +283,10 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
         self.next(); //                            skip 'Σ'
         self.expect(Token::LeftParen)?; //         consumes '('
         let parameter_name = self.name()?; //      consumes <identifier>
-        self.expect(Token::symbol(":"))?; //       consumes ':'
+        self.expect(Token::Colon)?; //             consumes ':'
         let parameter_type = self.type_expr()?; // consumes <expr>
         self.expect(Token::RightParen)?; //        consumes ')'
-        self.expect(Token::symbol("->"))?; //      consumes '->'
+        self.expect(Token::Arrow)?; //             consumes '->'
         let return_type = self.type_expr()?; //    consumes <expr>
 
         let b = self.peek();
@@ -323,12 +322,7 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
     pub fn ann(&mut self) -> Result<ExprRef> {
         let mut value = self.qualifier()?;
 
-        while let Token::Symbol(fn_id) = self.peek().value() {
-            // Currently, is impossible to pattern match agains't a [String], so it's the workaround
-            if fn_id != ":" {
-                break;
-            }
-
+        while let Token::Colon = self.peek().value() {
             self.next(); // skips ':'
 
             let against = self.qualifier()?;
@@ -346,12 +340,7 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
     pub fn qualifier(&mut self) -> Result<ExprRef> {
         let mut constraint = self.unnamed_pi()?;
 
-        while let Token::Symbol(fn_id) = self.peek().value() {
-            // Currently, is impossible to pattern match agains't a [String], so it's the workaround
-            if fn_id != "=>" {
-                break;
-            }
-
+        while let Token::DoubleArrow = self.peek().value() {
             self.next(); // skips '=>'
 
             let return_type = self.unnamed_pi()?;
@@ -375,13 +364,8 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
     pub fn unnamed_pi(&mut self) -> Result<ExprRef> {
         let mut lhs = self.accessor()?;
 
-        while let Token::Symbol(fn_id) = self.peek().value() {
-            // Currently, is impossible to pattern match agains't a [String], so it's the workaround
-            if fn_id != "->" {
-                break;
-            }
-
-            self.next(); // skips '=>'
+        while let Token::Arrow = self.peek().value() {
+            self.next(); // skips '->'
 
             let rhs = self.accessor()?;
 
@@ -483,12 +467,12 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
 
     /// Parses a [Pi] expression [Expr]
     pub fn pi(&mut self) -> Result<Expr> {
-        self.next(); //                       skip '('
-        let parameter_name = self.name()?; // consumes <identifier>
-        self.expect(Token::symbol(":"))?; //     consumes ':'
+        self.next(); //                            skip '('
+        let parameter_name = self.name()?; //      consumes <identifier>
+        self.expect(Token::Colon)?; //             consumes ':'
         let parameter_type = self.type_expr()?; // consumes <expr>
-        self.expect(Token::RightParen)?; //   consumes ')'
-        self.expect(Token::symbol("->"))?; //    consumes '->'
+        self.expect(Token::RightParen)?; //        consumes ')'
+        self.expect(Token::Arrow)?; //             consumes '->'
         let return_type = self.type_expr()?; //    consumes <expr>
 
         Ok(Expr::Pi(Pi {
@@ -510,12 +494,12 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
 
     /// Parses a [Sigma] expression [Expr]
     pub fn sigma(&mut self) -> Result<Expr> {
-        self.next(); //                       skip '['
-        let parameter_name = self.name()?; // consumes <identifier>
-        self.expect(Token::symbol(":"))?; //     consumes ':'
+        self.next(); //                            skip '['
+        let parameter_name = self.name()?; //      consumes <identifier>
+        self.expect(Token::Colon)?; //             consumes ':'
         let parameter_type = self.type_expr()?; // consumes <expr>
-        self.expect(Token::RightBracket)?; // consumes ']'
-        self.expect(Token::symbol("->"))?; //    consumes '->'
+        self.expect(Token::RightBracket)?; //      consumes ']'
+        self.expect(Token::Arrow)?; //             consumes '->'
         let return_type = self.type_expr()?; //    consumes <expr>
 
         Ok(Expr::Sigma(Sigma {

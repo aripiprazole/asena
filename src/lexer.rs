@@ -46,7 +46,14 @@ pub fn lexer<'a>() -> impl Parser<'a, &'a str, TokenSet, LexError<'a>> {
     let symbol = one_of(SYMBOLS.join(""))
         .repeated()
         .at_least(1)
-        .map_slice(|content: &str| Token::Symbol(content.into()))
+        .map_slice(|content: &str| match content {
+            "->" => Token::Arrow,
+            "=>" => Token::DoubleArrow,
+            "<-" => Token::InverseArrow,
+            "=" => Token::Equal,
+            ":" => Token::Colon,
+            _ => Token::symbol(content),
+        })
         .labelled("symbol");
 
     let comment = just("//")
