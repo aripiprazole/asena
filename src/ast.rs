@@ -199,7 +199,7 @@ pub struct Ann {
 #[derive(Debug, Clone)]
 pub struct Qualifier {
     pub constraint: Vec<Constraint>,
-    pub return_type: ExprRef,
+    pub return_type: Type,
 }
 
 /// Pi expression, is a dependent type expression, that abstracts a type into another return type.
@@ -216,8 +216,8 @@ pub struct Qualifier {
 #[derive(Debug, Clone)]
 pub struct Pi {
     pub parameter_name: Option<LocalId>,
-    pub parameter_type: ExprRef,
-    pub return_type: ExprRef,
+    pub parameter_type: Type,
+    pub return_type: Type,
 }
 
 /// Sigma expression, is a dependent pair expression, receives a type and a function that returns a
@@ -235,8 +235,8 @@ pub struct Pi {
 #[derive(Debug, Clone)]
 pub struct Sigma {
     pub parameter_name: LocalId,
-    pub parameter_type: ExprRef,
-    pub return_type: ExprRef,
+    pub parameter_type: Type,
+    pub return_type: Type,
 }
 
 #[derive(Clone)]
@@ -326,7 +326,7 @@ pub struct Parameter {
     pub name: Option<LocalId>,
 
     /// Parameter's type
-    pub parameter_type: ExprRef,
+    pub parameter_type: Type,
 
     /// If the parameter is explicit, or if it's a constraint or a type that can have the hole filled
     /// in the compile time, like a generic.
@@ -350,7 +350,7 @@ pub struct Parameter {
 pub struct Signature {
     pub name: GlobalId,
     pub parameters: Vec<Parameter>,
-    pub return_type: OptionalType,
+    pub return_type: Type,
 
     /// Holds, optionally the value of the [Signature], this is an sugar to [Assign].
     pub body: Option<Vec<StmtRef>>,
@@ -392,11 +392,7 @@ pub struct Command {
 /// class Person {
 ///   name: String;
 ///
-///   new(name: String): Self {
-///     Self { name }
-///   }
-///
-///   sayHello(self): IO () {
+///   sayHello (self): IO () {
 ///     printf "Hello, I'm {}" self.name
 ///   }
 /// }
@@ -414,9 +410,7 @@ pub struct Class {
 /// The syntax should like exactly:
 /// ```haskell
 /// instance Monad m : Functor m {
-///   pure (a) {
-///     ...
-///   }
+///   pure (a) { ... }
 /// }
 /// ```
 #[derive(Debug, Clone)]
@@ -426,7 +420,7 @@ pub struct Instance {
     pub properties: Vec<Method>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub enum Decl {
     Signature(Signature),
     Assign(Assign),
@@ -493,8 +487,8 @@ pub enum Property {
 }
 //<<<Properties
 
-#[derive(Debug, Clone)]
-pub enum OptionalType {
+#[derive(Clone)]
+pub enum Type {
     Infer, // _
     Explicit(ExprRef),
 }
@@ -563,21 +557,21 @@ impl Debug for LocalId {
 impl Debug for Expr {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Binary(expr) => write!(f, "{:#?}", expr),
-            Self::Accessor(expr) => write!(f, "{:#?}", expr),
-            Self::App(expr) => write!(f, "{:#?}", expr),
-            Self::Array(expr) => write!(f, "{:#?}", expr),
-            Self::Dsl(expr) => write!(f, "{:#?}", expr),
-            Self::Lam(expr) => write!(f, "{:#?}", expr),
-            Self::Let(expr) => write!(f, "{:#?}", expr),
-            Self::Global(expr) => write!(f, "{:#?}", expr),
-            Self::Local(expr) => write!(f, "{:#?}", expr),
-            Self::Ann(expr) => write!(f, "{:#?}", expr),
-            Self::Qualifier(expr) => write!(f, "{:#?}", expr),
-            Self::Pi(expr) => write!(f, "{:#?}", expr),
-            Self::Sigma(expr) => write!(f, "{:#?}", expr),
-            Self::Literal(expr) => write!(f, "Literal({:#?})", expr),
-            Self::Group(expr) => write!(f, "Group({:#?})", expr),
+            Self::Binary(expr) => write!(f, "{expr:#?}"),
+            Self::Accessor(expr) => write!(f, "{expr:#?}"),
+            Self::App(expr) => write!(f, "{expr:#?}"),
+            Self::Array(expr) => write!(f, "{expr:#?}"),
+            Self::Dsl(expr) => write!(f, "{expr:#?}"),
+            Self::Lam(expr) => write!(f, "{expr:#?}"),
+            Self::Let(expr) => write!(f, "{expr:#?}"),
+            Self::Global(expr) => write!(f, "{expr:#?}"),
+            Self::Local(expr) => write!(f, "{expr:#?}"),
+            Self::Ann(expr) => write!(f, "{expr:#?}"),
+            Self::Qualifier(expr) => write!(f, "{expr:#?}"),
+            Self::Pi(expr) => write!(f, "{expr:#?}"),
+            Self::Sigma(expr) => write!(f, "{expr:#?}"),
+            Self::Literal(expr) => write!(f, "Literal({expr:#?})"),
+            Self::Group(expr) => write!(f, "Group({expr:#?})"),
             Self::Help(help) => f.debug_struct("Help").field("expr", help).finish(),
         }
     }
@@ -683,6 +677,27 @@ impl Debug for Literal {
             Self::Float64(f64) => write!(f, "{f64}f64"),
             Self::True => write!(f, "true"),
             Self::False => write!(f, "false"),
+        }
+    }
+}
+
+impl Debug for Decl {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Signature(decl) => write!(f, "{decl:#?}"),
+            Self::Assign(decl) => write!(f, "{decl:#?}"),
+            Self::Command(decl) => write!(f, "{decl:#?}"),
+            Self::Class(decl) => write!(f, "{decl:#?}"),
+            Self::Instance(decl) => write!(f, "{decl:#?}"),
+        }
+    }
+}
+
+impl Debug for Type {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Infer => write!(f, "Infer"),
+            Self::Explicit(expr) => write!(f, "Type({:#?})", expr),
         }
     }
 }
