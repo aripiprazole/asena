@@ -34,7 +34,7 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
 
                 Report::<Loc>::build(ReportKind::Error, (), 0)
                     .with_code("E00")
-                    .with_message("Parsed with errors")
+                    .with_message("Recovered tree with errors")
                     .with_labels(errors.into_iter().map(|reason| {
                         Label::new(reason.span(0..0))
                             .with_message(reason.to_string())

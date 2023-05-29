@@ -249,7 +249,11 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
         let current = self.peek();
         let value = match current.value() {
             Symbol(..) => {
-                self.report(current.replace(ParseError::SymbolInsteadOfIdentifier));
+                let error = current
+                    .replace(ParseError::SymbolInsteadOfIdentifier)
+                    .with_tip(Tip::MaybeWriteSymbolName(current.value().clone()));
+
+                self.report(error);
                 self.next(); // skip ant tries to parse the next token
 
                 Pat::Error
@@ -723,7 +727,11 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
         let current = self.peek();
         let value = match current.value() {
             Symbol(..) => {
-                self.report(current.replace(ParseError::SymbolInsteadOfIdentifier));
+                let error = current
+                    .replace(ParseError::SymbolInsteadOfIdentifier)
+                    .with_tip(Tip::MaybeWriteSymbolName(current.value().clone()));
+
+                self.report(error);
                 self.next(); // skip ant tries to parse the next token
 
                 Expr::Error
@@ -918,7 +926,7 @@ mod tests {
 
     #[test]
     fn ask_stmt() {
-        let code = "(Just >) <- findUser 105;";
+        let code = "(Just <) <- findUser 105";
 
         let lexer = Lexer::new(code);
 

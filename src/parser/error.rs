@@ -63,6 +63,9 @@ pub enum Tip {
     #[error("{}", .0.value())]
     Spanned(Spanned<ParseError>),
 
+    #[error("Maybe write the in-language identifier `{}`", .0.in_language_identifier())]
+    MaybeWriteSymbolName(Token),
+
     #[error("Maybe add a semicolon here")]
     MaybeSemi(Spanned<Token>),
 

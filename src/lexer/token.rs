@@ -77,6 +77,57 @@ impl Token {
     pub fn symbol(s: &str) -> Token {
         Token::Symbol(s.into())
     }
+
+    pub fn in_language_identifier(&self) -> &str {
+        match self {
+            Token::Let => "let_",
+            Token::True => "true_",
+            Token::False => "false_",
+            Token::If => "if_",
+            Token::Else => "else_",
+            Token::Then => "then_",
+            Token::Type => "type_",
+            Token::Record => "record_",
+            Token::Return => "return_",
+            Token::Enum => "enum_",
+            Token::Trait => "trait_",
+            Token::Class => "class_",
+            Token::Case => "case_",
+            Token::Where => "where_",
+            Token::Match => "match_",
+            Token::Use => "use_",
+            Token::In => "in_",
+            Token::Lambda => "lambda",
+            Token::Forall => "forall",
+            Token::Pi => "pi",
+            Token::Sigma => "sigma",
+            Token::LeftBracket => "left_bracket",
+            Token::RightBracket => "right_bracket",
+            Token::LeftBrace => "left_brace",
+            Token::RightBrace => "right_brace",
+            Token::LeftParen => "left_parenthesis",
+            Token::RightParen => "right_parenthesis",
+            Token::Comma => "comma",
+            Token::Semi => "semicolon",
+            Token::Colon => "colon",
+            Token::Dot => "dot",
+            Token::Help => "interrogation",
+            Token::Equal => "equal",
+            Token::DoubleArrow => "double_arrow",
+            Token::Arrow => "arrow",
+            Token::InverseArrow => "inverse_arrow",
+            Token::Int8(_, _)
+            | Token::Int16(_, _)
+            | Token::Int32(_, _)
+            | Token::Int64(_, _)
+            | Token::Int128(_, _) => "integer",
+            Token::Float32(_) | Token::Float64(_) => "float",
+            Token::Symbol(_) => "symbol",
+            Token::Ident(_) => "identifier",
+            Token::String(_) => "string",
+            Token::Eof => "eof",
+        }
+    }
 }
 
 impl Display for Token {
