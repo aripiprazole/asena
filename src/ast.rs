@@ -313,7 +313,7 @@ pub type PatRef = Spanned<Pat>;
 #[derive(Clone)]
 pub enum Stmt {
     Ask(PatRef, ExprRef),    // <local_id> <- <expr>
-    Let(LocalId, ExprRef),   // let <local_id> = <expr>
+    Let(PatRef, ExprRef),    // let <local_id> = <expr>
     Return(Option<ExprRef>), // return <expr?>
     Eval(ExprRef),           // <expr?>
 }

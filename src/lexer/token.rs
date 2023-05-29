@@ -19,6 +19,7 @@ pub enum Token {
     Then,   // then
     Type,   // type
     Record, // record
+    Return, // return
     Enum,   // enum
     Trait,  // trait
     Class,  // class
@@ -89,6 +90,7 @@ impl Display for Token {
             Token::Then => write!(f, "then"),
             Token::Type => write!(f, "type"),
             Token::Record => write!(f, "record"),
+            Token::Return => write!(f, "return"),
             Token::Enum => write!(f, "enum"),
             Token::Trait => write!(f, "trait"),
             Token::Class => write!(f, "class"),

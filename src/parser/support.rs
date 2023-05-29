@@ -1,4 +1,4 @@
-use crate::lexer::span::Spanned;
+use crate::lexer::span::{Loc, Spanned};
 use crate::lexer::token::Token;
 use crate::parser::error::ParseError;
 
@@ -112,5 +112,10 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
     /// Sees the current token, and return it cloned.
     pub(crate) fn peek(&mut self) -> Spanned<Token> {
         self.stream.peek().unwrap().clone()
+    }
+
+    /// Locates the current token and starts measuring it
+    pub(crate) fn measure(&mut self) -> Loc {
+        self.stream.peek().unwrap().span().clone()
     }
 }

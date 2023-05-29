@@ -12,6 +12,9 @@ pub enum ParseError {
     #[error("Unexpected token")]
     UnexpectedToken,
 
+    #[error("Missing semicolon")]
+    MissingSemi,
+
     #[error("Expected token: `{}`. But got this instead", .0.to_string())]
     Expected(Token),
 
@@ -20,6 +23,9 @@ pub enum ParseError {
 
     #[error("Could not parse pattern")]
     CantParsePattern,
+
+    #[error("Could not parse statement")]
+    CantParseStatement,
 
     #[error("Could not parse anything, found end of file")]
     CantParseDueToEof,
@@ -45,11 +51,14 @@ pub enum ParseError {
 
 #[derive(Error, Debug, Clone, PartialEq)]
 pub enum Tip {
-    #[error("{0}")]
+    #[error("{}", .0)]
     Error(ParseError),
 
     #[error("{}", .0.value())]
     Spanned(Spanned<ParseError>),
+
+    #[error("Maybe add a semicolon here")]
+    MaybeSemi(Spanned<Token>),
 
     #[error("No tips")]
     NoTips,

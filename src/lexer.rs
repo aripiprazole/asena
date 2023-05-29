@@ -115,6 +115,7 @@ fn ident_lexer<'a>() -> impl Parser<'a, &'a str, Token, LexError<'a>> {
             "then" => Token::Then,
             "type" => Token::Type,
             "record" => Token::Record,
+            "return" => Token::Return,
             "enum" => Token::Enum,
             "trait" => Token::Trait,
             "class" => Token::Class,

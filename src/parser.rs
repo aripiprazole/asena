@@ -1,11 +1,11 @@
 use std::iter::Peekable;
 
-use crate::ast::*;
 use crate::lexer::span::Spanned;
 use crate::lexer::token::Token;
 use crate::parser::error::ParseError;
+use crate::{ast::*, lexer::span::Span};
 
-use self::error::Result;
+use self::error::{Result, Tip};
 
 pub type TokenRef = Spanned<Token>;
 
@@ -139,7 +139,56 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
 
     /// Parses a reference to [Stmt]
     pub fn stmt(&mut self) -> Result<StmtRef> {
-        self.ask_stmt()
+        let mut errors = vec![];
+
+        match self.peek().value() {
+            Token::Return => return self.return_stmt(),
+            Token::Let => return self.let_stmt(),
+            _ => {}
+        };
+
+        self.recover(&mut errors, Parser::eval_stmt)
+            .or_else(|| self.recover(&mut errors, Parser::ask_stmt))
+            .map(Ok)
+            .unwrap_or_else(|| {
+                self.end_diagnostic(ParseError::CantParseStatement)
+                    .map_err(|error| {
+                        errors
+                            .into_iter()
+                            .fold(error, |acc, next| acc.with_spanned(next))
+                    })
+            })
+    }
+
+    /// Parses a reference to [Stmt::Return]
+    pub fn return_stmt(&mut self) -> Result<StmtRef> {
+        let start = self.measure();
+
+        self.expect(Token::Return)?;
+
+        let value = match self.peek().value() {
+            Token::Semi => None,
+            _ => Some(self.expr()?),
+        };
+
+        Ok(StmtRef::new(start.on(self.measure()), Stmt::Return(value)))
+    }
+
+    /// Parses a reference to [Stmt::Eval]
+    pub fn eval_stmt(&mut self) -> Result<StmtRef> {
+        let start = self.measure();
+
+        let value = self.expr()?;
+
+        self.expect(Token::Semi)
+            .map_err(|error| {
+                error
+                    .on(start.on(self.measure()))
+                    .swap(ParseError::MissingSemi)
+            })
+            .map_err(|error| error.with_tip(Tip::MaybeSemi(self.peek())))?;
+
+        Ok(StmtRef::new(start.on(self.measure()), Stmt::Eval(value)))
     }
 
     /// Parses a reference to [Stmt::Ask]
@@ -150,11 +199,42 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
         self.expect(Token::InverseArrow)?;
         let value = self.expr()?;
 
+        self.expect(Token::Semi)
+            .map_err(|error| {
+                error
+                    .on(a.span.start..(self.peek().span().end))
+                    .swap(ParseError::MissingSemi)
+            })
+            .map_err(|error| error.with_tip(Tip::MaybeSemi(self.peek())))?;
+
         let b = self.peek();
 
         Ok(StmtRef::new(
             a.span.start..b.span.start,
             Stmt::Ask(pat, value),
+        ))
+    }
+
+    /// Parses a reference to [Stmt::Let]
+    pub fn let_stmt(&mut self) -> Result<StmtRef> {
+        let start = self.measure();
+
+        self.expect(Token::Let)?;
+        let pat = self.pat()?;
+        self.expect(Token::Equal)?;
+        let value = self.expr()?;
+
+        self.expect(Token::Semi)
+            .map_err(|error| {
+                error
+                    .on(start.on(self.measure()))
+                    .swap(ParseError::MissingSemi)
+            })
+            .map_err(|error| error.with_tip(Tip::MaybeSemi(self.peek())))?;
+
+        Ok(StmtRef::new(
+            start.on(self.measure()),
+            Stmt::Let(pat, value),
         ))
     }
 
@@ -842,5 +922,16 @@ mod tests {
 
         let mut parser = Parser::new(code, lexer.peekable());
         println!("{:#?}", parser.diagnostic(Parser::expr).unwrap())
+    }
+
+    #[test]
+    fn ask_stmt() {
+        let code = "let a = 10;";
+
+        let lexer = Lexer::new(code);
+
+        let mut parser = Parser::new(code, lexer.peekable());
+
+        println!("{:#?}", parser.diagnostic(Parser::stmt).unwrap())
     }
 }

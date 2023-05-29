@@ -2,6 +2,10 @@ use std::{fmt::Debug, ops::Range};
 
 pub type Loc = Range<usize>;
 
+pub trait Span {
+    fn on(&self, end: Loc) -> Self;
+}
+
 /// Localized reference in the heap, using [Box], and [Loc], to localize stuff in the source code
 #[derive(Clone, PartialEq, Eq)]
 pub struct Spanned<T> {
@@ -28,6 +32,13 @@ impl<T> Spanned<T> {
         &self.value
     }
 
+    pub fn on(self, loc: Loc) -> Self
+    where
+        T: Clone,
+    {
+        Spanned::new(loc, *self.value)
+    }
+
     pub fn swap<U>(self, value: U) -> Spanned<U> {
         Spanned::new(self.span, value)
     }
@@ -50,5 +61,11 @@ impl<T: Debug> Debug for Spanned<T> {
         write!(f, "{:#?}", self.value())?;
         write!(f, " @ ")?;
         write!(f, "{:?}", self.span())
+    }
+}
+
+impl Span for Loc {
+    fn on(&self, end: Loc) -> Self {
+        self.start..end.end
     }
 }
