@@ -1,18 +1,24 @@
 use IO;
 
-class Monad m <: Functor m {
+class Monad m : Functor m {
   pure: a -> m a;
 }
 
-if : Bool -> Lazy a -> Lazy b
+if : [f: Bool -> Type] => (cond: Bool) -> f true -> f false -> f cond
 if true  then _    = then
 if false _    else = else
+
+cond {f: Bool -> Set} (value: Bool) (then: f true) (otherwise: f false) -> f cond {
+  value.match
+    (\tt -> then)
+    (\ff -> otherwise)
+}
 
 class Person {
   name: String;
 
-  sayHello(self): IO () {
-    printf "Hello, I'm {}" self.name
+  sayHello(person): IO () {
+    printf "Hello, I'm {}" person.name
   }
 }
 

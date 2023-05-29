@@ -104,7 +104,7 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
 
             parameters.push(LocalId(ident));
         }
-        self.expect(Token::Dot)?;
+        self.expect(Token::sym("->"))?;
         let value = self.expr()?;
 
         let b = self.peek();
@@ -510,7 +510,8 @@ mod tests {
 
     #[test]
     fn it_works() {
-        let code = "let combine = MonadIO m => (a: m a) -> [b: m b] -> m c in todo";
+        let code =
+            "let combine = [x : Type, MonadIO m, F a, C] => (a: m a) -> [b: m b] -> m c in todo";
 
         let stream = Lexer::new(code);
         let mut parser = Parser::new(code, stream.peekable());
