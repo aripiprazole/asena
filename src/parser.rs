@@ -139,9 +139,14 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
     pub fn stmt(&mut self) -> Result<StmtRef> {
         let mut errors = vec![];
 
+        let start = self.measure();
+
         match self.peek().value() {
             Token::Return => return self.return_stmt(),
-            Token::Let => return self.let_stmt(),
+            Token::Let => match self.let_stmt() {
+                Ok(value) => return Ok(value),
+                Err(error) => errors.push(error),
+            },
             _ => {}
         };
 
@@ -150,6 +155,7 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
             .map(Ok)
             .unwrap_or_else(|| {
                 self.end_diagnostic(ParseError::CantParseStatement)
+                    .map_err(|error| error.on(start.on(self.measure())))
                     .map_err(|error| {
                         errors
                             .into_iter()
@@ -910,7 +916,7 @@ mod tests {
 
     #[test]
     fn ask_stmt() {
-        let code = "let a = 10;";
+        let code = "(Just a) <- findUser 105;";
 
         let lexer = Lexer::new(code);
 
