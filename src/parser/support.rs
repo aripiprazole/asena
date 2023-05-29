@@ -16,11 +16,11 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
         self.peek().value() == &token
     }
 
-    pub(crate) fn expect_semi(&mut self, start: Loc) -> Result<()> {
+    pub(crate) fn expect_semi(&mut self) -> Result<()> {
         self.expect(Token::Semi)
             .map_err(|error| {
                 error
-                    .on(start.on(self.measure()))
+                    .on(self.measure().on(self.measure()))
                     .swap(ParseError::MissingSemi)
             })
             .map_err(|error| error.with_tip(Tip::MaybeSemi(self.peek())))?;

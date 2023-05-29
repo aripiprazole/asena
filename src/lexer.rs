@@ -23,6 +23,7 @@ pub type LexError<'a> = extra::Err<Rich<'a, char, Span>>;
 #[derive(Debug, Clone)]
 pub struct Lexer<'a> {
     index: usize,
+    code: &'a str,
     source: Vec<Spanned<Token>>,
     pub errs: Vec<Rich<'a, char>>,
 }
@@ -136,6 +137,7 @@ impl<'a> Lexer<'a> {
 
         Self {
             index: 0,
+            code,
             source: tokens
                 .unwrap_or_default()
                 .into_iter()
@@ -156,7 +158,14 @@ impl<'a> Iterator for Lexer<'a> {
 
                 Some(value.clone())
             }
-            None => Some(Spanned::new(0..0, Token::Eof)),
+
+            // eof case
+            None if self.code.is_empty() => Some(Spanned::new(0..0, Token::Eof)),
+            None => {
+                let start = self.code.len() - 1;
+                let end = self.code.len();
+                Some(Spanned::new(start..end, Token::Eof))
+            }
         }
     }
 }

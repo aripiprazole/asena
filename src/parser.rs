@@ -42,9 +42,8 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
 
     /// Parses a reference to [Decl]
     pub fn decl(&mut self) -> Result<DeclRef> {
-        let start = self.measure();
         let decl = self.sig_decl();
-        self.expect_semi(start)?;
+        self.expect_semi()?;
         decl
     }
 
@@ -873,7 +872,7 @@ mod tests {
 
     #[test]
     fn sig_decl() {
-        let code = "cond : (f true) -> ((f false) -> (f cond));";
+        let code = "cond : (f true) -> ((f false) -> (f cond))";
 
         let stream = Lexer::new(code);
         let mut parser = Parser::new(code, stream.peekable());
