@@ -41,10 +41,12 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
             Ok(Some(expr)) => {
                 self.index = new_state.index;
                 self.stream = new_state.stream;
+                self.errors.extend(new_state.errors.clone());
                 Some(expr)
             }
             Err(error) => {
                 diagnostic.push(error);
+                self.errors.extend(new_state.errors.clone());
                 None
             }
         }

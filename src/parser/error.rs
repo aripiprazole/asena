@@ -15,6 +15,12 @@ pub enum ParseError {
     #[error("Missing semicolon")]
     MissingSemi,
 
+    #[error("Invalid identifier, found symbol")]
+    SymbolInsteadOfIdentifier,
+
+    #[error("Invalid identifier, found unicode symbol")]
+    UnicodeInsteadOfIdentifier,
+
     #[error("Expected token: `{}`. But got this instead", .0.to_string())]
     Expected(Token),
 

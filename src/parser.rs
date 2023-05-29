@@ -20,6 +20,7 @@ pub mod support;
 /// to advance and identify tokens on the programming language.
 #[derive(Clone)]
 pub struct Parser<'a, S: Iterator<Item = Spanned<Token>> + Clone> {
+    pub errors: Vec<Tip>,
     pub source: &'a str,
     pub index: usize,
     pub stream: Peekable<S>,
@@ -33,6 +34,7 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
     pub fn new(source: &'a str, stream: Peekable<S>) -> Self {
         Self {
             index: 0,
+            errors: vec![],
             source,
             stream,
         }
@@ -246,8 +248,8 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
 
         let current = self.peek();
         let value = match current.value() {
-            // TODO: report error
             Symbol(..) => {
+                self.report(current.replace(ParseError::SymbolInsteadOfIdentifier));
                 self.next(); // skip ant tries to parse the next token
 
                 Pat::Error
@@ -720,8 +722,8 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
 
         let current = self.peek();
         let value = match current.value() {
-            // TODO: report error
             Symbol(..) => {
+                self.report(current.replace(ParseError::SymbolInsteadOfIdentifier));
                 self.next(); // skip ant tries to parse the next token
 
                 Expr::Error
@@ -916,7 +918,7 @@ mod tests {
 
     #[test]
     fn ask_stmt() {
-        let code = "(Just a) <- findUser 105;";
+        let code = "(Just >) <- findUser 105;";
 
         let lexer = Lexer::new(code);
 
