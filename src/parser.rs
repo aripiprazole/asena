@@ -42,7 +42,10 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
 
     /// Parses a reference to [Decl]
     pub fn decl(&mut self) -> Result<DeclRef> {
-        self.sig_decl()
+        let start = self.measure();
+        let decl = self.sig_decl();
+        self.expect_semi(start)?;
+        decl
     }
 
     /// Parses a reference to [Signature]
@@ -186,14 +189,6 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
 
         let value = self.expr()?;
 
-        self.expect(Token::Semi)
-            .map_err(|error| {
-                error
-                    .on(start.on(self.measure()))
-                    .swap(ParseError::MissingSemi)
-            })
-            .map_err(|error| error.with_tip(Tip::MaybeSemi(self.peek())))?;
-
         Ok(StmtRef::new(start.on(self.measure()), Stmt::Eval(value)))
     }
 
@@ -204,14 +199,6 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
         let pat = self.pat()?;
         self.expect(Token::InverseArrow)?;
         let value = self.expr()?;
-
-        self.expect(Token::Semi)
-            .map_err(|error| {
-                error
-                    .on(start.on(self.measure()))
-                    .swap(ParseError::MissingSemi)
-            })
-            .map_err(|error| error.with_tip(Tip::MaybeSemi(self.peek())))?;
 
         Ok(StmtRef::new(
             start.on(self.measure()),
@@ -227,14 +214,6 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
         let pat = self.pat()?;
         self.expect(Token::Equal)?;
         let value = self.expr()?;
-
-        self.expect(Token::Semi)
-            .map_err(|error| {
-                error
-                    .on(start.on(self.measure()))
-                    .swap(ParseError::MissingSemi)
-            })
-            .map_err(|error| error.with_tip(Tip::MaybeSemi(self.peek())))?;
 
         Ok(StmtRef::new(
             start.on(self.measure()),
@@ -330,7 +309,35 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
 
     /// Parses a reference to [Expr]
     pub fn expr(&mut self) -> Result<ExprRef> {
-        self.runtime_expr()
+        let start = self.measure();
+
+        let expr = self.runtime_expr()?;
+
+        // starts parsing dsl, that is only available in runtime/evaluating code
+        if let Token::LeftBrace = self.peek().value() {
+            self.next(); // skip '{'
+
+            let mut stmts = vec![self.stmt()?];
+            while let Token::Comma = self.peek().value() {
+                self.next(); // skips ';'
+
+                stmts.push(self.stmt()?);
+            }
+
+            self.expect(Token::RightBrace)
+                .map_err(|error| error.swap(ParseError::UnfinishedBlock))?;
+
+            return Ok(ExprRef::new(
+                start.on(self.measure()),
+                Expr::Dsl(Dsl {
+                    callee: expr,
+                    parameters: vec![], // TODO
+                    block: stmts,
+                }),
+            ));
+        }
+
+        Ok(expr)
     }
 
     /// Parses a reference to [Expr]
@@ -866,7 +873,7 @@ mod tests {
 
     #[test]
     fn sig_decl() {
-        let code = "cond : (f true) -> (f false) -> (f cond)";
+        let code = "cond : (f true) -> ((f false) -> (f cond));";
 
         let stream = Lexer::new(code);
         let mut parser = Parser::new(code, stream.peekable());
@@ -926,7 +933,7 @@ mod tests {
 
     #[test]
     fn ask_stmt() {
-        let code = "(Just <) <- findUser 105";
+        let code = "(Just a) <- findUser 105 { pao }";
 
         let lexer = Lexer::new(code);
 

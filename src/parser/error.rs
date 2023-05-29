@@ -45,6 +45,9 @@ pub enum ParseError {
     #[error("Unfinished brackets, expected `]`")]
     UnfinishedBrackets,
 
+    #[error("Unfinished block, expected `}}`")]
+    UnfinishedBlock,
+
     #[error("Expected Σ expression or [<expr>] array expression")]
     ExpectedBracketExpr,
 

@@ -1,8 +1,8 @@
-use crate::lexer::span::{Loc, Spanned};
+use crate::lexer::span::{Loc, Span, Spanned};
 use crate::lexer::token::Token;
 use crate::parser::error::ParseError;
 
-use super::error::Result;
+use super::error::{Result, Tip};
 use super::{Parser, TokenRef};
 
 pub type Diagnostic = Vec<Spanned<ParseError>>;
@@ -14,6 +14,18 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
 
     pub(crate) fn match_token(&mut self, token: Token) -> bool {
         self.peek().value() == &token
+    }
+
+    pub(crate) fn expect_semi(&mut self, start: Loc) -> Result<()> {
+        self.expect(Token::Semi)
+            .map_err(|error| {
+                error
+                    .on(start.on(self.measure()))
+                    .swap(ParseError::MissingSemi)
+            })
+            .map_err(|error| error.with_tip(Tip::MaybeSemi(self.peek())))?;
+
+        Ok(())
     }
 
     pub(crate) fn comma<F, T>(&mut self, mut f: F) -> Result<Vec<T>>

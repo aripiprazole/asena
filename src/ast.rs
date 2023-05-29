@@ -120,7 +120,7 @@ pub struct App {
 pub struct Dsl {
     pub callee: ExprRef,
     pub parameters: Vec<Parameter>,
-    pub block: Vec<Stmt>,
+    pub block: Vec<StmtRef>,
 }
 
 /// Array expression, is an expression that can be checked agains't a `Vect n a`, a `List`, or an
