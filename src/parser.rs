@@ -154,8 +154,8 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
             _ => {}
         };
 
-        self.recover(&mut errors, Parser::eval_stmt)
-            .or_else(|| self.recover(&mut errors, Parser::ask_stmt))
+        self.recover(&mut errors, Parser::ask_stmt)
+            .or_else(|| self.recover(&mut errors, Parser::eval_stmt))
             .map(Ok)
             .unwrap_or_else(|| {
                 self.end_diagnostic(ParseError::CantParseStatement)
@@ -321,6 +321,13 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
                 self.next(); // skips ';'
 
                 stmts.push(self.stmt()?);
+            }
+
+            if let Token::Semi = self.peek().value() {
+                let semi = self.peek();
+                println!("{semi:?}");
+                self.next();
+                self.warn(semi.swap(ParseError::UeselessSemi))
             }
 
             self.expect(Token::RightBrace)
@@ -872,7 +879,7 @@ mod tests {
 
     #[test]
     fn sig_decl() {
-        let code = "cond : (f true) -> ((f false) -> (f cond))";
+        let code = "cond : (f true) -> ((f false) -> (f cond));";
 
         let stream = Lexer::new(code);
         let mut parser = Parser::new(code, stream.peekable());
@@ -932,12 +939,12 @@ mod tests {
 
     #[test]
     fn ask_stmt() {
-        let code = "(Just a) <- findUser 105 { pao }";
+        let code = "a { (Just a) <- findUser 105; }";
 
         let lexer = Lexer::new(code);
 
         let mut parser = Parser::new(code, lexer.peekable());
 
-        println!("{:#?}", parser.diagnostic(Parser::stmt).unwrap())
+        println!("{:#?}", parser.diagnostic(Parser::expr).unwrap())
     }
 }

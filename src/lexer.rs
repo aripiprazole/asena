@@ -62,6 +62,12 @@ pub fn lexer<'a>() -> impl Parser<'a, &'a str, TokenSet, LexError<'a>> {
         .padded()
         .labelled("comment");
 
+    let semi = just(";")
+        .repeated()
+        .at_least(1)
+        .to(Token::Semi)
+        .labelled("semi");
+
     let unicode = just("λ")
         .to(Token::Lambda)
         .or(just("∀").to(Token::Forall))
@@ -69,6 +75,7 @@ pub fn lexer<'a>() -> impl Parser<'a, &'a str, TokenSet, LexError<'a>> {
         .or(just("Σ").to(Token::Sigma));
 
     let token = control_lexer()
+        .or(semi)
         .or(unicode)
         .or(symbol)
         .or(num)
@@ -86,7 +93,7 @@ pub fn lexer<'a>() -> impl Parser<'a, &'a str, TokenSet, LexError<'a>> {
 }
 
 fn control_lexer<'a>() -> impl Parser<'a, &'a str, Token, LexError<'a>> {
-    one_of("()[]{};,.")
+    one_of("()[]{},.")
         .map(|control: char| match control {
             '[' => Token::LeftBracket,
             ']' => Token::RightBracket,
@@ -94,7 +101,6 @@ fn control_lexer<'a>() -> impl Parser<'a, &'a str, Token, LexError<'a>> {
             '}' => Token::RightBrace,
             '(' => Token::LeftParen,
             ')' => Token::RightParen,
-            ';' => Token::Semi,
             ',' => Token::Comma,
             ':' => Token::Colon,
             '.' => Token::Dot,

@@ -12,6 +12,10 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
         self.tip(Tip::Spanned(error))
     }
 
+    pub(crate) fn warn(&mut self, error: Spanned<ParseError>) {
+        self.tip(Tip::Warning(error))
+    }
+
     pub(crate) fn tip(&mut self, error: Tip) {
         self.errors.push(error)
     }

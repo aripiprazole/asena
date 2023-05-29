@@ -54,6 +54,9 @@ pub enum ParseError {
     #[error("Expected Π expression or (<expr>) group expression")]
     ExpectedParenthesisExpr,
 
+    #[error("Useless semicolon here, you can just ignore it")]
+    UeselessSemi,
+
     #[error("{0}")]
     Many(Box<ParseError>, Vec<Tip>),
 }
@@ -65,6 +68,9 @@ pub enum Tip {
 
     #[error("{}", .0.value())]
     Spanned(Spanned<ParseError>),
+
+    #[error("{}", .0.value())]
+    Warning(Spanned<ParseError>),
 
     #[error("Maybe write the in-language identifier `{}`", .0.in_language_identifier())]
     MaybeWriteSymbolName(Token),
