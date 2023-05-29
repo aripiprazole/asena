@@ -670,7 +670,7 @@ mod tests {
         let stream = Lexer::new(code);
         let mut parser = Parser::new(code, stream.peekable());
 
-        println!("{:#?}", parser.run_diagnostic(Parser::expr).unwrap())
+        println!("{:#?}", parser.diagnostic(Parser::expr).unwrap())
     }
 
     #[test]
@@ -680,7 +680,7 @@ mod tests {
         let stream = Lexer::new(code);
         let mut parser = Parser::new(code, stream.peekable());
 
-        println!("{:#?}", parser.run_diagnostic(Parser::decl).unwrap())
+        println!("{:#?}", parser.diagnostic(Parser::decl).unwrap())
     }
 
     #[test]
@@ -690,7 +690,7 @@ mod tests {
         let stream = Lexer::new(code);
         let mut parser = Parser::new(code, stream.peekable());
 
-        println!("{:#?}", parser.run_diagnostic(Parser::expr).unwrap())
+        println!("{:#?}", parser.diagnostic(Parser::expr).unwrap())
     }
 
     #[test]
@@ -700,7 +700,7 @@ mod tests {
         let stream = Lexer::new(code);
         let mut parser = Parser::new(code, stream.peekable());
 
-        println!("{:#?}", parser.run_diagnostic(Parser::expr).unwrap())
+        println!("{:#?}", parser.diagnostic(Parser::expr).unwrap())
     }
 
     #[test]
@@ -710,7 +710,7 @@ mod tests {
         let stream = Lexer::new(code);
         let mut parser = Parser::new(code, stream.peekable());
 
-        println!("{:#?}", parser.run_diagnostic(Parser::expr).unwrap())
+        println!("{:#?}", parser.diagnostic(Parser::expr).unwrap())
     }
 
     #[test]
@@ -720,7 +720,7 @@ mod tests {
         let stream = Lexer::new(code);
         let mut parser = Parser::new(code, stream.peekable());
 
-        println!("{:#?}", parser.run_diagnostic(Parser::expr).unwrap())
+        println!("{:#?}", parser.diagnostic(Parser::expr).unwrap())
     }
 
     #[test]
@@ -730,6 +730,6 @@ mod tests {
         let lexer = Lexer::new(code);
 
         let mut parser = Parser::new(code, lexer.peekable());
-        println!("{:#?}", parser.run_diagnostic(Parser::expr).unwrap())
+        println!("{:#?}", parser.diagnostic(Parser::expr).unwrap())
     }
 }

@@ -241,6 +241,9 @@ pub struct Sigma {
 
 #[derive(Clone)]
 pub enum Expr {
+    Error,
+
+    Sigma(Sigma),
     Group(ExprRef),
     Binary(Binary),
     Accessor(Accessor),
@@ -255,7 +258,6 @@ pub enum Expr {
     Ann(Ann),
     Qualifier(Qualifier),
     Pi(Pi),
-    Sigma(Sigma),
 
     /// Help syntax sugar to the debugger.
     Help(ExprRef),
@@ -573,6 +575,7 @@ impl Debug for Expr {
             Self::Literal(expr) => write!(f, "Literal({expr:#?})"),
             Self::Group(expr) => write!(f, "Group({expr:#?})"),
             Self::Help(help) => f.debug_struct("Help").field("expr", help).finish(),
+            Self::Error => write!(f, "Error"),
         }
     }
 }

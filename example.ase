@@ -19,14 +19,10 @@ instance Monad m : Functor m {
 }
 
 If : [f: Bool -> Set] => (cond: Bool) -> f true -> f false -> f cond;
+
+If [f: Bool -> Set] (value: Bool) (then: f true) (otherwise: f false) : f cond;
 If true  then _    = then;
 If false _    else = else;
-
-Cond [f: Bool -> Set] (value: Bool) (then: f true) (otherwise: f false) : f cond {
-  value.match
-    (\tt -> then)
-    (\ff -> otherwise)
-}
 
 Main {
   let person = Person.new "Sofis eu amo vc vc é a pessoa mais importante da minha vida";

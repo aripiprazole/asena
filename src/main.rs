@@ -51,7 +51,7 @@ pub fn run_cli() {
             let lexer = lexer::Lexer::new(&file);
             let mut parser = parser::Parser::new(&file, lexer.peekable());
 
-            println!("{:?}", parser.run_diagnostic(parser::Parser::expr));
+            println!("{:?}", parser.diagnostic(parser::Parser::expr));
         }
     }
 }

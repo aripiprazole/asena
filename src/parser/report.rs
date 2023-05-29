@@ -8,7 +8,7 @@ use super::Parser;
 impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
     /// Runs the parser, and if it fails, prints the error using a report crate. Returns Some(value)
     /// if the parsing is correct.
-    pub fn run_diagnostic<F, T>(&mut self, f: F) -> Option<T>
+    pub fn diagnostic<F, T>(&mut self, f: F) -> Option<T>
     where
         F: Fn(&mut Self) -> Result<T>,
     {
