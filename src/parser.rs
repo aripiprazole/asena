@@ -344,7 +344,7 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
 
     /// Parses a reference to [Qualifier]
     pub fn qualifier(&mut self) -> Result<ExprRef> {
-        let mut constraint = self.accessor()?;
+        let mut constraint = self.unnamed_pi()?;
 
         while let Token::Symbol(fn_id) = self.peek().value() {
             // Currently, is impossible to pattern match agains't a [String], so it's the workaround
@@ -354,7 +354,7 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
 
             self.next(); // skips '=>'
 
-            let return_type = self.accessor()?;
+            let return_type = self.unnamed_pi()?;
 
             // Combines two locations
             let span = constraint.span.start..return_type.span.end;
@@ -369,6 +369,36 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
         }
 
         Ok(constraint)
+    }
+
+    /// Parses a reference to [Pi]
+    pub fn unnamed_pi(&mut self) -> Result<ExprRef> {
+        let mut lhs = self.accessor()?;
+
+        while let Token::Symbol(fn_id) = self.peek().value() {
+            // Currently, is impossible to pattern match agains't a [String], so it's the workaround
+            if fn_id != "->" {
+                break;
+            }
+
+            self.next(); // skips '=>'
+
+            let rhs = self.accessor()?;
+
+            // Combines two locations
+            let span = lhs.span.start..rhs.span.end;
+
+            lhs = ExprRef::new(
+                span,
+                Expr::Pi(Pi {
+                    parameter_name: None,
+                    parameter_type: Type::Explicit(lhs),
+                    return_type: Type::Explicit(rhs),
+                }),
+            )
+        }
+
+        Ok(lhs)
     }
 
     /// Parses a reference to [Accessor]
@@ -640,7 +670,7 @@ mod tests {
         let stream = Lexer::new(code);
         let mut parser = Parser::new(code, stream.peekable());
 
-        println!("{:#?}", parser.run_diagnostic(Parser::expr))
+        println!("{:#?}", parser.run_diagnostic(Parser::expr).unwrap())
     }
 
     #[test]
@@ -650,7 +680,7 @@ mod tests {
         let stream = Lexer::new(code);
         let mut parser = Parser::new(code, stream.peekable());
 
-        println!("{:#?}", parser.run_diagnostic(Parser::decl))
+        println!("{:#?}", parser.run_diagnostic(Parser::decl).unwrap())
     }
 
     #[test]
@@ -660,7 +690,7 @@ mod tests {
         let stream = Lexer::new(code);
         let mut parser = Parser::new(code, stream.peekable());
 
-        println!("{:#?}", parser.run_diagnostic(Parser::expr))
+        println!("{:#?}", parser.run_diagnostic(Parser::expr).unwrap())
     }
 
     #[test]
@@ -670,7 +700,7 @@ mod tests {
         let stream = Lexer::new(code);
         let mut parser = Parser::new(code, stream.peekable());
 
-        println!("{:#?}", parser.run_diagnostic(Parser::expr))
+        println!("{:#?}", parser.run_diagnostic(Parser::expr).unwrap())
     }
 
     #[test]
@@ -680,7 +710,7 @@ mod tests {
         let stream = Lexer::new(code);
         let mut parser = Parser::new(code, stream.peekable());
 
-        println!("{:#?}", parser.run_diagnostic(Parser::expr))
+        println!("{:#?}", parser.run_diagnostic(Parser::expr).unwrap())
     }
 
     #[test]
@@ -690,7 +720,7 @@ mod tests {
         let stream = Lexer::new(code);
         let mut parser = Parser::new(code, stream.peekable());
 
-        println!("{:#?}", parser.run_diagnostic(Parser::expr))
+        println!("{:#?}", parser.run_diagnostic(Parser::expr).unwrap())
     }
 
     #[test]
@@ -700,6 +730,6 @@ mod tests {
         let lexer = Lexer::new(code);
 
         let mut parser = Parser::new(code, lexer.peekable());
-        println!("{:#?}", parser.run_diagnostic(Parser::expr))
+        println!("{:#?}", parser.run_diagnostic(Parser::expr).unwrap())
     }
 }
