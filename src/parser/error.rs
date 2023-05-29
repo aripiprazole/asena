@@ -9,7 +9,7 @@ pub type Result<T, E = Spanned<ParseError>> = std::result::Result<T, E>;
 #[derive(Error, Debug, Clone, PartialEq)]
 #[repr(u8)]
 pub enum ParseError {
-    #[error("Unexpected token at this position")]
+    #[error("Unexpected token")]
     UnexpectedToken,
 
     #[error("Expected token: `{}`. But got this instead", .0.to_string())]
@@ -17,6 +17,9 @@ pub enum ParseError {
 
     #[error("Could not parse primary")]
     CantParsePrimary,
+
+    #[error("Could not parse pattern")]
+    CantParsePattern,
 
     #[error("Could not parse anything, found end of file")]
     CantParseDueToEof,

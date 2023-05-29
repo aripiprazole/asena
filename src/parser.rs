@@ -43,6 +43,7 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
         self.sig_decl()
     }
 
+    /// Parses a reference to [Signature]
     pub fn sig_decl(&mut self) -> Result<DeclRef> {
         let a = self.peek();
 
@@ -136,6 +137,109 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
         Ok((None, parameter_type))
     }
 
+    /// Parses a reference to [Stmt]
+    pub fn stmt(&mut self) -> Result<StmtRef> {
+        self.ask_stmt()
+    }
+
+    /// Parses a reference to [Stmt::Ask]
+    pub fn ask_stmt(&mut self) -> Result<StmtRef> {
+        let a = self.peek();
+
+        let pat = self.pat()?;
+        self.expect(Token::InverseArrow)?;
+        let value = self.expr()?;
+
+        let b = self.peek();
+
+        Ok(StmtRef::new(
+            a.span.start..b.span.start,
+            Stmt::Ask(pat, value),
+        ))
+    }
+
+    /// Parses a reference to [Pat]
+    pub fn pat(&mut self) -> Result<PatRef> {
+        use Token::*;
+
+        let current = self.peek();
+        let value = match current.value() {
+            // TODO: report error
+            Symbol(..) => {
+                self.next(); // skip ant tries to parse the next token
+
+                Pat::Error
+            }
+
+            // Booleans
+            True => Pat::Literal(Literal::True),
+            False => Pat::Literal(Literal::False),
+
+            // Integers
+            Int8(n, signed) => Pat::Literal(Literal::Int8(*n, *signed)),
+            Int16(n, signed) => Pat::Literal(Literal::Int16(*n, *signed)),
+            Int32(n, signed) => Pat::Literal(Literal::Int32(*n, *signed)),
+            Int64(n, signed) => Pat::Literal(Literal::Int64(*n, *signed)),
+            Int128(n, signed) => Pat::Literal(Literal::Int128(*n, *signed)),
+
+            // Floating pointers
+            Float32(n) => Pat::Literal(Literal::Float32(*n)),
+            Float64(n) => Pat::Literal(Literal::Float64(*n)),
+
+            Ident(..) => {
+                // skip <identifier>
+                //
+                // It does not uses the Ident(..) pattern, because of the location, we need locality
+                // of the ast.
+                let ident = self.identifier()?.map(FunctionId);
+
+                Pat::Local(LocalId(ident))
+            }
+
+            //>>>Composed tokens
+            // Can parse the following expressions
+            // * [Constructor]
+            LeftParen => {
+                self.next(); // skip '('
+
+                let name = self.constructor_identifier()?;
+
+                let mut arguments = vec![];
+                while let Some(pattern) = self.catch(Parser::pat)? {
+                    arguments.push(pattern);
+                }
+
+                self.expect(Token::RightParen) // consumes ')'
+                    .map_err(|error| error.swap(ParseError::UnfinishedParenthesis))?;
+
+                Pat::Constructor(Constructor { name, arguments })
+            }
+
+            // * [List]
+            LeftBracket => {
+                self.next(); // skip '['
+
+                let mut items = vec![];
+                if !self.match_token(Token::RightBracket) {
+                    items = self.comma(Parser::pat)?;
+                }
+
+                self.expect(Token::RightBracket) //   consumes ']'
+                    .map_err(|error| error.swap(ParseError::UnfinishedBrackets))?;
+
+                Pat::List(List { items })
+            }
+
+            _ => {
+                return self
+                    .end_diagnostic(ParseError::CantParsePattern)
+                    .map_err(|error| error.with_error(ParseError::UnexpectedToken))
+            }
+        };
+
+        Ok(current.swap(value))
+    }
+
     /// Parses a reference to [Expr]
     pub fn expr(&mut self) -> Result<ExprRef> {
         self.runtime_expr()
@@ -146,7 +250,7 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
         let current = self.peek();
 
         match current.value() {
-            Token::Let => return self.let_(),
+            Token::Let => return self.val(),
             Token::Lambda => return self.unicode_lam(),
             Token::Forall => return self.unicode_qualifier(),
             Token::Pi => return self.unicode_pi(),
@@ -166,7 +270,7 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
     }
 
     /// Parses a reference to [Let]
-    pub fn let_(&mut self) -> Result<ExprRef> {
+    pub fn val(&mut self) -> Result<ExprRef> {
         let a = self.peek();
 
         self.next(); // skip 'let'
@@ -213,6 +317,7 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
 
             parameters.push(LocalId(ident));
         }
+
         self.expect(Token::Arrow)?;
         let value = self.expr()?;
 
@@ -443,6 +548,21 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
     }
 
     /// Parses a qualified identifier, and return it's content.
+    fn constructor_identifier(&mut self) -> Result<ConstructorId> {
+        self.eat(|next| match next.value() {
+            Token::Ident(content) => Some(ConstructorId(vec![
+                next.replace(FunctionId(content.clone()))
+            ])),
+
+            // Accepts symbol, so the parser is able to parse something like `Functor.<$>`
+            Token::Symbol(content) => Some(ConstructorId(vec![
+                next.replace(FunctionId(content.clone()))
+            ])),
+            _ => None,
+        })
+    }
+
+    /// Parses a qualified identifier, and return it's content.
     fn qualified_identifier(&mut self) -> Result<GlobalId> {
         self.eat(|next| match next.value() {
             Token::Ident(content) => {
@@ -530,6 +650,13 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
 
         let current = self.peek();
         let value = match current.value() {
+            // TODO: report error
+            Symbol(..) => {
+                self.next(); // skip ant tries to parse the next token
+
+                Expr::Error
+            }
+
             // Booleans
             True => Expr::Literal(Literal::True),
             False => Expr::Literal(Literal::False),

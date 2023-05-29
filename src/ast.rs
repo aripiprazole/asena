@@ -284,22 +284,37 @@ pub struct Constructor {
     pub arguments: Vec<PatRef>,
 }
 
+/// List pattern, is a pattern that deconstructs a list pattern.
+///
+/// The syntax is like:
+/// ```haskell
+/// [x, ..]
+/// ```
 #[derive(Debug, Clone)]
+pub struct List {
+    pub items: Vec<PatRef>,
+}
+
+#[derive(Clone)]
 pub enum Pat {
+    Error,
     Wildcard,                 // _
+    Spread,                   // ..
     Literal(Literal),         // <literal>
     Local(LocalId),           // <local>
-    Constructor(Constructor), // <global_id> <pattern...>
+    Constructor(Constructor), // (<global_id> <pattern...>)
+    List(List),               // [<pattern...>]
 }
 
 pub type PatRef = Spanned<Pat>;
 //<<<Patterns
 
 //>>>Statements
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub enum Stmt {
     Ask(PatRef, ExprRef),    // <local_id> <- <expr>
-    Return(Option<ExprRef>), // <return> <expr?>
+    Let(LocalId, ExprRef),   // let <local_id> = <expr>
+    Return(Option<ExprRef>), // return <expr?>
     Eval(ExprRef),           // <expr?>
 }
 
@@ -701,6 +716,39 @@ impl Debug for Type {
         match self {
             Self::Infer => write!(f, "Infer"),
             Self::Explicit(expr) => write!(f, "Type({:#?})", expr),
+        }
+    }
+}
+
+impl Debug for Pat {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Error => write!(f, "Error"),
+            Self::Wildcard => write!(f, "Wildcard"),
+            Self::Spread => write!(f, "Spread"),
+            Self::Literal(literal) => f.debug_tuple("Literal").field(literal).finish(),
+            Self::Local(local_id) => f.debug_struct("Local").field("local_id", local_id).finish(),
+            Self::Constructor(constructor) => write!(f, "{constructor:#?}"),
+            Self::List(list) => write!(f, "{list:#?}"),
+        }
+    }
+}
+
+impl Debug for Stmt {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Return(value) => f.debug_struct("Return").field("value", value).finish(),
+            Self::Eval(expr) => f.debug_struct("Eval").field("expr", expr).finish(),
+            Self::Ask(pat, value) => f
+                .debug_struct("Ask")
+                .field("pattern", pat)
+                .field("value", value)
+                .finish(),
+            Self::Let(name, value) => f
+                .debug_struct("Let")
+                .field("name", name)
+                .field("value", value)
+                .finish(),
         }
     }
 }
