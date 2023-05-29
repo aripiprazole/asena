@@ -349,13 +349,11 @@ pub struct Parameter {
 #[derive(Debug, Clone)]
 pub struct Signature {
     pub name: GlobalId,
-    pub parameters: Vec<ExprRef>,
+    pub parameters: Vec<Parameter>,
     pub return_type: OptionalType,
 
     /// Holds, optionally the value of the [Signature], this is an sugar to [Assign].
-    ///
-    /// TODO: it's currently enforced, to make easier to parse
-    pub body: Body,
+    pub body: Option<Vec<StmtRef>>,
 }
 
 /// Assign is the implementation of a [Signature], they can be used with sugar with [Body] directly

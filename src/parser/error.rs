@@ -21,6 +21,9 @@ pub enum ParseError {
     #[error("Could not parse anything, found end of file")]
     CantParseDueToEof,
 
+    #[error("Expected signature parameter")]
+    ExpectedParameter,
+
     #[error("Unfinished parenthesis, expected `)`")]
     UnfinishedParenthesis,
 

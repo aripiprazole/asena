@@ -38,18 +38,116 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
         }
     }
 
+    /// Parses a reference to [Decl]
+    pub fn decl(&mut self) -> Result<DeclRef> {
+        self.sig_decl()
+    }
+
+    pub fn sig_decl(&mut self) -> Result<DeclRef> {
+        let a = self.peek();
+
+        let name = self.qualified_identifier()?;
+        let mut parameters = vec![];
+
+        // can match `[` or `(`
+        while let Token::LeftParen | Token::LeftBracket = self.peek().value() {
+            parameters.push(self.parameter()?);
+        }
+
+        let return_type = if self.match_token(Token::symbol(":")) {
+            self.next(); // skip ':'
+
+            OptionalType::Explicit(self.expr()?)
+        } else {
+            OptionalType::Infer
+        };
+
+        let b = self.peek();
+
+        Ok(DeclRef::new(
+            a.span.start..b.span.end,
+            Decl::Signature(Signature {
+                name,
+                parameters,
+                return_type,
+                body: None,
+            }),
+        ))
+    }
+
+    /// Parses a reference to parameter [Expr]
+    pub fn parameter(&mut self) -> Result<Parameter> {
+        let mut errors = vec![];
+
+        let go = |this: &mut Self, errors: &mut Vec<Spanned<ParseError>>| {
+            this.recover(errors, Parser::named_parameter)
+                .or_else(|| this.recover(errors, Parser::unnamed_parameter))
+                .map(Ok)
+                .unwrap_or_else(|| {
+                    this.end_diagnostic(ParseError::ExpectedParameter)
+                        .map_err(|error| {
+                            errors
+                                .iter()
+                                .fold(error, |acc, next| acc.with_spanned(next.clone()))
+                        })
+                })
+        };
+
+        match self.peek().value() {
+            Token::LeftParen => {
+                self.expect(Token::LeftParen)?;
+                let (name, parameter_type) = go(self, &mut errors)?;
+                self.expect(Token::RightParen)?;
+
+                Ok(Parameter {
+                    name,
+                    parameter_type,
+                    explicit: true,
+                })
+            }
+
+            Token::LeftBracket => {
+                self.expect(Token::LeftBracket)?;
+                let (name, parameter_type) = go(self, &mut errors)?;
+                self.expect(Token::RightBracket)?;
+
+                Ok(Parameter {
+                    name,
+                    parameter_type,
+                    explicit: false,
+                })
+            }
+            _ => unreachable!(),
+        }
+    }
+
+    /// Parses a reference to named parameter [Parameter]
+    pub fn named_parameter(&mut self) -> Result<(Option<LocalId>, ExprRef)> {
+        let parameter_name = self.name()?.map(FunctionId);
+        self.expect(Token::symbol(":"))?;
+        let parameter_type = self.expr()?;
+
+        Ok((Some(LocalId(parameter_name)), parameter_type))
+    }
+
+    /// Parses a reference to unnamed parameter [Parameter]
+    pub fn unnamed_parameter(&mut self) -> Result<(Option<LocalId>, ExprRef)> {
+        let parameter_type = self.expr()?;
+
+        Ok((None, parameter_type))
+    }
+
     /// Parses a reference to [Expr]
     pub fn expr(&mut self) -> Result<ExprRef> {
         let current = self.peek();
 
         match current.value() {
             Token::Let => return self.let_(),
-            Token::If => {}
-            Token::Symbol(n) if n == "\\" => return self.lam(),
             Token::Lambda => return self.unicode_lam(),
             Token::Forall => return self.unicode_qualifier(),
             Token::Pi => return self.unicode_pi(),
             Token::Sigma => return self.unicode_sigma(),
+            Token::Symbol(n) if n == "\\" => return self.lam(),
             _ => {}
         }
 
@@ -78,7 +176,7 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
         let a = self.peek();
 
         let name = self.name()?.map(FunctionId);
-        self.expect(Token::sym("="))?;
+        self.expect(Token::symbol("="))?;
         let value = self.expr()?;
 
         let b = self.peek();
@@ -104,7 +202,7 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
 
             parameters.push(LocalId(ident));
         }
-        self.expect(Token::sym("->"))?;
+        self.expect(Token::symbol("->"))?;
         let value = self.expr()?;
 
         let b = self.peek();
@@ -128,7 +226,7 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
         self.expect(Token::LeftParen)?; //              consumes '('
         let constraints = self.comma(Parser::expr)?; // consumes <constraint*>
         self.expect(Token::RightParen)?; //             consumes ')'
-        self.expect(Token::sym("->"))?; //              consumes '->'
+        self.expect(Token::symbol("->"))?; //              consumes '->'
         let return_type = self.expr()?; //              consumes <expr>
 
         let b = self.peek();
@@ -149,10 +247,10 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
         self.next(); //                       skip 'Π'
         self.expect(Token::LeftParen)?; //    consumes '('
         let parameter_name = self.name()?; // consumes <identifier>
-        self.expect(Token::sym(":"))?; //     consumes ':'
+        self.expect(Token::symbol(":"))?; //     consumes ':'
         let parameter_type = self.expr()?; // consumes <expr>
         self.expect(Token::RightParen)?; //   consumes ')'
-        self.expect(Token::sym("->"))?; //    consumes '->'
+        self.expect(Token::symbol("->"))?; //    consumes '->'
         let return_type = self.expr()?; //    consumes <expr>
 
         let b = self.peek();
@@ -174,10 +272,10 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
         self.next(); //                       skip 'Σ'
         self.expect(Token::LeftParen)?; //    consumes '('
         let parameter_name = self.name()?; // consumes <identifier>
-        self.expect(Token::sym(":"))?; //     consumes ':'
+        self.expect(Token::symbol(":"))?; //     consumes ':'
         let parameter_type = self.expr()?; // consumes <expr>
         self.expect(Token::RightParen)?; //   consumes ')'
-        self.expect(Token::sym("->"))?; //    consumes '->'
+        self.expect(Token::symbol("->"))?; //    consumes '->'
         let return_type = self.expr()?; //    consumes <expr>
 
         let b = self.peek();
@@ -318,6 +416,21 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
         })
     }
 
+    /// Parses a qualified identifier, and return it's content.
+    fn qualified_identifier(&mut self) -> Result<GlobalId> {
+        self.eat(|next| match next.value() {
+            Token::Ident(content) => {
+                Some(GlobalId(vec![next.replace(FunctionId(content.clone()))]))
+            }
+
+            // Accepts symbol, so the parser is able to parse something like `Functor.<$>`
+            Token::Symbol(content) => {
+                Some(GlobalId(vec![next.replace(FunctionId(content.clone()))]))
+            }
+            _ => None,
+        })
+    }
+
     /// Parses a valid binary operator, and return it's content.
     fn operator(&mut self) -> Result<StringRef> {
         self.eat(|next| match next.value() {
@@ -330,10 +443,10 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
     pub fn pi(&mut self) -> Result<Expr> {
         self.next(); //                       skip '('
         let parameter_name = self.name()?; // consumes <identifier>
-        self.expect(Token::sym(":"))?; //     consumes ':'
+        self.expect(Token::symbol(":"))?; //     consumes ':'
         let parameter_type = self.expr()?; // consumes <expr>
         self.expect(Token::RightParen)?; //   consumes ')'
-        self.expect(Token::sym("->"))?; //    consumes '->'
+        self.expect(Token::symbol("->"))?; //    consumes '->'
         let return_type = self.expr()?; //    consumes <expr>
 
         Ok(Expr::Pi(Pi {
@@ -357,10 +470,10 @@ impl<'a, S: Iterator<Item = Spanned<Token>> + Clone> Parser<'a, S> {
     pub fn sigma(&mut self) -> Result<Expr> {
         self.next(); //                       skip '['
         let parameter_name = self.name()?; // consumes <identifier>
-        self.expect(Token::sym(":"))?; //     consumes ':'
+        self.expect(Token::symbol(":"))?; //     consumes ':'
         let parameter_type = self.expr()?; // consumes <expr>
         self.expect(Token::RightBracket)?; // consumes ']'
-        self.expect(Token::sym("->"))?; //    consumes '->'
+        self.expect(Token::symbol("->"))?; //    consumes '->'
         let return_type = self.expr()?; //    consumes <expr>
 
         Ok(Expr::Sigma(Sigma {
@@ -510,13 +623,22 @@ mod tests {
 
     #[test]
     fn it_works() {
-        let code =
-            "let combine = [x : Type, MonadIO m, F a, C] => (a: m a) -> [b: m b] -> m c in todo";
+        let code = "let combine = [x, MonadIO m, F a, C] => (a: m a) -> [b: m b] -> m c in todo";
 
         let stream = Lexer::new(code);
         let mut parser = Parser::new(code, stream.peekable());
 
         println!("{:#?}", parser.run_diagnostic(Parser::expr))
+    }
+
+    #[test]
+    fn sig_decl() {
+        let code = "cond : (f true) -> (f false) -> (f cond)";
+
+        let stream = Lexer::new(code);
+        let mut parser = Parser::new(code, stream.peekable());
+
+        println!("{:#?}", parser.run_diagnostic(Parser::decl))
     }
 
     #[test]
@@ -544,7 +666,6 @@ mod tests {
         let code = "Π (d: t) -> e";
 
         let stream = Lexer::new(code);
-        println!("{:#?}", stream);
         let mut parser = Parser::new(code, stream.peekable());
 
         println!("{:#?}", parser.run_diagnostic(Parser::expr))
@@ -552,7 +673,7 @@ mod tests {
 
     #[test]
     fn group_expr() {
-        let code = "(a)";
+        let code = "[Monad m] => m a";
 
         let stream = Lexer::new(code);
         let mut parser = Parser::new(code, stream.peekable());

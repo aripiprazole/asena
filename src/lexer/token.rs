@@ -68,7 +68,7 @@ pub enum Token {
 }
 
 impl Token {
-    pub fn sym(s: &str) -> Token {
+    pub fn symbol(s: &str) -> Token {
         Token::Symbol(s.into())
     }
 }
