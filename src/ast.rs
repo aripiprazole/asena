@@ -1,6 +1,6 @@
 use std::fmt::{Debug, Display, Formatter};
 
-use crate::lexer::span::{Loc, Spanned};
+use crate::lexer::span::{Loc, Localized, Spanned};
 use crate::lexer::token::Signed;
 
 pub mod node;
@@ -72,7 +72,7 @@ pub enum Literal {
 #[derive(Debug, Clone)]
 pub struct Binary {
     pub lhs: ExprRef,
-    pub fn_id: Spanned<FunctionId>,
+    pub fn_id: Localized<FunctionId>,
     pub rhs: ExprRef,
 }
 
@@ -268,9 +268,9 @@ pub enum Expr {
 /// Primary terms are terms that can be only be created without parenthesis, and does not contain
 /// spaces. So if, match expressions, for example, aren't accepted here, only if they are grouped
 /// by parenthesis, like: `(if a then b else c)`
-pub type PrimaryRef = Spanned<Expr>;
+pub type PrimaryRef = Localized<Expr>;
 
-pub type ExprRef = Spanned<Expr>;
+pub type ExprRef = Localized<Expr>;
 //<<<Expressions
 
 //>>>Patterns
@@ -308,7 +308,7 @@ pub enum Pat {
     List(List),               // [<pattern...>]
 }
 
-pub type PatRef = Spanned<Pat>;
+pub type PatRef = Localized<Pat>;
 //<<<Patterns
 
 //>>>Statements
@@ -320,7 +320,7 @@ pub enum Stmt {
     Eval(ExprRef),           // <expr?>
 }
 
-pub type StmtRef = Spanned<Stmt>;
+pub type StmtRef = Localized<Stmt>;
 //<<<Statements
 
 //>>>Binding
@@ -330,7 +330,7 @@ pub struct Binding {
     pub value: ExprRef,
 }
 
-pub type BindingRef = Spanned<Binding>;
+pub type BindingRef = Localized<Binding>;
 //<<<Binding
 
 #[derive(Debug, Clone)]
@@ -448,7 +448,7 @@ pub enum Decl {
     Instance(Instance),
 }
 
-pub type DeclRef = Spanned<Decl>;
+pub type DeclRef = Localized<Decl>;
 //<<<Declarations
 
 //>>>Properties

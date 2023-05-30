@@ -6,20 +6,19 @@ pub trait Span {
     fn on(&self, end: Loc) -> Self;
 }
 
+pub type Localized<T> = Spanned<Box<T>>;
+
 /// Localized reference in the heap, using [Box], and [Loc], to localize stuff in the source code
 #[derive(Clone, PartialEq, Eq)]
 pub struct Spanned<T> {
     pub span: Loc,
-    pub value: Box<T>,
+    pub value: T,
 }
 
 impl<T> Spanned<T> {
-    /// Creates a new [Spanned] with boxed [T].
+    /// Creates a new [Spanned]
     pub fn new(span: Loc, value: T) -> Self {
-        Self {
-            span,
-            value: Box::new(value),
-        }
+        Self { span, value }
     }
 
     /// Borrow the current location with [Loc]
@@ -36,7 +35,7 @@ impl<T> Spanned<T> {
     where
         T: Clone,
     {
-        Spanned::new(loc, *self.value)
+        Spanned::new(loc, self.value.clone())
     }
 
     pub fn swap<U>(self, value: U) -> Spanned<U> {
@@ -52,7 +51,7 @@ impl<T> Spanned<T> {
         F: Fn(T) -> U,
         T: Clone,
     {
-        Spanned::new(self.span, f(*self.value))
+        Spanned::new(self.span, f(self.value.clone()))
     }
 }
 
