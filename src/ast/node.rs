@@ -156,6 +156,12 @@ pub enum TreeKind {
     TypeExplicit,
 }
 
+impl Tree {
+    pub fn child<T: From<Child>>(&self, name: &str) -> T {
+        todo!()
+    }
+}
+
 impl Token {
     pub fn eof() -> Self {
         Self {
@@ -170,3 +176,27 @@ impl Display for TokenKind {
         write!(f, "{self:?}")
     }
 }
+
+macro_rules! ast_node {
+    (
+        $(#[$outer:meta])*
+        pub struct $name:ident {
+            $(
+                $(#[$field_outer:meta])*
+                $vis:vis $field:ident: $field_type:ty
+            ),*
+            $(,)?
+        }
+    ) => {
+        $(#[$outer])*
+        #[derive(Debug, Clone)]
+        pub struct $name {
+            $(
+                $(#[$field_outer])*
+                $vis $field: $field_type
+            ),*
+        }
+    };
+}
+
+pub(crate) use ast_node;
