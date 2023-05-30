@@ -1,10 +1,12 @@
+use std::fmt::Display;
+
 #[derive(Debug, Clone)]
 pub struct Token {
     pub kind: TokenKind,
     pub text: String,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Copy)]
 pub enum TokenKind {
     Error,
 
@@ -152,4 +154,19 @@ pub enum TreeKind {
 
     TypeInfer,
     TypeExplicit,
+}
+
+impl Token {
+    pub fn eof() -> Self {
+        Self {
+            kind: TokenKind::Eof,
+            text: Default::default(),
+        }
+    }
+}
+
+impl Display for TokenKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{self:?}")
+    }
 }

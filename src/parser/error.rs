@@ -1,7 +1,7 @@
 use thiserror::Error;
 
+use crate::ast::node::TokenKind;
 use crate::lexer::span::Spanned;
-use crate::lexer::token::Token;
 
 pub type Result<T, E = Spanned<ParseError>> = std::result::Result<T, E>;
 
@@ -22,7 +22,7 @@ pub enum ParseError {
     UnicodeInsteadOfIdentifier,
 
     #[error("Expected token: `{}`. But got this instead", .0.to_string())]
-    Expected(Token),
+    Expected(TokenKind),
 
     #[error("Could not parse primary")]
     CantParsePrimary,

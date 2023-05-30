@@ -1,27 +1,30 @@
 use std::cell::Cell;
 use std::iter::Peekable;
 
+use crate::ast::node::Token;
 use crate::lexer::span::{Localized, Spanned};
-use crate::lexer::token::Token;
 use crate::parser::error::ParseError;
+
+use self::event::Event;
 
 pub type TokenRef = Localized<Token>;
 
 pub type StringRef = Localized<String>;
 
 pub mod error;
-
+pub mod event;
 pub mod support;
 
 /// The language parser struct, it takes a [Token] iterator, that can be lazy or eager initialized
 /// to advance and identify tokens on the programming language.
 #[derive(Clone)]
-pub struct Parser<'a, S: Iterator<Item = Spanned<Token>> + Clone> {
+pub struct Parser<'a> {
     errors: Vec<Spanned<ParseError>>,
     source: &'a str,
     index: usize,
     fuel: Cell<u32>,
-    tokens: Peekable<S>,
+    tokens: Vec<Spanned<Token>>,
+    events: Vec<Event>,
 }
 
 #[cfg(test)]
