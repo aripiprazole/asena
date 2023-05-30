@@ -3,6 +3,8 @@ use std::fmt::{Debug, Display, Formatter};
 use crate::lexer::span::{Loc, Spanned};
 use crate::lexer::token::Signed;
 
+pub mod node;
+
 //>>>Identifiers
 /// Identifier's key to a function (everything on the language), this can be abstracted in another
 /// identifiers. Serves as a key on a graph, or the abstract syntax tree representation.

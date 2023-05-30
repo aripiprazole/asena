@@ -945,6 +945,6 @@ mod tests {
 
         let mut parser = Parser::new(code, lexer.peekable());
 
-        println!("{:#?}", parser.diagnostic(Parser::expr).unwrap())
+        println!("{:#?}", parser.diagnostic(Parser::stmt).unwrap())
     }
 }
