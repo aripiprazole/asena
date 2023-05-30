@@ -27,6 +27,19 @@ pub struct Parser<'a> {
     events: Vec<Event>,
 }
 
+impl<'a> Parser<'a> {
+    pub fn new(source: &'a str, tokens: Vec<Spanned<Token>>) -> Self {
+        Self {
+            source,
+            index: 0,
+            fuel: Cell::new(256),
+            errors: Default::default(),
+            tokens: Default::default(),
+            events: Default::default(),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::lexer::Lexer;

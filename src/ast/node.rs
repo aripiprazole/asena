@@ -166,7 +166,14 @@ pub enum TreeKind {
 }
 
 impl Tree {
-    pub fn child<T: From<Child>>(&self, name: &str) -> T {
+    pub fn new(kind: TreeKind) -> Self {
+        Self {
+            kind,
+            children: vec![],
+        }
+    }
+
+    pub fn child<T: TryFrom<Child>>(&self, name: &str) -> T {
         todo!()
     }
 }
