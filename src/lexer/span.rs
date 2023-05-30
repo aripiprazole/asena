@@ -35,7 +35,7 @@ impl<T> Spanned<T> {
     where
         T: Clone,
     {
-        Spanned::new(loc, self.value.clone())
+        Spanned::new(loc, self.value)
     }
 
     pub fn swap<U>(self, value: U) -> Spanned<U> {
@@ -51,7 +51,7 @@ impl<T> Spanned<T> {
         F: Fn(T) -> U,
         T: Clone,
     {
-        Spanned::new(self.span, f(self.value.clone()))
+        Spanned::new(self.span, f(self.value))
     }
 }
 

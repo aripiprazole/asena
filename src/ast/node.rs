@@ -114,6 +114,7 @@ pub enum TreeKind {
     LitTrue,
     LitFalse,
 
+    ExprGroup,
     ExprBinary,
     ExprAcessor,
     ExprApp,
@@ -121,11 +122,19 @@ pub enum TreeKind {
     ExprArray,
     ExprLam,
     ExprLet,
+    ExprGlobal,
+    ExprLocal,
+    ExprLit,
     ExprAnn,
     ExprQual,
     ExprPi,
     ExprSigma,
+    ExprHelp,
 
+    PatWildcard,
+    PatSpread,
+    PatLiteral,
+    PatLocal,
     PatConstructor,
     PatList,
 
@@ -180,6 +189,15 @@ impl Display for TokenKind {
 macro_rules! ast_node {
     (
         $(#[$outer:meta])*
+        pub struct $name:ident;
+    ) => {
+        ast_node! {
+            $(#[$outer:meta])* pub struct $name {}
+        }
+    };
+
+    (
+        $(#[$outer:meta])*
         pub struct $name:ident {
             $(
                 $(#[$field_outer:meta])*
@@ -199,4 +217,35 @@ macro_rules! ast_node {
     };
 }
 
+macro_rules! ast_enum {
+    (
+        $(#[$outer:meta])*
+        pub enum $name:ident {
+            $(
+                $(#[$field_outer:meta])*
+                $variant:ident <- $kind:expr
+            ),*
+            $(,)?
+        }
+    ) => {
+        $(#[$outer])*
+        #[derive(Clone)]
+        pub enum $name {
+            $(
+                $(#[$field_outer])*
+                $variant($variant),
+            )*
+        }
+
+        impl $name {
+            pub fn name() {
+                $(
+                    $kind;
+                )*
+            }
+        }
+    }
+}
+
+pub(crate) use ast_enum;
 pub(crate) use ast_node;
