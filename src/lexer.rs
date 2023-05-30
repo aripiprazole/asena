@@ -2,8 +2,9 @@ use std::fmt::Debug;
 
 use chumsky::prelude::*;
 
-use span::Spanned;
 use token::Token;
+
+use self::span::Spanned;
 
 pub mod span;
 pub mod token;
