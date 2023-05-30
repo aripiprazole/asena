@@ -3,7 +3,7 @@ use std::fmt::{Debug, Display, Formatter};
 use crate::lexer::span::{Loc, Localized, Spanned};
 use crate::lexer::token::Signed;
 
-use self::node::{ast_node, Tree};
+use self::node::{ast_enum, ast_node, TreeKind};
 
 pub mod node;
 
@@ -21,12 +21,12 @@ pub struct ConstructorId(pub Vec<Spanned<FunctionId>>);
 /// Pascal Case, as a language pattern. This can contain symbols like: `Person.new`, as it can
 /// contain `.`.
 #[derive(Clone)]
-pub struct GlobalId(pub Vec<Spanned<FunctionId>>);
+pub struct Global(pub Vec<Spanned<FunctionId>>);
 
 /// Identifier's key to local identifier, that's not declared globally, almost everything with
 /// snake case, as a language pattern.
 #[derive(Clone)]
-pub struct LocalId(pub Spanned<FunctionId>);
+pub struct Local(pub Spanned<FunctionId>);
 //<<<Identifiers
 
 /// Represents a language literal construct, can hold numbers, strings, booleans, etc.
@@ -102,7 +102,7 @@ ast_node! {
     /// ```
     pub struct Accessor {
         pub receiver: ExprRef,
-        pub accessor: LocalId,
+        pub accessor: Local,
     }
 }
 
@@ -175,7 +175,7 @@ ast_node! {
     /// λa b. c
     /// ```
     pub struct Lam {
-        pub parameters: Vec<LocalId>,
+        pub parameters: Vec<Local>,
         pub value: ExprRef,
     }
 }
@@ -241,7 +241,7 @@ ast_node! {
     /// Π (a: t) -> b
     /// ```
     pub struct Pi {
-        pub parameter_name: Option<LocalId>,
+        pub parameter_name: Option<Local>,
         pub parameter_type: Type,
         pub return_type: Type,
     }
@@ -261,34 +261,38 @@ ast_node! {
     /// Σ (a: t) -> b
     /// ```
     pub struct Sigma {
-        pub parameter_name: LocalId,
+        pub parameter_name: Local,
         pub parameter_type: Type,
         pub return_type: Type,
     }
 }
 
-#[derive(Clone)]
-pub enum Expr {
-    Error,
-
-    Group(Group),
-    Binary(Binary),
-    Accessor(Accessor),
-    App(App),
-    Array(Array),
-    Dsl(Dsl),
-    Lam(Lam),
-    Let(Let),
-    Global(GlobalId),
-    Local(LocalId),
-    Literal(Literal),
-    Ann(Ann),
-    Qualifier(Qual),
-    Pi(Pi),
-    Sigma(Sigma),
-
+ast_node! {
     /// Help syntax sugar to the debugger.
-    Help(ExprRef),
+    pub struct Help {
+        pub inner: ExprRef,
+    }
+}
+
+ast_enum! {
+    pub enum Expr {
+        Group    <- TreeKind::ExprGroup,
+        Binary   <- TreeKind::ExprBinary,
+        Accessor <- TreeKind::ExprAcessor,
+        App      <- TreeKind::ExprApp,
+        Array    <- TreeKind::ExprArray,
+        Dsl      <- TreeKind::ExprDsl,
+        Lam      <- TreeKind::ExprLam,
+        Let      <- TreeKind::ExprLet,
+        Global   <- TreeKind::ExprGlobal,
+        Local    <- TreeKind::ExprLocal,
+        Literal  <- TreeKind::ExprLit,
+        Ann      <- TreeKind::ExprAnn,
+        Qual     <- TreeKind::ExprQual,
+        Pi       <- TreeKind::ExprPi,
+        Sigma    <- TreeKind::ExprSigma,
+        Help     <- TreeKind::ExprHelp,
+    }
 }
 
 /// Primary terms are terms that can be only be created without parenthesis, and does not contain
@@ -325,27 +329,72 @@ ast_node! {
     }
 }
 
-#[derive(Clone)]
-pub enum Pat {
-    Error,
-    Wildcard,                 // _
-    Spread,                   // ..
-    Literal(Literal),         // <literal>
-    Local(LocalId),           // <local>
-    Constructor(Constructor), // (<global_id> <pattern...>)
-    List(List),               // [<pattern...>]
+ast_node! {
+    /// Spread pattern, is a pattern that deconstructs the rest of anything, like a list or
+    /// constructor.
+    ///
+    /// The syntax is like:
+    /// ```haskell
+    /// [x, ..]
+    /// ```
+    pub struct Spread {}
+}
+
+ast_node! {
+    /// Wildcard pattern, is the same as `_` pattern [Pat::Local]
+    pub struct Wildcard {}
+}
+
+ast_enum! {
+    pub enum Pat {
+        Wildcard    <- TreeKind::PatWildcard,    // _
+        Spread      <- TreeKind::PatSpread,      // ..
+        Literal     <- TreeKind::PatLiteral,     // <literal>
+        Local       <- TreeKind::PatLocal,       // <local>
+        Constructor <- TreeKind::PatConstructor, // (<global_id> <pattern...>)
+        List        <- TreeKind::PatList,        // [<pattern...>]
+    }
 }
 
 pub type PatRef = Localized<Pat>;
 //<<<Patterns
 
 //>>>Statements
-#[derive(Clone)]
-pub enum Stmt {
-    Ask(PatRef, ExprRef),    // <local_id> <- <expr>
-    Let(PatRef, ExprRef),    // let <local_id> = <expr>
-    Return(Option<ExprRef>), // return <expr?>
-    Eval(ExprRef),           // <expr?>
+ast_node! {
+    pub struct Ask {
+        pub pattern: PatRef,
+        pub value: ExprRef,
+    }
+}
+
+ast_node! {
+    pub struct Set {
+        pub pattern: PatRef,
+        pub value: ExprRef,
+    }
+}
+
+ast_node! {
+    pub struct Return {
+        /// This is using directly [ExprRef] in the AST, because when expanded, this will generate
+        /// and [Option] wrapped value.
+        pub value: ExprRef,
+    }
+}
+
+ast_node! {
+    pub struct Eval {
+        pub value: ExprRef,
+    }
+}
+
+ast_enum! {
+    pub enum Stmt {
+        Ask    <- TreeKind::StmtAsk,    // <local_id> <- <expr>
+        Set    <- TreeKind::StmtLet,    // let <local_id> = <expr>
+        Return <- TreeKind::StmtReturn, // return <expr?>
+        Eval   <- TreeKind::StmtExpr,   // <expr?>
+    }
 }
 
 pub type StmtRef = Localized<Stmt>;
@@ -354,7 +403,7 @@ pub type StmtRef = Localized<Stmt>;
 //>>>Binding
 ast_node! {
     pub struct Binding {
-        pub name: LocalId,
+        pub name: Local,
         pub value: ExprRef,
     }
 }
@@ -362,16 +411,32 @@ ast_node! {
 pub type BindingRef = Localized<Binding>;
 //<<<Binding
 
-#[derive(Debug, Clone)]
-pub enum Body {
-    Value(ExprRef),
-    Do(Vec<StmtRef>),
+ast_node! {
+    /// Value body node, is a value body that is an `=`.
+    pub struct Value {
+        pub value: ExprRef
+    }
+}
+
+ast_node! {
+    /// Do body node, is a value body that is an do-notation.
+    pub struct Do {
+        pub stmts: Vec<StmtRef>
+    }
+}
+
+ast_enum! {
+    #[derive(Debug)]
+    pub enum Body {
+        Value <- TreeKind::BodyValue,
+        Do    <- TreeKind::BodyDo,
+    }
 }
 
 ast_node! {
     pub struct Parameter {
         /// Optional parameter's name
-        pub name: Option<LocalId>,
+        pub name: Option<Local>,
 
         /// Parameter's type
         pub parameter_type: Type,
@@ -397,7 +462,7 @@ ast_node! {
     /// Print : Person -> IO ()
     /// ```
     pub struct Signature {
-        pub name: GlobalId,
+        pub name: Global,
         pub parameters: Vec<Parameter>,
         pub return_type: Type,
 
@@ -415,7 +480,7 @@ ast_node! {
     /// Print person = pure ()
     /// ```
     pub struct Assign {
-        pub name: GlobalId,
+        pub name: Global,
         pub patterns: Vec<PatRef>,
 
         /// Holds the value of the [Assign].
@@ -451,7 +516,7 @@ ast_node! {
     /// }
     /// ```
     pub struct Class {
-        pub name: GlobalId,
+        pub name: Global,
         pub constraints: Vec<Constraint>,
         pub properties: Vec<Property>,
     }
@@ -468,19 +533,20 @@ ast_node! {
     /// }
     /// ```
     pub struct Instance {
-        pub name: GlobalId,
+        pub name: Global,
         pub constraints: Vec<Constraint>,
         pub properties: Vec<Method>,
     }
 }
 
-#[derive(Clone)]
-pub enum Decl {
-    Signature(Signature),
-    Assign(Assign),
-    Command(Command),
-    Class(Class),
-    Instance(Instance),
+ast_enum! {
+    pub enum Decl {
+        Signature <- TreeKind::DeclSignature,
+        Assign    <- TreeKind::DeclAssign,
+        Command   <- TreeKind::DeclCommand,
+        Class     <- TreeKind::DeclClass,
+        Instance  <- TreeKind::DeclInstance,
+    }
 }
 
 pub type DeclRef = Localized<Decl>;
@@ -511,7 +577,7 @@ ast_node! {
     ///
     /// The constraint node should be wrote in a class context.
     pub struct Field {
-        pub name: LocalId,
+        pub name: Local,
         pub field_type: ExprRef,
     }
 }
@@ -530,7 +596,7 @@ ast_node! {
     /// The method node is a simple sugar for declaring it on the top level with the class name concatenated,
     /// like: `sayHello`, in the `Person` class, should be simply `Person.sayHello`.
     pub struct Method {
-        pub name: LocalId,
+        pub name: Local,
         pub implicit_parameters: Vec<Parameter>, // \<<implicit parameter*>\>
         pub explicit_parameters: Vec<Parameter>, // (<explicit parameter*>)
         pub where_clauses: Vec<Constraint>,      // where <constraint*>
@@ -539,11 +605,14 @@ ast_node! {
     }
 }
 
-#[derive(Debug, Clone)]
-pub enum Property {
-    Field(Field),
-    Method(Method),
+ast_enum! {
+    #[derive(Debug)]
+    pub enum Property {
+        Field  <- TreeKind::Field,
+        Method <- TreeKind::Method,
+    }
 }
+
 //<<<Properties
 
 #[derive(Clone)]
@@ -582,20 +651,20 @@ impl Debug for ConstructorId {
     }
 }
 
-impl GlobalId {
+impl Global {
     /// Creates a new [GlobalId] by a string
     pub fn new(span: Loc, id: &str) -> Self {
         Self(vec![Spanned::new(span, FunctionId::new(id))])
     }
 }
 
-impl Debug for GlobalId {
+impl Debug for Global {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "GlobalId {:#?}", self.0)
     }
 }
 
-impl LocalId {
+impl Local {
     /// Creates a new [LocalId] by a string
     pub fn new(span: Loc, id: &str) -> Self {
         Self(Spanned::new(span, FunctionId::new(id)))
@@ -607,7 +676,7 @@ impl LocalId {
     }
 }
 
-impl Debug for LocalId {
+impl Debug for Local {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "LocalId {:#?}", self.0)
     }
@@ -626,13 +695,12 @@ impl Debug for Expr {
             Self::Global(expr) => write!(f, "{expr:#?}"),
             Self::Local(expr) => write!(f, "{expr:#?}"),
             Self::Ann(expr) => write!(f, "{expr:#?}"),
-            Self::Qualifier(expr) => write!(f, "{expr:#?}"),
+            Self::Qual(expr) => write!(f, "{expr:#?}"),
             Self::Pi(expr) => write!(f, "{expr:#?}"),
             Self::Sigma(expr) => write!(f, "{expr:#?}"),
             Self::Literal(expr) => write!(f, "Literal({expr:#?})"),
             Self::Group(expr) => write!(f, "Group({expr:#?})"),
             Self::Help(help) => f.debug_struct("Help").field("expr", help).finish(),
-            Self::Error => write!(f, "Error"),
         }
     }
 }
@@ -765,9 +833,8 @@ impl Debug for Type {
 impl Debug for Pat {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Error => write!(f, "Error"),
-            Self::Wildcard => write!(f, "Wildcard"),
-            Self::Spread => write!(f, "Spread"),
+            Self::Wildcard(..) => write!(f, "Wildcard"),
+            Self::Spread(..) => write!(f, "Spread"),
             Self::Literal(literal) => f.debug_tuple("Literal").field(literal).finish(),
             Self::Local(local_id) => f.debug_struct("Local").field("local_id", local_id).finish(),
             Self::Constructor(constructor) => write!(f, "{constructor:#?}"),
@@ -779,18 +846,10 @@ impl Debug for Pat {
 impl Debug for Stmt {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Return(value) => f.debug_struct("Return").field("value", value).finish(),
-            Self::Eval(expr) => f.debug_struct("Eval").field("expr", expr).finish(),
-            Self::Ask(pat, value) => f
-                .debug_struct("Ask")
-                .field("pattern", pat)
-                .field("value", value)
-                .finish(),
-            Self::Let(name, value) => f
-                .debug_struct("Let")
-                .field("name", name)
-                .field("value", value)
-                .finish(),
+            Self::Ask(stmt) => write!(f, "{stmt:#?}"),
+            Self::Set(stmt) => write!(f, "{stmt:#?}"),
+            Self::Return(stmt) => write!(f, "{stmt:#?}"),
+            Self::Eval(stmt) => write!(f, "{stmt:#?}"),
         }
     }
 }
