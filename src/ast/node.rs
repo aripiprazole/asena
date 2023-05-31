@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::fmt::{Debug, Display};
 
 #[derive(Debug, Clone)]
 pub struct Token {
@@ -79,7 +79,7 @@ pub enum TokenKind {
     Eof,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Tree {
     pub kind: TreeKind,
     pub children: Vec<Child>,
@@ -182,6 +182,16 @@ impl Tree {
     pub fn child<T: TryFrom<Child>>(&self, name: &str) -> T {
         todo!()
     }
+
+    pub fn render(&self, f: &mut std::fmt::Formatter<'_>, tab: &str) -> std::fmt::Result {
+        write!(f, "{tab}")?;
+        write!(f, "{}", self.kind.name())?;
+        for child in &self.children {
+            writeln!(f)?;
+            child.render(f, &format!("{tab}    "))?;
+        }
+        Ok(())
+    }
 }
 
 impl Token {
@@ -197,6 +207,65 @@ impl Token {
             kind: TokenKind::Eof,
             text: Default::default(),
         }
+    }
+
+    pub fn render(&self, f: &mut std::fmt::Formatter<'_>, tab: &str) -> std::fmt::Result {
+        write!(f, "{tab}")?;
+        write!(f, "'{}'", self.text)
+    }
+}
+
+impl Child {
+    pub fn render(&self, f: &mut std::fmt::Formatter<'_>, tab: &str) -> std::fmt::Result {
+        match self {
+            Child::Tree(tree) => tree.render(f, tab),
+            Child::Token(token) => token.render(f, tab),
+        }
+    }
+}
+
+impl Debug for Tree {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.render(f, "")?;
+        Ok(())
+    }
+}
+
+impl TreeKind {
+    pub fn name(&self) -> String {
+        self.to_string()
+            .chars()
+            .enumerate()
+            .flat_map(|(i, char)| {
+                if char.is_uppercase() && i > 0 {
+                    vec!['_', char]
+                } else {
+                    vec![char]
+                }
+            })
+            .collect::<String>()
+            .to_uppercase()
+    }
+}
+
+impl TokenKind {
+    pub fn name(&self) -> String {
+        self.to_string()
+            .chars()
+            .flat_map(|char| {
+                if char.is_uppercase() {
+                    vec!['_', char]
+                } else {
+                    vec![char]
+                }
+            })
+            .collect::<String>()
+    }
+}
+
+impl Display for TreeKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{self:?}")
     }
 }
 
@@ -269,3 +338,4 @@ macro_rules! ast_enum {
 
 pub(crate) use ast_enum;
 pub(crate) use ast_node;
+use chumsky::container::Seq;
