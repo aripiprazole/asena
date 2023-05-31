@@ -11,23 +11,24 @@ pub enum TokenKind {
     Error,
 
     // keywords
-    Let,    // let
-    True,   // true
-    False,  // false
-    If,     // if
-    Else,   // else
-    Then,   // then
-    Type,   // type
-    Record, // record
-    Return, // return
-    Enum,   // enum
-    Trait,  // trait
-    Class,  // class
-    Case,   // case
-    Where,  // where
-    Match,  // match
-    Use,    // use
-    In,     // in
+    LetKeyword,      // let
+    TrueKeyword,     // true
+    FalseKeyword,    // false
+    IfKeyword,       // if
+    ElseKeyword,     // else
+    ThenKeyword,     // then
+    TypeKeyword,     // type
+    RecordKeyword,   // record
+    ReturnKeyword,   // return
+    EnumKeyword,     // enum
+    TraitKeyword,    // trait
+    ClassKeyword,    // class
+    CaseKeyword,     // case
+    WhereKeyword,    // where
+    MatchKeyword,    // match
+    UseKeyword,      // use
+    InstanceKeyword, // instance
+    InKeyword,       // in
 
     // unicode
     Lambda, // λ
@@ -49,9 +50,9 @@ pub enum TokenKind {
     Help,         // ?
     Equal,        // =
 
-    DoubleArrow,  // =>
-    Arrow,        // ->
-    InverseArrow, // <-
+    DoubleArrow, // =>
+    RightArrow,  // ->
+    LeftArrow,   // <-
 
     // integers
     Int8,
@@ -162,7 +163,7 @@ pub enum TreeKind {
     Method,
 
     TypeInfer,
-    TypeExplicit,
+    Type,
 }
 
 impl Tree {

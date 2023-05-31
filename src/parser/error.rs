@@ -15,6 +15,27 @@ pub enum ParseError {
     #[error("Missing semicolon")]
     MissingSemi,
 
+    #[error("Expression should be surrounded by parenthesis: `({} ..)`", .0)]
+    PrimaryMustBeSurrounded(TokenKind),
+
+    #[error("Found an `else` without previous `if` node")]
+    DanglingElse,
+
+    #[error("Found unicode `{}`, you can rewrite in the language norm as {}", .0, .1)]
+    Unicode(TokenKind, &'static str),
+
+    #[error("Reserved keyword `{}` in the wrong position, must be a constraint", .0)]
+    ConstraintReservedKeyword(TokenKind),
+
+    #[error("Reserved keyword `{}` in the wrong position, must be a statement", .0)]
+    StmtReservedKeyword(TokenKind),
+
+    #[error("Reserved keyword `{}` in the wrong position, must be a top-level declaration", .0)]
+    DeclReservedKeyword(TokenKind),
+
+    #[error("Reserved keyword `{}` to be used in a feature, you can use like: `{}_`", .0, .0)]
+    ReservedKeyword(TokenKind),
+
     #[error("Invalid identifier, found symbol")]
     SymbolInsteadOfIdentifier,
 
