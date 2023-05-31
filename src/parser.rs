@@ -55,9 +55,6 @@ mod tests {
         let code = "1 + 1";
 
         let stream = Lexer::new(code);
-
-        println!("{:#?}", stream.source);
-
         let mut parser = Parser::new(
             "1 + 1",
             vec![
