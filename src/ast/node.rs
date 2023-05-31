@@ -82,7 +82,7 @@ pub enum TokenKind {
 #[derive(Clone)]
 pub struct Tree {
     pub kind: TreeKind,
-    pub children: Vec<Child>,
+    pub children: Vec<Spanned<Child>>,
 }
 
 #[derive(Debug, Clone)]
@@ -183,12 +183,36 @@ impl Tree {
         todo!()
     }
 
-    pub fn render(&self, f: &mut std::fmt::Formatter<'_>, tab: &str) -> std::fmt::Result {
+    /// Uses the [std::fmt::Formatter] to write a pretty-printed tree in the terminal for debug
+    /// porpuses.
+    ///
+    /// It usually likes like the following printed code:
+    /// ```txt
+    /// EXPR_BINARY
+    ///     LIT_INT8
+    ///         '1' @ 0..1
+    ///     '+' @ 2..3
+    ///     LIT_INT8
+    ///         '1' @ 4..5
+    /// @ 0..5
+    /// ```
+    ///
+    /// The use of this code is like the following code, you should never use directly this function
+    /// since its local:
+    /// ```
+    /// let tree = Tree::new(TreeKind::Error); // just to show
+    /// println!("{:#?}", tree);
+    /// ```
+    fn render(&self, f: &mut std::fmt::Formatter<'_>, tab: &str) -> std::fmt::Result {
         write!(f, "{tab}")?;
         write!(f, "{}", self.kind.name())?;
         for child in &self.children {
             writeln!(f)?;
-            child.render(f, &format!("{tab}    "))?;
+            child.value.render(f, &format!("{tab}    "))?;
+            if matches!(child.value, Child::Token(..)) {
+                write!(f, " @ ")?;
+                write!(f, "{:?}", child.span)?;
+            }
         }
         Ok(())
     }
@@ -209,14 +233,54 @@ impl Token {
         }
     }
 
-    pub fn render(&self, f: &mut std::fmt::Formatter<'_>, tab: &str) -> std::fmt::Result {
+    /// Uses the [std::fmt::Formatter] to write a pretty-printed tree in the terminal for debug
+    /// porpuses.
+    ///
+    /// It usually likes like the following printed code:
+    /// ```txt
+    /// EXPR_BINARY
+    ///     LIT_INT8
+    ///         '1' @ 0..1
+    ///     '+' @ 2..3
+    ///     LIT_INT8
+    ///         '1' @ 4..5
+    /// @ 0..5
+    /// ```
+    ///
+    /// The use of this code is like the following code, you should never use directly this function
+    /// since its local:
+    /// ```
+    /// let tree = Tree::new(TreeKind::Error); // just to show
+    /// println!("{:#?}", tree);
+    /// ```
+    fn render(&self, f: &mut std::fmt::Formatter<'_>, tab: &str) -> std::fmt::Result {
         write!(f, "{tab}")?;
         write!(f, "'{}'", self.text)
     }
 }
 
 impl Child {
-    pub fn render(&self, f: &mut std::fmt::Formatter<'_>, tab: &str) -> std::fmt::Result {
+    /// Uses the [std::fmt::Formatter] to write a pretty-printed tree in the terminal for debug
+    /// porpuses.
+    ///
+    /// It usually likes like the following printed code:
+    /// ```txt
+    /// EXPR_BINARY
+    ///     LIT_INT8
+    ///         '1' @ 0..1
+    ///     '+' @ 2..3
+    ///     LIT_INT8
+    ///         '1' @ 4..5
+    /// @ 0..5
+    /// ```
+    ///
+    /// The use of this code is like the following code, you should never use directly this function
+    /// since its local:
+    /// ```
+    /// let tree = Tree::new(TreeKind::Error); // just to show
+    /// println!("{:#?}", tree);
+    /// ```
+    fn render(&self, f: &mut std::fmt::Formatter<'_>, tab: &str) -> std::fmt::Result {
         match self {
             Child::Tree(tree) => tree.render(f, tab),
             Child::Token(token) => token.render(f, tab),
@@ -227,11 +291,16 @@ impl Child {
 impl Debug for Tree {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.render(f, "")?;
+        writeln!(f)?; // Write the newline in the end of the tree
         Ok(())
     }
 }
 
 impl TreeKind {
+    /// Transforms the token's kind name into a upper case underline splitted string. It goes
+    /// something like:
+    ///
+    /// It does transforms the text: `ExprPrimary` into `EXPR_PRIMARY`
     pub fn name(&self) -> String {
         self.to_string()
             .chars()
@@ -249,6 +318,10 @@ impl TreeKind {
 }
 
 impl TokenKind {
+    /// Transforms the token's kind name into a upper case underline splitted string. It goes
+    /// something like:
+    ///
+    /// It does transforms the text: `LitInt8` into `LIT_INT8`
     pub fn name(&self) -> String {
         self.to_string()
             .chars()
@@ -339,3 +412,5 @@ macro_rules! ast_enum {
 pub(crate) use ast_enum;
 pub(crate) use ast_node;
 use chumsky::container::Seq;
+
+use crate::lexer::span::Spanned;
