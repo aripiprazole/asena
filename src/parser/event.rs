@@ -1,28 +1,33 @@
 use crate::ast::node::{Child, Tree, TreeKind};
+use crate::lexer::span::{Loc, Spanned};
 
 use super::Parser;
 
 #[derive(Debug, Clone)]
 pub enum Event {
-    Open(TreeKind),
+    Open(Spanned<TreeKind>),
     Close,
     Advance,
 }
 
-pub struct MarkOpened(usize);
+pub struct MarkOpened(usize, Loc);
 
 impl MarkOpened {
-    pub fn new(index: usize) -> Self {
-        Self(index)
+    pub fn new(index: usize, loc: Loc) -> Self {
+        Self(index, loc)
     }
 
     pub fn index(&self) -> usize {
         self.0
     }
+
+    pub fn span(&self) -> Loc {
+        self.1.clone()
+    }
 }
 
 impl<'a> Parser<'a> {
-    pub fn build_tree(self) -> Tree {
+    pub fn build_tree(self) -> Spanned<Tree> {
         let mut tokens = self.tokens.into_iter();
         let mut events = self.events;
         let mut stack = vec![];
@@ -35,7 +40,7 @@ impl<'a> Parser<'a> {
             match event {
                 // Starting a new node; just push an empty tree to the stack.
                 Event::Open(kind) => {
-                    stack.push(Tree::new(kind));
+                    stack.push(kind.replace(Tree::new(kind.value.clone())));
                 }
 
                 // A tree is done.
@@ -48,8 +53,9 @@ impl<'a> Parser<'a> {
                         // If we don't pop the last `Close` before this loop,
                         // this unwrap would trigger for it.
                         .unwrap()
+                        .value
                         .children
-                        .push(Child::Tree(tree))
+                        .push(tree.replace(Child::Tree(tree.value.clone())))
                 }
 
                 // Consume a token and append it to the current tree
@@ -59,8 +65,9 @@ impl<'a> Parser<'a> {
                     stack
                         .last_mut()
                         .unwrap()
+                        .value
                         .children
-                        .push(Child::Token(token.value))
+                        .push(token.replace(Child::Token(token.value.clone())))
                 }
             }
         }

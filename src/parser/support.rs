@@ -11,8 +11,9 @@ pub type Diagnostic = Vec<Spanned<ParseError>>;
 
 impl<'a> Parser<'a> {
     pub(crate) fn open(&mut self) -> MarkOpened {
-        let mark = MarkOpened::new(self.events.len());
-        self.events.push(Event::Open(TreeKind::Error));
+        let start = self.peek().into_owned();
+        let mark = MarkOpened::new(self.events.len(), start.span.clone());
+        self.events.push(Event::Open(start.swap(TreeKind::Error)));
         mark
     }
 
@@ -21,7 +22,13 @@ impl<'a> Parser<'a> {
     }
 
     pub(crate) fn close(&mut self, mark: MarkOpened, kind: TreeKind) {
-        self.events[mark.index()] = Event::Open(kind);
+        // Build tree position with the initial state, and the current
+        let initial = mark.span();
+        let current = self.peek().into_owned();
+        let position = initial.start..current.span.end;
+
+        // Replace the state in the tree builder
+        self.events[mark.index()] = Event::Open(Spanned::new(position, kind));
         self.events.push(Event::Close);
     }
 
