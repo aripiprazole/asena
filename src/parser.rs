@@ -13,6 +13,7 @@ pub type StringRef = Localized<String>;
 
 pub mod error;
 pub mod event;
+pub mod grammar;
 pub mod support;
 
 /// The language parser struct, it takes a [Token] iterator, that can be lazy or eager initialized

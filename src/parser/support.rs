@@ -16,6 +16,10 @@ impl<'a> Parser<'a> {
         mark
     }
 
+    pub(crate) fn ignore(&mut self, mark: MarkOpened) {
+        self.events.remove(mark.index());
+    }
+
     pub(crate) fn close(&mut self, mark: MarkOpened, kind: TreeKind) {
         self.events[mark.index()] = Event::Open(kind);
         self.events.push(Event::Close);
@@ -50,7 +54,7 @@ impl<'a> Parser<'a> {
         self.errors.push(error);
     }
 
-    pub(crate) fn recover_with(&mut self, error: ParseError) {
+    pub(crate) fn report(&mut self, error: ParseError) {
         let mark = self.open();
         let error = self.build_error(error);
         self.errors.push(error);
