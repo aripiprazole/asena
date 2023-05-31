@@ -34,8 +34,8 @@ impl<'a> Parser<'a> {
             source,
             index: 0,
             fuel: Cell::new(256),
+            tokens,
             errors: Default::default(),
-            tokens: Default::default(),
             events: Default::default(),
         }
     }
@@ -43,13 +43,34 @@ impl<'a> Parser<'a> {
 
 #[cfg(test)]
 mod tests {
-    use crate::lexer::Lexer;
+    use crate::{
+        ast::node::{Token, TokenKind},
+        lexer::{span::Spanned, Lexer},
+    };
+
+    use super::Parser;
 
     #[test]
     fn it_works() {
-        let code = "let combine = [x, MonadIO m, F a, C] => (a: m a) -> [b: m b] -> m c in todo";
+        let code = "1 + 1";
 
         let stream = Lexer::new(code);
+
+        println!("{:#?}", stream.source);
+
+        let mut parser = Parser::new(
+            "1 + 1",
+            vec![
+                Spanned::new(0..1, Token::new(TokenKind::Int8, "1")),
+                Spanned::new(2..3, Token::new(TokenKind::Symbol, "+")),
+                Spanned::new(4..5, Token::new(TokenKind::Int8, "1")),
+                // Spanned::new(5..5, Token::new(TokenKind::Eof, "")),
+            ],
+        );
+
+        parser.expr_binary();
+        let tree = parser.build_tree();
+        println!("{:#?}", tree);
     }
 
     #[test]

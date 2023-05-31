@@ -57,6 +57,7 @@ impl<'a> Parser<'a> {
         // simplify by returning the lhs symbol directly
         if self.at(Symbol) {
             while self.at(Symbol) {
+                self.advance();
                 self.expr_ann();
             }
 
@@ -75,6 +76,7 @@ impl<'a> Parser<'a> {
         // simplify by returning the lhs symbol directly
         if self.at(Colon) {
             while self.at(Colon) {
+                self.advance();
                 self.expr_qual();
             }
 
@@ -93,6 +95,7 @@ impl<'a> Parser<'a> {
         // simplify by returning the lhs symbol directly
         if self.at(DoubleArrow) {
             while self.at(DoubleArrow) {
+                self.advance();
                 self.expr_anonymous_pi();
             }
 
@@ -111,6 +114,7 @@ impl<'a> Parser<'a> {
         // simplify by returning the lhs symbol directly
         if self.at(RightArrow) {
             while self.at(RightArrow) {
+                self.advance();
                 self.expr_accessor();
             }
 
@@ -129,6 +133,7 @@ impl<'a> Parser<'a> {
         // simplify by returning the lhs symbol directly
         if self.at(Dot) {
             while self.at(Dot) {
+                self.advance();
                 self.expr_app();
             }
 
@@ -152,8 +157,8 @@ impl<'a> Parser<'a> {
         let token = self.peek();
 
         match token.value.kind {
-            TrueKeyword => todo!(),
-            FalseKeyword => todo!(),
+            TrueKeyword => self.terminal(LitTrue),
+            FalseKeyword => self.terminal(LitFalse),
 
             LetKeyword | IfKeyword | MatchKeyword => {
                 // TODO: try to properly parse the expression
@@ -192,26 +197,29 @@ impl<'a> Parser<'a> {
             RightArrow => self.report(ParseError::Unicode(RightArrow, "->")),
             LeftArrow => self.report(ParseError::Unicode(LeftArrow, "<-")),
 
-            Int8 => todo!(),
-            Int16 => todo!(),
-            Int32 => todo!(),
-            Int64 => todo!(),
-            Int128 => todo!(),
+            Int8 => self.terminal(LitInt8),
+            Int16 => self.terminal(LitInt16),
+            Int32 => self.terminal(LitInt32),
+            Int64 => self.terminal(LitInt64),
+            Int128 => self.terminal(LitInt128),
 
-            UInt8 => todo!(),
-            UInt16 => todo!(),
-            UInt32 => todo!(),
-            UInt64 => todo!(),
-            UInt128 => todo!(),
+            UInt8 => self.terminal(LitUInt8),
+            UInt16 => self.terminal(LitUInt16),
+            UInt32 => self.terminal(LitUInt32),
+            UInt64 => self.terminal(LitUInt64),
+            UInt128 => self.terminal(LitUInt128),
 
-            Float32 => todo!(),
-            Float64 => todo!(),
+            Float32 => self.terminal(LitFloat32),
+            Float64 => self.terminal(LitFloat64),
 
-            Symbol => todo!(),
-            Identifier => todo!(),
-            String => todo!(),
+            Symbol => self.terminal(LitSymbol),
+            Identifier => self.terminal(LitIdentifier),
+            String => self.terminal(LitString),
 
-            Eof => self.report(ParseError::CantParseDueToEof),
+            Eof => {
+                let mark = self.open();
+                self.close(mark, TreeEof);
+            } // TODO
 
             // Parse group or named pi expressions
             // - Pi
@@ -228,11 +236,11 @@ impl<'a> Parser<'a> {
 
     /// Global = <<Terminal>>
     pub fn global(&mut self) {
-        todo!()
+        self.terminal(LitSymbol);
     }
 
     /// Symbol = <<Terminal>>
     pub fn symbol(&mut self) {
-        todo!()
+        self.terminal(LitSymbol);
     }
 }
