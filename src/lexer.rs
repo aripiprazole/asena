@@ -25,7 +25,7 @@ pub type LexError<'a> = extra::Err<Rich<'a, char, Span>>;
 pub struct Lexer<'a> {
     index: usize,
     code: &'a str,
-    source: Vec<Spanned<Token>>,
+    pub source: Vec<Spanned<Token>>,
     pub errs: Vec<Rich<'a, char>>,
 }
 

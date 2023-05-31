@@ -25,6 +25,12 @@ impl<'a> Parser<'a> {
         self.events.push(Event::Close);
     }
 
+    pub(crate) fn terminal(&mut self, kind: TreeKind) {
+        let mark = self.open();
+        self.advance();
+        self.close(mark, kind);
+    }
+
     pub(crate) fn advance(&mut self) {
         assert!(!self.eof());
         self.fuel.set(256);

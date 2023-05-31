@@ -94,6 +94,7 @@ pub enum Child {
 #[derive(Debug, Clone)]
 pub enum TreeKind {
     Error,
+    TreeEof,
 
     File,
 
@@ -114,6 +115,10 @@ pub enum TreeKind {
 
     LitTrue,
     LitFalse,
+
+    LitSymbol,
+    LitIdentifier,
+    LitString,
 
     ExprGroup,
     ExprBinary,
@@ -180,6 +185,13 @@ impl Tree {
 }
 
 impl Token {
+    pub fn new(kind: TokenKind, text: &str) -> Self {
+        Self {
+            kind,
+            text: text.into(),
+        }
+    }
+
     pub fn eof() -> Self {
         Self {
             kind: TokenKind::Eof,
