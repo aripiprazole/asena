@@ -2,12 +2,12 @@ use std::fmt::Debug;
 
 use chumsky::prelude::*;
 
-use token::Token;
+use crate::ast::node::Token;
+use crate::ast::node::TokenKind::*;
 
 use self::span::Spanned;
 
 pub mod span;
-pub mod token;
 
 pub const SYMBOLS: &[&str] = &[
     "=", "!", ">", "<", "$", "#", "+", "-", "*", "/", "&", "|", ".", "@", "^", ":", "\\",
@@ -34,27 +34,25 @@ pub fn lexer<'a>() -> impl Parser<'a, &'a str, TokenSet, LexError<'a>> {
     let num = text::int(10)
         .then(just('.').then(text::digits(10)).or_not())
         .slice()
-        .from_str()
-        .unwrapped()
-        .map(Token::Float64)
+        .map(|value: &str| Token::new(Float64, value))
         .labelled("number"); // TODO: implement another float/integer variants
 
     let string = just('"')
         .ignore_then(none_of('"').repeated())
         .then_ignore(just('"'))
-        .map_slice(|string: &str| Token::String(string.into()))
+        .map_slice(|string: &str| Token::new(String, string))
         .labelled("string literal");
 
     let symbol = one_of(SYMBOLS.join(""))
         .repeated()
         .at_least(1)
         .map_slice(|content: &str| match content {
-            "->" => Token::Arrow,
-            "=>" => Token::DoubleArrow,
-            "<-" => Token::InverseArrow,
-            "=" => Token::Equal,
-            ":" => Token::Colon,
-            _ => Token::symbol(content),
+            "->" => Token::new(RightArrow, content),
+            "=>" => Token::new(DoubleArrow, content),
+            "<-" => Token::new(LeftArrow, content),
+            "=" => Token::new(Equal, content),
+            ":" => Token::new(Colon, content),
+            _ => Token::new(Symbol, content),
         })
         .labelled("symbol");
 
@@ -66,14 +64,14 @@ pub fn lexer<'a>() -> impl Parser<'a, &'a str, TokenSet, LexError<'a>> {
     let semi = just(";")
         .repeated()
         .at_least(1)
-        .to(Token::Semi)
+        .to(Token::new(Semi, ";"))
         .labelled("semi");
 
     let unicode = just("λ")
-        .to(Token::Lambda)
-        .or(just("∀").to(Token::Forall))
-        .or(just("Π").to(Token::Pi))
-        .or(just("Σ").to(Token::Sigma));
+        .to(Token::new(Lambda, "λ"))
+        .or(just("∀").to(Token::new(Forall, "∀")))
+        .or(just("Π").to(Token::new(Pi, "Π")))
+        .or(just("Σ").to(Token::new(Sigma, "Σ")));
 
     let token = control_lexer()
         .or(semi)
@@ -96,15 +94,15 @@ pub fn lexer<'a>() -> impl Parser<'a, &'a str, TokenSet, LexError<'a>> {
 fn control_lexer<'a>() -> impl Parser<'a, &'a str, Token, LexError<'a>> {
     one_of("()[]{},.")
         .map(|control: char| match control {
-            '[' => Token::LeftBracket,
-            ']' => Token::RightBracket,
-            '{' => Token::LeftBrace,
-            '}' => Token::RightBrace,
-            '(' => Token::LeftParen,
-            ')' => Token::RightParen,
-            ',' => Token::Comma,
-            ':' => Token::Colon,
-            '.' => Token::Dot,
+            '[' => Token::new(LeftBracket, "["),
+            ']' => Token::new(RightBracket, "]"),
+            '{' => Token::new(LeftBrace, "{"),
+            '}' => Token::new(RightBrace, "}"),
+            '(' => Token::new(LeftParen, "("),
+            ')' => Token::new(RightParen, ")"),
+            ',' => Token::new(Comma, ","),
+            ':' => Token::new(Colon, ":"),
+            '.' => Token::new(Dot, "."),
             // This code is unreachable, because its matched by the [one_of]
             // functions
             _ => panic!("unreachable"),
@@ -115,24 +113,24 @@ fn control_lexer<'a>() -> impl Parser<'a, &'a str, Token, LexError<'a>> {
 fn ident_lexer<'a>() -> impl Parser<'a, &'a str, Token, LexError<'a>> {
     text::ident()
         .map(|ident: &str| match ident {
-            "let" => Token::Let,
-            "true" => Token::True,
-            "false" => Token::False,
-            "if" => Token::If,
-            "else" => Token::Else,
-            "then" => Token::Then,
-            "type" => Token::Type,
-            "record" => Token::Record,
-            "return" => Token::Return,
-            "enum" => Token::Enum,
-            "trait" => Token::Trait,
-            "class" => Token::Class,
-            "case" => Token::Case,
-            "where" => Token::Where,
-            "match" => Token::Match,
-            "use" => Token::Use,
-            "in" => Token::In,
-            _ => Token::Ident(ident.into()),
+            "let" => Token::new(LetKeyword, ident),
+            "true" => Token::new(TrueKeyword, ident),
+            "false" => Token::new(FalseKeyword, ident),
+            "if" => Token::new(IfKeyword, ident),
+            "else" => Token::new(ElseKeyword, ident),
+            "then" => Token::new(ThenKeyword, ident),
+            "type" => Token::new(TypeKeyword, ident),
+            "record" => Token::new(RecordKeyword, ident),
+            "return" => Token::new(ReturnKeyword, ident),
+            "enum" => Token::new(EnumKeyword, ident),
+            "trait" => Token::new(TraitKeyword, ident),
+            "class" => Token::new(ClassKeyword, ident),
+            "case" => Token::new(CaseKeyword, ident),
+            "where" => Token::new(WhereKeyword, ident),
+            "match" => Token::new(MatchKeyword, ident),
+            "use" => Token::new(UseKeyword, ident),
+            "in" => Token::new(InKeyword, ident),
+            _ => Token::new(Identifier, ident),
         })
         .labelled("keyword")
 }
@@ -167,11 +165,11 @@ impl<'a> Iterator for Lexer<'a> {
             }
 
             // eof case
-            None if self.code.is_empty() => Some(Spanned::new(0..0, Token::Eof)),
+            None if self.code.is_empty() => Some(Spanned::new(0..0, Token::new(Eof, ""))),
             None => {
                 let start = self.code.len() - 1;
                 let end = self.code.len();
-                Some(Spanned::new(start..end, Token::Eof))
+                Some(Spanned::new(start..end, Token::new(Eof, "")))
             }
         }
     }

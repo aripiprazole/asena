@@ -1,11 +1,18 @@
 use std::fmt::{Debug, Display, Formatter};
 
 use crate::lexer::span::{Loc, Localized, Spanned};
-use crate::lexer::token::Signed;
 
-use self::node::{ast_enum, ast_node, TreeKind};
+use self::node::{ast_enum, ast_node};
 
 pub mod node;
+
+/// Represents a true-false value, just like an wrapper to [bool], this represents if an integer
+/// value is signed, or unsigned.
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub enum Signed {
+    Signed,
+    Unsigned,
+}
 
 //>>>Identifiers
 /// Identifier's key to a function (everything on the language), this can be abstracted in another

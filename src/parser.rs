@@ -1,5 +1,4 @@
 use std::cell::Cell;
-use std::iter::Peekable;
 
 use crate::ast::node::Token;
 use crate::lexer::span::{Localized, Spanned};
@@ -43,27 +42,16 @@ impl<'a> Parser<'a> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        ast::node::{Token, TokenKind},
-        lexer::{span::Spanned, Lexer},
-    };
+    use crate::lexer::Lexer;
 
-    use super::Parser;
+    use super::*;
 
     #[test]
     fn it_works() {
-        let code = "1 + 1";
+        let code = "1 + 1 + 1";
 
         let stream = Lexer::new(code);
-        let mut parser = Parser::new(
-            "1 + 1",
-            vec![
-                Spanned::new(0..1, Token::new(TokenKind::Int8, "1")),
-                Spanned::new(2..3, Token::new(TokenKind::Symbol, "+")),
-                Spanned::new(4..5, Token::new(TokenKind::Int8, "1")),
-                // Spanned::new(5..5, Token::new(TokenKind::Eof, "")),
-            ],
-        );
+        let mut parser = Parser::new(code, stream.source);
 
         parser.expr_binary();
         let tree = parser.build_tree();
