@@ -1,98 +1,42 @@
-use std::fmt::{Debug, Display};
+use std::fmt::Debug;
 
-pub use super::named::*;
 use super::spec::{Node, Spec, Terminal};
+use crate::lexer::span::Spanned;
+
+pub use super::kind::*;
+pub(crate) use super::macros::ast_enum;
+pub use super::named::*;
 pub use super::token::*;
 
+/// Syntax tree using the kind [TreeKind], built from tokens with the type [Token]. It can be pretty
+/// printed, and converted to an abstract-syntax-tree.
+///
+/// The [Tree] data structure is intended to be used as a concrete syntax tree, and its debug print
+/// its like the following:
+///
+/// ```txt
+/// EXPR_BINARY
+///     LIT_FLOAT64
+///         '1' @ 0..1
+///     '+' @ 2..3
+///     LIT_FLOAT64
+///         '2' @ 4..5
+///     '+' @ 6..7
+///     LIT_FLOAT64
+///        '1' @ 8..9
+///      @ 0..9
+/// ```
 #[derive(Clone)]
 pub struct Tree {
     pub kind: TreeKind,
     pub children: Vec<Spanned<Child>>,
 }
 
+/// Polymorphic variants of [Token] and [Tree], it can and must be used as an abstract to them.
 #[derive(Debug, Clone)]
 pub enum Child {
     Tree(Tree),
     Token(Token),
-}
-
-#[derive(Debug, Clone)]
-pub enum TreeKind {
-    Error,
-
-    File,
-
-    LitNat,
-    LitInt8,
-    LitUInt8,
-    LitInt16,
-    LitUInt16,
-    LitInt32,
-    LitUInt32,
-    LitInt64,
-    LitUInt64,
-    LitInt128,
-    LitUInt128,
-
-    LitFloat32,
-    LitFloat64,
-
-    LitTrue,
-    LitFalse,
-
-    LitSymbol,
-    LitIdentifier,
-    LitString,
-
-    ExprGroup,
-    ExprBinary,
-    ExprAcessor,
-    ExprApp,
-    ExprDsl,
-    ExprArray,
-    ExprLam,
-    ExprLet,
-    ExprGlobal,
-    ExprLocal,
-    ExprLit,
-    ExprAnn,
-    ExprQual,
-    ExprPi,
-    ExprSigma,
-    ExprHelp,
-
-    PatWildcard,
-    PatSpread,
-    PatLiteral,
-    PatLocal,
-    PatConstructor,
-    PatList,
-
-    StmtAsk,
-    StmtLet,
-    StmtReturn,
-    StmtExpr,
-
-    Binding,
-
-    BodyValue,
-    BodyDo,
-
-    Parameter,
-
-    DeclSignature,
-    DeclAssign,
-    DeclCommand,
-    DeclClass,
-    DeclInstance,
-
-    Constraint,
-
-    Field,
-    Method,
-
-    TypeInfer,
-    Type,
 }
 
 impl Tree {
@@ -199,15 +143,13 @@ impl Child {
     /// let tree = Tree::new(TreeKind::Error); // just to show
     /// println!("{:#?}", tree);
     /// ```
-    fn render(&self, f: &mut std::fmt::Formatter<'_>, tab: &str) -> std::fmt::Result {
+    pub(crate) fn render(&self, f: &mut std::fmt::Formatter<'_>, tab: &str) -> std::fmt::Result {
         match self {
             Child::Tree(tree) => tree.render(f, tab),
             Child::Token(token) => token.render(f, tab),
         }
     }
 }
-
-impl Named for TreeKind {}
 
 impl Debug for Tree {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -216,44 +158,3 @@ impl Debug for Tree {
         Ok(())
     }
 }
-
-impl Display for TreeKind {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{self:?}")
-    }
-}
-
-macro_rules! ast_enum {
-    (
-        $(#[$outer:meta])*
-        pub enum $name:ident {
-            $(
-                $(#[$field_outer:meta])*
-                $variant:ident <- $kind:expr
-            ),*
-            $(,)?
-        }
-    ) => {
-        $(#[$outer])*
-        #[derive(Clone)]
-        pub enum $name {
-            $(
-                $(#[$field_outer])*
-                $variant($variant),
-            )*
-        }
-
-        impl $name {
-            #[allow(dead_code)]
-            #[allow(path_statements)]
-            #[allow(clippy::no_effect)]
-            fn __show_type_info() {
-                $($kind;)*
-            }
-        }
-    }
-}
-
-pub(crate) use ast_enum;
-
-use crate::lexer::span::Spanned;
