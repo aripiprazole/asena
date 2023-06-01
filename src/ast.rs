@@ -250,6 +250,20 @@ impl Debug for Accessor {
     }
 }
 
+impl DerefMut for Accessor {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl Deref for Accessor {
+    type Target = Spanned<Tree>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 /// Application expression, is an expression that is simply a function application (or a call),
 /// they're both expressions
 ///
@@ -287,6 +301,20 @@ impl Debug for App {
             .field("callee", &self.callee())
             .field("argument", &self.argument())
             .finish()
+    }
+}
+
+impl DerefMut for App {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl Deref for App {
+    type Target = Spanned<Tree>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
@@ -338,6 +366,20 @@ impl Debug for Dsl {
     }
 }
 
+impl DerefMut for Dsl {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl Deref for Dsl {
+    type Target = Spanned<Tree>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 /// Array expression, is an expression that can be checked agains't a `Vect n a`, a `List`, or an
 /// `Array`.
 ///
@@ -367,6 +409,20 @@ impl Debug for Array {
         f.debug_struct("Array")
             .field("items", &self.items())
             .finish()
+    }
+}
+
+impl DerefMut for Array {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl Deref for Array {
+    type Target = Spanned<Tree>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
@@ -416,6 +472,20 @@ impl Debug for Lam {
     }
 }
 
+impl DerefMut for Lam {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl Deref for Lam {
+    type Target = Spanned<Tree>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 /// Let expression, is a let polymorphism binding expression, that abstracts throughough a value,
 /// like executing a local function: `(a => a) 10`, is the equivalent of `let a = 10 in a`.
 ///
@@ -454,6 +524,20 @@ impl Debug for Let {
     }
 }
 
+impl DerefMut for Let {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl Deref for Let {
+    type Target = Spanned<Tree>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 /// Annotation expression, is a epxression that checks a value agains't a type and make possible to
 /// type stuff, like a cast, but not unsafe.
 ///
@@ -488,6 +572,20 @@ impl Debug for Ann {
             .field("value", &self.value())
             .field("against", &self.against())
             .finish()
+    }
+}
+
+impl DerefMut for Ann {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl Deref for Ann {
+    type Target = Spanned<Tree>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
@@ -530,6 +628,20 @@ impl Debug for Qual {
             .field("constraint", &self.constraint())
             .field("return_type", &self.return_type())
             .finish()
+    }
+}
+
+impl DerefMut for Qual {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl Deref for Qual {
+    type Target = Spanned<Tree>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
@@ -576,6 +688,20 @@ impl Debug for Pi {
             .field("parameter_type", &self.parameter_type())
             .field("return_type", &self.return_type())
             .finish()
+    }
+}
+
+impl DerefMut for Pi {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl Deref for Pi {
+    type Target = Spanned<Tree>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
@@ -626,6 +752,20 @@ impl Debug for Sigma {
     }
 }
 
+impl DerefMut for Sigma {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl Deref for Sigma {
+    type Target = Spanned<Tree>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 /// Help syntax sugar to the debugger.
 #[derive(Clone)]
 pub struct Help(Spanned<Tree>);
@@ -649,6 +789,20 @@ impl Debug for Help {
         f.debug_struct("Help")
             .field("inner", &self.inner())
             .finish()
+    }
+}
+
+impl DerefMut for Help {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl Deref for Help {
+    type Target = Spanned<Tree>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
@@ -732,6 +886,20 @@ impl Debug for Constructor {
     }
 }
 
+impl DerefMut for Constructor {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl Deref for Constructor {
+    type Target = Spanned<Tree>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 /// List pattern, is a pattern that deconstructs a list pattern.
 ///
 /// The syntax is like:
@@ -763,6 +931,20 @@ impl Debug for List {
     }
 }
 
+impl DerefMut for List {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl Deref for List {
+    type Target = Spanned<Tree>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 /// Spread pattern, is a pattern that deconstructs the rest of anything, like a list or
 /// constructor.
 ///
@@ -789,6 +971,20 @@ impl Debug for Spread {
     }
 }
 
+impl DerefMut for Spread {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl Deref for Spread {
+    type Target = Spanned<Tree>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 /// Wildcard pattern, is the same as `_` pattern [Pat::Local]
 #[derive(Clone)]
 pub struct Wildcard(Spanned<Tree>);
@@ -806,6 +1002,20 @@ impl Wildcard {
 impl Debug for Wildcard {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Wildcard").finish()
+    }
+}
+
+impl DerefMut for Wildcard {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl Deref for Wildcard {
+    type Target = Spanned<Tree>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
@@ -854,6 +1064,20 @@ impl Debug for Ask {
     }
 }
 
+impl DerefMut for Ask {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl Deref for Ask {
+    type Target = Spanned<Tree>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 #[derive(Clone)]
 pub struct Set(Spanned<Tree>);
 
@@ -884,6 +1108,20 @@ impl Debug for Set {
     }
 }
 
+impl DerefMut for Set {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl Deref for Set {
+    type Target = Spanned<Tree>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 #[derive(Clone)]
 pub struct Return(Spanned<Tree>);
 
@@ -911,6 +1149,20 @@ impl Debug for Return {
     }
 }
 
+impl DerefMut for Return {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl Deref for Return {
+    type Target = Spanned<Tree>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 #[derive(Clone)]
 pub struct Eval(Spanned<Tree>);
 
@@ -933,6 +1185,20 @@ impl Debug for Eval {
         f.debug_struct("Eval")
             .field("value", &self.value())
             .finish()
+    }
+}
+
+impl DerefMut for Eval {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl Deref for Eval {
+    type Target = Spanned<Tree>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
@@ -979,6 +1245,20 @@ impl Debug for Binding {
     }
 }
 
+impl DerefMut for Binding {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl Deref for Binding {
+    type Target = Spanned<Tree>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 pub type BindingRef = Spanned<Binding>;
 //<<<Binding
 
@@ -1008,6 +1288,20 @@ impl Debug for Value {
     }
 }
 
+impl DerefMut for Value {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl Deref for Value {
+    type Target = Spanned<Tree>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 /// Do body node, is a value body that is an do-notation.
 #[derive(Clone)]
 pub struct Do(Spanned<Tree>);
@@ -1029,6 +1323,20 @@ impl Do {
 impl Debug for Do {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Do").field("stmts", &self.stmts()).finish()
+    }
+}
+
+impl DerefMut for Do {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl Deref for Do {
+    type Target = Spanned<Tree>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
@@ -1076,6 +1384,20 @@ impl Debug for Parameter {
             .field("parameter_type", &self.parameter_type())
             .field("explicit", &self.explicit())
             .finish()
+    }
+}
+
+impl DerefMut for Parameter {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl Deref for Parameter {
+    type Target = Spanned<Tree>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
@@ -1133,6 +1455,20 @@ impl Debug for Signature {
     }
 }
 
+impl DerefMut for Signature {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl Deref for Signature {
+    type Target = Spanned<Tree>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 /// Assign is the implementation of a [Signature], they can be used with sugar with [Body] directly
 /// on [Signature], but it's a value-declaration, and it's holds directly a value
 ///
@@ -1176,6 +1512,20 @@ impl Debug for Assign {
     }
 }
 
+impl DerefMut for Assign {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl Deref for Assign {
+    type Target = Spanned<Tree>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 /// Command is a declaration that executes a command in the LSP, like a REPL, the goal of the
 /// language, is to have a language server as a REPL, available to execute commands.
 ///
@@ -1210,6 +1560,20 @@ impl Debug for Command {
             .field("name", &self.name())
             .field("arguments", &self.arguments())
             .finish()
+    }
+}
+
+impl DerefMut for Command {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl Deref for Command {
+    type Target = Spanned<Tree>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
@@ -1260,6 +1624,20 @@ impl Debug for Class {
     }
 }
 
+impl DerefMut for Class {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl Deref for Class {
+    type Target = Spanned<Tree>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 /// An instance is a declaration that instantiates a record with default values, all the values
 /// should be methods.
 ///
@@ -1301,6 +1679,20 @@ impl Debug for Instance {
             .field("constraints", &self.constraints())
             .field("properties", &self.properties())
             .finish()
+    }
+}
+
+impl DerefMut for Instance {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl Deref for Instance {
+    type Target = Spanned<Tree>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
@@ -1351,6 +1743,20 @@ impl Debug for Constraint {
     }
 }
 
+impl DerefMut for Constraint {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl Deref for Constraint {
+    type Target = Spanned<Tree>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 /// A field node is a record node's field.
 ///
 /// The syntax is like:
@@ -1377,6 +1783,20 @@ impl Field {
 
     pub fn field_type(&self) -> Node<Spanned<Expr>> {
         todo!()
+    }
+}
+
+impl DerefMut for Field {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl Deref for Field {
+    type Target = Spanned<Tree>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
@@ -1448,6 +1868,20 @@ impl Debug for Method {
             .field("return_type", &self.return_type())
             .field("method_body", &self.method_body())
             .finish()
+    }
+}
+
+impl DerefMut for Method {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl Deref for Method {
+    type Target = Spanned<Tree>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
