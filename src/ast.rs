@@ -7,6 +7,8 @@ use self::node::{ast_enum, Tree, TreeKind};
 use self::spec::{Node, Spec, Terminal};
 use self::token::Token;
 
+pub mod kind;
+pub mod macros;
 pub mod named;
 pub mod node;
 pub mod spec;
