@@ -102,7 +102,7 @@ impl Tree {
         }
     }
 
-    pub fn child<T: TryFrom<Child>>(&self, _name: &str) -> T {
+    pub fn child<T: TryFrom<Child>>(&self, _name: &str) -> Option<T> {
         todo!()
     }
 
@@ -186,37 +186,6 @@ impl Display for TreeKind {
     }
 }
 
-macro_rules! ast_node {
-    (
-        $(#[$outer:meta])*
-        pub struct $name:ident;
-    ) => {
-        ast_node! {
-            $(#[$outer:meta])* pub struct $name {}
-        }
-    };
-
-    (
-        $(#[$outer:meta])*
-        pub struct $name:ident {
-            $(
-                $(#[$field_outer:meta])*
-                $vis:vis $field:ident: $field_type:ty
-            ),*
-            $(,)?
-        }
-    ) => {
-        $(#[$outer])*
-        #[derive(Debug, Clone)]
-        pub struct $name {
-            $(
-                $(#[$field_outer])*
-                $vis $field: $field_type
-            ),*
-        }
-    };
-}
-
 macro_rules! ast_enum {
     (
         $(#[$outer:meta])*
@@ -238,13 +207,16 @@ macro_rules! ast_enum {
         }
 
         impl $name {
-            pub fn name() {
+            #[allow(dead_code)]
+            #[allow(path_statements)]
+            #[allow(clippy::no_effect)]
+            fn __show_type_info() {
+                $($kind;)*
             }
         }
     }
 }
 
 pub(crate) use ast_enum;
-pub(crate) use ast_node;
 
 use crate::lexer::span::Spanned;

@@ -1,4 +1,7 @@
-use std::{fmt::Debug, ops::Range};
+use std::{
+    fmt::Debug,
+    ops::{Deref, Range},
+};
 
 pub type Loc = Range<usize>;
 
@@ -52,6 +55,14 @@ impl<T> Spanned<T> {
         T: Clone,
     {
         Spanned::new(self.span, f(self.value))
+    }
+}
+
+impl<T> Deref for Spanned<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        self.value()
     }
 }
 
