@@ -56,7 +56,7 @@ mod tests {
 
     #[test]
     fn it_works() {
-        let code = "1 + 1 + 1";
+        let code = "1 + 2 + 1";
 
         let mut parser = Parser::from(Lexer::new(code));
         parser.expr_binary();

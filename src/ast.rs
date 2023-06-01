@@ -1,9 +1,11 @@
 use std::fmt::{Debug, Display, Formatter};
+use std::ops::{Deref, DerefMut};
 
-use crate::lexer::span::{Loc, Localized, Spanned};
+use crate::lexer::span::{Loc, Spanned};
 
 use self::node::{ast_enum, Tree, TreeKind};
-use self::spec::Spec;
+use self::spec::{Node, Spec, Terminal};
+use self::token::Token;
 
 pub mod named;
 pub mod node;
@@ -23,6 +25,14 @@ pub enum Signed {
 /// identifiers. Serves as a key on a graph, or the abstract syntax tree representation.
 #[derive(Clone)]
 pub struct FunctionId(pub String);
+
+impl Terminal for FunctionId {
+    fn spec(token: Spanned<Token>) -> Node<Spanned<Self>> {
+        let text = token.text.clone();
+
+        Node::new(token.swap(FunctionId(text)))
+    }
+}
 
 /// Identifier's key to a type constructor.
 #[derive(Clone)]
@@ -62,6 +72,38 @@ pub enum Literal {
     False,
 }
 
+impl Spec for Literal {
+    fn spec(from: Spanned<Tree>) -> Node<Spanned<Self>> {
+        use TreeKind::*;
+
+        match from.kind {
+            LitNat => todo!(),
+            LitInt8 => todo!(),
+            LitUInt8 => todo!(),
+            LitInt16 => todo!(),
+            LitUInt16 => todo!(),
+            LitInt32 => todo!(),
+            LitUInt32 => todo!(),
+            LitInt64 => todo!(),
+            LitUInt64 => todo!(),
+            LitInt128 => todo!(),
+            LitUInt128 => todo!(),
+            LitFloat32 => todo!(),
+            LitFloat64 => {
+                let token = from.single();
+                let Ok(value) = token.text.parse::<f64>() else {
+                    return Node::empty();
+                };
+
+                Node::new(from.swap(Literal::Float64(value)))
+            }
+            LitTrue => todo!(),
+            LitFalse => todo!(),
+            _ => todo!(),
+        }
+    }
+}
+
 //>>>Expressions
 /// Group expression, is an expression that is a call between two operands, and is surrounded by
 /// parenthesis.
@@ -82,7 +124,7 @@ impl Group {
         self.0
     }
 
-    pub fn inner(&self) -> Spec<Localized<Expr>> {
+    pub fn inner(&self) -> Node<Spanned<Expr>> {
         todo!()
     }
 }
@@ -126,16 +168,38 @@ impl Binary {
         self.0
     }
 
-    pub fn lhs(&self) -> Spec<Localized<Expr>> {
-        todo!()
+    pub fn lhs(&self) -> Node<Spanned<Expr>> {
+        self.at(0)
     }
 
-    pub fn fn_id(&self) -> Spec<FunctionId> {
-        todo!()
+    pub fn fn_id(&self) -> Node<Spanned<FunctionId>> {
+        self.terminal(1)
     }
 
-    pub fn rhs(&self) -> Spec<Localized<Expr>> {
-        todo!()
+    pub fn rhs(&self) -> Node<Spanned<Expr>> {
+        let mut rhs = self.clone(); // TODO: improve error handling
+        rhs.children.remove(0); // Remove the first twice
+        rhs.children.remove(0);
+
+        if rhs.is_single() {
+            rhs.at(0)
+        } else {
+            Node::new(self.replace(Expr::Binary(rhs)))
+        }
+    }
+}
+
+impl DerefMut for Binary {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl Deref for Binary {
+    type Target = Spanned<Tree>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
@@ -168,11 +232,11 @@ impl Accessor {
         self.0
     }
 
-    pub fn receiver(&self) -> Spec<Localized<Expr>> {
+    pub fn receiver(&self) -> Node<Spanned<Expr>> {
         todo!()
     }
 
-    pub fn accessor(&self) -> Spec<Local> {
+    pub fn accessor(&self) -> Node<Local> {
         todo!()
     }
 }
@@ -208,11 +272,11 @@ impl App {
         self.0
     }
 
-    pub fn callee(&self) -> Spec<Localized<Expr>> {
+    pub fn callee(&self) -> Node<Spanned<Expr>> {
         todo!()
     }
 
-    pub fn argument(&self) -> Spec<Localized<Expr>> {
+    pub fn argument(&self) -> Node<Spanned<Expr>> {
         todo!()
     }
 }
@@ -251,15 +315,15 @@ impl Dsl {
         self.0
     }
 
-    pub fn callee(&self) -> Spec<Localized<Expr>> {
+    pub fn callee(&self) -> Node<Spanned<Expr>> {
         todo!()
     }
 
-    pub fn parameters(&self) -> Spec<Vec<Parameter>> {
+    pub fn parameters(&self) -> Node<Vec<Parameter>> {
         todo!()
     }
 
-    pub fn block(&self) -> Spec<Vec<Localized<Stmt>>> {
+    pub fn block(&self) -> Node<Vec<Spanned<Stmt>>> {
         todo!()
     }
 }
@@ -293,7 +357,7 @@ impl Array {
         self.0
     }
 
-    pub fn items(&self) -> Spec<Vec<Localized<Expr>>> {
+    pub fn items(&self) -> Node<Vec<Spanned<Expr>>> {
         todo!()
     }
 }
@@ -334,11 +398,11 @@ impl Lam {
         self.0
     }
 
-    pub fn parameters(&self) -> Spec<Vec<Local>> {
+    pub fn parameters(&self) -> Node<Vec<Local>> {
         todo!()
     }
 
-    pub fn value(&self) -> Spec<Localized<Expr>> {
+    pub fn value(&self) -> Node<Spanned<Expr>> {
         todo!()
     }
 }
@@ -372,11 +436,11 @@ impl Let {
         self.0
     }
 
-    pub fn bindings(&self) -> Spec<Vec<BindingRef>> {
+    pub fn bindings(&self) -> Node<Vec<BindingRef>> {
         todo!()
     }
 
-    pub fn in_value(&self) -> Spec<Localized<Expr>> {
+    pub fn in_value(&self) -> Node<Spanned<Expr>> {
         todo!()
     }
 }
@@ -409,11 +473,11 @@ impl Ann {
         self.0
     }
 
-    pub fn value(&self) -> Spec<Localized<Expr>> {
+    pub fn value(&self) -> Node<Spanned<Expr>> {
         todo!()
     }
 
-    pub fn against(&self) -> Spec<Localized<Expr>> {
+    pub fn against(&self) -> Node<Spanned<Expr>> {
         todo!()
     }
 }
@@ -451,11 +515,11 @@ impl Qual {
         self.0
     }
 
-    pub fn constraint(&self) -> Spec<Localized<Expr>> {
+    pub fn constraint(&self) -> Node<Spanned<Expr>> {
         todo!()
     }
 
-    pub fn return_type(&self) -> Spec<Type> {
+    pub fn return_type(&self) -> Node<Type> {
         todo!()
     }
 }
@@ -492,15 +556,15 @@ impl Pi {
         self.0
     }
 
-    pub fn parameter_name(&self) -> Spec<Option<Local>> {
+    pub fn parameter_name(&self) -> Node<Option<Local>> {
         todo!()
     }
 
-    pub fn parameter_type(&self) -> Spec<Type> {
+    pub fn parameter_type(&self) -> Node<Type> {
         todo!()
     }
 
-    pub fn return_type(&self) -> Spec<Type> {
+    pub fn return_type(&self) -> Node<Type> {
         todo!()
     }
 }
@@ -539,15 +603,15 @@ impl Sigma {
         self.0
     }
 
-    pub fn parameter_name(&self) -> Spec<Local> {
+    pub fn parameter_name(&self) -> Node<Local> {
         todo!()
     }
 
-    pub fn parameter_type(&self) -> Spec<Type> {
+    pub fn parameter_type(&self) -> Node<Type> {
         todo!()
     }
 
-    pub fn return_type(&self) -> Spec<Type> {
+    pub fn return_type(&self) -> Node<Type> {
         todo!()
     }
 }
@@ -575,7 +639,7 @@ impl Help {
         self.0
     }
 
-    pub fn inner(&self) -> Spec<Expr> {
+    pub fn inner(&self) -> Node<Expr> {
         todo!()
     }
 }
@@ -609,12 +673,26 @@ ast_enum! {
     }
 }
 
+impl Spec for Expr {
+    fn spec(from: Spanned<Tree>) -> Node<Spanned<Self>> {
+        use TreeKind::*;
+
+        match from.kind {
+            LitNat | LitInt8 | LitUInt8 | LitInt16 | LitUInt16 | LitInt32 | LitUInt32
+            | LitInt64 | LitUInt64 | LitInt128 | LitUInt128 | LitFloat32 | LitFloat64 | LitTrue
+            | LitFalse => Literal::spec(from)
+                .map(|literal| literal.replace(Expr::Literal(literal.value.clone()))),
+            _ => Node::empty(),
+        }
+    }
+}
+
 /// Primary terms are terms that can be only be created without parenthesis, and does not contain
 /// spaces. So if, match expressions, for example, aren't accepted here, only if they are grouped
 /// by parenthesis, like: `(if a then b else c)`
-pub type PrimaryRef = Localized<Expr>;
+pub type PrimaryRef = Spanned<Expr>;
 
-pub type ExprRef = Localized<Expr>;
+pub type ExprRef = Spanned<Expr>;
 //<<<Expressions
 
 //>>>Patterns
@@ -636,11 +714,11 @@ impl Constructor {
         self.0
     }
 
-    pub fn name(&self) -> Spec<ConstructorId> {
+    pub fn name(&self) -> Node<ConstructorId> {
         todo!()
     }
 
-    pub fn arguments(&self) -> Spec<Vec<Localized<Pat>>> {
+    pub fn arguments(&self) -> Node<Vec<Spanned<Pat>>> {
         todo!()
     }
 }
@@ -672,7 +750,7 @@ impl List {
         self.0
     }
 
-    pub fn items(&self) -> Spec<Vec<Localized<Pat>>> {
+    pub fn items(&self) -> Node<Vec<Spanned<Pat>>> {
         todo!()
     }
 }
@@ -742,7 +820,7 @@ ast_enum! {
     }
 }
 
-pub type PatRef = Localized<Pat>;
+pub type PatRef = Spanned<Pat>;
 //<<<Patterns
 
 //>>>Statements
@@ -758,11 +836,11 @@ impl Ask {
         self.0
     }
 
-    pub fn pattern(&self) -> Spec<Localized<Pat>> {
+    pub fn pattern(&self) -> Node<Spanned<Pat>> {
         todo!()
     }
 
-    pub fn value(&self) -> Spec<Localized<Expr>> {
+    pub fn value(&self) -> Node<Spanned<Expr>> {
         todo!()
     }
 }
@@ -788,11 +866,11 @@ impl Set {
         self.0
     }
 
-    pub fn pattern(&self) -> Spec<Localized<Pat>> {
+    pub fn pattern(&self) -> Node<Spanned<Pat>> {
         todo!()
     }
 
-    pub fn value(&self) -> Spec<Localized<Expr>> {
+    pub fn value(&self) -> Node<Spanned<Expr>> {
         todo!()
     }
 }
@@ -820,7 +898,7 @@ impl Return {
 
     /// This is using directly [ExprRef] in the AST, because when expanded, this will generate
     /// and [Option] wrapped value.
-    pub fn value(&self) -> Spec<Localized<Expr>> {
+    pub fn value(&self) -> Node<Spanned<Expr>> {
         todo!()
     }
 }
@@ -845,7 +923,7 @@ impl Eval {
         self.0
     }
 
-    pub fn value(&self) -> Spec<Localized<Expr>> {
+    pub fn value(&self) -> Node<Spanned<Expr>> {
         todo!()
     }
 }
@@ -867,7 +945,7 @@ ast_enum! {
     }
 }
 
-pub type StmtRef = Localized<Stmt>;
+pub type StmtRef = Spanned<Stmt>;
 //<<<Statements
 
 //>>>Binding
@@ -883,11 +961,11 @@ impl Binding {
         self.0
     }
 
-    pub fn name(&self) -> Spec<Local> {
+    pub fn name(&self) -> Node<Local> {
         todo!()
     }
 
-    pub fn value(&self) -> Spec<Localized<Expr>> {
+    pub fn value(&self) -> Node<Spanned<Expr>> {
         todo!()
     }
 }
@@ -901,7 +979,7 @@ impl Debug for Binding {
     }
 }
 
-pub type BindingRef = Localized<Binding>;
+pub type BindingRef = Spanned<Binding>;
 //<<<Binding
 
 /// Value body node, is a value body that is an `=`.
@@ -917,7 +995,7 @@ impl Value {
         self.0
     }
 
-    pub fn value(&self) -> Spec<Localized<Expr>> {
+    pub fn value(&self) -> Node<Spanned<Expr>> {
         todo!()
     }
 }
@@ -943,7 +1021,7 @@ impl Do {
         self.0
     }
 
-    pub fn stmts(&self) -> Spec<Vec<Localized<Stmt>>> {
+    pub fn stmts(&self) -> Node<Vec<Spanned<Stmt>>> {
         todo!()
     }
 }
@@ -975,12 +1053,12 @@ impl Parameter {
     }
 
     /// Optional parameter's name
-    pub fn name(&self) -> Spec<Option<Local>> {
+    pub fn name(&self) -> Node<Option<Local>> {
         todo!()
     }
 
     /// Parameter's type
-    pub fn parameter_type(&self) -> Spec<Type> {
+    pub fn parameter_type(&self) -> Node<Type> {
         todo!()
     }
 
@@ -1026,20 +1104,20 @@ impl Signature {
         self.0
     }
 
-    pub fn name(&self) -> Spec<Option<Local>> {
+    pub fn name(&self) -> Node<Option<Local>> {
         todo!()
     }
 
-    pub fn parameters(&self) -> Spec<Vec<Localized<Parameter>>> {
+    pub fn parameters(&self) -> Node<Vec<Spanned<Parameter>>> {
         todo!()
     }
 
-    pub fn return_type(&self) -> Spec<Type> {
+    pub fn return_type(&self) -> Node<Type> {
         todo!()
     }
 
     /// Holds, optionally the value of the [Signature], this is an sugar to [Assign].
-    pub fn body(&self) -> Spec<Vec<Localized<Stmt>>> {
+    pub fn body(&self) -> Node<Vec<Spanned<Stmt>>> {
         todo!()
     }
 }
@@ -1074,16 +1152,16 @@ impl Assign {
         self.0
     }
 
-    pub fn name(&self) -> Spec<Global> {
+    pub fn name(&self) -> Node<Global> {
         todo!()
     }
 
-    pub fn patterns(&self) -> Spec<Vec<Localized<Pat>>> {
+    pub fn patterns(&self) -> Node<Vec<Spanned<Pat>>> {
         todo!()
     }
 
     /// Holds the value of the [Assign].
-    pub fn body(&self) -> Spec<Localized<Body>> {
+    pub fn body(&self) -> Node<Spanned<Body>> {
         todo!()
     }
 }
@@ -1117,11 +1195,11 @@ impl Command {
         self.0
     }
 
-    pub fn name(&self) -> Spec<Global> {
+    pub fn name(&self) -> Node<Global> {
         todo!()
     }
 
-    pub fn arguments(&self) -> Spec<Vec<Localized<Expr>>> {
+    pub fn arguments(&self) -> Node<Vec<Spanned<Expr>>> {
         todo!()
     }
 }
@@ -1159,15 +1237,15 @@ impl Class {
         self.0
     }
 
-    pub fn name(&self) -> Spec<Global> {
+    pub fn name(&self) -> Node<Global> {
         todo!()
     }
 
-    pub fn constraints(&self) -> Spec<Vec<Localized<Constraint>>> {
+    pub fn constraints(&self) -> Node<Vec<Spanned<Constraint>>> {
         todo!()
     }
 
-    pub fn properties(&self) -> Spec<Vec<Localized<Property>>> {
+    pub fn properties(&self) -> Node<Vec<Spanned<Property>>> {
         todo!()
     }
 }
@@ -1203,15 +1281,15 @@ impl Instance {
         self.0
     }
 
-    pub fn name(&self) -> Spec<Global> {
+    pub fn name(&self) -> Node<Global> {
         todo!()
     }
 
-    pub fn constraints(&self) -> Spec<Vec<Localized<Constraint>>> {
+    pub fn constraints(&self) -> Node<Vec<Spanned<Constraint>>> {
         todo!()
     }
 
-    pub fn properties(&self) -> Spec<Vec<Localized<Method>>> {
+    pub fn properties(&self) -> Node<Vec<Spanned<Method>>> {
         todo!()
     }
 }
@@ -1236,7 +1314,7 @@ ast_enum! {
     }
 }
 
-pub type DeclRef = Localized<Decl>;
+pub type DeclRef = Spanned<Decl>;
 //<<<Declarations
 
 //>>>Properties
@@ -1260,7 +1338,7 @@ impl Constraint {
         self.0
     }
 
-    pub fn value(&self) -> Spec<Localized<Expr>> {
+    pub fn value(&self) -> Node<Spanned<Expr>> {
         todo!()
     }
 }
@@ -1293,11 +1371,11 @@ impl Field {
         self.0
     }
 
-    pub fn name(&self) -> Spec<Local> {
+    pub fn name(&self) -> Node<Local> {
         todo!()
     }
 
-    pub fn field_type(&self) -> Spec<Localized<Expr>> {
+    pub fn field_type(&self) -> Node<Spanned<Expr>> {
         todo!()
     }
 }
@@ -1335,27 +1413,27 @@ impl Method {
         self.0
     }
 
-    pub fn name(&self) -> Spec<Local> {
+    pub fn name(&self) -> Node<Local> {
         todo!()
     }
 
-    pub fn implicit_parameters(&self) -> Spec<Vec<Parameter>> {
+    pub fn implicit_parameters(&self) -> Node<Vec<Parameter>> {
         todo!()
     }
 
-    pub fn explicit_parameters(&self) -> Spec<Vec<Parameter>> {
+    pub fn explicit_parameters(&self) -> Node<Vec<Parameter>> {
         todo!()
     }
 
-    pub fn where_clauses(&self) -> Spec<Vec<Constraint>> {
+    pub fn where_clauses(&self) -> Node<Vec<Constraint>> {
         todo!()
     }
 
-    pub fn return_type(&self) -> Spec<Option<ExprRef>> {
+    pub fn return_type(&self) -> Node<Option<ExprRef>> {
         todo!()
     }
 
-    pub fn method_body(&self) -> Spec<Body> {
+    pub fn method_body(&self) -> Node<Body> {
         todo!()
     }
 }
