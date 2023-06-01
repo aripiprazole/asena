@@ -212,7 +212,7 @@ impl<'a> Parser<'a> {
             Float32 => self.terminal(LitFloat32),
             Float64 => self.terminal(LitFloat64),
 
-            Symbol => self.terminal(LitSymbol),
+            Symbol => self.report(ParseError::Expected(Identifier)),
             Identifier => self.terminal(LitIdentifier),
             String => self.terminal(LitString),
 

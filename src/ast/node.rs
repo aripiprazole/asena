@@ -179,7 +179,7 @@ impl Tree {
         }
     }
 
-    pub fn child<T: TryFrom<Child>>(&self, name: &str) -> T {
+    pub fn child<T: TryFrom<Child>>(&self, _name: &str) -> T {
         todo!()
     }
 
@@ -401,9 +401,6 @@ macro_rules! ast_enum {
 
         impl $name {
             pub fn name() {
-                $(
-                    $kind;
-                )*
             }
         }
     }
@@ -411,6 +408,5 @@ macro_rules! ast_enum {
 
 pub(crate) use ast_enum;
 pub(crate) use ast_node;
-use chumsky::container::Seq;
 
 use crate::lexer::span::Spanned;
