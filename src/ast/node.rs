@@ -122,7 +122,10 @@ impl Tree {
     }
 
     pub fn at<T: Spec>(&self, nth: usize) -> Node<Spanned<T>> {
-        let child = self.children.get(nth).unwrap(); // TODO
+        let Some(child) = self.children.get(nth) else {
+            return Node::empty();
+        };
+
         match &child.value {
             Child::Tree(tree) => T::spec(child.replace(tree.clone())),
             Child::Token(..) => Node::empty(),
@@ -130,7 +133,10 @@ impl Tree {
     }
 
     pub fn terminal<T: Terminal>(&self, nth: usize) -> Node<Spanned<T>> {
-        let child = self.children.get(nth).unwrap(); // TODO
+        let Some(child) = self.children.get(nth) else {
+            return Node::empty();
+        };
+
         match &child.value {
             Child::Tree(..) => Node::empty(),
             Child::Token(token) => T::spec(child.replace(token.clone())),

@@ -177,8 +177,17 @@ impl Binary {
     }
 
     pub fn rhs(&self) -> Node<Spanned<Expr>> {
-        let mut rhs = self.clone(); // TODO: improve error handling
-        rhs.children.remove(0); // Remove the first twice
+        let mut rhs = self.clone();
+
+        // Checks the integrity of the length for safety
+        match rhs.children.len() {
+            0 => return Node::empty(),
+            1 => return rhs.at(0),
+            _ => {}
+        }
+
+        // Remove the first twice
+        rhs.children.remove(0);
         rhs.children.remove(0);
 
         if rhs.is_single() {
