@@ -2,6 +2,7 @@ use std::cell::Cell;
 
 use crate::ast::node::Token;
 use crate::lexer::span::{Localized, Spanned};
+use crate::lexer::Lexer;
 use crate::parser::error::ParseError;
 
 use self::event::Event;
@@ -40,6 +41,12 @@ impl<'a> Parser<'a> {
     }
 }
 
+impl<'a> From<Lexer<'a>> for Parser<'a> {
+    fn from(value: Lexer<'a>) -> Self {
+        Self::new(value.source, value.tokens)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::lexer::Lexer;
@@ -50,60 +57,79 @@ mod tests {
     fn it_works() {
         let code = "1 + 1 + 1";
 
-        let stream = Lexer::new(code);
-        let mut parser = Parser::new(code, stream.source);
-
+        let mut parser = Parser::from(Lexer::new(code));
         parser.expr_binary();
-        let tree = parser.build_tree();
-        println!("{:#?}", tree);
+
+        println!("{:#?}", parser.build_tree());
     }
 
     #[test]
     fn sig_decl() {
         let code = "cond : (f true) -> ((f false) -> (f cond));";
 
-        let stream = Lexer::new(code);
+        let mut parser = Parser::from(Lexer::new(code));
+        parser.decl();
+
+        println!("{:#?}", parser.build_tree());
     }
 
     #[test]
     fn lam_expr() {
         let code = "\\a b -> c";
 
-        let stream = Lexer::new(code);
+        let mut parser = Parser::from(Lexer::new(code));
+        parser.decl();
+
+        println!("{:#?}", parser.build_tree());
     }
 
     #[test]
     fn sigma_expr() {
         let code = "[a: t] -> b";
 
-        let stream = Lexer::new(code);
+        let mut parser = Parser::from(Lexer::new(code));
+        parser.decl();
+
+        println!("{:#?}", parser.build_tree());
     }
 
     #[test]
     fn unicode_expr() {
         let code = "Π (d: t) -> e";
 
-        let stream = Lexer::new(code);
+        let mut parser = Parser::from(Lexer::new(code));
+        parser.decl();
+
+        println!("{:#?}", parser.build_tree());
     }
 
     #[test]
     fn group_expr() {
         let code = "[Monad m] => m a";
 
-        let stream = Lexer::new(code);
+        let mut parser = Parser::from(Lexer::new(code));
+        parser.decl();
+
+        println!("{:#?}", parser.build_tree());
     }
 
     #[test]
     fn pi_expr() {
         let code = "(a: t) -> b";
 
-        let lexer = Lexer::new(code);
+        let mut parser = Parser::from(Lexer::new(code));
+        parser.decl();
+
+        println!("{:#?}", parser.build_tree());
     }
 
     #[test]
     fn ask_stmt() {
         let code = "do { (Just a) <- findUser 105; }";
 
-        let lexer = Lexer::new(code);
+        let mut parser = Parser::from(Lexer::new(code));
+        parser.decl();
+
+        println!("{:#?}", parser.build_tree());
     }
 }

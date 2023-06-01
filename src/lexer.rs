@@ -24,9 +24,9 @@ pub type LexError<'a> = extra::Err<Rich<'a, char, Span>>;
 #[derive(Debug, Clone)]
 pub struct Lexer<'a> {
     index: usize,
-    code: &'a str,
-    pub source: Vec<Spanned<Token>>,
-    pub errs: Vec<Rich<'a, char>>,
+    pub(crate) source: &'a str,
+    pub tokens: Vec<Spanned<Token>>,
+    pub errors: Vec<Rich<'a, char>>,
 }
 
 /// It's the programming language, lexer, that transforms the string, into a set of [Token].
@@ -142,13 +142,13 @@ impl<'a> Lexer<'a> {
 
         Self {
             index: 0,
-            code,
-            source: tokens
+            source: code,
+            tokens: tokens
                 .unwrap_or_default()
                 .into_iter()
                 .map(|(value, span)| Spanned::new(span.into_range(), value))
                 .collect(),
-            errs,
+            errors: errs,
         }
     }
 }
@@ -157,7 +157,7 @@ impl<'a> Iterator for Lexer<'a> {
     type Item = Spanned<Token>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        match self.source.get(self.index) {
+        match self.tokens.get(self.index) {
             Some(value) => {
                 self.index += 1;
 
@@ -165,10 +165,10 @@ impl<'a> Iterator for Lexer<'a> {
             }
 
             // eof case
-            None if self.code.is_empty() => Some(Spanned::new(0..0, Token::new(Eof, ""))),
+            None if self.source.is_empty() => Some(Spanned::new(0..0, Token::new(Eof, ""))),
             None => {
-                let start = self.code.len() - 1;
-                let end = self.code.len();
+                let start = self.source.len() - 1;
+                let end = self.source.len();
                 Some(Spanned::new(start..end, Token::new(Eof, "")))
             }
         }
