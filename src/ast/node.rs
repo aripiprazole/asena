@@ -1,6 +1,7 @@
 use std::fmt::{Debug, Display};
 
 pub use super::named::*;
+use super::spec::{Node, Spec, Terminal};
 pub use super::token::*;
 
 #[derive(Clone)]
@@ -102,8 +103,38 @@ impl Tree {
         }
     }
 
+    pub fn single(&self) -> &Token {
+        match self.children.first() {
+            Some(token) => match &token.value {
+                Child::Token(token) => token,
+                Child::Tree(..) => panic!("called `Tree::single` on a non-terminal node"),
+            },
+            None => panic!("called `Tree::single` on a empty node"),
+        }
+    }
+
+    pub fn is_single(&self) -> bool {
+        self.children.len() == 1
+    }
+
     pub fn child<T: TryFrom<Child>>(&self, _name: &str) -> Option<T> {
         todo!()
+    }
+
+    pub fn at<T: Spec>(&self, nth: usize) -> Node<Spanned<T>> {
+        let child = self.children.get(nth).unwrap(); // TODO
+        match &child.value {
+            Child::Tree(tree) => T::spec(child.replace(tree.clone())),
+            Child::Token(..) => Node::empty(),
+        }
+    }
+
+    pub fn terminal<T: Terminal>(&self, nth: usize) -> Node<Spanned<T>> {
+        let child = self.children.get(nth).unwrap(); // TODO
+        match &child.value {
+            Child::Tree(..) => Node::empty(),
+            Child::Token(token) => T::spec(child.replace(token.clone())),
+        }
     }
 
     /// Uses the [std::fmt::Formatter] to write a pretty-printed tree in the terminal for debug

@@ -1,6 +1,6 @@
 use std::{
     fmt::Debug,
-    ops::{Deref, Range},
+    ops::{Deref, DerefMut, Range},
 };
 
 pub type Loc = Range<usize>;
@@ -55,6 +55,12 @@ impl<T> Spanned<T> {
         T: Clone,
     {
         Spanned::new(self.span, f(self.value))
+    }
+}
+
+impl<T> DerefMut for Spanned<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.value
     }
 }
 
