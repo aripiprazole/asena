@@ -216,10 +216,7 @@ impl<'a> Parser<'a> {
             Identifier => self.terminal(LitIdentifier),
             String => self.terminal(LitString),
 
-            Eof => {
-                let mark = self.open();
-                self.close(mark, TreeEof);
-            } // TODO
+            Eof => self.report(ParseError::CantParseDueToEof),
 
             // Parse group or named pi expressions
             // - Pi
