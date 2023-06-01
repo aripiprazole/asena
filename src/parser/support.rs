@@ -1,3 +1,5 @@
+#![allow(dead_code)] // TODO: remove me
+
 use std::borrow::Cow;
 
 use crate::ast::node::{Token, TokenKind, TreeKind};

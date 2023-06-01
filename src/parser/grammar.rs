@@ -56,8 +56,7 @@ impl<'a> Parser<'a> {
 
         // simplify by returning the lhs symbol directly
         if self.at(Symbol) {
-            while self.at(Symbol) {
-                self.advance();
+            while self.eat(Symbol) {
                 self.expr_ann();
             }
 
@@ -75,8 +74,7 @@ impl<'a> Parser<'a> {
 
         // simplify by returning the lhs symbol directly
         if self.at(Colon) {
-            while self.at(Colon) {
-                self.advance();
+            while self.eat(Colon) {
                 self.expr_qual();
             }
 
@@ -94,8 +92,7 @@ impl<'a> Parser<'a> {
 
         // simplify by returning the lhs symbol directly
         if self.at(DoubleArrow) {
-            while self.at(DoubleArrow) {
-                self.advance();
+            while self.eat(DoubleArrow) {
                 self.expr_anonymous_pi();
             }
 
@@ -113,8 +110,7 @@ impl<'a> Parser<'a> {
 
         // simplify by returning the lhs symbol directly
         if self.at(RightArrow) {
-            while self.at(RightArrow) {
-                self.advance();
+            while self.eat(RightArrow) {
                 self.expr_accessor();
             }
 
@@ -132,8 +128,7 @@ impl<'a> Parser<'a> {
 
         // simplify by returning the lhs symbol directly
         if self.at(Dot) {
-            while self.at(Dot) {
-                self.advance();
+            while self.eat(Dot) {
                 self.expr_app();
             }
 
