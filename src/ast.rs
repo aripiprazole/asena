@@ -4,7 +4,9 @@ use crate::lexer::span::{Loc, Localized, Spanned};
 
 use self::node::{ast_enum, ast_node};
 
+pub mod named;
 pub mod node;
+pub mod token;
 
 /// Represents a true-false value, just like an wrapper to [bool], this represents if an integer
 /// value is signed, or unsigned.
