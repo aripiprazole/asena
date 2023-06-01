@@ -1,5 +1,5 @@
 use std::fmt::{Debug, Display};
-use std::ops::Deref;
+use std::ops::{ControlFlow, Deref, FromResidual, Try};
 
 use crate::lexer::span::Spanned;
 
@@ -63,6 +63,33 @@ impl<T: Debug> Debug for Node<T> {
         match self.0 {
             Some(ref value) => write!(f, "{value:#?}"),
             None => write!(f, "Error"),
+        }
+    }
+}
+
+impl<T> Try for Node<T> {
+    type Output = T;
+    type Residual = Node<std::convert::Infallible>;
+
+    #[inline]
+    fn from_output(output: Self::Output) -> Self {
+        Node(Some(output))
+    }
+
+    #[inline]
+    fn branch(self) -> ControlFlow<Self::Residual, Self::Output> {
+        match self.0 {
+            Some(v) => ControlFlow::Continue(v),
+            None => ControlFlow::Break(Node::empty()),
+        }
+    }
+}
+
+impl<T> FromResidual for Node<T> {
+    fn from_residual(residual: <Self as Try>::Residual) -> Self {
+        match residual.0 {
+            Some(..) => unreachable!(),
+            None => Self::empty(),
         }
     }
 }
