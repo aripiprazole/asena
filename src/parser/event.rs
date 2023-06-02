@@ -1,11 +1,14 @@
+use std::fmt::Debug;
+
 use crate::ast::node::{Child, Tree, TreeKind};
 use crate::lexer::span::{Loc, Spanned};
 
 use super::Parser;
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub enum Event {
     Open(Spanned<TreeKind>),
+    Field(&'static str),
     Close,
     Advance,
 }
@@ -67,7 +70,16 @@ impl<'a> Parser<'a> {
                         .unwrap()
                         .value
                         .children
-                        .push(token.replace(Child::Token(token.value.clone())))
+                        .push(token.replace(Child::Token(token.value().clone())))
+                }
+
+                Event::Field(name) => {
+                    let last_item = stack.last_mut().unwrap();
+                    let last_child = last_item.children.last_mut().unwrap();
+                    match &mut last_child.value {
+                        Child::Tree(tree) => tree.name = Some(name),
+                        Child::Token(token) => token.name = Some(name),
+                    }
                 }
             }
         }
@@ -86,5 +98,16 @@ impl<'a> Parser<'a> {
         );
 
         stack.pop().unwrap()
+    }
+}
+
+impl Debug for Event {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Open(token) => write!(f, "Open({token:#?})"),
+            Self::Field(name) => write!(f, "Field({name:#?})"),
+            Self::Advance => write!(f, "Advance"),
+            Self::Close => write!(f, "Close"),
+        }
     }
 }

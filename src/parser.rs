@@ -157,7 +157,7 @@ mod tests {
         let code = "(a: t) -> b";
 
         let mut parser = Parser::from(Lexer::new(code));
-        parser.decl();
+        parser.expr();
 
         println!("{:#?}", parser.build_tree());
     }

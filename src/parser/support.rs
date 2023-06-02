@@ -24,6 +24,10 @@ impl<'a> Parser<'a> {
         self.events.remove(mark.index());
     }
 
+    pub(crate) fn field(&mut self, name: &'static str) {
+        self.events.push(Event::Field(name))
+    }
+
     pub(crate) fn close(&mut self, mark: MarkOpened, kind: TreeKind) {
         // Build tree position with the initial state, and the current
         let initial = mark.span();
