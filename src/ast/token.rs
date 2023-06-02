@@ -2,13 +2,13 @@ use std::fmt::Display;
 
 use super::named::Named;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Hash)]
 pub struct Token {
     pub kind: TokenKind,
     pub text: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum TokenKind {
     Error,
 

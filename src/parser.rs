@@ -49,20 +49,26 @@ impl<'a> From<Lexer<'a>> for Parser<'a> {
 
 #[cfg(test)]
 mod tests {
-    use crate::ast::spec::Spec;
-    use crate::ast::Expr;
+    use crate::ast::{Binary, Infix};
     use crate::lexer::Lexer;
 
     use super::*;
 
     #[test]
     fn it_works() {
-        let code = "1 + 2 + 1";
+        let code = "53 + 75 + 42";
 
         let mut parser = Parser::from(Lexer::new(code));
         parser.expr_binary();
+        let infix = Infix::new(parser.build_tree().into());
 
-        println!("{:#?}", Expr::spec(parser.build_tree()));
+        let lhs = infix.lhs();
+        let rhs = infix.rhs().duplicate();
+
+        infix.rhs().replace(lhs);
+        infix.lhs().replace(rhs);
+
+        println!("{:#?}", infix);
     }
 
     #[test]

@@ -1,6 +1,8 @@
 #![feature(box_patterns)]
 #![feature(concat_idents)]
 #![feature(try_trait_v2)]
+#![feature(lazy_cell)]
+#![feature(downcast_unchecked)]
 
 pub mod ast;
 pub mod graph;
