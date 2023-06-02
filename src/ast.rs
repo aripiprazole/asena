@@ -52,6 +52,39 @@ pub struct Global(pub Vec<Spanned<FunctionId>>);
 pub struct Local(pub Spanned<FunctionId>);
 //<<<Identifiers
 
+pub trait Binary: DerefMut + Deref<Target = Spanned<Tree>> + Clone {
+    fn make_expr(self) -> Expr;
+
+    fn lhs(&self) -> Node<Spanned<Expr>> {
+        self.at(0)
+    }
+
+    fn fn_id(&self) -> Node<Spanned<FunctionId>> {
+        self.terminal(1)
+    }
+
+    fn rhs(&self) -> Node<Spanned<Expr>> {
+        let mut rhs = self.clone();
+
+        // Checks the integrity of the length for safety
+        match rhs.children.len() {
+            0 => return Node::empty(),
+            1 => return rhs.at(0),
+            _ => {}
+        }
+
+        // Remove the first twice
+        rhs.children.remove(0);
+        rhs.children.remove(0);
+
+        if rhs.is_single() {
+            rhs.at(0)
+        } else {
+            Node::new(self.replace(rhs.make_expr()))
+        }
+    }
+}
+
 /// Represents a language literal construct, can hold numbers, strings, booleans, etc.
 #[derive(Clone)]
 pub enum Literal {
@@ -126,20 +159,34 @@ impl Group {
         self.0
     }
 
-    pub fn inner(&self) -> Node<Spanned<Expr>> {
-        todo!()
+    pub fn value(&self) -> Node<Spanned<Expr>> {
+        self.at(1)
     }
 }
 
 impl Debug for Group {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Group")
-            .field("inner", &self.inner())
+            .field("value", &self.value())
             .finish()
     }
 }
 
-/// Binary expression, is an expression that is a call between two operands, and is infix. The
+impl DerefMut for Group {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl Deref for Group {
+    type Target = Spanned<Tree>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+/// Infix expression, is an expression that is a call between two operands, and is infix. The
 /// fn_id, can be a symbol like: `+`, `-`.
 ///
 /// The syntax is like:
@@ -148,7 +195,7 @@ impl Debug for Group {
 ///
 /// ```
 ///
-/// The binary expressions can have precedence, and they have the following precedence order:
+/// The infix expressions can have precedence, and they have the following precedence order:
 ///   - `^`, `>>`, `<<`, `|`, `&`
 ///   - `>`, `>=`, `<=`, `<`
 ///   - `==`, `!=`
@@ -159,9 +206,9 @@ impl Debug for Group {
 ///   - `+`, `-`
 ///   Being the most important the first items.
 #[derive(Clone)]
-pub struct Binary(Spanned<Tree>);
+pub struct Infix(Spanned<Tree>);
 
-impl Binary {
+impl Infix {
     pub fn new(tree: Spanned<Tree>) -> Self {
         Self(tree)
     }
@@ -169,44 +216,15 @@ impl Binary {
     pub fn unwrap(self) -> Spanned<Tree> {
         self.0
     }
-
-    pub fn lhs(&self) -> Node<Spanned<Expr>> {
-        self.at(0)
-    }
-
-    pub fn fn_id(&self) -> Node<Spanned<FunctionId>> {
-        self.terminal(1)
-    }
-
-    pub fn rhs(&self) -> Node<Spanned<Expr>> {
-        let mut rhs = self.clone();
-
-        // Checks the integrity of the length for safety
-        match rhs.children.len() {
-            0 => return Node::empty(),
-            1 => return rhs.at(0),
-            _ => {}
-        }
-
-        // Remove the first twice
-        rhs.children.remove(0);
-        rhs.children.remove(0);
-
-        if rhs.is_single() {
-            rhs.at(0)
-        } else {
-            Node::new(self.replace(Expr::Binary(rhs)))
-        }
-    }
 }
 
-impl DerefMut for Binary {
+impl DerefMut for Infix {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
 }
 
-impl Deref for Binary {
+impl Deref for Infix {
     type Target = Spanned<Tree>;
 
     fn deref(&self) -> &Self::Target {
@@ -214,7 +232,13 @@ impl Deref for Binary {
     }
 }
 
-impl Debug for Binary {
+impl Binary for Infix {
+    fn make_expr(self) -> Expr {
+        Expr::Infix(self)
+    }
+}
+
+impl Debug for Infix {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Binary")
             .field("lhs", &self.lhs())
@@ -242,21 +266,21 @@ impl Accessor {
     pub fn unwrap(self) -> Spanned<Tree> {
         self.0
     }
+}
 
-    pub fn receiver(&self) -> Node<Spanned<Expr>> {
-        todo!()
-    }
-
-    pub fn accessor(&self) -> Node<Local> {
-        todo!()
+/// Binary operation represented by `fn_id`: `.`, and the two operands: `receiver`, `name`
+impl Binary for Accessor {
+    fn make_expr(self) -> Expr {
+        Expr::Accessor(self)
     }
 }
 
 impl Debug for Accessor {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Accessor")
-            .field("receiver", &self.receiver())
-            .field("accessor", &self.accessor())
+            .field("lhs", &self.lhs())
+            .field("fn_id", &self.fn_id())
+            .field("rhs", &self.rhs())
             .finish()
     }
 }
@@ -298,11 +322,11 @@ impl App {
     }
 
     pub fn callee(&self) -> Node<Spanned<Expr>> {
-        todo!()
+        self.at(0)
     }
 
     pub fn argument(&self) -> Node<Spanned<Expr>> {
-        todo!()
+        self.at(1)
     }
 }
 
@@ -820,7 +844,7 @@ impl Deref for Help {
 ast_enum! {
     pub enum Expr {
         Group    <- TreeKind::ExprGroup,
-        Binary   <- TreeKind::ExprBinary,
+        Infix    <- TreeKind::ExprBinary,
         Accessor <- TreeKind::ExprAcessor,
         App      <- TreeKind::ExprApp,
         Array    <- TreeKind::ExprArray,
@@ -1976,7 +2000,7 @@ impl Debug for Local {
 impl Debug for Expr {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Binary(expr) => write!(f, "{expr:#?}"),
+            Self::Infix(expr) => write!(f, "{expr:#?}"),
             Self::Accessor(expr) => write!(f, "{expr:#?}"),
             Self::App(expr) => write!(f, "{expr:#?}"),
             Self::Array(expr) => write!(f, "{expr:#?}"),
@@ -1989,9 +2013,9 @@ impl Debug for Expr {
             Self::Qual(expr) => write!(f, "{expr:#?}"),
             Self::Pi(expr) => write!(f, "{expr:#?}"),
             Self::Sigma(expr) => write!(f, "{expr:#?}"),
-            Self::Literal(expr) => write!(f, "Literal({expr:#?})"),
-            Self::Group(expr) => write!(f, "Group({expr:#?})"),
-            Self::Help(help) => f.debug_struct("Help").field("expr", help).finish(),
+            Self::Literal(expr) => write!(f, "{expr:#?}"),
+            Self::Group(expr) => write!(f, "{expr:#?}"),
+            Self::Help(expr) => write!(f, "{expr:#?}"),
         }
     }
 }
@@ -2124,10 +2148,10 @@ impl Debug for Type {
 impl Debug for Pat {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Wildcard(..) => write!(f, "Wildcard"),
-            Self::Spread(..) => write!(f, "Spread"),
-            Self::Literal(literal) => f.debug_tuple("Literal").field(literal).finish(),
-            Self::Local(local_id) => f.debug_struct("Local").field("local_id", local_id).finish(),
+            Self::Spread(spread) => write!(f, "{spread:#?}"),
+            Self::Wildcard(wildcard) => write!(f, "{wildcard:#?}"),
+            Self::Literal(literal) => write!(f, "{literal:#?}"),
+            Self::Local(local) => write!(f, "{local:#?}"),
             Self::Constructor(constructor) => write!(f, "{constructor:#?}"),
             Self::List(list) => write!(f, "{list:#?}"),
         }
