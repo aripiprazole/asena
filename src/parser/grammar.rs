@@ -273,6 +273,8 @@ impl<'a> Parser<'a> {
                     self.return_at(group);
                     return true;
                 }
+
+                self.report(ParseError::ExpectedParenthesisExpr)
             }
 
             _ => self.report(ParseError::CantParsePrimary),
