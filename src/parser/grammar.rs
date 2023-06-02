@@ -140,7 +140,29 @@ impl<'a> Parser<'a> {
 
     /// ExprApp = Primary Primary*
     pub fn expr_app(&mut self) {
+        let mark = self.open();
+        let mut index = 0;
+
         self.primary();
+
+        loop {
+            let argument = self.savepoint();
+            let succeeds = self.succeds(argument, |this| {
+                this.primary();
+            });
+
+            if !succeeds {
+                break;
+            } else {
+                index += 1;
+            }
+        }
+
+        if index == 0 {
+            self.ignore(mark);
+        } else {
+            self.close(mark, ExprApp);
+        }
     }
 
     pub fn expr_pi(&mut self) {

@@ -10,11 +10,19 @@ use super::token::Token;
 pub struct Node<T>(Option<T>);
 
 pub trait Spec: Sized {
-    fn spec(from: Spanned<Tree>) -> Node<Spanned<Self>>;
+    fn make(from: Spanned<Tree>) -> Node<Spanned<Self>>;
 }
 
 pub trait Terminal: Sized {
-    fn spec(from: Spanned<Token>) -> Node<Spanned<Self>>;
+    fn terminal(from: Spanned<Token>) -> Node<Spanned<Self>>;
+}
+
+impl<T: Terminal> Spec for T {
+    fn make(from: Spanned<Tree>) -> Node<Spanned<Self>> {
+        let token = from.single().clone();
+
+        <T as Terminal>::terminal(from.swap(token))
+    }
 }
 
 impl<T> From<T> for Node<T> {

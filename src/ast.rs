@@ -31,7 +31,7 @@ pub enum Signed {
 pub struct FunctionId(pub String);
 
 impl Terminal for FunctionId {
-    fn spec(token: Spanned<Token>) -> Node<Spanned<Self>> {
+    fn terminal(token: Spanned<Token>) -> Node<Spanned<Self>> {
         let text = token.text.clone();
 
         Node::new(token.swap(FunctionId(text)))
@@ -43,7 +43,7 @@ impl Terminal for FunctionId {
 pub struct ConstructorId(pub Vec<Spanned<FunctionId>>);
 
 impl Terminal for ConstructorId {
-    fn spec(token: Spanned<Token>) -> Node<Spanned<Self>> {
+    fn terminal(token: Spanned<Token>) -> Node<Spanned<Self>> {
         let text = token.text.clone();
         let span = token.span.clone();
 
@@ -58,7 +58,7 @@ impl Terminal for ConstructorId {
 pub struct Global(pub Vec<Spanned<FunctionId>>);
 
 impl Terminal for Global {
-    fn spec(token: Spanned<Token>) -> Node<Spanned<Self>> {
+    fn terminal(token: Spanned<Token>) -> Node<Spanned<Self>> {
         let text = token.text.clone();
         let span = token.span.clone();
 
@@ -72,7 +72,7 @@ impl Terminal for Global {
 pub struct Local(pub Spanned<FunctionId>);
 
 impl Terminal for Local {
-    fn spec(token: Spanned<Token>) -> Node<Spanned<Self>> {
+    fn terminal(token: Spanned<Token>) -> Node<Spanned<Self>> {
         let text = token.text.clone();
         let span = token.span.clone();
 
@@ -143,7 +143,7 @@ pub enum Literal {
 }
 
 impl Spec for Literal {
-    fn spec(from: Spanned<Tree>) -> Node<Spanned<Self>> {
+    fn make(from: Spanned<Tree>) -> Node<Spanned<Self>> {
         use self::Signed::*;
 
         use Literal::*;
@@ -934,7 +934,7 @@ ast_enum! {
 }
 
 impl Spec for Expr {
-    fn spec(from: Spanned<Tree>) -> Node<Spanned<Self>> {
+    fn make(from: Spanned<Tree>) -> Node<Spanned<Self>> {
         use TreeKind::*;
 
         let value = match from.kind {
@@ -959,10 +959,13 @@ impl Spec for Expr {
             ExprPi => Expr::Pi(Pi::new(from.clone())),
             ExprSigma => Expr::Sigma(Sigma::new(from.clone())),
             ExprHelp => Expr::Help(Help::new(from.clone())),
+            LitIdentifier => {
+                return Local::make(from.clone())?.map(Expr::Local).into();
+            }
             LitNat // literals
             | LitInt8 | LitUInt8 | LitInt16 | LitUInt16 | LitInt32 | LitUInt32
             | LitInt64 | LitUInt64 | LitInt128 | LitUInt128 | LitFloat32 | LitFloat64 | LitTrue
-            | LitFalse => Literal::spec(from.clone()).map(|literal| Expr::Literal(literal.value))?,
+            | LitFalse => Literal::make(from.clone()).map(|literal| Expr::Literal(literal.value))?,
             _ => return Node::empty(),
         };
 

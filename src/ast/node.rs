@@ -71,7 +71,7 @@ impl Tree {
         };
 
         match &child.value {
-            Child::Tree(tree) => T::spec(child.replace(tree.clone())),
+            Child::Tree(tree) => T::make(child.replace(tree.clone())),
             Child::Token(..) => Node::empty(),
         }
     }
@@ -83,7 +83,7 @@ impl Tree {
 
         match &child.value {
             Child::Tree(..) => Node::empty(),
-            Child::Token(token) => T::spec(child.replace(token.clone())),
+            Child::Token(token) => T::terminal(child.replace(token.clone())),
         }
     }
 
