@@ -26,14 +26,14 @@ pub use super::token::*;
 ///        '1' @ 8..9
 ///      @ 0..9
 /// ```
-#[derive(Clone)]
+#[derive(Clone, Hash)]
 pub struct Tree {
     pub kind: TreeKind,
     pub children: Vec<Spanned<Child>>,
 }
 
 /// Polymorphic variants of [Token] and [Tree], it can and must be used as an abstract to them.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Hash)]
 pub enum Child {
     Tree(Tree),
     Token(Token),

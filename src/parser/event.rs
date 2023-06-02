@@ -40,7 +40,7 @@ impl<'a> Parser<'a> {
             match event {
                 // Starting a new node; just push an empty tree to the stack.
                 Event::Open(kind) => {
-                    stack.push(kind.replace(Tree::new(kind.value.clone())));
+                    stack.push(kind.replace(Tree::new(kind.value)));
                 }
 
                 // A tree is done.

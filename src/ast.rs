@@ -3,6 +3,7 @@ use std::ops::{Deref, DerefMut};
 
 use crate::lexer::span::{Loc, Spanned};
 
+use self::green::{GreenTree, Green};
 use self::node::{ast_enum, Tree, TreeKind};
 use self::spec::{Node, Spec, Terminal};
 use self::token::Token;
@@ -13,6 +14,7 @@ pub mod named;
 pub mod node;
 pub mod spec;
 pub mod token;
+pub mod green;
 
 /// Represents a true-false value, just like an wrapper to [bool], this represents if an integer
 /// value is signed, or unsigned.
@@ -79,36 +81,42 @@ impl Terminal for Local {
 }
 //<<<Identifiers
 
-pub trait Binary: DerefMut + Deref<Target = Spanned<Tree>> + Clone {
-    fn make_expr(self) -> Expr;
+pub trait Binary: DerefMut + Deref<Target = GreenTree> + Clone {
+    fn make_expr(tree: GreenTree) -> Expr;
 
-    fn lhs(&self) -> Node<Spanned<Expr>> {
-        self.at(0)
+    fn lhs(&self) -> Green<Node<Spanned<Expr>>> {
+        self.lazy("lhs", |this| {
+            this.at(0)
+        })
     }
 
-    fn fn_id(&self) -> Node<Spanned<FunctionId>> {
-        self.terminal(1)
+    fn fn_id(&self) -> Green<Node<Spanned<FunctionId>>> {
+        self.lazy("fn_id", |this| {
+            this.terminal(1)
+        })
     }
 
-    fn rhs(&self) -> Node<Spanned<Expr>> {
-        let mut rhs = self.clone();
+    fn rhs(&self) -> Green<Node<Spanned<Expr>>> {
+        self.lazy("rhs", |this| {
+            let mut rhs = this.clone();
 
-        // Checks the integrity of the length for safety
-        match rhs.children.len() {
-            0 => return Node::empty(),
-            1 => return rhs.at(0),
-            _ => {}
-        }
+            // Checks the integrity of the length for safety
+            match rhs.children.len() {
+                0 => return Node::empty(),
+                1 => return rhs.at(0),
+                _ => {}
+            }
 
-        // Remove the first twice
-        rhs.children.remove(0);
-        rhs.children.remove(0);
+            // Remove the first twice
+            rhs.children.remove(0);
+            rhs.children.remove(0);
 
-        if rhs.is_single() {
-            rhs.at(0)
-        } else {
-            Node::new(self.replace(rhs.make_expr()))
-        }
+            if rhs.is_single() {
+                rhs.at(0)
+            } else {
+                Node::new(this.replace(Self::make_expr(rhs)))
+            }
+        })
     }
 }
 
@@ -270,14 +278,14 @@ impl Deref for Group {
 ///   - `+`, `-`
 ///   Being the most important the first items.
 #[derive(Clone)]
-pub struct Infix(Spanned<Tree>);
+pub struct Infix(GreenTree);
 
 impl Infix {
-    pub fn new(tree: Spanned<Tree>) -> Self {
+    pub fn new(tree: GreenTree) -> Self {
         Self(tree)
     }
 
-    pub fn unwrap(self) -> Spanned<Tree> {
+    pub fn unwrap(self) -> GreenTree {
         self.0
     }
 }
@@ -289,7 +297,7 @@ impl DerefMut for Infix {
 }
 
 impl Deref for Infix {
-    type Target = Spanned<Tree>;
+    type Target = GreenTree;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -297,14 +305,14 @@ impl Deref for Infix {
 }
 
 impl Binary for Infix {
-    fn make_expr(self) -> Expr {
-        Expr::Infix(self)
+    fn make_expr(tree: GreenTree) -> Expr {
+        Expr::Infix(Infix::new(tree))
     }
 }
 
 impl Debug for Infix {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Binary")
+        f.debug_struct("Infix")
             .field("lhs", &self.lhs())
             .field("fn_id", &self.fn_id())
             .field("rhs", &self.rhs())
@@ -320,22 +328,22 @@ impl Debug for Infix {
 /// person.data
 /// ```
 #[derive(Clone)]
-pub struct Accessor(Spanned<Tree>);
+pub struct Accessor(GreenTree);
 
 impl Accessor {
-    pub fn new(tree: Spanned<Tree>) -> Self {
+    pub fn new(tree: GreenTree) -> Self {
         Self(tree)
     }
 
-    pub fn unwrap(self) -> Spanned<Tree> {
+    pub fn unwrap(self) -> GreenTree {
         self.0
     }
 }
 
 /// Binary operation represented by `fn_id`: `.`, and the two operands: `receiver`, `name`
 impl Binary for Accessor {
-    fn make_expr(self) -> Expr {
-        Expr::Accessor(self)
+    fn make_expr(tree: GreenTree) -> Expr {
+        Expr::Accessor(Accessor::new(tree))
     }
 }
 
@@ -356,7 +364,7 @@ impl DerefMut for Accessor {
 }
 
 impl Deref for Accessor {
-    type Target = Spanned<Tree>;
+    type Target = GreenTree;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -701,14 +709,14 @@ impl Deref for Ann {
 /// ∀ (MonadIO m) -> Π (a: t) -> m b
 /// ```
 #[derive(Clone)]
-pub struct Qual(Spanned<Tree>);
+pub struct Qual(GreenTree);
 
 impl Qual {
-    pub fn new(tree: Spanned<Tree>) -> Self {
+    pub fn new(tree: GreenTree) -> Self {
         Self(tree)
     }
 
-    pub fn unwrap(self) -> Spanned<Tree> {
+    pub fn unwrap(self) -> GreenTree {
         self.0
     }
 }
@@ -730,7 +738,7 @@ impl DerefMut for Qual {
 }
 
 impl Deref for Qual {
-    type Target = Spanned<Tree>;
+    type Target = GreenTree;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -738,8 +746,8 @@ impl Deref for Qual {
 }
 
 impl Binary for Qual {
-    fn make_expr(self) -> Expr {
-        Expr::Qual(self)
+    fn make_expr(tree: GreenTree) -> Expr {
+        Expr::Qual(Qual::new(tree))
     }
 }
 
@@ -939,15 +947,15 @@ impl Spec for Expr {
             }
         
             ExprGroup => Expr::Group(Group::new(from.clone())),
-            ExprBinary => Expr::Infix(Infix::new(from.clone())),
-            ExprAcessor => Expr::Accessor(Accessor::new(from.clone())),
+            ExprBinary => Expr::Infix(Infix::new(from.clone().into())),
+            ExprAcessor => Expr::Accessor(Accessor::new(from.clone().into())),
             ExprApp => Expr::App(App::new(from.clone())),
             ExprArray => Expr::Array(Array::new(from.clone())),
             ExprDsl => Expr::Dsl(Dsl::new(from.clone())),
             ExprLam => Expr::Lam(Lam::new(from.clone())),
             ExprLet => Expr::Let(Let::new(from.clone())),
             ExprAnn => Expr::Ann(Ann::new(from.clone())),
-            ExprQual => Expr::Qual(Qual::new(from.clone())),
+            ExprQual => Expr::Qual(Qual::new(from.clone().into())),
             ExprPi => Expr::Pi(Pi::new(from.clone())),
             ExprSigma => Expr::Sigma(Sigma::new(from.clone())),
             ExprHelp => Expr::Help(Help::new(from.clone())),

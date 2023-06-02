@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use super::named::Named;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum TreeKind {
     Error,
 
