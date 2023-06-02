@@ -159,7 +159,17 @@ mod tests {
         let mut parser = Parser::from(Lexer::new(code));
         parser.expr();
 
-        println!("{:#?}", parser.build_tree());
+        println!("{:#?}", Expr::make(parser.build_tree()));
+    }
+
+    #[test]
+    fn anonymous_pi_expr() {
+        let code = "t -> b";
+
+        let mut parser = Parser::from(Lexer::new(code));
+        parser.expr();
+
+        println!("{:#?}", Expr::make(parser.build_tree()));
     }
 
     #[test]

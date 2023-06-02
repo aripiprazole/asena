@@ -8,7 +8,8 @@ use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
 
-use super::node::Tree;
+use super::node::{Child, Tree};
+use super::spec::{Node, Spec, Terminal};
 
 pub type GreenChild = Green<Box<dyn Any>>;
 
@@ -16,6 +17,9 @@ pub struct GreenTree {
     /// TODO: Use tree cursor instead of using directly the [Spanned] tree's [Tree], to invalidate
     /// `lazy_names` references.
     tree: Spanned<Tree>,
+
+    /// Children marked with name, to be accessed fast.
+    children: HashMap<&'static str, Spanned<Child>>,
 
     /// Lazy names' hash map, they have to exist, to make the tree mutable.
     ///
@@ -49,10 +53,39 @@ impl<T: Debug + Clone> Green<T> {
 }
 
 impl GreenTree {
-    pub fn new(tree: Spanned<Tree>) -> GreenTree {
+    pub fn new(tree: Spanned<Tree>) -> Self {
+        let named_children = Self::compute_named_children(&tree);
+
         Self {
             tree,
+            children: named_children,
             lazy_names: Default::default(),
+        }
+    }
+
+    pub fn has(&self, name: &'static str) -> bool {
+        matches!(self.children.get(name), Some(..))
+    }
+
+    pub fn named_at<T: Spec>(&self, name: &'static str) -> Node<Spanned<T>> {
+        let Some(child) = self.children.get(name) else {
+            return Node::empty();
+        };
+
+        match &child.value {
+            Child::Tree(tree) => T::make(child.replace(tree.clone())),
+            Child::Token(..) => Node::empty(),
+        }
+    }
+
+    pub fn named_terminal<T: Terminal>(&self, name: &'static str) -> Node<Spanned<T>> {
+        let Some(child) = self.children.get(name) else {
+            return Node::empty();
+        };
+
+        match &child.value {
+            Child::Tree(..) => Node::empty(),
+            Child::Token(token) => T::terminal(child.replace(token.clone())),
         }
     }
 
@@ -73,6 +106,27 @@ impl GreenTree {
             .insert(name, Box::new(node.clone()));
 
         node
+    }
+
+    fn compute_named_children(tree: &Spanned<Tree>) -> HashMap<&'static str, Spanned<Child>> {
+        let mut named_children = HashMap::new();
+
+        for child in &tree.children {
+            match child.value() {
+                Child::Tree(tree) => {
+                    if let Some(name) = tree.name {
+                        named_children.insert(name, child.clone());
+                    }
+                }
+                Child::Token(token) => {
+                    if let Some(name) = token.name {
+                        named_children.insert(name, child.clone());
+                    }
+                }
+            }
+        }
+
+        named_children
     }
 }
 
@@ -99,8 +153,9 @@ impl Deref for GreenTree {
 impl Clone for GreenTree {
     fn clone(&self) -> Self {
         Self {
-            tree: self.tree.clone(),
             lazy_names: Default::default(),
+            tree: self.tree.clone(),
+            children: self.children.clone(),
         }
     }
 }
