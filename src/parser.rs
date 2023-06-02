@@ -49,7 +49,8 @@ impl<'a> From<Lexer<'a>> for Parser<'a> {
 
 #[cfg(test)]
 mod tests {
-    use crate::ast::{Binary, Infix};
+    use crate::ast::spec::Spec;
+    use crate::ast::{Binary, Expr, Infix};
     use crate::lexer::Lexer;
 
     use super::*;
@@ -69,6 +70,16 @@ mod tests {
         infix.lhs().replace(rhs);
 
         println!("{:#?}", infix);
+    }
+
+    #[test]
+    fn resilient_group_expr() {
+        let code = "(1 + 2)";
+
+        let mut parser = Parser::from(Lexer::new(code));
+        parser.expr_binary();
+
+        println!("{:#?}", Expr::spec(parser.build_tree()));
     }
 
     #[test]

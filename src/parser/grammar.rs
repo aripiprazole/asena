@@ -143,6 +143,27 @@ impl<'a> Parser<'a> {
         self.primary();
     }
 
+    pub fn expr_pi(&mut self) {
+        let mark = self.open();
+        self.expect(LeftParen);
+        if self.eat(Identifier) {
+            self.expect(Colon);
+        }
+        self.type_expr();
+        self.expect(RightParen);
+        self.expect(RightArrow);
+        self.type_expr();
+        self.close(mark, ExprPi);
+    }
+
+    pub fn expr_group(&mut self) {
+        let mark = self.open();
+        self.expect(LeftParen);
+        self.expr();
+        self.expect(RightParen);
+        self.close(mark, ExprGroup);
+    }
+
     /// Primary = Nat 'n'? | Int 'i8'? | Int 'u8'?
     ///         | Int 'i16'? | Int 'u16'? | Int ('u' | 'i32')?
     ///         | Int ('u' | 'u32')? | Int 'i64'? | Int 'u64'?
@@ -217,7 +238,19 @@ impl<'a> Parser<'a> {
             // - Pi
             // - Group
             LeftParen => {
-                todo!()
+                let mut pi = self.savepoint();
+                pi.expr_pi();
+                if pi.errors.is_empty() {
+                    self.return_at(pi);
+                    return true;
+                }
+
+                let mut group = self.savepoint();
+                group.expr_group();
+                if group.errors.is_empty() {
+                    self.return_at(group);
+                    return true;
+                }
             }
 
             _ => self.report(ParseError::CantParsePrimary),
