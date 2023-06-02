@@ -49,7 +49,8 @@ impl<'a> From<Lexer<'a>> for Parser<'a> {
 
 #[cfg(test)]
 mod tests {
-    use crate::ast::Infix;
+    use crate::ast::spec::Spec;
+    use crate::ast::Expr;
     use crate::lexer::Lexer;
 
     use super::*;
@@ -61,7 +62,7 @@ mod tests {
         let mut parser = Parser::from(Lexer::new(code));
         parser.expr_binary();
 
-        println!("{:#?}", Infix::new(parser.build_tree()));
+        println!("{:#?}", Expr::spec(parser.build_tree()));
     }
 
     #[test]

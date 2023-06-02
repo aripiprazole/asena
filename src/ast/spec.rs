@@ -17,6 +17,12 @@ pub trait Terminal: Sized {
     fn spec(from: Spanned<Token>) -> Node<Spanned<Self>>;
 }
 
+impl<T> From<T> for Node<T> {
+    fn from(value: T) -> Self {
+        Node(Some(value))
+    }
+}
+
 impl<T> Node<T> {
     pub fn empty() -> Self {
         Self(None)

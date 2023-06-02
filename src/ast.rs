@@ -40,16 +40,43 @@ impl Terminal for FunctionId {
 #[derive(Clone)]
 pub struct ConstructorId(pub Vec<Spanned<FunctionId>>);
 
+impl Terminal for ConstructorId {
+    fn spec(token: Spanned<Token>) -> Node<Spanned<Self>> {
+        let text = token.text.clone();
+        let span = token.span.clone();
+
+        Node::new(token.swap(ConstructorId::new(span, &text)))
+    }
+}
+
 /// Identifier's key to a global identifier, that's not declared locally, almost everything with
 /// Pascal Case, as a language pattern. This can contain symbols like: `Person.new`, as it can
 /// contain `.`.
 #[derive(Clone)]
 pub struct Global(pub Vec<Spanned<FunctionId>>);
 
+impl Terminal for Global {
+    fn spec(token: Spanned<Token>) -> Node<Spanned<Self>> {
+        let text = token.text.clone();
+        let span = token.span.clone();
+
+        Node::new(token.swap(Global::new(span, &text)))
+    }
+}
+
 /// Identifier's key to local identifier, that's not declared globally, almost everything with
 /// snake case, as a language pattern.
 #[derive(Clone)]
 pub struct Local(pub Spanned<FunctionId>);
+
+impl Terminal for Local {
+    fn spec(token: Spanned<Token>) -> Node<Spanned<Self>> {
+        let text = token.text.clone();
+        let span = token.span.clone();
+
+        Node::new(token.swap(Local::new(span, &text)))
+    }
+}
 //<<<Identifiers
 
 pub trait Binary: DerefMut + Deref<Target = Spanned<Tree>> + Clone {
@@ -109,32 +136,69 @@ pub enum Literal {
 
 impl Spec for Literal {
     fn spec(from: Spanned<Tree>) -> Node<Spanned<Self>> {
+        use self::Signed::*;
+
+        use Literal::*;
         use TreeKind::*;
 
-        match from.kind {
-            LitNat => todo!(),
-            LitInt8 => todo!(),
-            LitUInt8 => todo!(),
-            LitInt16 => todo!(),
-            LitUInt16 => todo!(),
-            LitInt32 => todo!(),
-            LitUInt32 => todo!(),
-            LitInt64 => todo!(),
-            LitUInt64 => todo!(),
-            LitInt128 => todo!(),
-            LitUInt128 => todo!(),
-            LitFloat32 => todo!(),
-            LitFloat64 => {
-                let token = from.single();
-                let Ok(value) = token.text.parse::<f64>() else {
-                    return Node::empty();
-                };
+        let token = from.single();
 
-                Node::new(from.swap(Literal::Float64(value)))
-            }
-            LitTrue => todo!(),
-            LitFalse => todo!(),
-            _ => todo!(),
+        match from.kind {
+            LitTrue => from.swap(True).into(),
+            LitFalse => from.swap(False).into(),
+            LitNat => match token.text.parse::<_>() {
+                Ok(value) => from.swap(Nat(value)).into(),
+                Err(..) => Node::empty(),
+            },
+            LitInt8 => match token.text.parse::<_>() {
+                Ok(value) => from.swap(Int8(value, Signed)).into(),
+                Err(..) => Node::empty(),
+            },
+            LitUInt8 => match token.text.parse::<_>() {
+                Ok(value) => from.swap(Int8(value, Unsigned)).into(),
+                Err(..) => Node::empty(),
+            },
+            LitInt16 => match token.text.parse::<_>() {
+                Ok(value) => from.swap(Int16(value, Signed)).into(),
+                Err(..) => Node::empty(),
+            },
+            LitUInt16 => match token.text.parse::<_>() {
+                Ok(value) => from.swap(Int16(value, Unsigned)).into(),
+                Err(..) => Node::empty(),
+            },
+            LitInt32 => match token.text.parse::<_>() {
+                Ok(value) => from.swap(Int32(value, Signed)).into(),
+                Err(..) => Node::empty(),
+            },
+            LitUInt32 => match token.text.parse::<_>() {
+                Ok(value) => from.swap(Int32(value, Unsigned)).into(),
+                Err(..) => Node::empty(),
+            },
+            LitInt64 => match token.text.parse::<_>() {
+                Ok(value) => from.swap(Int64(value, Signed)).into(),
+                Err(..) => Node::empty(),
+            },
+            LitUInt64 => match token.text.parse::<_>() {
+                Ok(value) => from.swap(Int64(value, Unsigned)).into(),
+                Err(..) => Node::empty(),
+            },
+            LitInt128 => match token.text.parse::<_>() {
+                Ok(value) => from.swap(Int128(value, Signed)).into(),
+                Err(..) => Node::empty(),
+            },
+            LitUInt128 => match token.text.parse::<_>() {
+                Ok(value) => from.swap(Int128(value, Unsigned)).into(),
+                Err(..) => Node::empty(),
+            },
+            LitFloat32 => match token.text.parse::<_>() {
+                Ok(value) => from.swap(Float32(value)).into(),
+                Err(..) => Node::empty(),
+            },
+            LitFloat64 => match token.text.parse::<_>() {
+                Ok(value) => from.swap(Float64(value)).into(),
+                Err(..) => Node::empty(),
+            },
+            _ => Node::empty(),
         }
     }
 }
@@ -647,21 +711,14 @@ impl Qual {
     pub fn unwrap(self) -> Spanned<Tree> {
         self.0
     }
-
-    pub fn constraint(&self) -> Node<Spanned<Expr>> {
-        todo!()
-    }
-
-    pub fn return_type(&self) -> Node<Type> {
-        todo!()
-    }
 }
 
 impl Debug for Qual {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Qual")
-            .field("constraint", &self.constraint())
-            .field("return_type", &self.return_type())
+            .field("lhs", &self.lhs())
+            .field("fn_id", &self.fn_id())
+            .field("rhs_id", &self.rhs())
             .finish()
     }
 }
@@ -677,6 +734,12 @@ impl Deref for Qual {
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+impl Binary for Qual {
+    fn make_expr(self) -> Expr {
+        Expr::Qual(self)
     }
 }
 
@@ -866,13 +929,36 @@ impl Spec for Expr {
     fn spec(from: Spanned<Tree>) -> Node<Spanned<Self>> {
         use TreeKind::*;
 
-        match from.kind {
-            LitNat | LitInt8 | LitUInt8 | LitInt16 | LitUInt16 | LitInt32 | LitUInt32
+        let value = match from.kind {
+            ExprGlobal => {
+                todo!()
+            }
+
+            ExprLocal => {
+                todo!()
+            }
+        
+            ExprGroup => Expr::Group(Group::new(from.clone())),
+            ExprBinary => Expr::Infix(Infix::new(from.clone())),
+            ExprAcessor => Expr::Accessor(Accessor::new(from.clone())),
+            ExprApp => Expr::App(App::new(from.clone())),
+            ExprArray => Expr::Array(Array::new(from.clone())),
+            ExprDsl => Expr::Dsl(Dsl::new(from.clone())),
+            ExprLam => Expr::Lam(Lam::new(from.clone())),
+            ExprLet => Expr::Let(Let::new(from.clone())),
+            ExprAnn => Expr::Ann(Ann::new(from.clone())),
+            ExprQual => Expr::Qual(Qual::new(from.clone())),
+            ExprPi => Expr::Pi(Pi::new(from.clone())),
+            ExprSigma => Expr::Sigma(Sigma::new(from.clone())),
+            ExprHelp => Expr::Help(Help::new(from.clone())),
+            LitNat // literals
+            | LitInt8 | LitUInt8 | LitInt16 | LitUInt16 | LitInt32 | LitUInt32
             | LitInt64 | LitUInt64 | LitInt128 | LitUInt128 | LitFloat32 | LitFloat64 | LitTrue
-            | LitFalse => Literal::spec(from)
-                .map(|literal| literal.replace(Expr::Literal(literal.value.clone()))),
-            _ => Node::empty(),
-        }
+            | LitFalse => Literal::spec(from.clone()).map(|literal| Expr::Literal(literal.value))?,
+            _ => return Node::empty(),
+        };
+
+        from.replace(value).into()
     }
 }
 
@@ -1966,8 +2052,15 @@ impl Debug for ConstructorId {
     }
 }
 
+impl ConstructorId {
+    /// Creates a new [ConstructorId] by a string
+    pub fn new(span: Loc, id: &str) -> Self {
+        Self(vec![Spanned::new(span, FunctionId::new(id))])
+    }
+}
+
 impl Global {
-    /// Creates a new [GlobalId] by a string
+    /// Creates a new [Global] by a string
     pub fn new(span: Loc, id: &str) -> Self {
         Self(vec![Spanned::new(span, FunctionId::new(id))])
     }
@@ -1980,7 +2073,7 @@ impl Debug for Global {
 }
 
 impl Local {
-    /// Creates a new [LocalId] by a string
+    /// Creates a new [Local] by a string
     pub fn new(span: Loc, id: &str) -> Self {
         Self(Spanned::new(span, FunctionId::new(id)))
     }
