@@ -154,7 +154,7 @@ mod tests {
 
     #[test]
     fn pi_expr() {
-        let code = "(a: t) -> b";
+        let code = "(a: t) -> (b: t) -> c";
 
         let mut parser = Parser::from(Lexer::new(code));
         parser.expr();
@@ -164,7 +164,7 @@ mod tests {
 
     #[test]
     fn anonymous_pi_expr() {
-        let code = "t -> b";
+        let code = "t -> b -> c";
 
         let mut parser = Parser::from(Lexer::new(code));
         parser.expr();
