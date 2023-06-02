@@ -3,18 +3,18 @@ use std::ops::{Deref, DerefMut};
 
 use crate::lexer::span::{Loc, Spanned};
 
-use self::green::{GreenTree, Green};
+use self::green::{Green, GreenTree};
 use self::node::{ast_enum, Tree, TreeKind};
 use self::spec::{Node, Spec, Terminal};
 use self::token::Token;
 
+pub mod green;
 pub mod kind;
 pub mod macros;
 pub mod named;
 pub mod node;
 pub mod spec;
 pub mod token;
-pub mod green;
 
 /// Represents a true-false value, just like an wrapper to [bool], this represents if an integer
 /// value is signed, or unsigned.
@@ -85,15 +85,11 @@ pub trait Binary: DerefMut + Deref<Target = GreenTree> + Clone {
     fn make_expr(tree: GreenTree) -> Expr;
 
     fn lhs(&self) -> Green<Node<Spanned<Expr>>> {
-        self.lazy("lhs", |this| {
-            this.at(0)
-        })
+        self.lazy("lhs", |this| this.at(0))
     }
 
     fn fn_id(&self) -> Green<Node<Spanned<FunctionId>>> {
-        self.lazy("fn_id", |this| {
-            this.terminal(1)
-        })
+        self.lazy("fn_id", |this| this.terminal(1))
     }
 
     fn rhs(&self) -> Green<Node<Spanned<Expr>>> {
@@ -653,14 +649,14 @@ impl Deref for Let {
 /// 10 : Int
 /// ```
 #[derive(Clone)]
-pub struct Ann(Spanned<Tree>);
+pub struct Ann(GreenTree);
 
 impl Ann {
-    pub fn new(tree: Spanned<Tree>) -> Self {
+    pub fn new(tree: GreenTree) -> Self {
         Self(tree)
     }
 
-    pub fn unwrap(self) -> Spanned<Tree> {
+    pub fn unwrap(self) -> GreenTree {
         self.0
     }
 
@@ -676,8 +672,9 @@ impl Ann {
 impl Debug for Ann {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Ann")
-            .field("value", &self.value())
-            .field("against", &self.against())
+            .field("lhs", &self.lhs())
+            .field("fn_id", &self.fn_id())
+            .field("rhs", &self.rhs())
             .finish()
     }
 }
@@ -689,10 +686,16 @@ impl DerefMut for Ann {
 }
 
 impl Deref for Ann {
-    type Target = Spanned<Tree>;
+    type Target = GreenTree;
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+impl Binary for Ann {
+    fn make_expr(tree: GreenTree) -> Expr {
+        Expr::Ann(Ann::new(tree))
     }
 }
 
@@ -763,27 +766,33 @@ impl Binary for Qual {
 /// Π (a: t) -> b
 /// ```
 #[derive(Clone)]
-pub struct Pi(Spanned<Tree>);
+pub struct Pi(GreenTree);
 
 impl Pi {
-    pub fn new(tree: Spanned<Tree>) -> Self {
+    pub fn new(tree: GreenTree) -> Self {
         Self(tree)
     }
 
-    pub fn unwrap(self) -> Spanned<Tree> {
+    pub fn unwrap(self) -> GreenTree {
         self.0
     }
 
     pub fn parameter_name(&self) -> Node<Option<Local>> {
-        todo!()
+        if self.has("parameter_name") {
+            let fn_id = self.named_terminal::<FunctionId>("parameter_name")?;
+
+            Node::new(Some(Local(fn_id)))
+        } else {
+            Node::new(None)
+        }
     }
 
-    pub fn parameter_type(&self) -> Node<Type> {
-        todo!()
+    pub fn parameter_type(&self) -> Node<Spanned<Type>> {
+        self.named_at("parameter_type")
     }
 
-    pub fn return_type(&self) -> Node<Type> {
-        todo!()
+    pub fn return_type(&self) -> Node<Spanned<Type>> {
+        self.named_at("return_type")
     }
 }
 
@@ -804,7 +813,7 @@ impl DerefMut for Pi {
 }
 
 impl Deref for Pi {
-    type Target = Spanned<Tree>;
+    type Target = GreenTree;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -938,14 +947,6 @@ impl Spec for Expr {
         use TreeKind::*;
 
         let value = match from.kind {
-            ExprGlobal => {
-                todo!()
-            }
-
-            ExprLocal => {
-                todo!()
-            }
-        
             ExprGroup => Expr::Group(Group::new(from.clone())),
             ExprBinary => Expr::Infix(Infix::new(from.clone().into())),
             ExprAcessor => Expr::Accessor(Accessor::new(from.clone().into())),
@@ -954,9 +955,9 @@ impl Spec for Expr {
             ExprDsl => Expr::Dsl(Dsl::new(from.clone())),
             ExprLam => Expr::Lam(Lam::new(from.clone())),
             ExprLet => Expr::Let(Let::new(from.clone())),
-            ExprAnn => Expr::Ann(Ann::new(from.clone())),
+            ExprAnn => Expr::Ann(Ann::new(from.clone().into())),
             ExprQual => Expr::Qual(Qual::new(from.clone().into())),
-            ExprPi => Expr::Pi(Pi::new(from.clone())),
+            ExprPi => Expr::Pi(Pi::new(from.clone().into())),
             ExprSigma => Expr::Sigma(Sigma::new(from.clone())),
             ExprHelp => Expr::Help(Help::new(from.clone())),
             LitIdentifier => {
@@ -2031,6 +2032,22 @@ ast_enum! {
 pub enum Type {
     Infer, // _
     Explicit(ExprRef),
+}
+
+impl Spec for Type {
+    fn make(from: Spanned<Tree>) -> Node<Spanned<Self>> {
+        use TreeKind::*;
+
+        match from.kind {
+            Type => {
+                let expr = from.at::<Expr>(0)?;
+
+                Node::new(from.swap(Self::Explicit(expr)))
+            }
+            TypeInfer => from.swap(Self::Infer).into(),
+            _ => Node::empty(),
+        }
+    }
 }
 
 impl Display for FunctionId {
