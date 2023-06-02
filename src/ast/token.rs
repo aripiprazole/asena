@@ -4,6 +4,7 @@ use super::named::Named;
 
 #[derive(Debug, Clone, Hash)]
 pub struct Token {
+    pub name: Option<&'static str>,
     pub kind: TokenKind,
     pub text: String,
 }
@@ -84,6 +85,7 @@ pub enum TokenKind {
 impl Token {
     pub fn new(kind: TokenKind, text: &str) -> Self {
         Self {
+            name: None,
             kind,
             text: text.into(),
         }
@@ -91,6 +93,7 @@ impl Token {
 
     pub fn eof() -> Self {
         Self {
+            name: None,
             kind: TokenKind::Eof,
             text: Default::default(),
         }
@@ -118,6 +121,9 @@ impl Token {
     /// ```
     pub(crate) fn render(&self, f: &mut std::fmt::Formatter<'_>, tab: &str) -> std::fmt::Result {
         write!(f, "{tab}")?;
+        if let Some(name) = self.name {
+            write!(f, "{name} = ")?;
+        }
         write!(f, "'{}'", self.text)
     }
 }

@@ -28,6 +28,7 @@ pub use super::token::*;
 /// ```
 #[derive(Clone, Hash)]
 pub struct Tree {
+    pub name: Option<&'static str>,
     pub kind: TreeKind,
     pub children: Vec<Spanned<Child>>,
 }
@@ -42,6 +43,7 @@ pub enum Child {
 impl Tree {
     pub fn new(kind: TreeKind) -> Self {
         Self {
+            name: None,
             kind,
             children: vec![],
         }
@@ -109,6 +111,9 @@ impl Tree {
     /// ```
     pub(crate) fn render(&self, f: &mut std::fmt::Formatter<'_>, tab: &str) -> std::fmt::Result {
         write!(f, "{tab}")?;
+        if let Some(name) = self.name {
+            write!(f, "{name} = ")?;
+        }
         write!(f, "{}", self.kind.name())?;
         for child in &self.children {
             writeln!(f)?;

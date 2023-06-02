@@ -30,6 +30,8 @@ pub enum TreeKind {
     LitIdentifier,
     LitString,
 
+    Name,
+
     ExprGroup,
     ExprBinary,
     ExprAcessor,

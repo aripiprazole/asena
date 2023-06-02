@@ -169,12 +169,15 @@ impl<'a> Parser<'a> {
         let mark = self.open();
         self.expect(LeftParen);
         if self.eat(Identifier) {
+            self.field("parameter_name");
             self.expect(Colon);
         }
         self.type_expr();
+        self.field("parameter_type");
         self.expect(RightParen);
         self.expect(RightArrow);
         self.type_expr();
+        self.field("return_type");
         self.close(mark, ExprPi);
     }
 
