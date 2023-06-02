@@ -1,6 +1,7 @@
 #![allow(dead_code)] // TODO: remove me
 
 use std::borrow::Cow;
+use std::cell::Cell;
 
 use crate::ast::node::{Token, TokenKind, TreeKind};
 use crate::lexer::span::Spanned;
@@ -41,7 +42,7 @@ impl<'a> Parser<'a> {
     }
 
     pub(crate) fn advance(&mut self) {
-        assert!(!self.eof());
+        // assert!(!self.eof());
         self.fuel.set(256);
         self.events.push(Event::Advance);
         self.index += 1;
@@ -49,6 +50,23 @@ impl<'a> Parser<'a> {
 
     pub(crate) fn eof(&mut self) -> bool {
         self.tokens.len() == self.index
+    }
+
+    pub(crate) fn savepoint(&self) -> Self {
+        Self {
+            errors: vec![],
+            source: self.source,
+            index: self.index,
+            fuel: Cell::new(self.fuel.get()),
+            events: vec![],
+            tokens: self.tokens.clone(),
+        }
+    }
+
+    pub(crate) fn return_at(&mut self, point: Self) {
+        self.index = point.index;
+        self.fuel = point.fuel;
+        self.events.extend(point.events);
     }
 
     pub(crate) fn eat(&mut self, kind: TokenKind) -> bool {
