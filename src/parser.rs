@@ -73,16 +73,6 @@ mod tests {
     }
 
     #[test]
-    fn resilient_group_expr() {
-        let code = "(1 + 2)";
-
-        let mut parser = Parser::from(Lexer::new(code));
-        parser.expr_binary();
-
-        println!("{:#?}", Expr::spec(parser.build_tree()));
-    }
-
-    #[test]
     fn sig_decl() {
         let code = "cond : (f true) -> ((f false) -> (f cond));";
 
@@ -123,13 +113,43 @@ mod tests {
     }
 
     #[test]
-    fn group_expr() {
-        let code = "[Monad m] => m a";
+    fn qual_app_expr() {
+        let code = "a b => a b";
 
         let mut parser = Parser::from(Lexer::new(code));
-        parser.decl();
+        parser.expr_binary();
+
+        println!("{:#?}", Expr::make(parser.build_tree()));
+    }
+
+    #[test]
+    fn app_expr() {
+        let code = "a b";
+
+        let mut parser = Parser::from(Lexer::new(code));
+        parser.expr_binary();
+
+        println!("{:#?}", Expr::make(parser.build_tree()));
+    }
+
+    #[test]
+    fn qual_expr() {
+        let code = "a => b";
+
+        let mut parser = Parser::from(Lexer::new(code));
+        parser.expr_binary();
 
         println!("{:#?}", parser.build_tree());
+    }
+
+    #[test]
+    fn group_expr() {
+        let code = "(1 + 2)";
+
+        let mut parser = Parser::from(Lexer::new(code));
+        parser.expr_binary();
+
+        println!("{:#?}", Expr::make(parser.build_tree()));
     }
 
     #[test]

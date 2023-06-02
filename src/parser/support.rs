@@ -58,7 +58,7 @@ impl<'a> Parser<'a> {
             source: self.source,
             index: self.index,
             fuel: Cell::new(self.fuel.get()),
-            events: vec![],
+            events: self.events.clone(),
             tokens: self.tokens.clone(),
         }
     }
@@ -66,12 +66,25 @@ impl<'a> Parser<'a> {
     pub(crate) fn return_at(&mut self, point: Self) {
         self.index = point.index;
         self.fuel = point.fuel;
-        self.events.extend(point.events);
+        self.events = point.events;
     }
 
     pub(crate) fn eat(&mut self, kind: TokenKind) -> bool {
         if self.at(kind) {
             self.advance();
+            true
+        } else {
+            false
+        }
+    }
+
+    pub(crate) fn succeds<F>(&mut self, mut point: Self, f: F) -> bool
+    where
+        F: Fn(&mut Self),
+    {
+        f(&mut point);
+        if point.errors.is_empty() {
+            self.return_at(point);
             true
         } else {
             false
