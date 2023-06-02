@@ -787,12 +787,43 @@ impl Pi {
         }
     }
 
-    pub fn parameter_type(&self) -> Node<Spanned<Type>> {
-        self.named_at("parameter_type")
+    pub fn parameter_type(&self) -> Green<Node<Spanned<Type>>> {
+        self.lazy("parameter_type", |this| {
+            if self.parameter_name().is_some() {
+                this.named_at("parameter_type")
+            } else {
+                this.at(0)
+            }
+        })
     }
 
-    pub fn return_type(&self) -> Node<Spanned<Type>> {
-        self.named_at("return_type")
+    pub fn return_type(&self) -> Green<Node<Spanned<Type>>> {
+        self.lazy("return_type", |this| {
+            if self.parameter_name().is_some() {
+                return self.named_at("return_type");
+            }
+
+            let mut rhs = this.clone();
+
+            // Checks the integrity of the length for safety
+            match rhs.children.len() {
+                0 => return Node::empty(),
+                1 => return rhs.at(0),
+                _ => {}
+            }
+
+            // Remove the first twice
+            //   `->`
+            //   <type_expr>
+            rhs.children.remove(0);
+            rhs.children.remove(0);
+
+            if rhs.is_single() {
+                rhs.at(0)
+            } else {
+                Node::new(this.replace(Type::Explicit(Expr::Pi(Self::new(rhs)))))
+            }
+        })
     }
 }
 
@@ -2031,7 +2062,7 @@ ast_enum! {
 #[derive(Clone)]
 pub enum Type {
     Infer, // _
-    Explicit(ExprRef),
+    Explicit(Expr),
 }
 
 impl Spec for Type {
@@ -2042,10 +2073,14 @@ impl Spec for Type {
             Type => {
                 let expr = from.at::<Expr>(0)?;
 
-                Node::new(from.swap(Self::Explicit(expr)))
+                Node::new(from.swap(Self::Explicit(expr.value)))
             }
             TypeInfer => from.swap(Self::Infer).into(),
-            _ => Node::empty(),
+            _ => {
+                let expr = Expr::make(from.clone())?;
+
+                from.swap(Self::Explicit(expr.value)).into()
+            }
         }
     }
 }
