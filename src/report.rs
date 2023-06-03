@@ -2,7 +2,7 @@ use std::error::Error;
 use std::path::PathBuf;
 
 use crate::ast::node::Tree;
-use crate::lexer::span::Spanned;
+use crate::lexer::span::{Loc, Spanned};
 
 pub trait InternalError: Error {
     fn code(&self) -> u16 {
@@ -61,8 +61,18 @@ impl<E: InternalError> Report<E> {
         self.diagnostics.last_mut().unwrap()
     }
 
-    pub fn dump(&mut self) {
-        todo!()
+    pub fn dump(&mut self)
+    where
+        E: Clone,
+    {
+        for diagnostic in self.diagnostics.iter() {
+            diagnostic.dump(&self.source);
+        }
+
+        println!();
+        println!("  -> Recovered `Concrete Syntax Tree`:");
+        println!();
+        println!("{:#?}", self.tree);
     }
 }
 
@@ -85,6 +95,43 @@ impl<E: InternalError> Diagnostic<E> {
         });
 
         self
+    }
+
+    fn as_label(&self, colors: &mut ariadne::ColorGenerator) -> ariadne::Label {
+        ariadne::Label::new(self.message.span.clone())
+            .with_message(self.message.value.to_string())
+            .with_color(match self.kind {
+                DiagnosticKind::Warning | DiagnosticKind::Deprecated => ariadne::Color::Yellow,
+                DiagnosticKind::Info => ariadne::Color::Blue,
+                DiagnosticKind::HardError
+                | DiagnosticKind::Error
+                | DiagnosticKind::InternalError => ariadne::Color::Red,
+                _ => colors.next(),
+            })
+    }
+
+    fn dump(&self, source: &str)
+    where
+        E: Clone,
+    {
+        use ariadne::{ColorGenerator, Report, ReportKind, Source};
+
+        let mut colors = ColorGenerator::new();
+        let mut children = vec![];
+        children.push(self.clone());
+        children.extend(self.children.clone());
+
+        Report::<Loc>::build(ReportKind::Error, (), 0)
+            .with_code(format!("E{:.3X}", self.code))
+            .with_message(self.message.value().to_string())
+            .with_labels(
+                children
+                    .iter()
+                    .map(|diagnostic| diagnostic.as_label(&mut colors)),
+            )
+            .finish()
+            .print(Source::from(source.clone()))
+            .unwrap();
     }
 }
 

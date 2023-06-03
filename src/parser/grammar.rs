@@ -147,7 +147,7 @@ pub fn expr_app(p: &mut Parser) {
         return;
     };
 
-    loop {
+    while !p.eof() {
         let mut arg = p.savepoint();
         if matches!(primary(&mut arg), None) {
             // if can't parse anything, it's not a app expression
@@ -240,7 +240,7 @@ pub fn primary(p: &mut Parser) -> Option<MarkClosed> {
                 return Some(closed);
             }
 
-            p.report(ExpectedParenExprError)
+            return p.report(ExpectedParenExprError);
         }
 
         _ => {

@@ -128,7 +128,7 @@ mod tests {
 
     #[test]
     fn app_expr() {
-        let code = "a b";
+        let code = "a + @ (";
 
         let mut parser = Parser::from(Lexer::new(code));
         grammar::expr(&mut parser);

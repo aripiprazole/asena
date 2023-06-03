@@ -100,12 +100,18 @@ impl<'a> Parser<'a> {
         self.errors.push(Diagnostic::new(error));
     }
 
-    pub(crate) fn report(&mut self, error: ParseError) -> MarkClosed {
+    pub(crate) fn report(&mut self, error: ParseError) -> Option<MarkClosed> {
+        if self.eof() {
+            let error = self.build_error(error);
+            self.errors.push(Diagnostic::new(error));
+            return None;
+        }
         let mark = self.open();
         let error = self.build_error(error);
         self.errors.push(Diagnostic::new(error));
         self.advance();
-        self.close(mark, TreeKind::Error)
+
+        Some(self.close(mark, TreeKind::Error))
     }
 
     pub(crate) fn at(&self, kind: TokenKind) -> bool {
