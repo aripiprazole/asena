@@ -12,6 +12,7 @@ pub type TokenRef = Localized<Token>;
 
 pub type StringRef = Localized<String>;
 
+pub mod builder;
 pub mod error;
 pub mod event;
 pub mod grammar;
@@ -128,7 +129,7 @@ mod tests {
 
     #[test]
     fn app_expr() {
-        let code = "a + @ (";
+        let code = "@ b";
 
         let mut parser = Parser::from(Lexer::new(code));
         grammar::expr(&mut parser);

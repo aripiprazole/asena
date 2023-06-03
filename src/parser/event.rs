@@ -2,6 +2,7 @@ use std::fmt::Debug;
 
 use crate::ast::node::{Child, Tree, TreeKind};
 use crate::lexer::span::{Loc, Spanned};
+use crate::parser::builder::EventBuilder;
 use crate::report::Report;
 
 use super::error::ParseError;
@@ -26,11 +27,10 @@ pub struct RedTree {
 
 impl<'a> Parser<'a> {
     pub fn build_tree(self) -> RedTree {
+        let event_debugger = EventBuilder::new(self.events.clone());
         let mut tokens = self.tokens.into_iter();
         let mut events = self.events;
         let mut stack = vec![];
-
-        println!("{:#?}", events);
 
         // Special case: pop the last `Close` event to ensure
         // that the stack is non-empty inside the loop.
@@ -52,7 +52,11 @@ impl<'a> Parser<'a> {
                         .last_mut()
                         // If we don't pop the last `Close` before this loop,
                         // this unwrap would trigger for it.
-                        .unwrap()
+                        .unwrap_or_else(|| {
+                            println!("  -> Debug event trace: (Event::Close)");
+                            println!("{:?}", event_debugger.clone());
+                            panic!("Could not continue parsing");
+                        })
                         .value
                         .children
                         .push(tree.replace(Child::Tree(tree.value.clone())))
@@ -64,7 +68,11 @@ impl<'a> Parser<'a> {
 
                     stack
                         .last_mut()
-                        .unwrap()
+                        .unwrap_or_else(|| {
+                            println!("  -> Debug event trace: (Event::Advance)");
+                            println!("{:?}", event_debugger.clone());
+                            panic!("Could not continue parsing");
+                        })
                         .value
                         .children
                         .push(token.replace(Child::Token(token.value().clone())))
