@@ -4,6 +4,7 @@ use crate::ast::node::Token;
 use crate::lexer::span::{Localized, Spanned};
 use crate::lexer::Lexer;
 use crate::parser::error::ParseError;
+use crate::report::Diagnostic;
 
 use self::event::Event;
 
@@ -20,7 +21,7 @@ pub mod support;
 /// to advance and identify tokens on the programming language.
 #[derive(Clone)]
 pub struct Parser<'a> {
-    errors: Vec<Spanned<ParseError>>,
+    errors: Vec<Diagnostic<ParseError>>,
     source: &'a str,
     index: usize,
     fuel: Cell<u32>,
@@ -62,7 +63,7 @@ mod tests {
         let mut parser = Parser::from(Lexer::new(code));
         grammar::expr(&mut parser);
 
-        let infix = Infix::new(parser.build_tree().into());
+        let infix = Infix::new(parser.build_tree().unwrap().into());
 
         let lhs = infix.lhs();
         let rhs = infix.rhs().duplicate();
@@ -80,7 +81,7 @@ mod tests {
         let mut parser = Parser::from(Lexer::new(code));
         grammar::decl(&mut parser);
 
-        println!("{:#?}", parser.build_tree());
+        println!("{:#?}", parser.build_tree().unwrap());
     }
 
     #[test]
@@ -90,7 +91,7 @@ mod tests {
         let mut parser = Parser::from(Lexer::new(code));
         grammar::decl(&mut parser);
 
-        println!("{:#?}", parser.build_tree());
+        println!("{:#?}", parser.build_tree().unwrap());
     }
 
     #[test]
@@ -100,7 +101,7 @@ mod tests {
         let mut parser = Parser::from(Lexer::new(code));
         grammar::expr(&mut parser);
 
-        println!("{:#?}", parser.build_tree());
+        println!("{:#?}", parser.build_tree().unwrap());
     }
 
     #[test]
@@ -110,7 +111,7 @@ mod tests {
         let mut parser = Parser::from(Lexer::new(code));
         grammar::expr(&mut parser);
 
-        println!("{:#?}", parser.build_tree());
+        println!("{:#?}", parser.build_tree().unwrap());
     }
 
     #[test]
@@ -120,7 +121,9 @@ mod tests {
         let mut parser = Parser::from(Lexer::new(code));
         grammar::expr(&mut parser);
 
-        println!("{:#?}", Expr::make(parser.build_tree()));
+        let tree = parser.build_tree().unwrap();
+
+        println!("{:#?}", Expr::make(tree));
     }
 
     #[test]
@@ -130,7 +133,9 @@ mod tests {
         let mut parser = Parser::from(Lexer::new(code));
         grammar::expr(&mut parser);
 
-        println!("{:#?}", Expr::make(parser.build_tree()));
+        let tree = parser.build_tree().unwrap();
+
+        println!("{:#?}", Expr::make(tree));
     }
 
     #[test]
@@ -140,7 +145,7 @@ mod tests {
         let mut parser = Parser::from(Lexer::new(code));
         grammar::expr(&mut parser);
 
-        println!("{:#?}", parser.build_tree());
+        println!("{:#?}", parser.build_tree().data());
     }
 
     #[test]
@@ -150,7 +155,9 @@ mod tests {
         let mut parser = Parser::from(Lexer::new(code));
         grammar::expr(&mut parser);
 
-        println!("{:#?}", Expr::make(parser.build_tree()));
+        let tree = parser.build_tree().unwrap();
+
+        println!("{:#?}", Expr::make(tree));
     }
 
     #[test]
@@ -160,7 +167,9 @@ mod tests {
         let mut parser = Parser::from(Lexer::new(code));
         grammar::expr(&mut parser);
 
-        println!("{:#?}", parser.build_tree());
+        let tree = parser.build_tree().unwrap();
+
+        println!("{:#?}", Expr::make(tree));
     }
 
     #[test]
@@ -170,7 +179,9 @@ mod tests {
         let mut parser = Parser::from(Lexer::new(code));
         grammar::expr(&mut parser);
 
-        println!("{:#?}", Expr::make(parser.build_tree()));
+        let tree = parser.build_tree().unwrap();
+
+        println!("{:#?}", Expr::make(tree));
     }
 
     #[test]
@@ -180,6 +191,8 @@ mod tests {
         let mut parser = Parser::from(Lexer::new(code));
         grammar::decl(&mut parser);
 
-        println!("{:#?}", parser.build_tree());
+        let tree = parser.build_tree().unwrap();
+
+        println!("{:#?}", Expr::make(tree));
     }
 }
