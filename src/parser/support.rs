@@ -6,11 +6,10 @@ use std::cell::Cell;
 use crate::ast::node::{Token, TokenKind, TreeKind};
 use crate::lexer::span::Spanned;
 use crate::parser::error::ParseError;
+use crate::report::Diagnostic;
 
 use super::event::{Event, MarkClosed, MarkOpened};
 use super::Parser;
-
-pub type Diagnostic = Vec<Spanned<ParseError>>;
 
 impl<'a> Parser<'a> {
     pub(crate) fn open(&mut self) -> MarkOpened {
@@ -98,13 +97,13 @@ impl<'a> Parser<'a> {
         }
 
         let error = self.build_error(ParseError::ExpectedTokenError(kind));
-        self.errors.push(error);
+        self.errors.push(Diagnostic::new(error));
     }
 
     pub(crate) fn report(&mut self, error: ParseError) -> MarkClosed {
         let mark = self.open();
         let error = self.build_error(error);
-        self.errors.push(error);
+        self.errors.push(Diagnostic::new(error));
         self.advance();
         self.close(mark, TreeKind::Error)
     }

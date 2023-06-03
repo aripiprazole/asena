@@ -67,6 +67,15 @@ impl<E: InternalError> Report<E> {
 }
 
 impl<E: InternalError> Diagnostic<E> {
+    pub fn new(error: Spanned<E>) -> Self {
+        Self {
+            kind: E::kind(),
+            code: error.code(),
+            message: error,
+            children: vec![],
+        }
+    }
+
     pub fn add_child(mut self, message: Spanned<E>) -> Self {
         self.children.push(Diagnostic {
             kind: E::kind(),
@@ -75,7 +84,6 @@ impl<E: InternalError> Diagnostic<E> {
             children: vec![],
         });
 
-        self.children.last_mut().unwrap();
         self
     }
 }

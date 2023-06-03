@@ -2,7 +2,9 @@ use std::fmt::Debug;
 
 use crate::ast::node::{Child, Tree, TreeKind};
 use crate::lexer::span::{Loc, Spanned};
+use crate::report::Report;
 
+use super::error::ParseError;
 use super::Parser;
 
 #[derive(Clone)]
@@ -15,38 +17,15 @@ pub enum Event {
 
 pub struct MarkOpened(usize, Loc);
 
-impl MarkOpened {
-    pub fn new(index: usize, loc: Loc) -> Self {
-        Self(index, loc)
-    }
-
-    pub fn index(&self) -> usize {
-        self.0
-    }
-
-    pub fn span(&self) -> Loc {
-        self.1.clone()
-    }
-}
-
 pub struct MarkClosed(usize, Loc);
 
-impl MarkClosed {
-    pub fn new(index: usize, loc: Loc) -> Self {
-        Self(index, loc)
-    }
-
-    pub fn index(&self) -> usize {
-        self.0
-    }
-
-    pub fn span(&self) -> Loc {
-        self.1.clone()
-    }
+pub struct RedTree {
+    pub data: Spanned<Tree>,
+    pub report: Report<ParseError>,
 }
 
 impl<'a> Parser<'a> {
-    pub fn build_tree(self) -> Spanned<Tree> {
+    pub fn build_tree(self) -> RedTree {
         let mut tokens = self.tokens.into_iter();
         let mut events = self.events;
         let mut stack = vec![];
@@ -113,7 +92,65 @@ impl<'a> Parser<'a> {
             "The token stream still contain something"
         );
 
-        stack.pop().unwrap()
+        let tree = stack.pop().unwrap();
+        let mut report = Report::new(self.source, tree.clone());
+        for diagnostic in &self.errors {
+            report.diagnostics.push(diagnostic.clone());
+        }
+
+        RedTree { data: tree, report }
+    }
+}
+
+impl MarkOpened {
+    pub fn new(index: usize, loc: Loc) -> Self {
+        Self(index, loc)
+    }
+
+    pub fn index(&self) -> usize {
+        self.0
+    }
+
+    pub fn span(&self) -> Loc {
+        self.1.clone()
+    }
+}
+
+impl MarkClosed {
+    pub fn new(index: usize, loc: Loc) -> Self {
+        Self(index, loc)
+    }
+
+    pub fn index(&self) -> usize {
+        self.0
+    }
+
+    pub fn span(&self) -> Loc {
+        self.1.clone()
+    }
+}
+
+impl RedTree {
+    pub fn unwrap(mut self) -> Spanned<Tree> {
+        if self.has_errors() {
+            self.report.dump();
+
+            panic!("Called `RedTree::unwrap` on a failed-to-parse tree");
+        }
+
+        self.data
+    }
+
+    pub fn has_errors(&self) -> bool {
+        !self.report.diagnostics.is_empty()
+    }
+
+    pub fn data(&self) -> &Spanned<Tree> {
+        &self.data
+    }
+
+    pub fn report(&self) -> &Report<ParseError> {
+        &self.report
     }
 }
 
@@ -125,5 +162,17 @@ impl Debug for Event {
             Self::Advance => write!(f, "Advance"),
             Self::Close => write!(f, "Close"),
         }
+    }
+}
+
+impl From<RedTree> for Spanned<Tree> {
+    fn from(value: RedTree) -> Self {
+        value.data
+    }
+}
+
+impl From<RedTree> for Report<ParseError> {
+    fn from(value: RedTree) -> Self {
+        value.report
     }
 }

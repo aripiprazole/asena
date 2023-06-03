@@ -56,7 +56,8 @@ pub fn run_cli() {
             let lexer = lexer::Lexer::new(&file);
             let mut parser = parser::Parser::from(lexer);
             parser::grammar::expr(&mut parser);
-            println!("{:#?}", parser.build_tree());
+            let tree = parser.build_tree();
+            println!("{:#?}", tree.data());
         }
     }
 }
