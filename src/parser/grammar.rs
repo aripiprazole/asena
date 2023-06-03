@@ -58,7 +58,7 @@ pub fn expr_binary(p: &mut Parser) {
 
     // simplify by returning the lhs symbol directly
     if p.at(Symbol) {
-        while p.eat(Symbol) {
+        while !p.eof() && p.eat(Symbol) {
             expr_ann(p);
         }
 
@@ -76,7 +76,7 @@ pub fn expr_ann(p: &mut Parser) {
 
     // simplify by returning the lhs symbol directly
     if p.at(Colon) {
-        while p.eat(Colon) {
+        while !p.eof() && p.eat(Colon) {
             expr_qual(p);
         }
 
@@ -94,7 +94,7 @@ pub fn expr_qual(p: &mut Parser) {
 
     // simplify by returning the lhs symbol directly
     if p.at(DoubleArrow) {
-        while p.eat(DoubleArrow) {
+        while !p.eof() && p.eat(DoubleArrow) {
             expr_anonymous_pi(p);
         }
 
@@ -112,7 +112,7 @@ pub fn expr_anonymous_pi(p: &mut Parser) {
 
     // simplify by returning the lhs symbol directly
     if p.at(RightArrow) {
-        while p.eat(RightArrow) {
+        while !p.eof() && p.eat(RightArrow) {
             expr_accessor(p);
         }
 
@@ -130,7 +130,7 @@ pub fn expr_accessor(p: &mut Parser) {
 
     // simplify by returning the lhs symbol directly
     if p.at(Dot) {
-        while p.eat(Dot) {
+        while !p.eof() && p.eat(Dot) {
             expr_app(p);
         }
 
@@ -142,9 +142,13 @@ pub fn expr_accessor(p: &mut Parser) {
 
 /// ExprApp = Primary Primary*
 pub fn expr_app(p: &mut Parser) {
-    let Some(mut lhs) = primary(p) else {
-        p.report(PrimaryExpectedError);
-        return;
+    let mut lhs = match primary(p) {
+        Some(lhs) => lhs,
+        None if p.eof() => {
+            p.report(PrimaryExpectedError);
+            return;
+        }
+        None => MarkClosed::new(0, p.peek().span().clone()),
     };
 
     while !p.eof() {
