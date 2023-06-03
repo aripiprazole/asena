@@ -1,298 +1,296 @@
 use crate::ast::node::TokenKind::*;
 use crate::ast::node::TreeKind::*;
 
-use super::error::ParseError;
+use super::error::ParseError::*;
 use super::Parser;
 
-impl<'a> Parser<'a> {
-    /// File = Decl*
-    pub fn file(&mut self) {
-        let mark = self.open();
+/// File = Decl*
+pub fn file(p: &mut Parser) {
+    let mark = p.open();
 
-        while !self.eof() {
-            self.decl();
+    while !p.eof() {
+        decl(p);
+    }
+
+    p.close(mark, File)
+}
+
+/// Decl = DeclSignature
+pub fn decl(p: &mut Parser) {
+    decl_signature(p)
+}
+
+/// DeclSignature = Global ':' TypeExpr
+pub fn decl_signature(p: &mut Parser) {
+    let mark = p.open();
+
+    global(p);
+    p.at(Colon);
+    type_expr(p);
+
+    p.close(mark, DeclSignature);
+}
+
+/// TypeExpr = Expr
+pub fn type_expr(p: &mut Parser) {
+    let mark = p.open();
+    expr(p);
+    p.close(mark, Type)
+}
+
+/// Expr = ExprGroup | ExprBinary | ExprAccessor
+///      | ExprApp | ExprDsl | ExprArray
+///      | ExprLam | ExprLet | ExprGlobal
+///      | ExprLocal | ExprLit | ExprAnn
+///      | ExprQual | ExprPi | ExprSigma | ExprHelp
+pub fn expr(p: &mut Parser) {
+    expr_binary(p)
+}
+
+/// ExprBinary = ExprAccessor (Symbol ExprAccessor)*
+pub fn expr_binary(p: &mut Parser) {
+    let mark = p.open();
+
+    expr_ann(p);
+
+    // simplify by returning the lhs symbol directly
+    if p.at(Symbol) {
+        while p.eat(Symbol) {
+            expr_ann(p);
         }
 
-        self.close(mark, File)
+        p.close(mark, ExprBinary)
+    } else {
+        p.ignore(mark)
     }
+}
 
-    /// Decl = DeclSignature
-    pub fn decl(&mut self) {
-        self.decl_signature()
+/// ExprAnn = ExprQual (':' ExprQual)*
+pub fn expr_ann(p: &mut Parser) {
+    let mark = p.open();
+
+    expr_qual(p);
+
+    // simplify by returning the lhs symbol directly
+    if p.at(Colon) {
+        while p.eat(Colon) {
+            expr_qual(p);
+        }
+
+        p.close(mark, ExprAnn)
+    } else {
+        p.ignore(mark)
     }
+}
 
-    /// DeclSignature = Global ':' TypeExpr
-    pub fn decl_signature(&mut self) {
-        let mark = self.open();
+/// ExprQual = ExprAnonymousPi ('=>' ExprAnonymousPi)*
+pub fn expr_qual(p: &mut Parser) {
+    let mark = p.open();
 
-        self.global();
-        self.at(Colon);
-        self.type_expr();
+    expr_anonymous_pi(p);
 
-        self.close(mark, DeclSignature);
+    // simplify by returning the lhs symbol directly
+    if p.at(DoubleArrow) {
+        while p.eat(DoubleArrow) {
+            expr_anonymous_pi(p);
+        }
+
+        p.close(mark, ExprQual)
+    } else {
+        p.ignore(mark)
     }
+}
 
-    /// TypeExpr = Expr
-    pub fn type_expr(&mut self) {
-        let mark = self.open();
-        self.expr();
-        self.close(mark, Type)
+/// ExprAnonymousPi = ExprAccessor ('->' ExprAccessor)*
+pub fn expr_anonymous_pi(p: &mut Parser) {
+    let mark = p.open();
+
+    expr_accessor(p);
+
+    // simplify by returning the lhs symbol directly
+    if p.at(RightArrow) {
+        while p.eat(RightArrow) {
+            expr_accessor(p);
+        }
+
+        p.close(mark, ExprPi)
+    } else {
+        p.ignore(mark)
     }
+}
 
-    /// Expr = ExprGroup | ExprBinary | ExprAccessor
-    ///      | ExprApp | ExprDsl | ExprArray
-    ///      | ExprLam | ExprLet | ExprGlobal
-    ///      | ExprLocal | ExprLit | ExprAnn
-    ///      | ExprQual | ExprPi | ExprSigma | ExprHelp
-    pub fn expr(&mut self) {
-        self.expr_binary()
+/// ExprAccessor = ExprApp ('.' ExprApp)*
+pub fn expr_accessor(p: &mut Parser) {
+    let mark = p.open();
+
+    expr_app(p);
+
+    // simplify by returning the lhs symbol directly
+    if p.at(Dot) {
+        while p.eat(Dot) {
+            expr_app(p);
+        }
+
+        p.close(mark, ExprAcessor)
+    } else {
+        p.ignore(mark)
     }
+}
 
-    /// ExprBinary = ExprAccessor (Symbol ExprAccessor)*
-    pub fn expr_binary(&mut self) {
-        let mark = self.open();
+/// ExprApp = Primary Primary*
+pub fn expr_app(p: &mut Parser) {
+    let mark = p.open();
+    let mut index = 0;
 
-        self.expr_ann();
+    primary(p);
 
-        // simplify by returning the lhs symbol directly
-        if self.at(Symbol) {
-            while self.eat(Symbol) {
-                self.expr_ann();
-            }
+    loop {
+        let argument = p.savepoint();
+        let succeeds = p.succeds(argument, |this| {
+            primary(this);
+        });
 
-            self.close(mark, ExprBinary)
+        if !succeeds {
+            break;
         } else {
-            self.ignore(mark)
+            index += 1;
         }
     }
 
-    /// ExprAnn = ExprQual (':' ExprQual)*
-    pub fn expr_ann(&mut self) {
-        let mark = self.open();
+    if index == 0 {
+        p.ignore(mark);
+    } else {
+        p.close(mark, ExprApp);
+    }
+}
 
-        self.expr_qual();
+pub fn expr_pi(p: &mut Parser) {
+    let mark = p.open();
+    p.expect(LeftParen);
+    if p.eat(Identifier) {
+        p.field("parameter_name");
+        p.expect(Colon);
+    }
+    type_expr(p);
+    p.field("parameter_type");
+    p.expect(RightParen);
+    p.expect(RightArrow);
+    type_expr(p);
+    p.field("return_type");
+    p.close(mark, ExprPi);
+}
 
-        // simplify by returning the lhs symbol directly
-        if self.at(Colon) {
-            while self.eat(Colon) {
-                self.expr_qual();
+pub fn expr_group(p: &mut Parser) {
+    let mark = p.open();
+    p.expect(LeftParen);
+    expr(p);
+    p.expect(RightParen);
+    p.close(mark, ExprGroup);
+}
+
+/// Primary = Nat 'n'? | Int 'i8'? | Int 'u8'?
+///         | Int 'i16'? | Int 'u16'? | Int ('u' | 'i32')?
+///         | Int ('u' | 'u32')? | Int 'i64'? | Int 'u64'?
+///         | Int 'i128'? | Int 'u128'? | Float 'f32'?
+///         | Float 'f64'? | 'true' | 'false'
+pub fn primary(p: &mut Parser) -> bool {
+    let token = p.peek();
+
+    match token.value.kind {
+        TrueKeyword => p.terminal(LitTrue),
+        FalseKeyword => p.terminal(LitFalse),
+
+        LetKeyword | IfKeyword | MatchKeyword => {
+            // TODO: try to properly parse the expression
+            p.report(PrimarySurroundedError(token.value.kind))
+        }
+
+        ElseKeyword => p.report(DanglingElseError),
+        CaseKeyword => p.report(ReservedKeywordError(CaseKeyword)),
+
+        UseKeyword | TypeKeyword | RecordKeyword | ClassKeyword | TraitKeyword
+        | InstanceKeyword => p.report(DeclReservedKeywordError(TypeKeyword)),
+
+        ReturnKeyword => p.report(StmtReservedKeywordError(ReturnKeyword)),
+        WhereKeyword => p.report(StmtReservedKeywordError(WhereKeyword)),
+        InKeyword => p.report(ReservedKeywordError(InKeyword)),
+
+        Lambda => p.report(UnicodeError(Lambda, "lambda")),
+        Forall => p.report(UnicodeError(Lambda, "forall")),
+        Pi => p.report(UnicodeError(Lambda, "pi")),
+        Sigma => p.report(UnicodeError(Lambda, "sigma")),
+
+        LeftBracket => p.report(UnicodeError(LeftBracket, "left_bracket")),
+        RightBracket => p.report(UnicodeError(RightBracket, "right_bracket")),
+        LeftBrace => p.report(UnicodeError(LeftBrace, "left_brace")),
+        RightBrace => p.report(UnicodeError(RightBrace, "right_brace")),
+        RightParen => p.report(UnicodeError(RightParen, "right_paren")),
+
+        Comma => p.report(UnicodeError(Comma, "comma")),
+        Semi => p.report(UnicodeError(Semi, "semi")),
+        Colon => p.report(UnicodeError(Colon, "colon")),
+        Dot => p.report(UnicodeError(Dot, "dot")),
+        Help => p.report(UnicodeError(Help, "interrogation")),
+        Equal => p.report(UnicodeError(Equal, "equal")),
+
+        DoubleArrow => p.report(UnicodeError(DoubleArrow, "=>")),
+        RightArrow => p.report(UnicodeError(RightArrow, "->")),
+        LeftArrow => p.report(UnicodeError(LeftArrow, "<-")),
+
+        Int8 => p.terminal(LitInt8),
+        Int16 => p.terminal(LitInt16),
+        Int32 => p.terminal(LitInt32),
+        Int64 => p.terminal(LitInt64),
+        Int128 => p.terminal(LitInt128),
+
+        UInt8 => p.terminal(LitUInt8),
+        UInt16 => p.terminal(LitUInt16),
+        UInt32 => p.terminal(LitUInt32),
+        UInt64 => p.terminal(LitUInt64),
+        UInt128 => p.terminal(LitUInt128),
+
+        Float32 => p.terminal(LitFloat32),
+        Float64 => p.terminal(LitFloat64),
+
+        Symbol => p.report(ExpectedTokenError(Identifier)),
+        Identifier => p.terminal(LitIdentifier),
+        String => p.terminal(LitString),
+
+        Eof => p.report(EofError),
+
+        // Parse group or named pi expressions
+        // - Pi
+        // - Group
+        LeftParen => {
+            let mut pi = p.savepoint();
+            expr_pi(&mut pi);
+            if pi.errors.is_empty() {
+                p.return_at(pi);
+                return true;
             }
 
-            self.close(mark, ExprAnn)
-        } else {
-            self.ignore(mark)
-        }
-    }
-
-    /// ExprQual = ExprAnonymousPi ('=>' ExprAnonymousPi)*
-    pub fn expr_qual(&mut self) {
-        let mark = self.open();
-
-        self.expr_anonymous_pi();
-
-        // simplify by returning the lhs symbol directly
-        if self.at(DoubleArrow) {
-            while self.eat(DoubleArrow) {
-                self.expr_anonymous_pi();
+            let mut group = p.savepoint();
+            expr_group(&mut group);
+            if group.errors.is_empty() {
+                p.return_at(group);
+                return true;
             }
 
-            self.close(mark, ExprQual)
-        } else {
-            self.ignore(mark)
-        }
-    }
-
-    /// ExprAnonymousPi = ExprAccessor ('->' ExprAccessor)*
-    pub fn expr_anonymous_pi(&mut self) {
-        let mark = self.open();
-
-        self.expr_accessor();
-
-        // simplify by returning the lhs symbol directly
-        if self.at(RightArrow) {
-            while self.eat(RightArrow) {
-                self.expr_accessor();
-            }
-
-            self.close(mark, ExprPi)
-        } else {
-            self.ignore(mark)
-        }
-    }
-
-    /// ExprAccessor = ExprApp ('.' ExprApp)*
-    pub fn expr_accessor(&mut self) {
-        let mark = self.open();
-
-        self.expr_app();
-
-        // simplify by returning the lhs symbol directly
-        if self.at(Dot) {
-            while self.eat(Dot) {
-                self.expr_app();
-            }
-
-            self.close(mark, ExprAcessor)
-        } else {
-            self.ignore(mark)
-        }
-    }
-
-    /// ExprApp = Primary Primary*
-    pub fn expr_app(&mut self) {
-        let mark = self.open();
-        let mut index = 0;
-
-        self.primary();
-
-        loop {
-            let argument = self.savepoint();
-            let succeeds = self.succeds(argument, |this| {
-                this.primary();
-            });
-
-            if !succeeds {
-                break;
-            } else {
-                index += 1;
-            }
+            p.report(ExpectedParenExprError)
         }
 
-        if index == 0 {
-            self.ignore(mark);
-        } else {
-            self.close(mark, ExprApp);
-        }
+        _ => p.report(PrimaryExpectedError),
     }
 
-    pub fn expr_pi(&mut self) {
-        let mark = self.open();
-        self.expect(LeftParen);
-        if self.eat(Identifier) {
-            self.field("parameter_name");
-            self.expect(Colon);
-        }
-        self.type_expr();
-        self.field("parameter_type");
-        self.expect(RightParen);
-        self.expect(RightArrow);
-        self.type_expr();
-        self.field("return_type");
-        self.close(mark, ExprPi);
-    }
+    false
+}
 
-    pub fn expr_group(&mut self) {
-        let mark = self.open();
-        self.expect(LeftParen);
-        self.expr();
-        self.expect(RightParen);
-        self.close(mark, ExprGroup);
-    }
+/// Global = <<Terminal>>
+pub fn global(p: &mut Parser) {
+    p.terminal(LitSymbol);
+}
 
-    /// Primary = Nat 'n'? | Int 'i8'? | Int 'u8'?
-    ///         | Int 'i16'? | Int 'u16'? | Int ('u' | 'i32')?
-    ///         | Int ('u' | 'u32')? | Int 'i64'? | Int 'u64'?
-    ///         | Int 'i128'? | Int 'u128'? | Float 'f32'?
-    ///         | Float 'f64'? | 'true' | 'false'
-    pub fn primary(&mut self) -> bool {
-        let token = self.peek();
-
-        match token.value.kind {
-            TrueKeyword => self.terminal(LitTrue),
-            FalseKeyword => self.terminal(LitFalse),
-
-            LetKeyword | IfKeyword | MatchKeyword => {
-                // TODO: try to properly parse the expression
-                self.report(ParseError::PrimaryMustBeSurrounded(token.value.kind))
-            }
-
-            ElseKeyword => self.report(ParseError::DanglingElse),
-            CaseKeyword => self.report(ParseError::ReservedKeyword(CaseKeyword)),
-
-            UseKeyword | TypeKeyword | RecordKeyword | ClassKeyword | TraitKeyword
-            | InstanceKeyword => self.report(ParseError::DeclReservedKeyword(TypeKeyword)),
-
-            ReturnKeyword => self.report(ParseError::StmtReservedKeyword(ReturnKeyword)),
-            WhereKeyword => self.report(ParseError::StmtReservedKeyword(WhereKeyword)),
-            InKeyword => self.report(ParseError::ReservedKeyword(InKeyword)),
-
-            Lambda => self.report(ParseError::Unicode(Lambda, "lambda")),
-            Forall => self.report(ParseError::Unicode(Lambda, "forall")),
-            Pi => self.report(ParseError::Unicode(Lambda, "pi")),
-            Sigma => self.report(ParseError::Unicode(Lambda, "sigma")),
-
-            LeftBracket => self.report(ParseError::Unicode(LeftBracket, "left_bracket")),
-            RightBracket => self.report(ParseError::Unicode(RightBracket, "right_bracket")),
-            LeftBrace => self.report(ParseError::Unicode(LeftBrace, "left_brace")),
-            RightBrace => self.report(ParseError::Unicode(RightBrace, "right_brace")),
-            RightParen => self.report(ParseError::Unicode(RightParen, "right_paren")),
-
-            Comma => self.report(ParseError::Unicode(Comma, "comma")),
-            Semi => self.report(ParseError::Unicode(Semi, "semi")),
-            Colon => self.report(ParseError::Unicode(Colon, "colon")),
-            Dot => self.report(ParseError::Unicode(Dot, "dot")),
-            Help => self.report(ParseError::Unicode(Help, "interrogation")),
-            Equal => self.report(ParseError::Unicode(Equal, "equal")),
-
-            DoubleArrow => self.report(ParseError::Unicode(DoubleArrow, "=>")),
-            RightArrow => self.report(ParseError::Unicode(RightArrow, "->")),
-            LeftArrow => self.report(ParseError::Unicode(LeftArrow, "<-")),
-
-            Int8 => self.terminal(LitInt8),
-            Int16 => self.terminal(LitInt16),
-            Int32 => self.terminal(LitInt32),
-            Int64 => self.terminal(LitInt64),
-            Int128 => self.terminal(LitInt128),
-
-            UInt8 => self.terminal(LitUInt8),
-            UInt16 => self.terminal(LitUInt16),
-            UInt32 => self.terminal(LitUInt32),
-            UInt64 => self.terminal(LitUInt64),
-            UInt128 => self.terminal(LitUInt128),
-
-            Float32 => self.terminal(LitFloat32),
-            Float64 => self.terminal(LitFloat64),
-
-            Symbol => self.report(ParseError::Expected(Identifier)),
-            Identifier => self.terminal(LitIdentifier),
-            String => self.terminal(LitString),
-
-            Eof => self.report(ParseError::CantParseDueToEof),
-
-            // Parse group or named pi expressions
-            // - Pi
-            // - Group
-            LeftParen => {
-                let mut pi = self.savepoint();
-                pi.expr_pi();
-                if pi.errors.is_empty() {
-                    self.return_at(pi);
-                    return true;
-                }
-
-                let mut group = self.savepoint();
-                group.expr_group();
-                if group.errors.is_empty() {
-                    self.return_at(group);
-                    return true;
-                }
-
-                self.report(ParseError::ExpectedParenthesisExpr)
-            }
-
-            _ => self.report(ParseError::CantParsePrimary),
-        }
-
-        false
-    }
-
-    /// Global = <<Terminal>>
-    pub fn global(&mut self) {
-        self.terminal(LitSymbol);
-    }
-
-    /// Symbol = <<Terminal>>
-    pub fn symbol(&mut self) {
-        self.terminal(LitSymbol);
-    }
+/// Symbol = <<Terminal>>
+pub fn symbol(p: &mut Parser) {
+    p.terminal(LitSymbol);
 }

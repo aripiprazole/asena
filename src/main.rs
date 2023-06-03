@@ -54,8 +54,7 @@ pub fn run_cli() {
             let file = std::fs::read_to_string(path).unwrap();
             let lexer = lexer::Lexer::new(&file);
             let mut parser = parser::Parser::from(lexer);
-            parser.expr();
-
+            parser::grammar::expr(&mut parser);
             println!("{:#?}", parser.build_tree());
         }
     }
