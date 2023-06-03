@@ -138,75 +138,6 @@ pub enum Literal {
     False,
 }
 
-impl Spec for Literal {
-    fn make(from: Spanned<Tree>) -> Node<Spanned<Self>> {
-        use self::Signed::*;
-
-        use Literal::*;
-        use TreeKind::*;
-
-        let token = from.single();
-
-        match from.kind {
-            LitTrue => from.swap(True).into(),
-            LitFalse => from.swap(False).into(),
-            LitNat => match token.text.parse::<_>() {
-                Ok(value) => from.swap(Nat(value)).into(),
-                Err(..) => Node::empty(),
-            },
-            LitInt8 => match token.text.parse::<_>() {
-                Ok(value) => from.swap(Int8(value, Signed)).into(),
-                Err(..) => Node::empty(),
-            },
-            LitUInt8 => match token.text.parse::<_>() {
-                Ok(value) => from.swap(Int8(value, Unsigned)).into(),
-                Err(..) => Node::empty(),
-            },
-            LitInt16 => match token.text.parse::<_>() {
-                Ok(value) => from.swap(Int16(value, Signed)).into(),
-                Err(..) => Node::empty(),
-            },
-            LitUInt16 => match token.text.parse::<_>() {
-                Ok(value) => from.swap(Int16(value, Unsigned)).into(),
-                Err(..) => Node::empty(),
-            },
-            LitInt32 => match token.text.parse::<_>() {
-                Ok(value) => from.swap(Int32(value, Signed)).into(),
-                Err(..) => Node::empty(),
-            },
-            LitUInt32 => match token.text.parse::<_>() {
-                Ok(value) => from.swap(Int32(value, Unsigned)).into(),
-                Err(..) => Node::empty(),
-            },
-            LitInt64 => match token.text.parse::<_>() {
-                Ok(value) => from.swap(Int64(value, Signed)).into(),
-                Err(..) => Node::empty(),
-            },
-            LitUInt64 => match token.text.parse::<_>() {
-                Ok(value) => from.swap(Int64(value, Unsigned)).into(),
-                Err(..) => Node::empty(),
-            },
-            LitInt128 => match token.text.parse::<_>() {
-                Ok(value) => from.swap(Int128(value, Signed)).into(),
-                Err(..) => Node::empty(),
-            },
-            LitUInt128 => match token.text.parse::<_>() {
-                Ok(value) => from.swap(Int128(value, Unsigned)).into(),
-                Err(..) => Node::empty(),
-            },
-            LitFloat32 => match token.text.parse::<_>() {
-                Ok(value) => from.swap(Float32(value)).into(),
-                Err(..) => Node::empty(),
-            },
-            LitFloat64 => match token.text.parse::<_>() {
-                Ok(value) => from.swap(Float64(value)).into(),
-                Err(..) => Node::empty(),
-            },
-            _ => Node::empty(),
-        }
-    }
-}
-
 //>>>Expressions
 /// Group expression, is an expression that is a call between two operands, and is surrounded by
 /// parenthesis.
@@ -970,38 +901,6 @@ ast_enum! {
         Pi       <- TreeKind::ExprPi,
         Sigma    <- TreeKind::ExprSigma,
         Help     <- TreeKind::ExprHelp,
-    }
-}
-
-impl Spec for Expr {
-    fn make(from: Spanned<Tree>) -> Node<Spanned<Self>> {
-        use TreeKind::*;
-
-        let value = match from.kind {
-            ExprGroup => Expr::Group(Group::new(from.clone())),
-            ExprBinary => Expr::Infix(Infix::new(from.clone().into())),
-            ExprAcessor => Expr::Accessor(Accessor::new(from.clone().into())),
-            ExprApp => Expr::App(App::new(from.clone())),
-            ExprArray => Expr::Array(Array::new(from.clone())),
-            ExprDsl => Expr::Dsl(Dsl::new(from.clone())),
-            ExprLam => Expr::Lam(Lam::new(from.clone())),
-            ExprLet => Expr::Let(Let::new(from.clone())),
-            ExprAnn => Expr::Ann(Ann::new(from.clone().into())),
-            ExprQual => Expr::Qual(Qual::new(from.clone().into())),
-            ExprPi => Expr::Pi(Pi::new(from.clone().into())),
-            ExprSigma => Expr::Sigma(Sigma::new(from.clone())),
-            ExprHelp => Expr::Help(Help::new(from.clone())),
-            LitIdentifier => {
-                return Local::make(from.clone())?.map(Expr::Local).into();
-            }
-            LitNat // literals
-            | LitInt8 | LitUInt8 | LitInt16 | LitUInt16 | LitInt32 | LitUInt32
-            | LitInt64 | LitUInt64 | LitInt128 | LitUInt128 | LitFloat32 | LitFloat64 | LitTrue
-            | LitFalse => Literal::make(from.clone()).map(|literal| Expr::Literal(literal.value))?,
-            _ => return Node::empty(),
-        };
-
-        from.replace(value).into()
     }
 }
 
@@ -2176,87 +2075,6 @@ impl Debug for Expr {
     }
 }
 
-impl Literal {
-    /// Creates a new [Literal::Nat]
-    pub fn nat(value: u128) -> Literal {
-        Literal::Nat(value)
-    }
-
-    /// Creates a new [Literal::String]
-    pub fn string(value: String) -> Literal {
-        Literal::String(value)
-    }
-
-    /// Creates a new signed [Literal::Int8]
-    pub fn i8(value: i8) -> Literal {
-        Literal::Int8(value as u8, Signed::Signed)
-    }
-
-    /// Creates a new unsigned [Literal::Int8]
-    pub fn u8(value: u8) -> Literal {
-        Literal::Int8(value, Signed::Unsigned)
-    }
-
-    /// Creates a new signed [Literal::Int16]
-    pub fn i16(value: i16) -> Literal {
-        Literal::Int16(value as u16, Signed::Signed)
-    }
-
-    /// Creates a new unsigned [Literal::Int16]
-    pub fn u16(value: u16) -> Literal {
-        Literal::Int16(value, Signed::Unsigned)
-    }
-
-    /// Creates a new signed [Literal::Int32]
-    pub fn i32(value: i32) -> Literal {
-        Literal::Int32(value as u32, Signed::Signed)
-    }
-
-    /// Creates a new unsigned [Literal::Int32]
-    pub fn u32(value: u32) -> Literal {
-        Literal::Int32(value, Signed::Unsigned)
-    }
-
-    /// Creates a new signed [Literal::Int64]
-    pub fn i64(value: i64) -> Literal {
-        Literal::Int64(value as u64, Signed::Signed)
-    }
-
-    /// Creates a new unsigned [Literal::Int64]
-    pub fn u64(value: u64) -> Literal {
-        Literal::Int64(value, Signed::Unsigned)
-    }
-
-    /// Creates a new signed [Literal::Int128]
-    pub fn i128(value: i128) -> Literal {
-        Literal::Int128(value as u128, Signed::Signed)
-    }
-
-    /// Creates a new unsigned [Literal::Int128]
-    pub fn u128(value: u128) -> Literal {
-        Literal::Int128(value, Signed::Unsigned)
-    }
-
-    /// Creates a new floating point [Literal::Float32]
-    pub fn f32(value: f32) -> Literal {
-        Literal::Float32(value)
-    }
-
-    /// Creates a new floating point [Literal::Float64]
-    pub fn f64(value: f64) -> Literal {
-        Literal::Float64(value)
-    }
-
-    /// Creates a new boolean [Literal::True] or [Literal::False]
-    pub fn bool(value: bool) -> Literal {
-        if value {
-            Literal::True
-        } else {
-            Literal::False
-        }
-    }
-}
-
 impl Debug for Literal {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -2322,5 +2140,78 @@ impl Debug for Stmt {
             Self::Return(stmt) => write!(f, "{stmt:#?}"),
             Self::Eval(stmt) => write!(f, "{stmt:#?}"),
         }
+    }
+}
+
+impl Spec for Expr {
+    fn make(from: Spanned<Tree>) -> Node<Spanned<Self>> {
+        use TreeKind::*;
+
+        let value = match from.kind {
+            ExprGroup => Expr::Group(Group::new(from.clone())),
+            ExprBinary => Expr::Infix(Infix::new(from.clone().into())),
+            ExprAcessor => Expr::Accessor(Accessor::new(from.clone().into())),
+            ExprApp => Expr::App(App::new(from.clone())),
+            ExprArray => Expr::Array(Array::new(from.clone())),
+            ExprDsl => Expr::Dsl(Dsl::new(from.clone())),
+            ExprLam => Expr::Lam(Lam::new(from.clone())),
+            ExprLet => Expr::Let(Let::new(from.clone())),
+            ExprAnn => Expr::Ann(Ann::new(from.clone().into())),
+            ExprQual => Expr::Qual(Qual::new(from.clone().into())),
+            ExprPi => Expr::Pi(Pi::new(from.clone().into())),
+            ExprSigma => Expr::Sigma(Sigma::new(from.clone())),
+            ExprHelp => Expr::Help(Help::new(from.clone())),
+            LitIdentifier => {
+                return Local::make(from.clone())?.map(Expr::Local).into();
+            }
+            LitNat // literals
+            | LitInt8 | LitUInt8 | LitInt16 | LitUInt16 | LitInt32 | LitUInt32
+            | LitInt64 | LitUInt64 | LitInt128 | LitUInt128 | LitFloat32 | LitFloat64 | LitTrue
+            | LitFalse => Literal::make(from.clone()).map(|literal| Expr::Literal(literal.value))?,
+            _ => return Node::empty(),
+        };
+
+        from.replace(value).into()
+    }
+}
+
+impl Spec for Literal {
+    fn make(from: Spanned<Tree>) -> Node<Spanned<Self>> {
+        use self::Signed::*;
+        use Literal::*;
+        use TreeKind::*;
+
+        let token = from.single();
+        let text = &token.text;
+        let result = match from.kind {
+            LitTrue => return from.swap(True).into(),
+            LitFalse => return from.swap(False).into(),
+            LitNat => text.parse().map(Nat),
+            LitInt8 => text.parse().map(|value| Int8(value, Signed)),
+            LitUInt8 => text.parse().map(|value| Int8(value, Unsigned)),
+            LitInt16 => text.parse().map(|value| Int16(value, Signed)),
+            LitUInt16 => text.parse().map(|value| Int16(value, Unsigned)),
+            LitInt32 => text.parse().map(|value| Int32(value, Signed)),
+            LitUInt32 => text.parse().map(|value| Int32(value, Unsigned)),
+            LitInt64 => text.parse().map(|value| Int64(value, Signed)),
+            LitUInt64 => text.parse().map(|value| Int64(value, Unsigned)),
+            LitInt128 => text.parse().map(|value| Int128(value, Signed)),
+            LitUInt128 => text.parse().map(|value| Int128(value, Unsigned)),
+            LitFloat32 => {
+                return text
+                    .parse()
+                    .map(Float32)
+                    .map_or(Node::empty(), |value| Node::new(from.swap(value)));
+            }
+            LitFloat64 => {
+                return text
+                    .parse()
+                    .map(Float64)
+                    .map_or(Node::empty(), |value| Node::new(from.swap(value)));
+            }
+            _ => return Node::empty(),
+        };
+
+        result.map_or(Node::empty(), |value| Node::new(from.swap(value)))
     }
 }
