@@ -204,43 +204,6 @@ pub fn primary(p: &mut Parser) -> Option<MarkClosed> {
         TrueKeyword => p.terminal(LitTrue),
         FalseKeyword => p.terminal(LitFalse),
 
-        LetKeyword | IfKeyword | MatchKeyword => {
-            // TODO: try to properly parse the expression
-            p.report(PrimarySurroundedError(token.value.kind))
-        }
-
-        ElseKeyword => p.report(DanglingElseError),
-        CaseKeyword => p.report(ReservedKeywordError(CaseKeyword)),
-
-        UseKeyword | TypeKeyword | RecordKeyword | ClassKeyword | TraitKeyword
-        | InstanceKeyword => p.report(DeclReservedKeywordError(TypeKeyword)),
-
-        ReturnKeyword => p.report(StmtReservedKeywordError(ReturnKeyword)),
-        WhereKeyword => p.report(StmtReservedKeywordError(WhereKeyword)),
-        InKeyword => p.report(ReservedKeywordError(InKeyword)),
-
-        Lambda => p.report(UnicodeError(Lambda, "lambda")),
-        Forall => p.report(UnicodeError(Lambda, "forall")),
-        Pi => p.report(UnicodeError(Lambda, "pi")),
-        Sigma => p.report(UnicodeError(Lambda, "sigma")),
-
-        LeftBracket => p.report(UnicodeError(LeftBracket, "left_bracket")),
-        RightBracket => p.report(UnicodeError(RightBracket, "right_bracket")),
-        LeftBrace => p.report(UnicodeError(LeftBrace, "left_brace")),
-        RightBrace => p.report(UnicodeError(RightBrace, "right_brace")),
-        RightParen => p.report(UnicodeError(RightParen, "right_paren")),
-
-        Comma => p.report(UnicodeError(Comma, "comma")),
-        Semi => p.report(UnicodeError(Semi, "semi")),
-        Colon => p.report(UnicodeError(Colon, "colon")),
-        Dot => p.report(UnicodeError(Dot, "dot")),
-        Help => p.report(UnicodeError(Help, "interrogation")),
-        Equal => p.report(UnicodeError(Equal, "equal")),
-
-        DoubleArrow => p.report(UnicodeError(DoubleArrow, "=>")),
-        RightArrow => p.report(UnicodeError(RightArrow, "->")),
-        LeftArrow => p.report(UnicodeError(LeftArrow, "<-")),
-
         Int8 => p.terminal(LitInt8),
         Int16 => p.terminal(LitInt16),
         Int32 => p.terminal(LitInt32),
@@ -256,11 +219,8 @@ pub fn primary(p: &mut Parser) -> Option<MarkClosed> {
         Float32 => p.terminal(LitFloat32),
         Float64 => p.terminal(LitFloat64),
 
-        Symbol => p.report(ExpectedTokenError(Identifier)),
         Identifier => p.terminal(LitIdentifier),
         String => p.terminal(LitString),
-
-        Eof => p.report(EofError),
 
         // Parse group or named pi expressions
         // - Pi
@@ -283,7 +243,52 @@ pub fn primary(p: &mut Parser) -> Option<MarkClosed> {
             p.report(ExpectedParenExprError)
         }
 
-        _ => p.report(PrimaryExpectedError),
+        _ => {
+            match token.value.kind {
+                Eof => p.report(EofError),
+                Symbol => p.report(ExpectedTokenError(Identifier)),
+
+                LetKeyword | IfKeyword | MatchKeyword => {
+                    // TODO: try to properly parse the expression
+                    p.report(PrimarySurroundedError(token.value.kind))
+                }
+
+                ElseKeyword => p.report(DanglingElseError),
+                CaseKeyword => p.report(ReservedKeywordError(CaseKeyword)),
+
+                UseKeyword | TypeKeyword | RecordKeyword | ClassKeyword | TraitKeyword
+                | InstanceKeyword => p.report(DeclReservedKeywordError(TypeKeyword)),
+
+                ReturnKeyword => p.report(StmtReservedKeywordError(ReturnKeyword)),
+                WhereKeyword => p.report(StmtReservedKeywordError(WhereKeyword)),
+                InKeyword => p.report(ReservedKeywordError(InKeyword)),
+
+                Lambda => p.report(UnicodeError(Lambda, "lambda")),
+                Forall => p.report(UnicodeError(Lambda, "forall")),
+                Pi => p.report(UnicodeError(Lambda, "pi")),
+                Sigma => p.report(UnicodeError(Lambda, "sigma")),
+
+                LeftBracket => p.report(UnicodeError(LeftBracket, "left_bracket")),
+                RightBracket => p.report(UnicodeError(RightBracket, "right_bracket")),
+                LeftBrace => p.report(UnicodeError(LeftBrace, "left_brace")),
+                RightBrace => p.report(UnicodeError(RightBrace, "right_brace")),
+                RightParen => p.report(UnicodeError(RightParen, "right_paren")),
+
+                Comma => p.report(UnicodeError(Comma, "comma")),
+                Semi => p.report(UnicodeError(Semi, "semi")),
+                Colon => p.report(UnicodeError(Colon, "colon")),
+                Dot => p.report(UnicodeError(Dot, "dot")),
+                Help => p.report(UnicodeError(Help, "interrogation")),
+                Equal => p.report(UnicodeError(Equal, "equal")),
+
+                DoubleArrow => p.report(UnicodeError(DoubleArrow, "=>")),
+                RightArrow => p.report(UnicodeError(RightArrow, "->")),
+                LeftArrow => p.report(UnicodeError(LeftArrow, "<-")),
+
+                _ => p.report(PrimaryExpectedError),
+            };
+            return None;
+        }
     };
 
     Some(result)
