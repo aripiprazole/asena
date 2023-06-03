@@ -13,9 +13,26 @@ pub enum Event {
     Advance,
 }
 
+///
 pub struct MarkOpened(usize, Loc);
 
 impl MarkOpened {
+    pub fn new(index: usize, loc: Loc) -> Self {
+        Self(index, loc)
+    }
+
+    pub fn index(&self) -> usize {
+        self.0
+    }
+
+    pub fn span(&self) -> Loc {
+        self.1.clone()
+    }
+}
+
+pub struct MarkClosed(usize, Loc);
+
+impl MarkClosed {
     pub fn new(index: usize, loc: Loc) -> Self {
         Self(index, loc)
     }

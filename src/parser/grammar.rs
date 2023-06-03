@@ -2,6 +2,7 @@ use crate::ast::node::TokenKind::*;
 use crate::ast::node::TreeKind::*;
 
 use super::error::ParseError::*;
+use super::event::MarkClosed;
 use super::Parser;
 
 /// File = Decl*
@@ -12,7 +13,7 @@ pub fn file(p: &mut Parser) {
         decl(p);
     }
 
-    p.close(mark, File)
+    p.close(mark, File);
 }
 
 /// Decl = DeclSignature
@@ -35,14 +36,16 @@ pub fn decl_signature(p: &mut Parser) {
 pub fn type_expr(p: &mut Parser) {
     let mark = p.open();
     expr(p);
-    p.close(mark, Type)
+    p.close(mark, Type);
 }
 
-/// Expr = ExprGroup | ExprBinary | ExprAccessor
-///      | ExprApp | ExprDsl | ExprArray
-///      | ExprLam | ExprLet | ExprGlobal
-///      | ExprLocal | ExprLit | ExprAnn
-///      | ExprQual | ExprPi | ExprSigma | ExprHelp
+/// Expr =
+///   ExprGroup
+/// | ExprBinary | ExprAccessor | ExprApp
+/// | ExprDsl | ExprArray | ExprLam
+/// | ExprLet | ExprGlobal | ExprLocal
+/// | ExprLit | ExprAnn | ExprQual
+/// | ExprPi | ExprSigma | ExprHelp
 pub fn expr(p: &mut Parser) {
     expr_binary(p)
 }
@@ -59,7 +62,7 @@ pub fn expr_binary(p: &mut Parser) {
             expr_ann(p);
         }
 
-        p.close(mark, ExprBinary)
+        p.close(mark, ExprBinary);
     } else {
         p.ignore(mark)
     }
@@ -77,7 +80,7 @@ pub fn expr_ann(p: &mut Parser) {
             expr_qual(p);
         }
 
-        p.close(mark, ExprAnn)
+        p.close(mark, ExprAnn);
     } else {
         p.ignore(mark)
     }
@@ -95,7 +98,7 @@ pub fn expr_qual(p: &mut Parser) {
             expr_anonymous_pi(p);
         }
 
-        p.close(mark, ExprQual)
+        p.close(mark, ExprQual);
     } else {
         p.ignore(mark)
     }
@@ -113,7 +116,7 @@ pub fn expr_anonymous_pi(p: &mut Parser) {
             expr_accessor(p);
         }
 
-        p.close(mark, ExprPi)
+        p.close(mark, ExprPi);
     } else {
         p.ignore(mark)
     }
@@ -131,7 +134,7 @@ pub fn expr_accessor(p: &mut Parser) {
             expr_app(p);
         }
 
-        p.close(mark, ExprAcessor)
+        p.close(mark, ExprAcessor);
     } else {
         p.ignore(mark)
     }
@@ -145,14 +148,13 @@ pub fn expr_app(p: &mut Parser) {
     primary(p);
 
     loop {
-        let argument = p.savepoint();
-        let succeeds = p.succeds(argument, |this| {
-            primary(this);
-        });
+        let mut arg = p.savepoint();
+        primary(&mut arg);
 
-        if !succeeds {
+        if arg.has_errors() {
             break;
         } else {
+            p.return_at(arg);
             index += 1;
         }
     }
@@ -164,7 +166,7 @@ pub fn expr_app(p: &mut Parser) {
     }
 }
 
-pub fn expr_pi(p: &mut Parser) {
+pub fn expr_pi(p: &mut Parser) -> MarkClosed {
     let mark = p.open();
     p.expect(LeftParen);
     if p.eat(Identifier) {
@@ -177,15 +179,15 @@ pub fn expr_pi(p: &mut Parser) {
     p.expect(RightArrow);
     type_expr(p);
     p.field("return_type");
-    p.close(mark, ExprPi);
+    p.close(mark, ExprPi)
 }
 
-pub fn expr_group(p: &mut Parser) {
+pub fn expr_group(p: &mut Parser) -> MarkClosed {
     let mark = p.open();
     p.expect(LeftParen);
     expr(p);
     p.expect(RightParen);
-    p.close(mark, ExprGroup);
+    p.close(mark, ExprGroup)
 }
 
 /// Primary = Nat 'n'? | Int 'i8'? | Int 'u8'?
@@ -193,10 +195,10 @@ pub fn expr_group(p: &mut Parser) {
 ///         | Int ('u' | 'u32')? | Int 'i64'? | Int 'u64'?
 ///         | Int 'i128'? | Int 'u128'? | Float 'f32'?
 ///         | Float 'f64'? | 'true' | 'false'
-pub fn primary(p: &mut Parser) -> bool {
+pub fn primary(p: &mut Parser) -> Option<MarkClosed> {
     let token = p.peek();
 
-    match token.value.kind {
+    let result = match token.value.kind {
         TrueKeyword => p.terminal(LitTrue),
         FalseKeyword => p.terminal(LitFalse),
 
@@ -263,26 +265,26 @@ pub fn primary(p: &mut Parser) -> bool {
         // - Group
         LeftParen => {
             let mut pi = p.savepoint();
-            expr_pi(&mut pi);
-            if pi.errors.is_empty() {
+            let closed = expr_pi(&mut pi);
+            if !pi.has_errors() {
                 p.return_at(pi);
-                return true;
+                return Some(closed);
             }
 
             let mut group = p.savepoint();
-            expr_group(&mut group);
-            if group.errors.is_empty() {
+            let closed = expr_group(&mut group);
+            if !group.has_errors() {
                 p.return_at(group);
-                return true;
+                return Some(closed);
             }
 
             p.report(ExpectedParenExprError)
         }
 
         _ => p.report(PrimaryExpectedError),
-    }
+    };
 
-    false
+    Some(result)
 }
 
 /// Global = <<Terminal>>

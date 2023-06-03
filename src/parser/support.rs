@@ -7,7 +7,7 @@ use crate::ast::node::{Token, TokenKind, TreeKind};
 use crate::lexer::span::Spanned;
 use crate::parser::error::ParseError;
 
-use super::event::{Event, MarkOpened};
+use super::event::{Event, MarkClosed, MarkOpened};
 use super::Parser;
 
 pub type Diagnostic = Vec<Spanned<ParseError>>;
@@ -28,7 +28,7 @@ impl<'a> Parser<'a> {
         self.events.push(Event::Field(name))
     }
 
-    pub(crate) fn close(&mut self, mark: MarkOpened, kind: TreeKind) {
+    pub(crate) fn close(&mut self, mark: MarkOpened, kind: TreeKind) -> MarkClosed {
         // Build tree position with the initial state, and the current
         let initial = mark.span();
         let current = self.peek().into_owned();
@@ -37,12 +37,14 @@ impl<'a> Parser<'a> {
         // Replace the state in the tree builder
         self.events[mark.index()] = Event::Open(Spanned::new(position, kind));
         self.events.push(Event::Close);
+
+        MarkClosed::new(mark.index(), mark.span())
     }
 
-    pub(crate) fn terminal(&mut self, kind: TreeKind) {
+    pub(crate) fn terminal(&mut self, kind: TreeKind) -> MarkClosed {
         let mark = self.open();
         self.advance();
-        self.close(mark, kind);
+        self.close(mark, kind)
     }
 
     pub(crate) fn advance(&mut self) {
@@ -104,7 +106,7 @@ impl<'a> Parser<'a> {
         self.errors.push(error);
     }
 
-    pub(crate) fn report(&mut self, error: ParseError) {
+    pub(crate) fn report(&mut self, error: ParseError) -> MarkClosed {
         let mark = self.open();
         let error = self.build_error(error);
         self.errors.push(error);
@@ -137,6 +139,10 @@ impl<'a> Parser<'a> {
 
             Cow::Owned(Spanned::new(start..end, Token::eof()))
         })
+    }
+
+    pub(crate) fn has_errors(&self) -> bool {
+        !self.errors.is_empty()
     }
 
     fn build_error(&self, error: ParseError) -> Spanned<ParseError> {
