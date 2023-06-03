@@ -26,6 +26,7 @@ pub fn decl_signature(p: &mut Parser) {
     let m = p.open();
 
     global(p);
+    p.field("name");
     p.expect(Colon);
     type_expr(p);
 

@@ -809,27 +809,29 @@ impl Deref for Pi {
 /// Σ (a: t) -> b
 /// ```
 #[derive(Clone)]
-pub struct Sigma(Spanned<Tree>);
+pub struct Sigma(GreenTree);
 
 impl Sigma {
-    pub fn new(tree: Spanned<Tree>) -> Self {
+    pub fn new(tree: GreenTree) -> Self {
         Self(tree)
     }
 
-    pub fn unwrap(self) -> Spanned<Tree> {
+    pub fn unwrap(self) -> GreenTree {
         self.0
     }
 
     pub fn parameter_name(&self) -> Node<Local> {
-        todo!()
+        let fn_id = self.named_terminal::<FunctionId>("parameter_name")?;
+
+        Node::new(Local(fn_id))
     }
 
-    pub fn parameter_type(&self) -> Node<Type> {
-        todo!()
+    pub fn parameter_type(&self) -> Green<Node<Spanned<Type>>> {
+        self.lazy("parameter_type", |this| this.named_at("parameter_type"))
     }
 
-    pub fn return_type(&self) -> Node<Type> {
-        todo!()
+    pub fn return_type(&self) -> Green<Node<Spanned<Type>>> {
+        self.lazy("return_type", |this| this.named_at("return_type"))
     }
 }
 
@@ -850,7 +852,7 @@ impl DerefMut for Sigma {
 }
 
 impl Deref for Sigma {
-    type Target = Spanned<Tree>;
+    type Target = GreenTree;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -870,15 +872,15 @@ impl Help {
         self.0
     }
 
-    pub fn inner(&self) -> Node<Expr> {
-        todo!()
+    pub fn value(&self) -> Node<Spanned<Expr>> {
+        self.at(0)
     }
 }
 
 impl Debug for Help {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Help")
-            .field("inner", &self.inner())
+            .field("value", &self.value())
             .finish()
     }
 }
@@ -2173,7 +2175,7 @@ impl Spec for Expr {
             ExprAnn => Expr::Ann(Ann::new(from.clone().into())),
             ExprQual => Expr::Qual(Qual::new(from.clone().into())),
             ExprPi => Expr::Pi(Pi::new(from.clone().into())),
-            ExprSigma => Expr::Sigma(Sigma::new(from.clone())),
+            ExprSigma => Expr::Sigma(Sigma::new(from.clone().into())),
             ExprHelp => Expr::Help(Help::new(from.clone())),
             LitIdentifier => {
                 return Local::make(from.clone())?.map(Expr::Local).into();
@@ -2232,6 +2234,8 @@ impl Spec for Literal {
 
 impl Spec for QualifiedPath {
     fn make(from: Spanned<Tree>) -> Node<Spanned<Self>> {
-        todo!()
+        let tree = from.clone().into();
+
+        Node::new(from.swap(QualifiedPath::new(tree)))
     }
 }
