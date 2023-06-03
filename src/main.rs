@@ -8,6 +8,7 @@ pub mod ast;
 pub mod graph;
 pub mod lexer;
 pub mod parser;
+pub mod report;
 
 use clap::{Args, Parser, Subcommand};
 
