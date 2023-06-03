@@ -7,13 +7,13 @@ use super::Parser;
 
 /// File = Decl*
 pub fn file(p: &mut Parser) {
-    let mark = p.open();
+    let m = p.open();
 
     while !p.eof() {
         decl(p);
     }
 
-    p.close(mark, File);
+    p.close(m, File);
 }
 
 /// Decl = DeclSignature
@@ -23,20 +23,20 @@ pub fn decl(p: &mut Parser) {
 
 /// DeclSignature = Global ':' TypeExpr
 pub fn decl_signature(p: &mut Parser) {
-    let mark = p.open();
+    let m = p.open();
 
     global(p);
     p.at(Colon);
     type_expr(p);
 
-    p.close(mark, DeclSignature);
+    p.close(m, DeclSignature);
 }
 
 /// TypeExpr = Expr
 pub fn type_expr(p: &mut Parser) {
-    let mark = p.open();
+    let m = p.open();
     expr(p);
-    p.close(mark, Type);
+    p.close(m, Type);
 }
 
 /// Expr =
@@ -52,7 +52,7 @@ pub fn expr(p: &mut Parser) {
 
 /// ExprBinary = ExprAccessor (Symbol ExprAccessor)*
 pub fn expr_binary(p: &mut Parser) {
-    let mark = p.open();
+    let m = p.open();
 
     expr_ann(p);
 
@@ -62,15 +62,15 @@ pub fn expr_binary(p: &mut Parser) {
             expr_ann(p);
         }
 
-        p.close(mark, ExprBinary);
+        p.close(m, ExprBinary);
     } else {
-        p.ignore(mark)
+        p.ignore(m)
     }
 }
 
 /// ExprAnn = ExprQual (':' ExprQual)*
 pub fn expr_ann(p: &mut Parser) {
-    let mark = p.open();
+    let m = p.open();
 
     expr_qual(p);
 
@@ -80,15 +80,15 @@ pub fn expr_ann(p: &mut Parser) {
             expr_qual(p);
         }
 
-        p.close(mark, ExprAnn);
+        p.close(m, ExprAnn);
     } else {
-        p.ignore(mark)
+        p.ignore(m)
     }
 }
 
 /// ExprQual = ExprAnonymousPi ('=>' ExprAnonymousPi)*
 pub fn expr_qual(p: &mut Parser) {
-    let mark = p.open();
+    let m = p.open();
 
     expr_anonymous_pi(p);
 
@@ -98,15 +98,15 @@ pub fn expr_qual(p: &mut Parser) {
             expr_anonymous_pi(p);
         }
 
-        p.close(mark, ExprQual);
+        p.close(m, ExprQual);
     } else {
-        p.ignore(mark)
+        p.ignore(m)
     }
 }
 
 /// ExprAnonymousPi = ExprAccessor ('->' ExprAccessor)*
 pub fn expr_anonymous_pi(p: &mut Parser) {
-    let mark = p.open();
+    let m = p.open();
 
     expr_accessor(p);
 
@@ -116,15 +116,15 @@ pub fn expr_anonymous_pi(p: &mut Parser) {
             expr_accessor(p);
         }
 
-        p.close(mark, ExprPi);
+        p.close(m, ExprPi);
     } else {
-        p.ignore(mark)
+        p.ignore(m)
     }
 }
 
 /// ExprAccessor = ExprApp ('.' ExprApp)*
 pub fn expr_accessor(p: &mut Parser) {
-    let mark = p.open();
+    let m = p.open();
 
     expr_app(p);
 
@@ -134,40 +134,38 @@ pub fn expr_accessor(p: &mut Parser) {
             expr_app(p);
         }
 
-        p.close(mark, ExprAcessor);
+        p.close(m, ExprAcessor);
     } else {
-        p.ignore(mark)
+        p.ignore(m)
     }
 }
 
 /// ExprApp = Primary Primary*
 pub fn expr_app(p: &mut Parser) {
-    let mark = p.open();
-    let mut index = 0;
-
-    primary(p);
+    let Some(mut lhs) = primary(p) else {
+        p.report(PrimaryExpectedError);
+        return;
+    };
 
     loop {
         let mut arg = p.savepoint();
-        primary(&mut arg);
+        if matches!(primary(&mut arg), None) {
+            // if can't parse anything, it's not a app expression
+            break;
+        };
 
-        if arg.has_errors() {
+        if arg.has_errors() && p.eof() {
             break;
         } else {
             p.return_at(arg);
-            index += 1;
+            let m = p.open_before(lhs);
+            lhs = p.close(m, ExprApp);
         }
-    }
-
-    if index == 0 {
-        p.ignore(mark);
-    } else {
-        p.close(mark, ExprApp);
     }
 }
 
 pub fn expr_pi(p: &mut Parser) -> MarkClosed {
-    let mark = p.open();
+    let m = p.open();
     p.expect(LeftParen);
     if p.eat(Identifier) {
         p.field("parameter_name");
@@ -179,15 +177,15 @@ pub fn expr_pi(p: &mut Parser) -> MarkClosed {
     p.expect(RightArrow);
     type_expr(p);
     p.field("return_type");
-    p.close(mark, ExprPi)
+    p.close(m, ExprPi)
 }
 
 pub fn expr_group(p: &mut Parser) -> MarkClosed {
-    let mark = p.open();
+    let m = p.open();
     p.expect(LeftParen);
     expr(p);
     p.expect(RightParen);
-    p.close(mark, ExprGroup)
+    p.close(m, ExprGroup)
 }
 
 /// Primary = Nat 'n'? | Int 'i8'? | Int 'u8'?
@@ -196,6 +194,10 @@ pub fn expr_group(p: &mut Parser) -> MarkClosed {
 ///         | Int 'i128'? | Int 'u128'? | Float 'f32'?
 ///         | Float 'f64'? | 'true' | 'false'
 pub fn primary(p: &mut Parser) -> Option<MarkClosed> {
+    if p.eof() {
+        return None;
+    }
+
     let token = p.peek();
 
     let result = match token.value.kind {
