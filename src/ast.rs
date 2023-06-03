@@ -79,6 +79,20 @@ impl Terminal for Local {
         Node::new(token.swap(Local::new(span, &text)))
     }
 }
+
+/// Qualified path
+#[derive(Clone)]
+pub struct QualifiedPath(GreenTree);
+
+impl QualifiedPath {
+    pub fn new(tree: GreenTree) -> Self {
+        Self(tree)
+    }
+
+    pub fn unwrap(self) -> GreenTree {
+        self.0
+    }
+}
 //<<<Identifiers
 
 pub trait Binary: DerefMut + Deref<Target = GreenTree> + Clone {
@@ -2213,5 +2227,11 @@ impl Spec for Literal {
         };
 
         result.map_or(Node::empty(), |value| Node::new(from.swap(value)))
+    }
+}
+
+impl Spec for QualifiedPath {
+    fn make(from: Spanned<Tree>) -> Node<Spanned<Self>> {
+        todo!()
     }
 }
