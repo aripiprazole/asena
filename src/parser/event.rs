@@ -30,6 +30,8 @@ impl<'a> Parser<'a> {
         let mut events = self.events;
         let mut stack = vec![];
 
+        println!("{:#?}", events);
+
         // Special case: pop the last `Close` event to ensure
         // that the stack is non-empty inside the loop.
         assert!(matches!(events.pop(), Some(Event::Close)));
