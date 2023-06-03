@@ -122,7 +122,7 @@ impl<E: InternalError> Diagnostic<E> {
         children.extend(self.children.clone());
 
         Report::<Loc>::build(ReportKind::Error, (), 0)
-            .with_code(format!("E{:.3X}", self.code))
+            .with_code(format!("E{:03X}", self.code))
             .with_message(self.message.value().to_string())
             .with_labels(
                 children
