@@ -20,6 +20,14 @@ impl<'a> Parser<'a> {
         mark
     }
 
+    pub(crate) fn open_before(&mut self, mark: MarkClosed) -> MarkOpened {
+        let span = mark.span();
+        let mark = MarkOpened::new(mark.index(), span.clone());
+        let open_at = Spanned::new(span, TreeKind::Error);
+        self.events.insert(mark.index(), Event::Open(open_at));
+        mark
+    }
+
     pub(crate) fn ignore(&mut self, mark: MarkOpened) {
         self.events.remove(mark.index());
     }
@@ -48,7 +56,7 @@ impl<'a> Parser<'a> {
     }
 
     pub(crate) fn advance(&mut self) {
-        // assert!(!self.eof());
+        assert!(!self.eof());
         self.fuel.set(256);
         self.events.push(Event::Advance);
         self.index += 1;
@@ -78,19 +86,6 @@ impl<'a> Parser<'a> {
     pub(crate) fn eat(&mut self, kind: TokenKind) -> bool {
         if self.at(kind) {
             self.advance();
-            true
-        } else {
-            false
-        }
-    }
-
-    pub(crate) fn succeds<F>(&mut self, mut point: Self, f: F) -> bool
-    where
-        F: Fn(&mut Self),
-    {
-        f(&mut point);
-        if point.errors.is_empty() {
-            self.return_at(point);
             true
         } else {
             false

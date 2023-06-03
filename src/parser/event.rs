@@ -13,7 +13,6 @@ pub enum Event {
     Advance,
 }
 
-///
 pub struct MarkOpened(usize, Loc);
 
 impl MarkOpened {
