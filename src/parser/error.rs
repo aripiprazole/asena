@@ -2,6 +2,7 @@ use thiserror::Error;
 
 use crate::ast::node::TokenKind;
 use crate::lexer::span::Spanned;
+use crate::report::InternalError;
 
 pub type Result<T, E = Spanned<ParseError>> = std::result::Result<T, E>;
 
@@ -85,5 +86,15 @@ impl ParseError {
         // between `repr(C)` structs, each of which has the `u8` discriminant as its first
         // field, so we can read the discriminant without offsetting the pointer.
         unsafe { *<*const _>::from(self).cast::<u8>() }
+    }
+}
+
+impl InternalError for ParseError {
+    fn code(&self) -> u16 {
+        self.discriminant() as u16
+    }
+
+    fn kind() -> crate::report::DiagnosticKind {
+        crate::report::DiagnosticKind::Error
     }
 }
