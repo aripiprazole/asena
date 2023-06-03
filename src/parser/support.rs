@@ -100,7 +100,7 @@ impl<'a> Parser<'a> {
             return;
         }
 
-        let error = self.build_error(ParseError::Expected(kind));
+        let error = self.build_error(ParseError::ExpectedTokenError(kind));
         self.errors.push(error);
     }
 

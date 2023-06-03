@@ -10,73 +10,73 @@ pub type Result<T, E = Spanned<ParseError>> = std::result::Result<T, E>;
 #[repr(u8)]
 pub enum ParseError {
     #[error("Unexpected token")]
-    UnexpectedToken,
+    UnexpectedTokenError,
 
     #[error("Missing semicolon")]
-    MissingSemi,
+    MissingSemiError,
 
     #[error("Expression should be surrounded by parenthesis: `({} ..)`", .0)]
-    PrimaryMustBeSurrounded(TokenKind),
+    PrimarySurroundedError(TokenKind),
 
     #[error("Found an `else` without previous `if` node")]
-    DanglingElse,
+    DanglingElseError,
 
     #[error("Found unicode `{}`, you can rewrite in the language norm as {}", .0, .1)]
-    Unicode(TokenKind, &'static str),
+    UnicodeError(TokenKind, &'static str),
 
     #[error("Reserved keyword `{}` in the wrong position, must be a constraint", .0)]
-    ConstraintReservedKeyword(TokenKind),
+    ConstraintReservedKeywordError(TokenKind),
 
     #[error("Reserved keyword `{}` in the wrong position, must be a statement", .0)]
-    StmtReservedKeyword(TokenKind),
+    StmtReservedKeywordError(TokenKind),
 
     #[error("Reserved keyword `{}` in the wrong position, must be a top-level declaration", .0)]
-    DeclReservedKeyword(TokenKind),
+    DeclReservedKeywordError(TokenKind),
 
     #[error("Reserved keyword `{}` to be used in a feature, you can use like: `{}_`", .0, .0)]
-    ReservedKeyword(TokenKind),
+    ReservedKeywordError(TokenKind),
 
     #[error("Invalid identifier, found symbol")]
-    SymbolInsteadOfIdentifier,
+    InvalidSymbolIdentifierError,
 
     #[error("Invalid identifier, found unicode symbol")]
-    UnicodeInsteadOfIdentifier,
+    InvalidUnicodeIdentifierError,
 
     #[error("Expected token: `{}`. But got this instead", .0.to_string())]
-    Expected(TokenKind),
+    ExpectedTokenError(TokenKind),
 
     #[error("Could not parse primary")]
-    CantParsePrimary,
+    PrimaryExpectedError,
 
     #[error("Could not parse pattern")]
-    CantParsePattern,
+    PatExpectedError,
 
     #[error("Could not parse statement")]
-    CantParseStatement,
+    StmtExpectedError,
 
     #[error("Could not parse anything, found end of file")]
-    CantParseDueToEof,
+    EofError,
 
     #[error("Expected signature parameter")]
-    ExpectedParameter,
+    ParameterExpectedError,
 
     #[error("Unfinished parenthesis, expected `)`")]
-    UnfinishedParenthesis,
+    UnfinishedParenError,
 
     #[error("Unfinished brackets, expected `]`")]
-    UnfinishedBrackets,
+    UnfinishedBracketError,
 
     #[error("Unfinished block, expected `}}`")]
-    UnfinishedBlock,
+    UnfinishedBraceError,
 
     #[error("Expected Σ expression or [<expr>] array expression")]
-    ExpectedBracketExpr,
+    ExpectedBracketExprError,
 
     #[error("Expected Π expression or (<expr>) group expression")]
-    ExpectedParenthesisExpr,
+    ExpectedParenExprError,
 
     #[error("Useless semicolon here, you can just ignore it")]
-    UeselessSemi,
+    UeselessSemiError,
 }
 
 impl ParseError {

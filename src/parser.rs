@@ -60,7 +60,8 @@ mod tests {
         let code = "53 + 75 + 42";
 
         let mut parser = Parser::from(Lexer::new(code));
-        parser.expr_binary();
+        grammar::expr(&mut parser);
+
         let infix = Infix::new(parser.build_tree().into());
 
         let lhs = infix.lhs();
@@ -77,7 +78,7 @@ mod tests {
         let code = "cond : (f true) -> ((f false) -> (f cond));";
 
         let mut parser = Parser::from(Lexer::new(code));
-        parser.decl();
+        grammar::decl(&mut parser);
 
         println!("{:#?}", parser.build_tree());
     }
@@ -87,7 +88,7 @@ mod tests {
         let code = "\\a b -> c";
 
         let mut parser = Parser::from(Lexer::new(code));
-        parser.decl();
+        grammar::decl(&mut parser);
 
         println!("{:#?}", parser.build_tree());
     }
@@ -97,7 +98,7 @@ mod tests {
         let code = "[a: t] -> b";
 
         let mut parser = Parser::from(Lexer::new(code));
-        parser.decl();
+        grammar::expr(&mut parser);
 
         println!("{:#?}", parser.build_tree());
     }
@@ -107,7 +108,7 @@ mod tests {
         let code = "Π (d: t) -> e";
 
         let mut parser = Parser::from(Lexer::new(code));
-        parser.decl();
+        grammar::expr(&mut parser);
 
         println!("{:#?}", parser.build_tree());
     }
@@ -117,7 +118,7 @@ mod tests {
         let code = "a b => a b";
 
         let mut parser = Parser::from(Lexer::new(code));
-        parser.expr_binary();
+        grammar::expr(&mut parser);
 
         println!("{:#?}", Expr::make(parser.build_tree()));
     }
@@ -127,7 +128,7 @@ mod tests {
         let code = "a b";
 
         let mut parser = Parser::from(Lexer::new(code));
-        parser.expr_binary();
+        grammar::expr(&mut parser);
 
         println!("{:#?}", Expr::make(parser.build_tree()));
     }
@@ -137,7 +138,7 @@ mod tests {
         let code = "a => b";
 
         let mut parser = Parser::from(Lexer::new(code));
-        parser.expr_binary();
+        grammar::expr(&mut parser);
 
         println!("{:#?}", parser.build_tree());
     }
@@ -147,27 +148,27 @@ mod tests {
         let code = "(1 + 2)";
 
         let mut parser = Parser::from(Lexer::new(code));
-        parser.expr_binary();
+        grammar::expr(&mut parser);
 
         println!("{:#?}", Expr::make(parser.build_tree()));
     }
 
     #[test]
     fn pi_expr() {
-        let code = "(a: t) -> (b: t) -> c";
+        let code = "(a: t) -> (b: t) -> a b";
 
         let mut parser = Parser::from(Lexer::new(code));
-        parser.expr();
+        grammar::expr(&mut parser);
 
-        println!("{:#?}", Expr::make(parser.build_tree()));
+        println!("{:#?}", parser.build_tree());
     }
 
     #[test]
     fn anonymous_pi_expr() {
-        let code = "t -> b -> c";
+        let code = "m -> a -> m a";
 
         let mut parser = Parser::from(Lexer::new(code));
-        parser.expr();
+        grammar::expr(&mut parser);
 
         println!("{:#?}", Expr::make(parser.build_tree()));
     }
@@ -177,7 +178,7 @@ mod tests {
         let code = "do { (Just a) <- findUser 105; }";
 
         let mut parser = Parser::from(Lexer::new(code));
-        parser.decl();
+        grammar::decl(&mut parser);
 
         println!("{:#?}", parser.build_tree());
     }
