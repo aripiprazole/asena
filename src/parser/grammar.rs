@@ -26,7 +26,7 @@ pub fn decl_signature(p: &mut Parser) {
     let m = p.open();
 
     global(p);
-    p.at(Colon);
+    p.expect(Colon);
     type_expr(p);
 
     p.close(m, DeclSignature);

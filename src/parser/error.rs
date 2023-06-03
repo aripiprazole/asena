@@ -28,7 +28,7 @@ pub enum ParseError {
     #[error("Found an `else` without previous `if` node")]
     DanglingElseError,
 
-    #[error("Found unicode `{}`, you can rewrite in the language norm as {}", .0, .1)]
+    #[error("Found unicode `{}`, you can rewrite in the language norm as `{}`", .0, .1)]
     UnicodeError(TokenKind, &'static str),
 
     #[error("Reserved keyword `{}` in the wrong position, must be a constraint", .0)]
