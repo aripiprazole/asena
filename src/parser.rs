@@ -129,7 +129,7 @@ mod tests {
 
     #[test]
     fn app_expr() {
-        let code = "@ b";
+        let code = "a (@ b)";
 
         let mut parser = Parser::from(Lexer::new(code));
         grammar::expr(&mut parser);

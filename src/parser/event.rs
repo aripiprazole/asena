@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use crate::ast::node::{Child, Tree, TreeKind};
 use crate::lexer::span::{Loc, Spanned};
 use crate::parser::builder::EventBuilder;
-use crate::report::Report;
+use crate::report::{Diagnostic, Report};
 
 use super::error::ParseError;
 use super::Parser;
@@ -26,7 +26,7 @@ pub struct RedTree {
 }
 
 impl<'a> Parser<'a> {
-    pub fn build_tree(self) -> RedTree {
+    pub fn build_tree(mut self) -> RedTree {
         let event_debugger = EventBuilder::new(self.events.clone());
         let mut tokens = self.tokens.into_iter();
         let mut events = self.events;
@@ -92,15 +92,15 @@ impl<'a> Parser<'a> {
         // Our parser will guarantee that all the trees are closed
         // and cover the entirety of tokens.
 
-        assert!(
-            stack.len() == 1,
-            "The stack should contain just the tree element"
-        );
+        if stack.len() != 1 {
+            let error = ParseError::StackError(stack.len());
+            self.errors.push(Diagnostic::new(Spanned::new(0..0, error)))
+        }
 
-        assert!(
-            tokens.next().is_none(),
-            "The token stream still contain something"
-        );
+        if let Some(token) = tokens.next() {
+            let error = ParseError::StreamStillContainElements(token.kind);
+            self.errors.push(Diagnostic::new(token.swap(error)));
+        }
 
         let tree = stack.pop().unwrap();
         let mut report = Report::new(self.source, tree.clone());

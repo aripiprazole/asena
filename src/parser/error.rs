@@ -10,6 +10,12 @@ pub type Result<T, E = Spanned<ParseError>> = std::result::Result<T, E>;
 #[derive(Error, Debug, Clone, PartialEq)]
 #[repr(u8)]
 pub enum ParseError {
+    #[error("The stack should contain just the tree element but has {} elements", .0)]
+    StackError(usize),
+
+    #[error("The token stream still contain something: `{}`", .0)]
+    StreamStillContainElements(TokenKind),
+
     #[error("Unexpected token")]
     UnexpectedTokenError,
 
