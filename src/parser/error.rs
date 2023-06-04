@@ -76,11 +76,14 @@ pub enum ParseError {
     #[error("Unfinished block, expected `}}`")]
     UnfinishedBraceError,
 
-    #[error("Expected Σ expression or [<expr>] array expression")]
+    #[error("Expected <SIGMA_EXPR> or <ARRAY_EXPR>")]
     ExpectedBracketExprError,
 
-    #[error("Expected Π expression or (<expr>) group expression")]
+    #[error("Expected <PI_EXPR> or <GROUP_EXPR>")]
     ExpectedParenExprError,
+
+    #[error("Expected <CONSTRUCTOR_PAT> or <GROUP_PAT>")]
+    ExpectedConstructorError,
 
     #[error("Useless semicolon here, you can just ignore it")]
     UeselessSemiError,

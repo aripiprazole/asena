@@ -34,7 +34,11 @@ impl<'a> Parser<'a> {
 
         // Special case: pop the last `Close` event to ensure
         // that the stack is non-empty inside the loop.
-        assert!(matches!(events.pop(), Some(Event::Close)));
+        if !matches!(events.pop(), Some(Event::Close)) {
+            println!("  -> Debug event trace: ()");
+            println!("{:?}", event_debugger.clone());
+            panic!("The last event should be a Event::Close");
+        }
 
         for event in events {
             match event {

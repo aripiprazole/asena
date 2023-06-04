@@ -16,21 +16,41 @@ pub fn file(p: &mut Parser) {
     p.close(m, File);
 }
 
-/// Decl = DeclSignature
+/// Decl = DeclSignature | DeclAssign
 pub fn decl(p: &mut Parser) {
-    decl_signature(p)
+    let mut decl = p.savepoint();
+    decl_signature(&mut decl);
+    if !decl.has_errors() {
+        p.return_at(decl);
+        return;
+    }
+
+    decl_assign(p);
+}
+
+/// DeclAssign = Global Pat* '=' Expr
+pub fn decl_assign(p: &mut Parser) {
+    let m = p.open();
+    global(p);
+    p.field("name");
+    while !p.eof() && !p.at(Equal) {
+        pat(p);
+    }
+    p.expect(Equal);
+    expr(p);
+    p.field("value");
+    p.close(m, DeclAssign);
 }
 
 /// DeclSignature = Global Param* ':' TypeExpr
-/// DeclAssign = Global Param* '=' TypeExpr
 pub fn decl_signature(p: &mut Parser) {
     let m = p.open();
-
     global(p);
     p.field("name");
     while !p.eof() && p.at(LeftParen) || p.at(LeftBracket) {
         param(p);
     }
+    p.expect(Colon);
     type_expr(p);
     p.field("type");
     p.close(m, DeclSignature);
@@ -226,10 +246,6 @@ pub fn expr_group(p: &mut Parser) -> MarkClosed {
 ///         | Int 'i128'? | Int 'u128'? | Float 'f32'?
 ///         | Float 'f64'? | 'true' | 'false'
 pub fn primary(p: &mut Parser) -> Option<MarkClosed> {
-    if p.eof() {
-        return None;
-    }
-
     let token = p.peek();
 
     let result = match token.value.kind {
@@ -322,6 +338,123 @@ pub fn primary(p: &mut Parser) -> Option<MarkClosed> {
             return None;
         }
     };
+
+    Some(result)
+}
+
+/// Pat = Nat 'n'? | Int 'i8'? | Int 'u8'?
+///     | Int 'i16'? | Int 'u16'? | Int ('u' | 'i32')?
+///     | Int ('u' | 'u32')? | Int 'i64'? | Int 'u64'?
+///     | Int 'i128'? | Int 'u128'? | Float 'f32'?
+///     | Float 'f64'? | 'true' | 'false'
+///     | '(' Global Pat* ')' | '_' | '..'
+pub fn pat(p: &mut Parser) -> Option<MarkClosed> {
+    let m = p.open();
+    let token = p.peek();
+
+    let result = match token.value.kind {
+        Identifier if token.text == "_" => {
+            p.advance();
+            return Some(p.close(m, PatWildcard));
+        }
+        Dot => {
+            p.advance();
+            if p.eat(Dot) {
+                p.report(UnicodeError(Dot, "dot"));
+
+                return None;
+            } else {
+                return Some(p.close(m, PatSpread));
+            }
+        }
+        Identifier => {
+            p.terminal(LitIdentifier);
+            return Some(p.close(m, PatLocal));
+        }
+        LeftBracket => {
+            p.expect(LeftBracket);
+            pat(p);
+            while !p.eof() && !p.at(RightBracket) {
+                p.expect(Comma);
+                pat(p);
+            }
+            p.eat(Comma); // trailling comma
+            p.expect(RightBracket);
+            return Some(p.close(m, PatList));
+        }
+        LeftParen => {
+            p.expect(LeftParen);
+            global(p);
+            while !p.eof() && !p.at(RightParen) {
+                pat(p);
+            }
+            p.expect(RightParen);
+            return Some(p.close(m, PatConstructor));
+        }
+        String => p.terminal(LitString),
+        TrueKeyword => p.terminal(LitTrue),
+        FalseKeyword => p.terminal(LitFalse),
+        Int8 => p.terminal(LitInt8),
+        Int16 => p.terminal(LitInt16),
+        Int32 => p.terminal(LitInt32),
+        Int64 => p.terminal(LitInt64),
+        Int128 => p.terminal(LitInt128),
+        UInt8 => p.terminal(LitUInt8),
+        UInt16 => p.terminal(LitUInt16),
+        UInt32 => p.terminal(LitUInt32),
+        UInt64 => p.terminal(LitUInt64),
+        UInt128 => p.terminal(LitUInt128),
+        Float32 => p.terminal(LitFloat32),
+        Float64 => p.terminal(LitFloat64),
+
+        _ => {
+            match token.value.kind {
+                Eof => p.report(EofError),
+                Symbol => p.report(ExpectedTokenError(Identifier)),
+
+                LetKeyword | IfKeyword | MatchKeyword => {
+                    // TODO: try to properly parse the expression
+                    p.report(PrimarySurroundedError(token.value.kind))
+                }
+
+                ElseKeyword => p.report(DanglingElseError),
+                CaseKeyword => p.report(ReservedKeywordError(CaseKeyword)),
+
+                UseKeyword | TypeKeyword | RecordKeyword | ClassKeyword | TraitKeyword
+                | InstanceKeyword => p.report(DeclReservedKeywordError(TypeKeyword)),
+
+                ReturnKeyword => p.report(StmtReservedKeywordError(ReturnKeyword)),
+                WhereKeyword => p.report(StmtReservedKeywordError(WhereKeyword)),
+                InKeyword => p.report(ReservedKeywordError(InKeyword)),
+
+                Lambda => p.report(UnicodeError(Lambda, "lambda")),
+                Forall => p.report(UnicodeError(Lambda, "forall")),
+                Pi => p.report(UnicodeError(Lambda, "pi")),
+                Sigma => p.report(UnicodeError(Lambda, "sigma")),
+
+                LeftBracket => p.report(UnicodeError(LeftBracket, "left_bracket")),
+                RightBracket => p.report(UnicodeError(RightBracket, "right_bracket")),
+                LeftBrace => p.report(UnicodeError(LeftBrace, "left_brace")),
+                RightBrace => p.report(UnicodeError(RightBrace, "right_brace")),
+                RightParen => p.report(UnicodeError(RightParen, "right_paren")),
+
+                Comma => p.report(UnicodeError(Comma, "comma")),
+                Semi => p.report(UnicodeError(Semi, "semi")),
+                Colon => p.report(UnicodeError(Colon, "colon")),
+                Help => p.report(UnicodeError(Help, "interrogation")),
+                Equal => p.report(UnicodeError(Equal, "equal")),
+
+                DoubleArrow => p.report(UnicodeError(DoubleArrow, "=>")),
+                RightArrow => p.report(UnicodeError(RightArrow, "->")),
+                LeftArrow => p.report(UnicodeError(LeftArrow, "<-")),
+
+                _ => p.report(PrimaryExpectedError),
+            };
+            return None;
+        }
+    };
+
+    p.close(m, PatLiteral);
 
     Some(result)
 }
