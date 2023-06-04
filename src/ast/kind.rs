@@ -68,6 +68,7 @@ pub enum TreeKind {
 
     Parameter,
 
+    DeclUse,
     DeclSignature,
     DeclAssign,
     DeclCommand,

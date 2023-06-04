@@ -1717,6 +1717,49 @@ impl Deref for Class {
     }
 }
 
+/// An use is a declaration that defines an import to a specific module.
+///
+/// The syntax should like exactly:
+/// ```haskell
+/// use IO;
+/// ```
+#[derive(Clone)]
+pub struct Use(Spanned<Tree>);
+
+impl Use {
+    pub fn new(tree: Spanned<Tree>) -> Self {
+        Self(tree)
+    }
+
+    pub fn unwrap(self) -> Spanned<Tree> {
+        self.0
+    }
+
+    pub fn path(&self) -> Node<Global> {
+        todo!()
+    }
+}
+
+impl Debug for Use {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Use").field("path", &self.path()).finish()
+    }
+}
+
+impl DerefMut for Use {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl Deref for Use {
+    type Target = Spanned<Tree>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 /// An instance is a declaration that instantiates a record with default values, all the values
 /// should be methods.
 ///
@@ -1777,6 +1820,7 @@ impl Deref for Instance {
 
 ast_enum! {
     pub enum Decl {
+        Use       <- TreeKind::DeclUse,
         Signature <- TreeKind::DeclSignature,
         Assign    <- TreeKind::DeclAssign,
         Command   <- TreeKind::DeclCommand,
@@ -2117,6 +2161,7 @@ impl Debug for Literal {
 impl Debug for Decl {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::Use(decl) => write!(f, "{decl:#?}"),
             Self::Signature(decl) => write!(f, "{decl:#?}"),
             Self::Assign(decl) => write!(f, "{decl:#?}"),
             Self::Command(decl) => write!(f, "{decl:#?}"),

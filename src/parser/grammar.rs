@@ -22,6 +22,11 @@ pub fn file(p: &mut Parser) {
 
 /// Decl = DeclSignature | DeclAssign
 pub fn decl(p: &mut Parser) {
+    if p.at(UseKeyword) {
+        decl_use(p);
+        return;
+    }
+
     let mut decl = p.savepoint();
     decl_signature(&mut decl);
     if !decl.has_errors() {
@@ -30,6 +35,13 @@ pub fn decl(p: &mut Parser) {
     }
 
     decl_assign(p);
+}
+/// DeclUse = 'Use' Global
+pub fn decl_use(p: &mut Parser) {
+    let m = p.open();
+    p.expect(UseKeyword);
+    global(p);
+    p.close(m, DeclUse);
 }
 
 /// DeclAssign = Global Pat* '=' Expr

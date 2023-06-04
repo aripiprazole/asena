@@ -1,3 +1,5 @@
+use IO;
+
 Cond : [f: Bool -> Set] => (cond: Bool) -> f true -> f false -> f cond;
 
 If [f: Bool -> Set] (cond: Bool) (thenf: f true) (otherwise: f false) : f cond;
