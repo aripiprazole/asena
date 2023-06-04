@@ -9,7 +9,11 @@ use super::Parser;
 pub fn file(p: &mut Parser) {
     let m = p.open();
 
-    while !p.eof() {
+    if !p.eof() {
+        decl(p);
+    }
+
+    while !p.eof() && semi_eof(p) {
         decl(p);
     }
 
@@ -95,6 +99,21 @@ pub fn last_semi(p: &mut Parser) {
     while !p.eof() && p.eat(Semi) {
         p.warning(UeselessSemiError);
     }
+}
+
+pub fn semi_eof(p: &mut Parser) -> bool {
+    if !p.eat(Semi) {
+        p.report(MissingSemiError);
+    } else if p.lookahead(0) == RightBrace {
+        p.warning(UeselessSemiError);
+    }
+
+    while !p.eof() && p.eat(Semi) {
+        p.warning(UeselessSemiError);
+    }
+
+    // returns if can continues
+    !p.eof()
 }
 
 pub fn semi(p: &mut Parser) -> bool {

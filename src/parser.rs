@@ -76,6 +76,16 @@ mod tests {
     }
 
     #[test]
+    fn simple() {
+        let code = include_str!("simple.ase");
+
+        let mut parser = Parser::from(Lexer::new(code));
+        grammar::file(&mut parser);
+
+        println!("{:#?}", parser.build_tree().unwrap());
+    }
+
+    #[test]
     fn sig_decl() {
         let code = "some_proof : 10 := 10 { proof }";
 

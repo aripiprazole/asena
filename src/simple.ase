@@ -1,0 +1,3 @@
+If [f: Bool -> Set] (cond: Bool) (thenf: f true) (otherwise: f false) : f cond;
+If f true  thenf _         = thenf;
+If f false _     otherwise = otherwise;
