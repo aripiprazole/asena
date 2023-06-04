@@ -54,10 +54,21 @@ pub fn decl_signature(p: &mut Parser) {
     while !p.eof() && p.at(LeftParen) || p.at(LeftBracket) {
         param(p);
     }
-    p.expect(Colon);
-    type_expr(p);
-    p.field("type");
-    if p.eat(LeftBrace) {
+    if p.eat(Colon) {
+        type_expr(p);
+        p.field("type");
+        if p.eat(LeftBrace) {
+            if !p.at(RightBrace) {
+                stmt(p);
+            }
+            while !p.eof() && !p.at(RightBrace) && semi(p) {
+                stmt(p);
+            }
+            last_semi(p);
+            p.expect(RightBrace);
+        }
+    } else {
+        p.expect(LeftBrace);
         if !p.at(RightBrace) {
             stmt(p);
         }

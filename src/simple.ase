@@ -1,3 +1,11 @@
+Cond : [f: Bool -> Set] => (cond: Bool) -> f true -> f false -> f cond;
+
 If [f: Bool -> Set] (cond: Bool) (thenf: f true) (otherwise: f false) : f cond;
 If f true  thenf _         = thenf;
 If f false _     otherwise = otherwise;
+
+Main {
+  let person = Person.new "Sofia";
+  person.sayHello;
+  println "Hello, world!"
+}
