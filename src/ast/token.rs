@@ -13,6 +13,8 @@ pub struct Token {
 pub enum TokenKind {
     Error,
 
+    Nat,
+
     // keywords
     LetKeyword,      // let
     TrueKeyword,     // true

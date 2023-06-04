@@ -360,11 +360,11 @@ pub fn expr_pi(p: &mut Parser) -> MarkClosed {
         p.field("parameter_name");
         p.expect(Colon);
     }
-    type_expr(p);
+    expr(p);
     p.field("parameter_type");
     p.expect(RightParen);
     p.expect(RightArrow);
-    type_expr(p);
+    expr(p);
     p.field("return_type");
     p.close(m, ExprPi)
 }
@@ -376,11 +376,11 @@ pub fn expr_sigma(p: &mut Parser) -> MarkClosed {
         p.field("parameter_name");
         p.expect(Colon);
     }
-    type_expr(p);
+    expr(p);
     p.field("parameter_type");
     p.expect(RightBracket);
     p.expect(RightArrow);
-    type_expr(p);
+    expr(p);
     p.field("return_type");
     p.close(m, ExprSigma)
 }
@@ -491,7 +491,7 @@ pub fn pat(p: &mut Parser) -> Option<MarkClosed> {
         }
         Identifier => {
             let m = p.open();
-            p.terminal(QualifiedPath);
+            p.terminal(TreeQualifiedPath);
             p.close(m, PatLocal)
         }
         LeftBracket => {
@@ -560,7 +560,7 @@ pub fn lit(p: &mut Parser, kind: TreeKind) -> Option<MarkClosed> {
 
 /// Global = <<Terminal>>
 pub fn global(p: &mut Parser) {
-    p.terminal(QualifiedPath);
+    p.terminal(TreeQualifiedPath);
 }
 
 /// Symbol = <<Terminal>>

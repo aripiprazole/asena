@@ -1,6 +1,8 @@
 use std::fmt::{Debug, Display, Formatter};
 use std::ops::{Deref, DerefMut};
 
+use node::TokenKind;
+
 use crate::lexer::span::{Loc, Spanned};
 
 use self::green::{Green, GreenTree};
@@ -51,21 +53,6 @@ impl Terminal for ConstructorId {
     }
 }
 
-/// Identifier's key to a global identifier, that's not declared locally, almost everything with
-/// Pascal Case, as a language pattern. This can contain symbols like: `Person.new`, as it can
-/// contain `.`.
-#[derive(Clone)]
-pub struct Global(pub Vec<Spanned<FunctionId>>);
-
-impl Terminal for Global {
-    fn terminal(token: Spanned<Token>) -> Node<Spanned<Self>> {
-        let text = token.text.clone();
-        let span = token.span.clone();
-
-        Node::new(token.swap(Global::new(span, &text)))
-    }
-}
-
 /// Identifier's key to local identifier, that's not declared globally, almost everything with
 /// snake case, as a language pattern.
 #[derive(Clone)]
@@ -80,7 +67,9 @@ impl Terminal for Local {
     }
 }
 
-/// Qualified path
+/// Identifier's key to a global identifier, that's not declared locally, almost everything with
+/// Pascal Case, as a language pattern. This can contain symbols like: `Person.new`, as it can
+/// contain `.`.
 #[derive(Clone)]
 pub struct QualifiedPath(GreenTree);
 
@@ -91,6 +80,34 @@ impl QualifiedPath {
 
     pub fn unwrap(self) -> GreenTree {
         self.0
+    }
+
+    pub fn segments(&self) -> Vec<Node<Spanned<Local>>> {
+        self.filter_terminal()
+    }
+}
+
+impl Debug for QualifiedPath {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "QualifiedPath ")?;
+        for segment in self.segments() {
+            write!(f, " ({:?})", segment.value)?;
+        }
+        Ok(())
+    }
+}
+
+impl DerefMut for QualifiedPath {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl Deref for QualifiedPath {
+    type Target = GreenTree;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 //<<<Identifiers
@@ -127,6 +144,45 @@ pub trait Binary: DerefMut + Deref<Target = GreenTree> + Clone {
                 Node::new(this.replace(Self::make_expr(rhs)))
             }
         })
+    }
+}
+
+#[derive(Clone)]
+pub struct AsenaFile(GreenTree);
+
+impl AsenaFile {
+    pub fn new(tree: GreenTree) -> Self {
+        Self(tree)
+    }
+
+    pub fn unwrap(self) -> GreenTree {
+        self.0
+    }
+
+    pub fn declarations(&self) -> Vec<Node<Spanned<Decl>>> {
+        self.filter()
+    }
+}
+
+impl Debug for AsenaFile {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("AsenaFile")
+            .field("declarations", &self.declarations())
+            .finish()
+    }
+}
+
+impl DerefMut for AsenaFile {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl Deref for AsenaFile {
+    type Target = GreenTree;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
@@ -447,8 +503,8 @@ impl Array {
         self.0
     }
 
-    pub fn items(&self) -> Node<Vec<Spanned<Expr>>> {
-        todo!()
+    pub fn items(&self) -> Vec<Node<Spanned<Expr>>> {
+        self.filter::<Expr>()
     }
 }
 
@@ -732,7 +788,7 @@ impl Pi {
         }
     }
 
-    pub fn parameter_type(&self) -> Green<Node<Spanned<Type>>> {
+    pub fn parameter_type(&self) -> Green<Node<Spanned<Expr>>> {
         self.lazy("parameter_type", |this| {
             if self.parameter_name().is_some() {
                 this.named_at("parameter_type")
@@ -742,7 +798,7 @@ impl Pi {
         })
     }
 
-    pub fn return_type(&self) -> Green<Node<Spanned<Type>>> {
+    pub fn return_type(&self) -> Green<Node<Spanned<Expr>>> {
         self.lazy("return_type", |this| {
             if self.parameter_name().is_some() {
                 return self.named_at("return_type");
@@ -766,7 +822,7 @@ impl Pi {
             if rhs.is_single() {
                 rhs.at(0)
             } else {
-                Node::new(this.replace(Type::Explicit(Expr::Pi(Self::new(rhs)))))
+                Node::new(this.replace(Expr::Pi(Self::new(rhs))))
             }
         })
     }
@@ -826,11 +882,11 @@ impl Sigma {
         Node::new(Local(fn_id))
     }
 
-    pub fn parameter_type(&self) -> Green<Node<Spanned<Type>>> {
+    pub fn parameter_type(&self) -> Green<Node<Spanned<Expr>>> {
         self.lazy("parameter_type", |this| this.named_at("parameter_type"))
     }
 
-    pub fn return_type(&self) -> Green<Node<Spanned<Type>>> {
+    pub fn return_type(&self) -> Green<Node<Spanned<Expr>>> {
         self.lazy("return_type", |this| this.named_at("return_type"))
     }
 }
@@ -901,22 +957,22 @@ impl Deref for Help {
 
 ast_enum! {
     pub enum Expr {
-        Group    <- TreeKind::ExprGroup,
-        Infix    <- TreeKind::ExprBinary,
-        Accessor <- TreeKind::ExprAccessor,
-        App      <- TreeKind::ExprApp,
-        Array    <- TreeKind::ExprArray,
-        Dsl      <- TreeKind::ExprDsl,
-        Lam      <- TreeKind::ExprLam,
-        Let      <- TreeKind::ExprLet,
-        Global   <- TreeKind::ExprGlobal,
-        Local    <- TreeKind::ExprLocal,
-        Literal  <- TreeKind::ExprLit,
-        Ann      <- TreeKind::ExprAnn,
-        Qual     <- TreeKind::ExprQual,
-        Pi       <- TreeKind::ExprPi,
-        Sigma    <- TreeKind::ExprSigma,
-        Help     <- TreeKind::ExprHelp,
+        QualifiedPath   <- TreeKind::TreeQualifiedPath,
+        Group           <- TreeKind::ExprGroup,
+        Infix           <- TreeKind::ExprBinary,
+        Accessor        <- TreeKind::ExprAccessor,
+        App             <- TreeKind::ExprApp,
+        Array           <- TreeKind::ExprArray,
+        Dsl             <- TreeKind::ExprDsl,
+        Lam             <- TreeKind::ExprLam,
+        Let             <- TreeKind::ExprLet,
+        Local           <- TreeKind::ExprLocal,
+        Literal         <- TreeKind::ExprLit,
+        Ann             <- TreeKind::ExprAnn,
+        Qual            <- TreeKind::ExprQual,
+        Pi              <- TreeKind::ExprPi,
+        Sigma           <- TreeKind::ExprSigma,
+        Help            <- TreeKind::ExprHelp,
     }
 }
 
@@ -1170,11 +1226,11 @@ impl Set {
     }
 
     pub fn pattern(&self) -> Node<Spanned<Pat>> {
-        todo!()
+        self.filter::<Pat>().first().cloned().into()
     }
 
     pub fn value(&self) -> Node<Spanned<Expr>> {
-        todo!()
+        self.filter::<Expr>().first().cloned().into()
     }
 }
 
@@ -1255,7 +1311,7 @@ impl Eval {
     }
 
     pub fn value(&self) -> Node<Spanned<Expr>> {
-        todo!()
+        self.filter::<Expr>().first().cloned().into()
     }
 }
 
@@ -1440,19 +1496,19 @@ impl Parameter {
     }
 
     /// Optional parameter's name
-    pub fn name(&self) -> Node<Option<Local>> {
-        todo!()
+    pub fn name(&self) -> Option<Node<Spanned<Local>>> {
+        self.filter_terminal::<Local>().first().cloned()
     }
 
     /// Parameter's type
-    pub fn parameter_type(&self) -> Node<Type> {
-        todo!()
+    pub fn parameter_type(&self) -> Node<Spanned<Type>> {
+        self.filter::<Type>().first().cloned().into()
     }
 
     /// If the parameter is explicit, or if it's a constraint or a type that can have the hole filled
     /// in the compile time, like a generic.
     pub fn explicit(&self) -> bool {
-        todo!()
+        self.matches(0, TokenKind::LeftParen)
     }
 }
 
@@ -1494,32 +1550,32 @@ impl Deref for Parameter {
 /// Print : Person -> IO ()
 /// ```
 #[derive(Clone)]
-pub struct Signature(Spanned<Tree>);
+pub struct Signature(GreenTree);
 
 impl Signature {
-    pub fn new(tree: Spanned<Tree>) -> Self {
+    pub fn new(tree: GreenTree) -> Self {
         Self(tree)
     }
 
-    pub fn unwrap(self) -> Spanned<Tree> {
+    pub fn unwrap(self) -> GreenTree {
         self.0
     }
 
-    pub fn name(&self) -> Node<Option<Local>> {
-        todo!()
+    pub fn name(&self) -> Node<Spanned<QualifiedPath>> {
+        self.filter::<QualifiedPath>().first().unwrap().clone()
     }
 
-    pub fn parameters(&self) -> Node<Vec<Spanned<Parameter>>> {
-        todo!()
+    pub fn parameters(&self) -> Vec<Node<Spanned<Parameter>>> {
+        self.filter::<Parameter>()
     }
 
-    pub fn return_type(&self) -> Node<Type> {
-        todo!()
+    pub fn return_type(&self) -> Option<Node<Spanned<Type>>> {
+        self.filter::<Type>().first().cloned()
     }
 
     /// Holds, optionally the value of the [Signature], this is an sugar to [Assign].
-    pub fn body(&self) -> Node<Vec<Spanned<Stmt>>> {
-        todo!()
+    pub fn body(&self) -> Vec<Node<Spanned<Stmt>>> {
+        self.filter::<Stmt>()
     }
 }
 
@@ -1541,7 +1597,7 @@ impl DerefMut for Signature {
 }
 
 impl Deref for Signature {
-    type Target = Spanned<Tree>;
+    type Target = GreenTree;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -1567,17 +1623,18 @@ impl Assign {
         self.0
     }
 
-    pub fn name(&self) -> Node<Global> {
-        todo!()
+    pub fn name(&self) -> Node<Spanned<QualifiedPath>> {
+        self.filter::<QualifiedPath>().first().unwrap().clone()
     }
 
-    pub fn patterns(&self) -> Node<Vec<Spanned<Pat>>> {
-        todo!()
+    pub fn patterns(&self) -> Vec<Node<Spanned<Pat>>> {
+        self.filter::<Pat>()
     }
 
     /// Holds the value of the [Assign].
-    pub fn body(&self) -> Node<Spanned<Body>> {
-        todo!()
+    pub fn body(&self) -> Node<Spanned<Expr>> {
+        /*  */
+        self.filter::<Expr>().first().cloned().into()
     }
 }
 
@@ -1624,7 +1681,7 @@ impl Command {
         self.0
     }
 
-    pub fn name(&self) -> Node<Global> {
+    pub fn name(&self) -> Node<QualifiedPath> {
         todo!()
     }
 
@@ -1680,7 +1737,7 @@ impl Class {
         self.0
     }
 
-    pub fn name(&self) -> Node<Global> {
+    pub fn name(&self) -> Node<QualifiedPath> {
         todo!()
     }
 
@@ -1735,8 +1792,8 @@ impl Use {
         self.0
     }
 
-    pub fn path(&self) -> Node<Global> {
-        todo!()
+    pub fn path(&self) -> Node<Spanned<QualifiedPath>> {
+        self.filter::<QualifiedPath>().first().unwrap().clone()
     }
 }
 
@@ -1781,7 +1838,7 @@ impl Instance {
         self.0
     }
 
-    pub fn name(&self) -> Node<Global> {
+    pub fn name(&self) -> Node<QualifiedPath> {
         todo!()
     }
 
@@ -2034,12 +2091,7 @@ impl Spec for Type {
 
                 Node::new(from.swap(Self::Explicit(expr.value)))
             }
-            TypeInfer => from.swap(Self::Infer).into(),
-            _ => {
-                let expr = Expr::make(from.clone())?;
-
-                from.swap(Self::Explicit(expr.value)).into()
-            }
+            _ => Node::empty(),
         }
     }
 }
@@ -2081,19 +2133,6 @@ impl ConstructorId {
     }
 }
 
-impl Global {
-    /// Creates a new [Global] by a string
-    pub fn new(span: Loc, id: &str) -> Self {
-        Self(vec![Spanned::new(span, FunctionId::new(id))])
-    }
-}
-
-impl Debug for Global {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "GlobalId {:#?}", self.0)
-    }
-}
-
 impl Local {
     /// Creates a new [Local] by a string
     pub fn new(span: Loc, id: &str) -> Self {
@@ -2115,6 +2154,7 @@ impl Debug for Local {
 impl Debug for Expr {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::QualifiedPath(expr) => write!(f, "{expr:#?}"),
             Self::Infix(expr) => write!(f, "{expr:#?}"),
             Self::Accessor(expr) => write!(f, "{expr:#?}"),
             Self::App(expr) => write!(f, "{expr:#?}"),
@@ -2122,7 +2162,6 @@ impl Debug for Expr {
             Self::Dsl(expr) => write!(f, "{expr:#?}"),
             Self::Lam(expr) => write!(f, "{expr:#?}"),
             Self::Let(expr) => write!(f, "{expr:#?}"),
-            Self::Global(expr) => write!(f, "{expr:#?}"),
             Self::Local(expr) => write!(f, "{expr:#?}"),
             Self::Ann(expr) => write!(f, "{expr:#?}"),
             Self::Qual(expr) => write!(f, "{expr:#?}"),
@@ -2209,6 +2248,7 @@ impl Spec for Expr {
         use TreeKind::*;
 
         let value = match from.kind {
+            TreeQualifiedPath => Expr::QualifiedPath(QualifiedPath::new(from.clone().into())),
             ExprGroup => Expr::Group(Group::new(from.clone())),
             ExprBinary => Expr::Infix(Infix::new(from.clone().into())),
             ExprAccessor => Expr::Accessor(Accessor::new(from.clone().into())),
@@ -2222,13 +2262,11 @@ impl Spec for Expr {
             ExprPi => Expr::Pi(Pi::new(from.clone().into())),
             ExprSigma => Expr::Sigma(Sigma::new(from.clone().into())),
             ExprHelp => Expr::Help(Help::new(from.clone())),
-            QualifiedPath => {
-                return Local::make(from.clone())?.map(Expr::Local).into();
-            }
-            LitNat // literals
-            | LitInt8 | LitUInt8 | LitInt16 | LitUInt16 | LitInt32 | LitUInt32
-            | LitInt64 | LitUInt64 | LitInt128 | LitUInt128 | LitFloat32 | LitFloat64 | LitTrue
-            | LitFalse => Literal::make(from.clone()).map(|literal| Expr::Literal(literal.value))?,
+            ExprLocal => return from.terminal::<Local>(0)?.map(Expr::Local).into(),
+            ExprLit => match from.filter_terminal::<Literal>().first().cloned() {
+                Some(x) => return Node::new(from.swap(Expr::Literal(x.value.clone()))),
+                None => return Node::empty(),
+            },
             _ => return Node::empty(),
         };
 
@@ -2236,35 +2274,98 @@ impl Spec for Expr {
     }
 }
 
-impl Spec for Literal {
+impl Spec for Decl {
     fn make(from: Spanned<Tree>) -> Node<Spanned<Self>> {
-        use self::Signed::*;
-        use Literal::*;
         use TreeKind::*;
 
-        let token = from.single();
-        let text = &token.text;
+        let value = match from.kind {
+            DeclUse => Decl::Use(Use::new(from.clone())),
+            DeclSignature => Decl::Signature(Signature::new(from.clone().into())),
+            DeclAssign => Decl::Assign(Assign::new(from.clone())),
+            DeclCommand => Decl::Command(Command::new(from.clone())),
+            DeclClass => Decl::Class(Class::new(from.clone())),
+            DeclInstance => Decl::Instance(Instance::new(from.clone())),
+            _ => return Node::empty(),
+        };
+
+        from.replace(value).into()
+    }
+}
+
+impl Spec for Stmt {
+    fn make(from: Spanned<Tree>) -> Node<Spanned<Self>> {
+        use TreeKind::*;
+
+        let value = match from.kind {
+            StmtExpr => Stmt::Eval(Eval::new(from.clone())),
+            StmtLet => Stmt::Set(Set::new(from.clone())),
+            StmtAsk => Stmt::Ask(Ask::new(from.clone())),
+            StmtReturn => Stmt::Return(Return::new(from.clone())),
+            _ => return Node::empty(),
+        };
+
+        from.replace(value).into()
+    }
+}
+
+impl Spec for Pat {
+    fn make(from: Spanned<Tree>) -> Node<Spanned<Self>> {
+        use TreeKind::*;
+
+        let value = match from.kind {
+            PatList => Pat::List(List::new(from.clone())),
+            PatWildcard => Pat::Wildcard(Wildcard::new(from.clone())),
+            PatSpread => Pat::Spread(Spread::new(from.clone())),
+            PatConstructor => Pat::Constructor(Constructor::new(from.clone())),
+            PatLocal => return from.terminal::<Local>(0)?.map(Pat::Local).into(),
+            PatLit => {
+                return from
+                    .filter_terminal::<Literal>()
+                    .first()
+                    .cloned()
+                    .unwrap()
+                    .map(|x| from.swap(Pat::Literal(x.value)));
+            }
+            _ => return Node::empty(),
+        };
+
+        from.replace(value).into()
+    }
+}
+
+impl Terminal for Literal {
+    fn terminal(from: Spanned<Token>) -> Node<Spanned<Self>> {
+        use self::Signed::*;
+        use Literal::*;
+
+        let text = &from.text;
         let result = match from.kind {
-            LitTrue => return from.swap(True).into(),
-            LitFalse => return from.swap(False).into(),
-            LitNat => text.parse().map(Nat),
-            LitInt8 => text.parse().map(|value| Int8(value, Signed)),
-            LitUInt8 => text.parse().map(|value| Int8(value, Unsigned)),
-            LitInt16 => text.parse().map(|value| Int16(value, Signed)),
-            LitUInt16 => text.parse().map(|value| Int16(value, Unsigned)),
-            LitInt32 => text.parse().map(|value| Int32(value, Signed)),
-            LitUInt32 => text.parse().map(|value| Int32(value, Unsigned)),
-            LitInt64 => text.parse().map(|value| Int64(value, Signed)),
-            LitUInt64 => text.parse().map(|value| Int64(value, Unsigned)),
-            LitInt128 => text.parse().map(|value| Int128(value, Signed)),
-            LitUInt128 => text.parse().map(|value| Int128(value, Unsigned)),
-            LitFloat32 => {
+            TokenKind::TrueKeyword => return from.swap(True).into(),
+            TokenKind::FalseKeyword => return from.swap(False).into(),
+            TokenKind::Nat => text.parse().map(Nat),
+            TokenKind::Int8 => text.parse().map(|value| Int8(value, Signed)),
+            TokenKind::UInt8 => text.parse().map(|value| Int8(value, Unsigned)),
+            TokenKind::Int16 => text.parse().map(|value| Int16(value, Signed)),
+            TokenKind::UInt16 => text.parse().map(|value| Int16(value, Unsigned)),
+            TokenKind::Int32 => text.parse().map(|value| Int32(value, Signed)),
+            TokenKind::UInt32 => text.parse().map(|value| Int32(value, Unsigned)),
+            TokenKind::Int64 => text.parse().map(|value| Int64(value, Signed)),
+            TokenKind::UInt64 => text.parse().map(|value| Int64(value, Unsigned)),
+            TokenKind::Int128 => text.parse().map(|value| Int128(value, Signed)),
+            TokenKind::UInt128 => text.parse().map(|value| Int128(value, Unsigned)),
+            TokenKind::String => {
+                let text = &from.text[1..(text.len() - 1)];
+                let text = text.to_string();
+
+                return Node::new(from.swap(String(text)));
+            }
+            TokenKind::Float32 => {
                 return text
                     .parse()
                     .map(Float32)
                     .map_or(Node::empty(), |value| Node::new(from.swap(value)));
             }
-            LitFloat64 => {
+            TokenKind::Float64 => {
                 return text
                     .parse()
                     .map(Float64)
@@ -2279,8 +2380,24 @@ impl Spec for Literal {
 
 impl Spec for QualifiedPath {
     fn make(from: Spanned<Tree>) -> Node<Spanned<Self>> {
+        if from.kind != TreeKind::TreeQualifiedPath {
+            return Node::empty();
+        }
+
         let tree = from.clone().into();
 
         Node::new(from.swap(QualifiedPath::new(tree)))
+    }
+}
+
+impl Spec for Parameter {
+    fn make(from: Spanned<Tree>) -> Node<Spanned<Self>> {
+        if from.kind != TreeKind::Param {
+            return Node::empty();
+        }
+
+        let tree = from.clone();
+
+        Node::new(from.swap(Parameter::new(tree)))
     }
 }

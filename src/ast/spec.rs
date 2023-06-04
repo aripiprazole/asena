@@ -25,12 +25,6 @@ impl<T: Terminal> Spec for T {
     }
 }
 
-impl<T> From<T> for Node<T> {
-    fn from(value: T) -> Self {
-        Node(Some(value))
-    }
-}
-
 impl<T> Node<T> {
     pub fn empty() -> Self {
         Self(None)
@@ -49,6 +43,10 @@ impl<T> Node<T> {
         F: FnOnce(T) -> U,
     {
         Node(self.0.map(f))
+    }
+
+    pub fn is_empty(&self) -> bool {
+        matches!(self.0, None)
     }
 }
 
@@ -104,6 +102,27 @@ impl<T> FromResidual for Node<T> {
         match residual.0 {
             Some(..) => unreachable!(),
             None => Self::empty(),
+        }
+    }
+}
+
+impl<T> From<T> for Node<T> {
+    fn from(value: T) -> Self {
+        Node(Some(value))
+    }
+}
+
+impl<T> From<Option<T>> for Node<T> {
+    fn from(value: Option<T>) -> Self {
+        Node(value)
+    }
+}
+
+impl<T> From<Option<Node<T>>> for Node<T> {
+    fn from(value: Option<Node<T>>) -> Self {
+        match value {
+            Some(value) => Node(value.0),
+            None => Node::empty(),
         }
     }
 }

@@ -29,7 +29,7 @@ pub enum TreeKind {
     LitString,
 
     SymbolIdentifier,
-    QualifiedPath,
+    TreeQualifiedPath,
 
     ExprGroup,
     ExprBinary,
@@ -39,7 +39,6 @@ pub enum TreeKind {
     ExprArray,
     ExprLam,
     ExprLet,
-    ExprGlobal,
     ExprLocal,
     ExprLit,
     ExprAnn,
@@ -64,8 +63,6 @@ pub enum TreeKind {
 
     BodyValue,
     BodyDo,
-
-    Parameter,
 
     DeclUse,
     DeclSignature,

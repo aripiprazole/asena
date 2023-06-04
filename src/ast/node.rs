@@ -63,8 +63,26 @@ impl Tree {
         self.children.len() == 1
     }
 
-    pub fn child<T: TryFrom<Child>>(&self, _name: &str) -> Option<T> {
-        todo!()
+    pub fn filter<T: Spec>(&self) -> Vec<Node<Spanned<T>>> {
+        self.children
+            .iter()
+            .filter_map(|child| match child.value.clone() {
+                Child::Tree(tree) => Some(T::make(child.replace(tree))),
+                Child::Token(..) => None,
+            })
+            .filter(|node| !node.is_empty())
+            .collect()
+    }
+
+    pub fn filter_terminal<T: Terminal>(&self) -> Vec<Node<Spanned<T>>> {
+        self.children
+            .iter()
+            .filter_map(|child| match child.value.clone() {
+                Child::Tree(..) => None,
+                Child::Token(token) => Some(T::terminal(child.replace(token))),
+            })
+            .filter(|node| !node.is_empty())
+            .collect()
     }
 
     pub fn at<T: Spec>(&self, nth: usize) -> Node<Spanned<T>> {
@@ -86,6 +104,17 @@ impl Tree {
         match &child.value {
             Child::Tree(..) => Node::empty(),
             Child::Token(token) => T::terminal(child.replace(token.clone())),
+        }
+    }
+
+    pub fn matches(&self, nth: usize, kind: TokenKind) -> bool {
+        let Some(child) = self.children.get(nth) else {
+            return false;
+        };
+
+        match &child.value {
+            Child::Tree(..) => false,
+            Child::Token(token) => token.kind == kind,
         }
     }
 

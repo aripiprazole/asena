@@ -52,7 +52,7 @@ impl<'a> From<Lexer<'a>> for Parser<'a> {
 #[cfg(test)]
 mod tests {
     use crate::ast::spec::Spec;
-    use crate::ast::{Binary, Expr, Infix};
+    use crate::ast::{AsenaFile, Binary, Expr, Infix};
     use crate::lexer::Lexer;
 
     use super::*;
@@ -81,8 +81,10 @@ mod tests {
 
         let mut parser = Parser::from(Lexer::new(code));
         grammar::file(&mut parser);
+        let file = parser.build_tree().unwrap();
+        println!("{:#?}", file);
 
-        println!("{:#?}", parser.build_tree().unwrap());
+        println!("{:#?}", AsenaFile::new(file.into()));
     }
 
     #[test]
