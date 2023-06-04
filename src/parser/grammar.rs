@@ -53,6 +53,17 @@ pub fn decl_signature(p: &mut Parser) {
     p.expect(Colon);
     type_expr(p);
     p.field("type");
+    if p.eat(LeftBrace) {
+        if !p.at(RightBrace) {
+            stmt(p);
+        }
+        while !p.eof() && !p.at(RightBrace) {
+            p.expect(Semi);
+            stmt(p);
+        }
+        p.expect(RightBrace);
+    }
+
     p.close(m, DeclSignature);
 }
 
@@ -80,8 +91,53 @@ pub fn param(p: &mut Parser) {
     p.close(m, Param);
 }
 
-pub fn stmt(_p: &mut Parser) {
-    todo!()
+pub fn stmt(p: &mut Parser) {
+    match p.lookahead(0) {
+        ReturnKeyword => stmt_return(p),
+        LetKeyword => stmt_let(p),
+        _ => {
+            let mut ask = p.savepoint();
+            stmt_ask(&mut ask);
+            if !ask.has_errors() {
+                p.return_at(ask);
+                return;
+            }
+
+            stmt_expr(p)
+        }
+    }
+}
+
+pub fn stmt_return(p: &mut Parser) {
+    let m = p.open();
+    p.expect(ReturnKeyword);
+    if !p.at(Semi) {
+        expr_dsl(p);
+    }
+    p.close(m, StmtReturn);
+}
+
+pub fn stmt_ask(p: &mut Parser) {
+    let m = p.open();
+    pat(p);
+    p.expect(LeftArrow);
+    expr_dsl(p);
+    p.close(m, StmtAsk);
+}
+
+pub fn stmt_let(p: &mut Parser) {
+    let m = p.open();
+    p.expect(LetKeyword);
+    pat(p);
+    p.expect(Equal);
+    expr_dsl(p);
+    p.close(m, StmtLet);
+}
+
+pub fn stmt_expr(p: &mut Parser) {
+    let m = p.open();
+    expr_dsl(p);
+    p.close(m, StmtExpr);
 }
 
 /// TypeExpr = Expr

@@ -35,9 +35,13 @@ impl<'a> Parser<'a> {
         // Special case: pop the last `Close` event to ensure
         // that the stack is non-empty inside the loop.
         if !matches!(events.pop(), Some(Event::Close)) {
-            println!("  -> Debug event trace: ()");
-            println!("{:?}", event_debugger);
-            panic!("The last event should be a Event::Close");
+            #[cfg(debug_assertions)]
+            {
+                println!("  -> Debug event trace: ()");
+                println!("{:?}", event_debugger);
+            };
+            let error = ParseError::EmptyStackError;
+            self.errors.push(Diagnostic::new(Spanned::new(0..0, error)))
         }
 
         for event in events {

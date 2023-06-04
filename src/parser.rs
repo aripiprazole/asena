@@ -187,13 +187,13 @@ mod tests {
 
     #[test]
     fn ask_stmt() {
-        let code = "do { (Just a) <- findUser 105; }";
+        let code = "do { (Just a) <- findUser 105 }";
 
         let mut parser = Parser::from(Lexer::new(code));
-        grammar::decl(&mut parser);
+        grammar::stmt(&mut parser);
 
         let tree = parser.build_tree().unwrap();
 
-        println!("{:#?}", Expr::make(tree));
+        println!("{:#?}", tree);
     }
 }

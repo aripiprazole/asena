@@ -1,6 +1,6 @@
 use IO;
 
-class Monad m [Functor m] {
+class Monad (m) [Functor m] {
   pure: a -> m a;
 }
 
@@ -12,7 +12,7 @@ class Person {
   }
 }
 
-instance Monad m [Functor m] {
+instance Monad (m) [Functor m] {
   pure (a) {
     Applicative.pure(a)
   }
