@@ -120,43 +120,6 @@ pub fn param(p: &mut Parser) {
     p.close(m, Param);
 }
 
-pub fn last_semi(p: &mut Parser) {
-    while !p.eof() && p.eat(Semi) {
-        p.warning(UeselessSemiError);
-    }
-}
-
-pub fn semi_eof(p: &mut Parser) -> bool {
-    if !p.eat(Semi) {
-        p.report(MissingSemiError);
-    } else if p.lookahead(0) == RightBrace {
-        p.warning(UeselessSemiError);
-    }
-
-    while !p.eof() && p.eat(Semi) {
-        p.warning(UeselessSemiError);
-    }
-
-    // returns if can continues
-    !p.eof()
-}
-
-pub fn semi(p: &mut Parser) -> bool {
-    if !p.eat(Semi) {
-        p.report(MissingSemiError);
-    } else if p.lookahead(0) == RightBrace {
-        p.warning(UeselessSemiError);
-    }
-
-    while !p.eof() && p.eat(Semi) {
-        p.warning(UeselessSemiError);
-    }
-
-    // returns if can continues
-    // generally the end of the statement block is RightBrace
-    !p.at(RightBrace)
-}
-
 pub fn stmt(p: &mut Parser) {
     match p.lookahead(0) {
         ReturnKeyword => stmt_return(p),
@@ -605,7 +568,7 @@ pub fn symbol(p: &mut Parser) {
     p.terminal(SymbolIdentifier);
 }
 
-pub fn report_non_primary(p: &mut Parser, kind: TokenKind) -> Option<MarkClosed> {
+fn report_non_primary(p: &mut Parser, kind: TokenKind) -> Option<MarkClosed> {
     match kind {
         Eof => p.report(EofError),
         Symbol => p.report(ExpectedTokenError(Identifier)),
@@ -642,10 +605,47 @@ pub fn report_non_primary(p: &mut Parser, kind: TokenKind) -> Option<MarkClosed>
         Help => p.report(UnicodeError(Help, "interrogation")),
         Equal => p.report(UnicodeError(Equal, "equal")),
 
-        DoubleArrow => p.report(UnicodeError(DoubleArrow, "=>")),
-        RightArrow => p.report(UnicodeError(RightArrow, "->")),
-        LeftArrow => p.report(UnicodeError(LeftArrow, "<-")),
+        DoubleArrow => p.report(UnicodeError(DoubleArrow, "double_arrow")),
+        RightArrow => p.report(UnicodeError(RightArrow, "right_arrow")),
+        LeftArrow => p.report(UnicodeError(LeftArrow, "left_arrow")),
 
         _ => p.report(PrimaryExpectedError),
     }
+}
+
+fn last_semi(p: &mut Parser) {
+    while !p.eof() && p.eat(Semi) {
+        p.warning(UeselessSemiError);
+    }
+}
+
+fn semi_eof(p: &mut Parser) -> bool {
+    if !p.eat(Semi) {
+        p.report(MissingSemiError);
+    } else if p.lookahead(0) == RightBrace {
+        p.warning(UeselessSemiError);
+    }
+
+    while !p.eof() && p.eat(Semi) {
+        p.warning(UeselessSemiError);
+    }
+
+    // returns if can continues
+    !p.eof()
+}
+
+fn semi(p: &mut Parser) -> bool {
+    if !p.eat(Semi) {
+        p.report(MissingSemiError);
+    } else if p.lookahead(0) == RightBrace {
+        p.warning(UeselessSemiError);
+    }
+
+    while !p.eof() && p.eat(Semi) {
+        p.warning(UeselessSemiError);
+    }
+
+    // returns if can continues
+    // generally the end of the statement block is RightBrace
+    !p.at(RightBrace)
 }

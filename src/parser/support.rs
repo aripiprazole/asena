@@ -1,5 +1,3 @@
-#![allow(dead_code)] // TODO: remove me
-
 use std::borrow::Cow;
 use std::cell::Cell;
 
@@ -55,7 +53,9 @@ impl<'a> Parser<'a> {
     }
 
     pub(crate) fn advance(&mut self) {
-        assert!(!self.eof());
+        #[cfg(debug_assertions)]
+        assert!(!self.eof(), "Found eof at index {}", self.index);
+
         self.fuel.set(256);
         self.events.push(Event::Advance);
         self.index += 1;
@@ -132,6 +132,7 @@ impl<'a> Parser<'a> {
     }
 
     pub(crate) fn nth(&self, lookahead: usize) -> Option<&Spanned<Token>> {
+        #[cfg(debug_assertions)]
         if self.fuel.get() == 0 {
             panic!("parser is stuck")
         }
