@@ -50,7 +50,7 @@ pub enum TreeKind {
     PatWildcard,
     PatSpread,
     PatLit,
-    PatLocal,
+    PatGlobal,
     PatConstructor,
     PatList,
 

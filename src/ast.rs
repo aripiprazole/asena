@@ -1156,12 +1156,13 @@ impl Deref for Wildcard {
 
 ast_enum! {
     pub enum Pat {
-        Wildcard    <- TreeKind::PatWildcard,    // _
-        Spread      <- TreeKind::PatSpread,      // ..
-        Literal     <- TreeKind::PatLit,     // <literal>
-        Local       <- TreeKind::PatLocal,       // <local>
-        Constructor <- TreeKind::PatConstructor, // (<global_id> <pattern...>)
-        List        <- TreeKind::PatList,        // [<pattern...>]
+        Wildcard      <- TreeKind::PatWildcard,    // _
+        Spread        <- TreeKind::PatSpread,      // ..
+        Literal       <- TreeKind::PatLit,         // <literal>
+        Local         <- TreeKind::PatGlobal,      // <local>
+        QualifiedPath <- TreeKind::PatGlobal,      // <global>
+        Constructor   <- TreeKind::PatConstructor, // (<global_id> <pattern...>)
+        List          <- TreeKind::PatList,        // [<pattern...>]
     }
 }
 
@@ -2226,6 +2227,7 @@ impl Debug for Pat {
             Self::Wildcard(wildcard) => write!(f, "{wildcard:#?}"),
             Self::Literal(literal) => write!(f, "{literal:#?}"),
             Self::Local(local) => write!(f, "{local:#?}"),
+            Self::QualifiedPath(qualified_path) => write!(f, "{qualified_path:#?}"),
             Self::Constructor(constructor) => write!(f, "{constructor:#?}"),
             Self::List(list) => write!(f, "{list:#?}"),
         }
@@ -2317,7 +2319,7 @@ impl Spec for Pat {
             PatWildcard => Pat::Wildcard(Wildcard::new(from.clone())),
             PatSpread => Pat::Spread(Spread::new(from.clone())),
             PatConstructor => Pat::Constructor(Constructor::new(from.clone())),
-            PatLocal => return from.terminal::<Local>(0)?.map(Pat::Local).into(),
+            PatGlobal => return from.at::<QualifiedPath>(0)?.map(Pat::QualifiedPath).into(),
             PatLit => {
                 return from
                     .filter_terminal::<Literal>()
@@ -2326,7 +2328,9 @@ impl Spec for Pat {
                     .unwrap()
                     .map(|x| from.swap(Pat::Literal(x.value)));
             }
-            _ => return Node::empty(),
+            _ => {
+                return Node::empty();
+            }
         };
 
         from.replace(value).into()

@@ -491,8 +491,8 @@ pub fn pat(p: &mut Parser) -> Option<MarkClosed> {
         }
         Identifier => {
             let m = p.open();
-            p.terminal(TreeQualifiedPath);
-            p.close(m, PatLocal)
+            global(p);
+            p.close(m, PatGlobal)
         }
         LeftBracket => {
             let m = p.open();
