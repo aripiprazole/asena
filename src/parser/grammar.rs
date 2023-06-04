@@ -21,16 +21,43 @@ pub fn decl(p: &mut Parser) {
     decl_signature(p)
 }
 
-/// DeclSignature = Global ':' TypeExpr
+/// DeclSignature = Global Param* ':' TypeExpr
+/// DeclAssign = Global Param* '=' TypeExpr
 pub fn decl_signature(p: &mut Parser) {
     let m = p.open();
 
     global(p);
     p.field("name");
-    p.expect(Colon);
+    while !p.eof() && p.at(LeftParen) || p.at(LeftBracket) {
+        param(p);
+    }
     type_expr(p);
-
+    p.field("type");
     p.close(m, DeclSignature);
+}
+
+/// Param = ImplicitParam | ExplicitParam
+pub fn param(p: &mut Parser) {
+    let m = p.open();
+    let token = p.peek();
+
+    match token.kind {
+        LeftParen => {
+            p.expect(LeftParen);
+            p.expect(Identifier);
+            p.expect(Colon);
+            type_expr(p);
+            p.expect(RightParen);
+        }
+        LeftBracket => {
+            p.expect(LeftBracket);
+            type_expr(p);
+            p.expect(RightBracket);
+        }
+        _ => {}
+    }
+
+    p.close(m, Param);
 }
 
 /// TypeExpr = Expr

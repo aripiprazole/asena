@@ -74,6 +74,8 @@ pub enum TreeKind {
     DeclClass,
     DeclInstance,
 
+    Param,
+
     Constraint,
 
     Field,
