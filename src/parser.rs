@@ -97,7 +97,7 @@ mod tests {
 
     #[test]
     fn sigma_expr() {
-        let code = "[a: t] -> b";
+        let code = "(awa {})";
 
         let mut parser = Parser::from(Lexer::new(code));
         grammar::expr(&mut parser);

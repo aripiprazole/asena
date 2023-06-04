@@ -80,6 +80,10 @@ pub fn param(p: &mut Parser) {
     p.close(m, Param);
 }
 
+pub fn stmt(_p: &mut Parser) {
+    todo!()
+}
+
 /// TypeExpr = Expr
 pub fn type_expr(p: &mut Parser) {
     let m = p.open();
@@ -128,7 +132,24 @@ pub fn expr_lam(p: &mut Parser) {
 }
 
 pub fn expr_dsl(p: &mut Parser) {
+    let m = p.open();
     expr(p);
+
+    if p.eat(LeftBrace) {
+        p.field("callee");
+
+        if !p.at(RightBrace) {
+            stmt(p);
+        }
+        while !p.eof() && !p.at(RightBrace) {
+            p.expect(Semi);
+            stmt(p);
+        }
+        p.expect(RightBrace);
+        p.close(m, ExprDsl);
+    } else {
+        p.ignore(m);
+    }
 }
 
 /// ExprBinary = ExprAccessor (Symbol ExprAccessor)*
