@@ -265,12 +265,42 @@ pub fn expr_pi(p: &mut Parser) -> MarkClosed {
     p.close(m, ExprPi)
 }
 
+pub fn expr_sigma(p: &mut Parser) -> MarkClosed {
+    let m = p.open();
+    p.expect(LeftBracket);
+    if p.eat(Identifier) {
+        p.field("parameter_name");
+        p.expect(Colon);
+    }
+    type_expr(p);
+    p.field("parameter_type");
+    p.expect(RightBracket);
+    p.expect(RightArrow);
+    type_expr(p);
+    p.field("return_type");
+    p.close(m, ExprSigma)
+}
+
 pub fn expr_group(p: &mut Parser) -> MarkClosed {
     let m = p.open();
     p.expect(LeftParen);
     expr_dsl(p);
     p.expect(RightParen);
     p.close(m, ExprGroup)
+}
+
+pub fn expr_array(p: &mut Parser) -> MarkClosed {
+    let m = p.open();
+    p.expect(LeftBracket);
+    if !p.at(RightBracket) {
+        expr_dsl(p);
+    }
+    while !p.eof() && !p.at(RightBracket) {
+        p.expect(Comma);
+        expr_dsl(p);
+    }
+    p.expect(RightBracket);
+    p.close(m, ExprArray)
 }
 
 /// Primary = Nat 'n'? | Int 'i8'? | Int 'u8'?
@@ -302,6 +332,27 @@ pub fn primary(p: &mut Parser) -> Option<MarkClosed> {
 
         Identifier => p.terminal(LitIdentifier),
         String => p.terminal(LitString),
+
+        // Parse array or named sigma expressions
+        // - Sigma
+        // - Array
+        LeftBracket => {
+            let mut pi = p.savepoint();
+            let closed = expr_sigma(&mut pi);
+            if !pi.has_errors() {
+                p.return_at(pi);
+                return Some(closed);
+            }
+
+            let mut group = p.savepoint();
+            let closed = expr_array(&mut group);
+            if !group.has_errors() {
+                p.return_at(group);
+                return Some(closed);
+            }
+
+            return p.report(ExpectedParenExprError);
+        }
 
         // Parse group or named pi expressions
         // - Pi
@@ -406,7 +457,9 @@ pub fn pat(p: &mut Parser) -> Option<MarkClosed> {
         }
         LeftBracket => {
             p.expect(LeftBracket);
-            pat(p);
+            if !p.at(RightBracket) {
+                pat(p);
+            }
             while !p.eof() && !p.at(RightBracket) {
                 p.expect(Comma);
                 pat(p);

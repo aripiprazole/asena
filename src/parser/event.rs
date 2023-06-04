@@ -36,7 +36,7 @@ impl<'a> Parser<'a> {
         // that the stack is non-empty inside the loop.
         if !matches!(events.pop(), Some(Event::Close)) {
             println!("  -> Debug event trace: ()");
-            println!("{:?}", event_debugger.clone());
+            println!("{:?}", event_debugger);
             panic!("The last event should be a Event::Close");
         }
 
