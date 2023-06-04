@@ -1,5 +1,7 @@
 use crate::ast::node::TokenKind::*;
+use crate::ast::node::TreeKind;
 use crate::ast::node::TreeKind::*;
+use crate::ast::token::TokenKind;
 
 use super::error::ParseError::*;
 use super::event::MarkClosed;
@@ -354,7 +356,7 @@ pub fn expr_accessor(p: &mut Parser) {
             expr_app(p);
         }
 
-        p.close(m, ExprAcessor);
+        p.close(m, ExprAccessor);
     } else {
         p.ignore(m)
     }
@@ -442,57 +444,40 @@ pub fn expr_array(p: &mut Parser) -> MarkClosed {
     p.close(m, ExprArray)
 }
 
-/// Primary = Nat 'n'? | Int 'i8'? | Int 'u8'?
-///         | Int 'i16'? | Int 'u16'? | Int ('u' | 'i32')?
-///         | Int ('u' | 'u32')? | Int 'i64'? | Int 'u64'?
-///         | Int 'i128'? | Int 'u128'? | Float 'f32'?
-///         | Float 'f64'? | 'true' | 'false'
+/// Primary =
+///   Lit
+/// | Local # Local
+/// | '(' Identifier ':' TypeExpr ')' '->' 'TypeExpr' # Pi
+/// | '(' ExprDsl ')' # Group
+/// | '[' Identifier ':' TypeExpr ']' '->' 'TypeExpr' # Sigma
+/// | '[' ExprDsl (',' ExprDsl)* ','? ']'  # Pi
 pub fn primary(p: &mut Parser) -> Option<MarkClosed> {
+    if let Some(literal) = lit(p, ExprLit) {
+        return Some(literal);
+    }
+
     let token = p.peek();
 
     let result = match token.value.kind {
-        TrueKeyword => p.terminal(LitTrue),
-        FalseKeyword => p.terminal(LitFalse),
-
-        Int8 => p.terminal(LitInt8),
-        Int16 => p.terminal(LitInt16),
-        Int32 => p.terminal(LitInt32),
-        Int64 => p.terminal(LitInt64),
-        Int128 => p.terminal(LitInt128),
-
-        UInt8 => p.terminal(LitUInt8),
-        UInt16 => p.terminal(LitUInt16),
-        UInt32 => p.terminal(LitUInt32),
-        UInt64 => p.terminal(LitUInt64),
-        UInt128 => p.terminal(LitUInt128),
-
-        Float32 => p.terminal(LitFloat32),
-        Float64 => p.terminal(LitFloat64),
-
-        Identifier => p.terminal(LitIdentifier),
-        String => p.terminal(LitString),
+        Identifier => {
+            let m = p.open();
+            p.advance();
+            p.close(m, ExprLocal)
+        }
 
         // Parse array or named sigma expressions
         // - Sigma
         // - Array
         LeftBracket => {
-            let mut pi = p.savepoint();
-            let closed = expr_sigma(&mut pi);
-            if !pi.has_errors() {
-                p.return_at(pi);
+            let mut sigma = p.savepoint();
+            let closed = expr_sigma(&mut sigma);
+            if !sigma.has_errors() {
+                p.return_at(sigma);
                 return Some(closed);
             }
 
-            let mut group = p.savepoint();
-            let closed = expr_array(&mut group);
-            if !group.has_errors() {
-                p.return_at(group);
-                return Some(closed);
-            }
-
-            return p.report(ExpectedParenExprError);
+            expr_array(p)
         }
-
         // Parse group or named pi expressions
         // - Pi
         // - Group
@@ -504,60 +489,11 @@ pub fn primary(p: &mut Parser) -> Option<MarkClosed> {
                 return Some(closed);
             }
 
-            let mut group = p.savepoint();
-            let closed = expr_group(&mut group);
-            if !group.has_errors() {
-                p.return_at(group);
-                return Some(closed);
-            }
-
-            return p.report(ExpectedParenExprError);
+            expr_group(p)
         }
+        otherwise => {
+            report_non_primary(p, otherwise);
 
-        _ => {
-            match token.value.kind {
-                Eof => p.report(EofError),
-                Symbol => p.report(ExpectedTokenError(Identifier)),
-
-                LetKeyword | IfKeyword | MatchKeyword => {
-                    // TODO: try to properly parse the expression
-                    p.report(PrimarySurroundedError(token.value.kind))
-                }
-
-                ElseKeyword => p.report(DanglingElseError),
-                CaseKeyword => p.report(ReservedKeywordError(CaseKeyword)),
-
-                UseKeyword | TypeKeyword | RecordKeyword | ClassKeyword | TraitKeyword
-                | InstanceKeyword => p.report(DeclReservedKeywordError(TypeKeyword)),
-
-                ReturnKeyword => p.report(StmtReservedKeywordError(ReturnKeyword)),
-                WhereKeyword => p.report(StmtReservedKeywordError(WhereKeyword)),
-                InKeyword => p.report(ReservedKeywordError(InKeyword)),
-
-                Lambda => p.report(UnicodeError(Lambda, "lambda")),
-                Forall => p.report(UnicodeError(Lambda, "forall")),
-                Pi => p.report(UnicodeError(Lambda, "pi")),
-                Sigma => p.report(UnicodeError(Lambda, "sigma")),
-
-                LeftBracket => p.report(UnicodeError(LeftBracket, "left_bracket")),
-                RightBracket => p.report(UnicodeError(RightBracket, "right_bracket")),
-                LeftBrace => p.report(UnicodeError(LeftBrace, "left_brace")),
-                RightBrace => p.report(UnicodeError(RightBrace, "right_brace")),
-                RightParen => p.report(UnicodeError(RightParen, "right_paren")),
-
-                Comma => p.report(UnicodeError(Comma, "comma")),
-                Semi => p.report(UnicodeError(Semi, "semi")),
-                Colon => p.report(UnicodeError(Colon, "colon")),
-                Dot => p.report(UnicodeError(Dot, "dot")),
-                Help => p.report(UnicodeError(Help, "interrogation")),
-                Equal => p.report(UnicodeError(Equal, "equal")),
-
-                DoubleArrow => p.report(UnicodeError(DoubleArrow, "=>")),
-                RightArrow => p.report(UnicodeError(RightArrow, "->")),
-                LeftArrow => p.report(UnicodeError(LeftArrow, "<-")),
-
-                _ => p.report(PrimaryExpectedError),
-            };
             return None;
         }
     };
@@ -565,36 +501,38 @@ pub fn primary(p: &mut Parser) -> Option<MarkClosed> {
     Some(result)
 }
 
-/// Pat = Nat 'n'? | Int 'i8'? | Int 'u8'?
-///     | Int 'i16'? | Int 'u16'? | Int ('u' | 'i32')?
-///     | Int ('u' | 'u32')? | Int 'i64'? | Int 'u64'?
-///     | Int 'i128'? | Int 'u128'? | Float 'f32'?
-///     | Float 'f64'? | 'true' | 'false'
-///     | '(' Global Pat* ')' | '_' | '..'
+/// Pat = '(' Global Pat* ')' | '_' | Lit | '..'
 pub fn pat(p: &mut Parser) -> Option<MarkClosed> {
-    let m = p.open();
+    if let Some(literal) = lit(p, PatLit) {
+        return Some(literal);
+    }
+
     let token = p.peek();
 
     let result = match token.value.kind {
         Identifier if token.text == "_" => {
+            let m = p.open();
             p.advance();
-            return Some(p.close(m, PatWildcard));
+            p.close(m, PatWildcard)
         }
         Dot => {
+            let m = p.open();
             p.advance();
             if p.eat(Dot) {
                 p.report(UnicodeError(Dot, "dot"));
 
                 return None;
             } else {
-                return Some(p.close(m, PatSpread));
+                p.close(m, PatSpread)
             }
         }
         Identifier => {
-            p.terminal(LitIdentifier);
-            return Some(p.close(m, PatLocal));
+            let m = p.open();
+            p.terminal(QualifiedPath);
+            p.close(m, PatLocal)
         }
         LeftBracket => {
+            let m = p.open();
             p.expect(LeftBracket);
             if !p.at(RightBracket) {
                 pat(p);
@@ -605,91 +543,109 @@ pub fn pat(p: &mut Parser) -> Option<MarkClosed> {
             }
             p.eat(Comma); // trailling comma
             p.expect(RightBracket);
-            return Some(p.close(m, PatList));
+            p.close(m, PatList)
         }
         LeftParen => {
+            let m = p.open();
             p.expect(LeftParen);
             global(p);
             while !p.eof() && !p.at(RightParen) {
                 pat(p);
             }
             p.expect(RightParen);
-            return Some(p.close(m, PatConstructor));
+            p.close(m, PatConstructor)
         }
-        String => p.terminal(LitString),
-        TrueKeyword => p.terminal(LitTrue),
-        FalseKeyword => p.terminal(LitFalse),
-        Int8 => p.terminal(LitInt8),
-        Int16 => p.terminal(LitInt16),
-        Int32 => p.terminal(LitInt32),
-        Int64 => p.terminal(LitInt64),
-        Int128 => p.terminal(LitInt128),
-        UInt8 => p.terminal(LitUInt8),
-        UInt16 => p.terminal(LitUInt16),
-        UInt32 => p.terminal(LitUInt32),
-        UInt64 => p.terminal(LitUInt64),
-        UInt128 => p.terminal(LitUInt128),
-        Float32 => p.terminal(LitFloat32),
-        Float64 => p.terminal(LitFloat64),
 
-        _ => {
-            match token.value.kind {
-                Eof => p.report(EofError),
-                Symbol => p.report(ExpectedTokenError(Identifier)),
+        otherwise => {
+            report_non_primary(p, otherwise);
 
-                LetKeyword | IfKeyword | MatchKeyword => {
-                    // TODO: try to properly parse the expression
-                    p.report(PrimarySurroundedError(token.value.kind))
-                }
-
-                ElseKeyword => p.report(DanglingElseError),
-                CaseKeyword => p.report(ReservedKeywordError(CaseKeyword)),
-
-                UseKeyword | TypeKeyword | RecordKeyword | ClassKeyword | TraitKeyword
-                | InstanceKeyword => p.report(DeclReservedKeywordError(TypeKeyword)),
-
-                ReturnKeyword => p.report(StmtReservedKeywordError(ReturnKeyword)),
-                WhereKeyword => p.report(StmtReservedKeywordError(WhereKeyword)),
-                InKeyword => p.report(ReservedKeywordError(InKeyword)),
-
-                Lambda => p.report(UnicodeError(Lambda, "lambda")),
-                Forall => p.report(UnicodeError(Lambda, "forall")),
-                Pi => p.report(UnicodeError(Lambda, "pi")),
-                Sigma => p.report(UnicodeError(Lambda, "sigma")),
-
-                LeftBracket => p.report(UnicodeError(LeftBracket, "left_bracket")),
-                RightBracket => p.report(UnicodeError(RightBracket, "right_bracket")),
-                LeftBrace => p.report(UnicodeError(LeftBrace, "left_brace")),
-                RightBrace => p.report(UnicodeError(RightBrace, "right_brace")),
-                RightParen => p.report(UnicodeError(RightParen, "right_paren")),
-
-                Comma => p.report(UnicodeError(Comma, "comma")),
-                Semi => p.report(UnicodeError(Semi, "semi")),
-                Colon => p.report(UnicodeError(Colon, "colon")),
-                Help => p.report(UnicodeError(Help, "interrogation")),
-                Equal => p.report(UnicodeError(Equal, "equal")),
-
-                DoubleArrow => p.report(UnicodeError(DoubleArrow, "=>")),
-                RightArrow => p.report(UnicodeError(RightArrow, "->")),
-                LeftArrow => p.report(UnicodeError(LeftArrow, "<-")),
-
-                _ => p.report(PrimaryExpectedError),
-            };
             return None;
         }
     };
 
-    p.close(m, PatLiteral);
+    Some(result)
+}
+
+/// Lit =
+///   Nat 'n'? | Int 'i8'? | Int 'u8'?
+/// | Int 'i16'? | Int 'u16'? | Int ('u' | 'i32')?
+/// | Int ('u' | 'u32')? | Int 'i64'? | Int 'u64'?
+/// | Int 'i128'? | Int 'u128'? | Float 'f32'?
+/// | Float 'f64'? | 'true' | 'false'
+pub fn lit(p: &mut Parser, kind: TreeKind) -> Option<MarkClosed> {
+    let result = match p.lookahead(0) {
+        String => p.terminal(kind),
+        TrueKeyword => p.terminal(kind),
+        FalseKeyword => p.terminal(kind),
+        Int8 => p.terminal(kind),
+        Int16 => p.terminal(kind),
+        Int32 => p.terminal(kind),
+        Int64 => p.terminal(kind),
+        Int128 => p.terminal(kind),
+        UInt8 => p.terminal(kind),
+        UInt16 => p.terminal(kind),
+        UInt32 => p.terminal(kind),
+        UInt64 => p.terminal(kind),
+        UInt128 => p.terminal(kind),
+        Float32 => p.terminal(kind),
+        Float64 => p.terminal(kind),
+        _ => return None,
+    };
 
     Some(result)
 }
 
 /// Global = <<Terminal>>
 pub fn global(p: &mut Parser) {
-    p.terminal(LitSymbol);
+    p.terminal(QualifiedPath);
 }
 
 /// Symbol = <<Terminal>>
 pub fn symbol(p: &mut Parser) {
-    p.terminal(LitSymbol);
+    p.terminal(SymbolIdentifier);
+}
+
+pub fn report_non_primary(p: &mut Parser, kind: TokenKind) -> Option<MarkClosed> {
+    match kind {
+        Eof => p.report(EofError),
+        Symbol => p.report(ExpectedTokenError(Identifier)),
+
+        LetKeyword | IfKeyword | MatchKeyword => {
+            // TODO: try to properly parse the expression
+            p.report(PrimarySurroundedError(kind))
+        }
+
+        ElseKeyword => p.report(DanglingElseError),
+        CaseKeyword => p.report(ReservedKeywordError(CaseKeyword)),
+
+        UseKeyword | TypeKeyword | RecordKeyword | ClassKeyword | TraitKeyword
+        | InstanceKeyword => p.report(DeclReservedKeywordError(TypeKeyword)),
+
+        ReturnKeyword => p.report(StmtReservedKeywordError(ReturnKeyword)),
+        WhereKeyword => p.report(StmtReservedKeywordError(WhereKeyword)),
+        InKeyword => p.report(ReservedKeywordError(InKeyword)),
+
+        Lambda => p.report(UnicodeError(Lambda, "lambda")),
+        Forall => p.report(UnicodeError(Lambda, "forall")),
+        Pi => p.report(UnicodeError(Lambda, "pi")),
+        Sigma => p.report(UnicodeError(Lambda, "sigma")),
+
+        LeftBracket => p.report(UnicodeError(LeftBracket, "left_bracket")),
+        RightBracket => p.report(UnicodeError(RightBracket, "right_bracket")),
+        LeftBrace => p.report(UnicodeError(LeftBrace, "left_brace")),
+        RightBrace => p.report(UnicodeError(RightBrace, "right_brace")),
+        RightParen => p.report(UnicodeError(RightParen, "right_paren")),
+
+        Comma => p.report(UnicodeError(Comma, "comma")),
+        Semi => p.report(UnicodeError(Semi, "semi")),
+        Colon => p.report(UnicodeError(Colon, "colon")),
+        Help => p.report(UnicodeError(Help, "interrogation")),
+        Equal => p.report(UnicodeError(Equal, "equal")),
+
+        DoubleArrow => p.report(UnicodeError(DoubleArrow, "=>")),
+        RightArrow => p.report(UnicodeError(RightArrow, "->")),
+        LeftArrow => p.report(UnicodeError(LeftArrow, "<-")),
+
+        _ => p.report(PrimaryExpectedError),
+    }
 }

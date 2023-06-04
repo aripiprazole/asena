@@ -26,15 +26,14 @@ pub enum TreeKind {
     LitTrue,
     LitFalse,
 
-    LitSymbol,
-    LitIdentifier,
     LitString,
 
-    Name,
+    SymbolIdentifier,
+    QualifiedPath,
 
     ExprGroup,
     ExprBinary,
-    ExprAcessor,
+    ExprAccessor,
     ExprApp,
     ExprDsl,
     ExprArray,
@@ -51,7 +50,7 @@ pub enum TreeKind {
 
     PatWildcard,
     PatSpread,
-    PatLiteral,
+    PatLit,
     PatLocal,
     PatConstructor,
     PatList,

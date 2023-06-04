@@ -903,7 +903,7 @@ ast_enum! {
     pub enum Expr {
         Group    <- TreeKind::ExprGroup,
         Infix    <- TreeKind::ExprBinary,
-        Accessor <- TreeKind::ExprAcessor,
+        Accessor <- TreeKind::ExprAccessor,
         App      <- TreeKind::ExprApp,
         Array    <- TreeKind::ExprArray,
         Dsl      <- TreeKind::ExprDsl,
@@ -1102,7 +1102,7 @@ ast_enum! {
     pub enum Pat {
         Wildcard    <- TreeKind::PatWildcard,    // _
         Spread      <- TreeKind::PatSpread,      // ..
-        Literal     <- TreeKind::PatLiteral,     // <literal>
+        Literal     <- TreeKind::PatLit,     // <literal>
         Local       <- TreeKind::PatLocal,       // <local>
         Constructor <- TreeKind::PatConstructor, // (<global_id> <pattern...>)
         List        <- TreeKind::PatList,        // [<pattern...>]
@@ -2211,7 +2211,7 @@ impl Spec for Expr {
         let value = match from.kind {
             ExprGroup => Expr::Group(Group::new(from.clone())),
             ExprBinary => Expr::Infix(Infix::new(from.clone().into())),
-            ExprAcessor => Expr::Accessor(Accessor::new(from.clone().into())),
+            ExprAccessor => Expr::Accessor(Accessor::new(from.clone().into())),
             ExprApp => Expr::App(App::new(from.clone())),
             ExprArray => Expr::Array(Array::new(from.clone())),
             ExprDsl => Expr::Dsl(Dsl::new(from.clone())),
@@ -2222,7 +2222,7 @@ impl Spec for Expr {
             ExprPi => Expr::Pi(Pi::new(from.clone().into())),
             ExprSigma => Expr::Sigma(Sigma::new(from.clone().into())),
             ExprHelp => Expr::Help(Help::new(from.clone())),
-            LitIdentifier => {
+            QualifiedPath => {
                 return Local::make(from.clone())?.map(Expr::Local).into();
             }
             LitNat // literals
