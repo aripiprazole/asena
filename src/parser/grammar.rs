@@ -37,7 +37,7 @@ pub fn decl_assign(p: &mut Parser) {
         pat(p);
     }
     p.expect(Equal);
-    expr(p);
+    expr_dsl(p);
     p.field("value");
     p.close(m, DeclAssign);
 }
@@ -95,7 +95,40 @@ pub fn type_expr(p: &mut Parser) {
 /// | ExprLit | ExprAnn | ExprQual
 /// | ExprPi | ExprSigma | ExprHelp
 pub fn expr(p: &mut Parser) {
-    expr_binary(p)
+    let token = p.peek();
+    match token.kind {
+        Symbol if token.text == "\\" => return expr_lam(p),
+        Help => return expr_help(p),
+        _ => {}
+    }
+
+    expr_binary(p);
+}
+
+/// ExprHelp = '?' ExprDsl
+pub fn expr_help(p: &mut Parser) {
+    let m = p.open();
+    p.expect(Help);
+    expr_dsl(p);
+    p.close(m, ExprHelp);
+}
+
+/// ExprLam = '\' Identifier* '->' ExprDsl
+pub fn expr_lam(p: &mut Parser) {
+    let m = p.open();
+    p.advance();
+    while !p.eof() && !p.at(RightArrow) {
+        let m = p.open();
+        p.expect(Identifier);
+        p.close(m, LamParam);
+    }
+    p.expect(RightArrow);
+    expr_dsl(p);
+    p.close(m, ExprLam);
+}
+
+pub fn expr_dsl(p: &mut Parser) {
+    expr(p);
 }
 
 /// ExprBinary = ExprAccessor (Symbol ExprAccessor)*
@@ -235,7 +268,7 @@ pub fn expr_pi(p: &mut Parser) -> MarkClosed {
 pub fn expr_group(p: &mut Parser) -> MarkClosed {
     let m = p.open();
     p.expect(LeftParen);
-    expr(p);
+    expr_dsl(p);
     p.expect(RightParen);
     p.close(m, ExprGroup)
 }

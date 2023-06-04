@@ -90,7 +90,7 @@ mod tests {
         let code = "\\a b -> c";
 
         let mut parser = Parser::from(Lexer::new(code));
-        grammar::decl(&mut parser);
+        grammar::expr(&mut parser);
 
         println!("{:#?}", parser.build_tree().unwrap());
     }
