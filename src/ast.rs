@@ -60,6 +60,10 @@ pub struct Local(pub Spanned<FunctionId>);
 
 impl Terminal for Local {
     fn terminal(token: Spanned<Token>) -> Node<Spanned<Self>> {
+        if token.kind != TokenKind::Identifier {
+            return Node::empty();
+        }
+
         let text = token.text.clone();
         let span = token.span.clone();
 
