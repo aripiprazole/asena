@@ -77,7 +77,7 @@ mod tests {
 
     #[test]
     fn sig_decl() {
-        let code = "cond [Monad m] : 10";
+        let code = "some_proof : 10 := 10 { proof }";
 
         let mut parser = Parser::from(Lexer::new(code));
         grammar::decl(&mut parser);

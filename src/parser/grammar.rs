@@ -57,10 +57,10 @@ pub fn decl_signature(p: &mut Parser) {
         if !p.at(RightBrace) {
             stmt(p);
         }
-        while !p.eof() && !p.at(RightBrace) {
-            p.expect(Semi);
+        while !p.eof() && !p.at(RightBrace) && semi(p) {
             stmt(p);
         }
+        last_semi(p);
         p.expect(RightBrace);
     }
 
@@ -89,6 +89,28 @@ pub fn param(p: &mut Parser) {
     }
 
     p.close(m, Param);
+}
+
+pub fn last_semi(p: &mut Parser) {
+    while !p.eof() && p.eat(Semi) {
+        p.warning(UeselessSemiError);
+    }
+}
+
+pub fn semi(p: &mut Parser) -> bool {
+    if !p.eat(Semi) {
+        p.report(MissingSemiError);
+    } else if p.lookahead(0) == RightBrace {
+        p.warning(UeselessSemiError);
+    }
+
+    while !p.eof() && p.eat(Semi) {
+        p.warning(UeselessSemiError);
+    }
+
+    // returns if can continues
+    // generally the end of the statement block is RightBrace
+    !p.at(RightBrace)
 }
 
 pub fn stmt(p: &mut Parser) {
@@ -192,15 +214,13 @@ pub fn expr_dsl(p: &mut Parser) {
     expr(p);
 
     if p.eat(LeftBrace) {
-        p.field("callee");
-
         if !p.at(RightBrace) {
             stmt(p);
         }
-        while !p.eof() && !p.at(RightBrace) {
-            p.expect(Semi);
+        while !p.eof() && !p.at(RightBrace) && semi(p) {
             stmt(p);
         }
+        last_semi(p);
         p.expect(RightBrace);
         p.close(m, ExprDsl);
     } else {

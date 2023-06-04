@@ -6,7 +6,7 @@ use std::cell::Cell;
 use crate::ast::node::{Token, TokenKind, TreeKind};
 use crate::lexer::span::Spanned;
 use crate::parser::error::ParseError;
-use crate::report::Diagnostic;
+use crate::report::{Diagnostic, DiagnosticKind};
 
 use super::event::{Event, MarkClosed, MarkOpened};
 use super::Parser;
@@ -98,6 +98,24 @@ impl<'a> Parser<'a> {
 
         let error = self.build_error(ParseError::ExpectedTokenError(kind));
         self.errors.push(Diagnostic::new(error));
+    }
+
+    pub(crate) fn warning(&mut self, error: ParseError) -> Option<MarkClosed> {
+        if self.eof() {
+            let error = self.build_error(error);
+            let mut diagnostic = Diagnostic::new(error);
+            diagnostic.kind = DiagnosticKind::Warning;
+            self.errors.push(diagnostic);
+            return None;
+        }
+        let mark = self.open();
+        let error = self.build_error(error);
+        let mut error = Diagnostic::new(error);
+        error.kind = DiagnosticKind::Warning;
+        self.errors.push(error);
+        self.advance();
+
+        Some(self.close(mark, TreeKind::Error))
     }
 
     pub(crate) fn report(&mut self, error: ParseError) -> Option<MarkClosed> {
