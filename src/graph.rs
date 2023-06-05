@@ -180,10 +180,12 @@ impl Graph {
                     }
 
                     visited.insert(*key, Visited);
-                    queue.push_back(self.directions.get(key).unwrap().clone());
+                    queue.push_front(self.directions.get(key).unwrap().clone());
                 }
             }
         }
+
+        pipeline.reverse();
 
         Search {
             pipeline,
@@ -259,8 +261,8 @@ mod tests {
         graph.link(&cli, &std_io);
 
         graph.link(&std_io, &std_unsafe);
-        graph.link(&std_io, &std_array);
         graph.link(&std_array, &std_unsafe);
+        graph.link(&std_io, &std_array);
 
         let pipeline = graph.search(cli);
         graph.run_pipeline(pipeline);
