@@ -1,16 +1,12 @@
-use std::{
-    collections::{HashMap, VecDeque},
-    fmt::Debug,
-    hash::Hash,
-    path::PathBuf,
-    sync::{Arc, Mutex},
-};
+use std::collections::HashMap;
+use std::fmt::Debug;
+use std::hash::Hash;
+use std::path::PathBuf;
+use std::sync::{Arc, Mutex};
 
-use crate::{
-    ast::{spec::Spec, AsenaFile, Decl},
-    incremental::{query_ast, query_file_path},
-    lexer::span::Spanned,
-};
+use crate::ast::{spec::Spec, AsenaFile, Decl};
+use crate::incremental::{query_ast, query_file_path};
+use crate::lexer::span::Spanned;
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Copy)]
 pub struct Key(usize);
@@ -87,7 +83,7 @@ pub enum Direction {
 pub struct Node {
     pub name: String,
     pub declaration: Mutex<Option<Declaration>>,
-    pub edges: Mutex<HashMap<Key, Direction>>,
+    pub edges: Mutex<Vec<(Key, Direction)>>,
 }
 
 #[derive(Clone)]
@@ -142,11 +138,11 @@ impl Node {
 impl Graph {
     pub fn link(&mut self, a: &Arc<Node>, b: &Arc<Node>) {
         if let Ok(mut node) = a.edges.lock() {
-            node.insert(b.key(), Direction::Forward);
+            node.push((b.key(), Direction::Forward));
         }
 
         if let Ok(mut node) = b.edges.lock() {
-            node.insert(a.key(), Direction::Backward);
+            node.push((a.key(), Direction::Backward));
         }
 
         self.directions.insert(a.key(), a.clone());
@@ -160,18 +156,18 @@ impl Graph {
         let mut recompile = vec![];
 
         let mut visited = HashMap::new();
-        let mut queue = VecDeque::from([entrypoint.clone()]);
-        visited.insert(entrypoint.key(), Visited);
+        let mut queue = vec![entrypoint];
 
-        while let Some(node) = queue.pop_back() {
+        while let Some(node) = queue.pop() {
+            if visited.contains_key(&node.key()) {
+                continue;
+            }
+
             pipeline.push(node.clone());
+            visited.insert(node.key(), Visited);
 
             if let Ok(adjacents) = node.edges.lock() {
                 for (key, direction) in adjacents.iter() {
-                    if visited.contains_key(key) {
-                        continue;
-                    }
-
                     // TODO: loop again like with queue
                     if let Direction::Backward = direction {
                         visited.insert(*key, Visited);
@@ -179,8 +175,7 @@ impl Graph {
                         continue;
                     }
 
-                    visited.insert(*key, Visited);
-                    queue.push_front(self.directions.get(key).unwrap().clone());
+                    queue.push(self.directions.get(key).unwrap().clone());
                 }
             }
         }
@@ -245,6 +240,7 @@ mod tests {
 
     use super::{Graph, Node};
 
+    // FIXME: collision hash
     #[test]
     fn it_works() {
         let mut graph = Graph::default();
@@ -261,8 +257,8 @@ mod tests {
         graph.link(&cli, &std_io);
 
         graph.link(&std_io, &std_unsafe);
-        graph.link(&std_array, &std_unsafe);
         graph.link(&std_io, &std_array);
+        graph.link(&std_array, &std_unsafe);
 
         let pipeline = graph.search(cli);
         graph.run_pipeline(pipeline);
