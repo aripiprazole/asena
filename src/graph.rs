@@ -1,7 +1,18 @@
-use std::collections::HashMap;
+use std::{
+    collections::{HashMap, VecDeque},
+    fmt::Debug,
+    hash::Hash,
+    sync::{Arc, Mutex},
+};
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Copy)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Copy)]
 pub struct Key(usize);
+
+impl Debug for Key {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Key(0x{:03x})", self.0)
+    }
+}
 
 /// Represents the `Asena` dependency graph to be compiled incrementally, just like the following
 /// example. It should determine when the compiler should paralelize the build, store the interner
@@ -55,53 +66,128 @@ pub struct Key(usize);
 /// dependency graph.
 #[derive(Default, Debug, Clone)]
 pub struct Graph {
-    pub nodes: HashMap<Key, TopLevel>,
-    pub directions: HashMap<Key, Node>,
+    pub directions: HashMap<Key, Arc<Node>>,
     pub count: usize,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, Copy)]
 pub enum Direction {
     /// Defines a foward link between 2 nodes in the graph, just like
-    Foward,
+    Forward,
     Backward,
 }
 
-#[derive(Debug, Clone)]
 pub struct Node {
-    pub edges: HashMap<Direction, Key>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
-pub struct TopLevel {
     pub name: String,
+    pub edges: Mutex<HashMap<Key, Direction>>,
 }
 
-impl TopLevel {
+impl Node {
     pub fn new(name: &str) -> Self {
-        Self { name: name.into() }
+        Self {
+            name: name.into(),
+            edges: Default::default(),
+        }
+    }
+
+    pub fn key(&self) -> Key {
+        Key(fxhash::hash(&self))
     }
 }
 
+impl Eq for Node {}
+
+impl PartialEq for Node {
+    fn eq(&self, other: &Self) -> bool {
+        self.name == other.name
+    }
+}
+
+struct Visited;
+
 impl Graph {
-    pub fn link(&mut self, _a: TopLevel, _b: TopLevel) {}
+    pub fn link(&mut self, a: Arc<Node>, b: Arc<Node>) {
+        if let Ok(mut node) = a.edges.lock() {
+            node.insert(b.key(), Direction::Forward);
+        }
+
+        if let Ok(mut node) = b.edges.lock() {
+            node.insert(a.key(), Direction::Backward);
+        }
+
+        self.directions.insert(a.key(), a);
+        self.directions.insert(b.key(), b);
+    }
+
+    pub fn search(&mut self, mut node: Arc<Node>) -> Vec<Arc<Node>> {
+        let mut front = 0;
+        let mut rear = 1;
+        let mut visited = HashMap::new();
+        let mut queue = vec![node.clone()];
+        visited.insert(node.key(), Visited);
+
+        while front != rear {
+            node = queue.get(front).unwrap().clone();
+            front += 1;
+
+            if let Ok(adjacents) = node.edges.lock() {
+                for (key, ..) in adjacents.iter() {
+                    if !visited.contains_key(key) {
+                        visited.insert(*key, Visited);
+                        queue.insert(rear, self.directions.get(key).unwrap().clone());
+                        rear += 1;
+                    }
+                }
+            }
+        }
+
+        queue
+    }
+}
+
+impl Debug for Node {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self.edges.lock() {
+            Ok(edges) => f
+                .debug_struct("Node")
+                .field("name", &self.name)
+                .field("edges", &edges)
+                .finish(),
+            Err(..) => f.debug_struct("Node").field("name", &self.name).finish(),
+        }
+    }
+}
+
+impl Hash for Node {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.name.hash(state);
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{Graph, TopLevel};
+    use std::sync::Arc;
+
+    use super::{Graph, Node};
 
     #[test]
     fn it_works() {
         let mut graph = Graph::default();
 
-        graph.link(TopLevel::new("Main"), TopLevel::new("Std.IO"));
-        graph.link(TopLevel::new("Main"), TopLevel::new("Cli"));
-        graph.link(TopLevel::new("Cli"), TopLevel::new("Std.Array"));
-        graph.link(TopLevel::new("Cli"), TopLevel::new("Std.IO"));
+        let main = Arc::new(Node::new("Main"));
 
-        graph.link(TopLevel::new("Std.IO"), TopLevel::new("Std.Unsafe"));
-        graph.link(TopLevel::new("Std.IO"), TopLevel::new("Std.Array"));
-        graph.link(TopLevel::new("Std.Array"), TopLevel::new("Std.Unsafe"));
+        graph.link(main.clone(), Node::new("Std.IO").into());
+        graph.link(main.clone(), Node::new("Cli").into());
+        graph.link(Node::new("Cli").into(), Node::new("Std.Array").into());
+        graph.link(Node::new("Cli").into(), Node::new("Std.IO").into());
+
+        graph.link(Node::new("Std.IO").into(), Node::new("Std.Unsafe").into());
+        graph.link(Node::new("Std.IO").into(), Node::new("Std.Array").into());
+        graph.link(
+            Node::new("Std.Array").into(),
+            Node::new("Std.Unsafe").into(),
+        );
+
+        println!("{:#?}", graph.search(main));
     }
 }
