@@ -4,6 +4,9 @@ use std::hash::Hash;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
+use im::{hashset, HashSet};
+use itertools::Itertools;
+
 use crate::ast::{spec::Spec, AsenaFile, Decl};
 use crate::incremental::{query_ast, query_file_path};
 use crate::lexer::span::Spanned;
@@ -111,13 +114,13 @@ impl Default for Declaration {
 
 #[derive(Debug)]
 pub struct Search {
-    pipeline: Vec<Arc<Node>>,
+    pipeline: Vec<HashSet<Arc<Node>>>,
     pub recompile: Vec<Arc<Node>>,
 }
 
 impl Search {
-    pub fn pipeline(&self) -> Vec<Vec<Arc<Node>>> {
-        self.pipeline.iter().map(|arc| vec![arc.clone()]).collect()
+    pub fn pipeline(&self) -> Vec<HashSet<Arc<Node>>> {
+        self.pipeline.clone()
     }
 }
 
@@ -152,18 +155,18 @@ impl Graph {
     pub fn search(&mut self, entrypoint: Arc<Node>) -> Search {
         struct Visited;
 
-        let mut pipeline = vec![];
+        let mut depth = 0;
+        let mut pipeline: HashMap<Arc<Node>, usize> = HashMap::new();
         let mut recompile = vec![];
 
         let mut visited = HashMap::new();
-        let mut queue = vec![entrypoint];
+        let mut queue = vec![entrypoint.clone()];
 
         while let Some(node) = queue.pop() {
             if visited.contains_key(&node.key()) {
                 continue;
             }
 
-            pipeline.push(node.clone());
             visited.insert(node.key(), Visited);
 
             if let Ok(adjacents) = node.edges.lock() {
@@ -175,15 +178,39 @@ impl Graph {
                         continue;
                     }
 
-                    queue.push(self.directions.get(key).unwrap().clone());
+                    let node = self.directions.get(key).unwrap().clone();
+                    queue.push(node.clone());
+                    pipeline.insert(node, depth);
                 }
+
+                depth += 1;
             }
         }
 
-        pipeline.reverse();
+        let mut vec_pipeline: Vec<_> = vec![];
+        for (key, group) in &pipeline
+            .iter()
+            .sorted_by(|(_, a), (_, b)| a.cmp(b))
+            .group_by(|(_, key)| **key)
+        {
+            let set: &mut HashSet<_> = match vec_pipeline.get_mut(key) {
+                Some(value) => value,
+                None => {
+                    vec_pipeline.push(hashset![]);
+                    vec_pipeline.last_mut().unwrap()
+                }
+            };
+
+            for (node, _) in group {
+                set.insert(node.clone());
+            }
+        }
+
+        vec_pipeline.reverse();
+        vec_pipeline.push(hashset![entrypoint]);
 
         Search {
-            pipeline,
+            pipeline: vec_pipeline,
             recompile,
         }
     }
@@ -240,7 +267,6 @@ mod tests {
 
     use super::{Graph, Node};
 
-    // FIXME: collision hash
     #[test]
     fn it_works() {
         let mut graph = Graph::default();

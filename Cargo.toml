@@ -11,5 +11,7 @@ ariadne = "0.2"
 chumsky = {version = "1.0.0-alpha.4", features = ["label"]}
 clap = {version = "4.2.7", features = ["derive"]}
 fxhash = "0.2.1"
+im = "15.1.0"
+itertools = "0.10.5"
 salsa = "0.16.1"
 thiserror = "1.0.40"
