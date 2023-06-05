@@ -2,7 +2,14 @@ use std::{
     collections::{HashMap, VecDeque},
     fmt::Debug,
     hash::Hash,
+    path::PathBuf,
     sync::{Arc, Mutex},
+};
+
+use crate::{
+    ast::{spec::Spec, AsenaFile, Decl},
+    incremental::{query_ast, query_file_path},
+    lexer::span::Spanned,
 };
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Copy)]
@@ -79,13 +86,50 @@ pub enum Direction {
 
 pub struct Node {
     pub name: String,
+    pub declaration: Mutex<Option<Declaration>>,
     pub edges: Mutex<HashMap<Key, Direction>>,
+}
+
+#[derive(Clone)]
+pub struct Declaration {
+    pub name: String,
+    pub file: Option<PathBuf>,
+    pub tree: Arc<crate::ast::spec::Node<AsenaFile>>,
+    pub node: Arc<crate::ast::spec::Node<Spanned<Decl>>>,
+
+    /// Recompile flag, if its true, all the other fields will be recompiled
+    pub recompile: bool,
+}
+
+impl Default for Declaration {
+    fn default() -> Self {
+        Declaration {
+            name: Default::default(),
+            file: None,
+            tree: Arc::new(AsenaFile::new(Default::default()).into()),
+            node: Arc::new(Decl::make(Default::default())),
+            recompile: false,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct Search {
+    pipeline: Vec<Arc<Node>>,
+    pub recompile: Vec<Arc<Node>>,
+}
+
+impl Search {
+    pub fn pipeline(&self) -> Vec<Vec<Arc<Node>>> {
+        self.pipeline.iter().map(|arc| vec![arc.clone()]).collect()
+    }
 }
 
 impl Node {
     pub fn new(name: &str) -> Self {
         Self {
             name: name.into(),
+            declaration: Default::default(),
             edges: Default::default(),
         }
     }
@@ -95,24 +139,8 @@ impl Node {
     }
 }
 
-impl Eq for Node {}
-
-impl PartialEq for Node {
-    fn eq(&self, other: &Self) -> bool {
-        self.name == other.name
-    }
-}
-
-#[derive(Debug)]
-pub struct Search {
-    pub pipeline: Vec<Arc<Node>>,
-    pub recompile: Vec<Arc<Node>>,
-}
-
-struct Visited;
-
 impl Graph {
-    pub fn link(&mut self, a: Arc<Node>, b: Arc<Node>) {
+    pub fn link(&mut self, a: &Arc<Node>, b: &Arc<Node>) {
         if let Ok(mut node) = a.edges.lock() {
             node.insert(b.key(), Direction::Forward);
         }
@@ -121,17 +149,19 @@ impl Graph {
             node.insert(a.key(), Direction::Backward);
         }
 
-        self.directions.insert(a.key(), a);
-        self.directions.insert(b.key(), b);
+        self.directions.insert(a.key(), a.clone());
+        self.directions.insert(b.key(), b.clone());
     }
 
-    pub fn search(&mut self, node: Arc<Node>) -> Search {
+    pub fn search(&mut self, entrypoint: Arc<Node>) -> Search {
+        struct Visited;
+
         let mut pipeline = vec![];
         let mut recompile = vec![];
 
         let mut visited = HashMap::new();
-        let mut queue = VecDeque::from([node.clone()]);
-        visited.insert(node.key(), Visited);
+        let mut queue = VecDeque::from([entrypoint.clone()]);
+        visited.insert(entrypoint.key(), Visited);
 
         while let Some(node) = queue.pop_back() {
             pipeline.push(node.clone());
@@ -142,6 +172,7 @@ impl Graph {
                         continue;
                     }
 
+                    // TODO: loop again like with queue
                     if let Direction::Backward = direction {
                         visited.insert(*key, Visited);
                         recompile.push(self.directions.get(key).unwrap().clone());
@@ -149,7 +180,7 @@ impl Graph {
                     }
 
                     visited.insert(*key, Visited);
-                    queue.push_front(self.directions.get(key).unwrap().clone());
+                    queue.push_back(self.directions.get(key).unwrap().clone());
                 }
             }
         }
@@ -158,6 +189,32 @@ impl Graph {
             pipeline,
             recompile,
         }
+    }
+
+    pub fn run_pipeline(&mut self, search: Search) {
+        for nodes in search.pipeline() {
+            for node in nodes {
+                if let Ok(mut declaration) = node.declaration.lock() {
+                    let mut default_value = Declaration {
+                        name: node.name.clone(),
+                        ..Default::default()
+                    };
+
+                    let declaration = declaration.as_mut().unwrap_or(&mut default_value);
+
+                    declaration.file = query_file_path(self, declaration);
+                    declaration.tree = Arc::new(query_ast(self, declaration).into());
+                }
+            }
+        }
+    }
+}
+
+impl Eq for Node {}
+
+impl PartialEq for Node {
+    fn eq(&self, other: &Self) -> bool {
+        self.name == other.name
     }
 }
 
@@ -192,19 +249,25 @@ mod tests {
 
         let main = Arc::new(Node::new("Main"));
         let cli = Arc::new(Node::new("Cli"));
+        let std_io = Arc::new(Node::new("Std.IO"));
+        let std_array = Arc::new(Node::new("Std.Array"));
+        let std_unsafe = Arc::new(Node::new("Std.Unsafe"));
 
-        graph.link(main.clone(), Node::new("Std.IO").into());
-        graph.link(main.clone(), cli.clone());
-        graph.link(cli.clone(), Node::new("Std.Array").into());
-        graph.link(cli.clone(), Node::new("Std.IO").into());
+        graph.link(&main, &std_io);
+        graph.link(&main, &cli);
+        graph.link(&cli, &std_array);
+        graph.link(&cli, &std_io);
 
-        graph.link(Node::new("Std.IO").into(), Node::new("Std.Unsafe").into());
-        graph.link(Node::new("Std.IO").into(), Node::new("Std.Array").into());
-        graph.link(
-            Node::new("Std.Array").into(),
-            Node::new("Std.Unsafe").into(),
-        );
+        graph.link(&std_io, &std_unsafe);
+        graph.link(&std_io, &std_array);
+        graph.link(&std_array, &std_unsafe);
 
-        println!("{:#?}", graph.search(cli));
+        let pipeline = graph.search(cli);
+        graph.run_pipeline(pipeline);
+
+        println!("---");
+
+        let pipeline = graph.search(std_array);
+        graph.run_pipeline(pipeline);
     }
 }

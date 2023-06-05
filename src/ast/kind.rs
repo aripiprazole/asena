@@ -2,8 +2,9 @@ use std::fmt::Display;
 
 use super::named::Named;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum TreeKind {
+    #[default]
     Error,
 
     File,

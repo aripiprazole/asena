@@ -13,6 +13,7 @@ use super::spec::{Node, Spec, Terminal};
 
 pub type GreenChild = Green<Box<dyn Any>>;
 
+#[derive(Default)]
 pub struct GreenTree {
     /// TODO: Use tree cursor instead of using directly the [Spanned] tree's [Tree], to invalidate
     /// `lazy_names` references.

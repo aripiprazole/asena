@@ -12,7 +12,7 @@ pub trait Span {
 pub type Localized<T> = Spanned<Box<T>>;
 
 /// Localized reference in the heap, using [Box], and [Loc], to localize stuff in the source code
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Default, Clone, PartialEq, Eq, Hash)]
 pub struct Spanned<T> {
     pub span: Loc,
     pub value: T,

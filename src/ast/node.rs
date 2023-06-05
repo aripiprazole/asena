@@ -26,7 +26,7 @@ pub use super::token::*;
 ///        '1' @ 8..9
 ///      @ 0..9
 /// ```
-#[derive(Clone, Hash)]
+#[derive(Default, Clone, Hash)]
 pub struct Tree {
     pub name: Option<&'static str>,
     pub kind: TreeKind,

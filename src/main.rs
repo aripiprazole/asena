@@ -6,6 +6,7 @@
 
 pub mod ast;
 pub mod graph;
+pub mod incremental;
 pub mod lexer;
 pub mod parser;
 pub mod report;
