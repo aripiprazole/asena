@@ -103,6 +103,12 @@ impl PartialEq for Node {
     }
 }
 
+#[derive(Debug)]
+pub struct Search {
+    pub pipeline: Vec<Arc<Node>>,
+    pub recompile: Vec<Arc<Node>>,
+}
+
 struct Visited;
 
 impl Graph {
@@ -119,29 +125,39 @@ impl Graph {
         self.directions.insert(b.key(), b);
     }
 
-    pub fn search(&mut self, mut node: Arc<Node>) -> Vec<Arc<Node>> {
-        let mut front = 0;
-        let mut rear = 1;
+    pub fn search(&mut self, node: Arc<Node>) -> Search {
+        let mut pipeline = vec![];
+        let mut recompile = vec![];
+
         let mut visited = HashMap::new();
-        let mut queue = vec![node.clone()];
+        let mut queue = VecDeque::from([node.clone()]);
         visited.insert(node.key(), Visited);
 
-        while front != rear {
-            node = queue.get(front).unwrap().clone();
-            front += 1;
+        while let Some(node) = queue.pop_back() {
+            pipeline.push(node.clone());
 
             if let Ok(adjacents) = node.edges.lock() {
-                for (key, ..) in adjacents.iter() {
-                    if !visited.contains_key(key) {
-                        visited.insert(*key, Visited);
-                        queue.insert(rear, self.directions.get(key).unwrap().clone());
-                        rear += 1;
+                for (key, direction) in adjacents.iter() {
+                    if visited.contains_key(key) {
+                        continue;
                     }
+
+                    if let Direction::Backward = direction {
+                        visited.insert(*key, Visited);
+                        recompile.push(self.directions.get(key).unwrap().clone());
+                        continue;
+                    }
+
+                    visited.insert(*key, Visited);
+                    queue.push_front(self.directions.get(key).unwrap().clone());
                 }
             }
         }
 
-        queue
+        Search {
+            pipeline,
+            recompile,
+        }
     }
 }
 
@@ -175,11 +191,12 @@ mod tests {
         let mut graph = Graph::default();
 
         let main = Arc::new(Node::new("Main"));
+        let cli = Arc::new(Node::new("Cli"));
 
         graph.link(main.clone(), Node::new("Std.IO").into());
-        graph.link(main.clone(), Node::new("Cli").into());
-        graph.link(Node::new("Cli").into(), Node::new("Std.Array").into());
-        graph.link(Node::new("Cli").into(), Node::new("Std.IO").into());
+        graph.link(main.clone(), cli.clone());
+        graph.link(cli.clone(), Node::new("Std.Array").into());
+        graph.link(cli.clone(), Node::new("Std.IO").into());
 
         graph.link(Node::new("Std.IO").into(), Node::new("Std.Unsafe").into());
         graph.link(Node::new("Std.IO").into(), Node::new("Std.Array").into());
@@ -188,6 +205,6 @@ mod tests {
             Node::new("Std.Unsafe").into(),
         );
 
-        println!("{:#?}", graph.search(main));
+        println!("{:#?}", graph.search(cli));
     }
 }
