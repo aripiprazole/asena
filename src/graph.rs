@@ -1,9 +1,11 @@
-use std::collections::HashMap;
-use std::fmt::Debug;
+use std::cmp::Ordering;
+use std::collections::{HashMap, VecDeque};
+use std::fmt::{Debug, Display};
 use std::hash::Hash;
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, RwLock};
 
+use chumsky::container::Container;
 use im::{hashset, HashSet};
 use itertools::Itertools;
 
@@ -16,7 +18,8 @@ pub struct Key(usize);
 
 impl Debug for Key {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Key(0x{:03x})", self.0)
+        let s = self.0.to_string();
+        write!(f, "{}", &s[0..4])
     }
 }
 
@@ -85,8 +88,9 @@ pub enum Direction {
 
 pub struct Node {
     pub name: String,
-    pub declaration: Mutex<Option<Declaration>>,
-    pub edges: Mutex<Vec<(Key, Direction)>>,
+    pub declaration: RwLock<Option<Declaration>>,
+    pub edges: RwLock<Vec<(Key, Direction)>>,
+    pub preds: RwLock<Vec<Key>>,
 }
 
 #[derive(Clone)]
@@ -130,6 +134,7 @@ impl Node {
             name: name.into(),
             declaration: Default::default(),
             edges: Default::default(),
+            preds: Default::default(),
         }
     }
 
@@ -138,87 +143,126 @@ impl Node {
     }
 }
 
+#[derive(Hash, PartialEq, Eq, Clone)]
+struct Result {
+    preds: Vec<Arc<Node>>,
+    adjacents: Vec<Arc<Node>>,
+    node: Key,
+}
+
 impl Graph {
     pub fn link(&mut self, a: &Arc<Node>, b: &Arc<Node>) {
-        if let Ok(mut node) = a.edges.lock() {
+        if let Ok(mut node) = a.edges.write() {
             node.push((b.key(), Direction::Forward));
         }
 
-        if let Ok(mut node) = b.edges.lock() {
+        if let Ok(mut node) = b.edges.write() {
             node.push((a.key(), Direction::Backward));
         }
 
-        self.directions.insert(a.key(), a.clone());
-        self.directions.insert(b.key(), b.clone());
+        self.directions.entry(a.key()).or_insert_with(|| a.clone());
+        self.directions.entry(b.key()).or_insert_with(|| b.clone());
     }
 
-    pub fn search(&mut self, entrypoint: Arc<Node>) -> Search {
-        struct Visited;
-
-        let mut depth = 0;
-        let mut pipeline: HashMap<Arc<Node>, usize> = HashMap::new();
-        let mut recompile = vec![];
-
-        let mut visited = HashMap::new();
-        let mut queue = vec![entrypoint.clone()];
-
-        while let Some(node) = queue.pop() {
-            if visited.contains_key(&node.key()) {
-                continue;
-            }
-
-            visited.insert(node.key(), Visited);
-
-            if let Ok(adjacents) = node.edges.lock() {
-                for (key, direction) in adjacents.iter() {
-                    // TODO: loop again like with queue
-                    if let Direction::Backward = direction {
-                        visited.insert(*key, Visited);
-                        recompile.push(self.directions.get(key).unwrap().clone());
-                        continue;
-                    }
-
-                    let node = self.directions.get(key).unwrap().clone();
-                    queue.push(node.clone());
-                    pipeline.insert(node, depth);
+    fn preds(&self, a: &Arc<Node>) -> Vec<Key> {
+        let mut r = vec![];
+        r.push(a.key());
+        if let Ok(g) = a.edges.read() {
+            for (ele, dir) in g.iter() {
+                if let Direction::Backward = dir {
+                    let n = self.directions.get(ele).unwrap();
+                    r.extend(self.preds(n));
                 }
+            }
+        }
+        r
+    }
 
-                depth += 1;
+    fn succs(&self, a: &Arc<Node>) -> Vec<Key> {
+        let mut r = vec![];
+        r.push(a.key());
+        if let Ok(g) = a.edges.read() {
+            for (ele, dir) in g.iter() {
+                if let Direction::Forward = dir {
+                    let n = self.directions.get(ele).unwrap();
+                    r.extend(self.preds(n));
+                }
+            }
+        }
+        r
+    }
+
+    pub fn search(&mut self, entry: Arc<Node>) -> Search {
+        let mut d = self.dfs(entry);
+        let mut stack: VecDeque<Arc<Node>> = VecDeque::new();
+        let mut result: Vec<Vec<Key>> = vec![];
+        println!("dfs(entry) = {:?}", d);
+
+        for n in d {
+            let mut p = self.preds(&n);
+            let mut s = self.succs(&n);
+            p.remove(0);
+            s.remove(0);
+            println!("  n = {n:?} ; {:?}", n.key());
+            println!("    p = {p:?}");
+            println!("    s = {s:?}");
+            if let Some(x) = stack.front() {
+                let mut px = self.preds(&n);
+                let mut sx = self.succs(&n);
+                px.remove(0);
+                sx.remove(0);
+                if x.clone() != n && (p == px || s == sx) {
+                    let parallel = result.last_mut().unwrap();
+                    parallel.push(n.key());
+                } else {
+                    let v = vec![n.key()];
+                    result.push(v);
+                }
+                stack.push_back(n);
             }
         }
 
-        let mut vec_pipeline: Vec<_> = vec![];
-        for (key, group) in &pipeline
-            .iter()
-            .sorted_by(|(_, a), (_, b)| a.cmp(b))
-            .group_by(|(_, key)| **key)
-        {
-            let set: &mut HashSet<_> = match vec_pipeline.get_mut(key) {
-                Some(value) => value,
-                None => {
-                    vec_pipeline.push(hashset![]);
-                    vec_pipeline.last_mut().unwrap()
-                }
-            };
-
-            for (node, _) in group {
-                set.insert(node.clone());
-            }
-        }
-
-        vec_pipeline.reverse();
-        vec_pipeline.push(hashset![entrypoint]);
+        println!("result = {result:?}");
+        println!();
 
         Search {
-            pipeline: vec_pipeline,
-            recompile,
+            pipeline: vec![],
+            recompile: vec![],
         }
+    }
+
+    fn dfs(&self, node: Arc<Node>) -> Vec<Arc<Node>> {
+        use Direction::*;
+        let mut visited: Vec<Arc<Node>> = Vec::new();
+        let mut queue: VecDeque<Arc<Node>> = VecDeque::new();
+        queue.push_back(node);
+
+        while let Some(v) = queue.pop_back() {
+            if visited.contains(&v) {
+                continue;
+            }
+            visited.push(v.clone());
+            let edges = v.edges.read().unwrap();
+            // means this is the goal
+            for (key, direction) in edges.iter() {
+                if let Forward = direction {
+                    let x = self.directions.get(key).unwrap().clone();
+                    queue.push_front(x.clone());
+                }
+            }
+        }
+
+        visited
     }
 
     pub fn run_pipeline(&mut self, search: Search) {
         for nodes in search.pipeline() {
+            // println!(
+            //     ">>= Running {:?}",
+            //     nodes.iter().map(|x| x.name.clone()).collect_vec()
+            // );
             for node in nodes {
-                if let Ok(mut declaration) = node.declaration.lock() {
+                if let Ok(mut declaration) = node.declaration.write() {
                     let mut default_value = Declaration {
                         name: node.name.clone(),
                         ..Default::default()
@@ -244,14 +288,7 @@ impl PartialEq for Node {
 
 impl Debug for Node {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self.edges.lock() {
-            Ok(edges) => f
-                .debug_struct("Node")
-                .field("name", &self.name)
-                .field("edges", &edges)
-                .finish(),
-            Err(..) => f.debug_struct("Node").field("name", &self.name).finish(),
-        }
+        write!(f, "{}", self.name)
     }
 }
 
@@ -267,6 +304,220 @@ mod tests {
 
     use super::{Graph, Node};
 
+    ///
+    /// Dependency Graph:
+    /// ```txt
+    ///                ┌−−−−−−−−−−−−−−−−−−−−−−−−−−−−−−−−┐
+    ///                ╎                 Std            ╎
+    ///                ╎   ┌───────────────────┐        ╎
+    ///                ╎   │                   ▼        └−−−−−−−−−−−−−−−−−−−−−┐
+    /// ┌────────┐     ╎ ┌───────────┐       ┌────────┐        ┌────────────┐ ╎
+    /// │ Main 5 │ ──▶ ╎ │ Array   3 │────┐  │ IO   2 │──────▶ │ Unsafe   1 │ ╎ ◀┐
+    /// └────────┘     ╎ └───────────┘    │  └────────┘        └────────────┘ ╎  │
+    ///    ▼           └−−−▲−−−−−−−−−−┐   │    ▲    │            ▲            ╎  │
+    /// ┌────────┐         │          ╎   └────┼────┼────────────┘            ╎  │
+    /// │ Cli 4  │─────────┘──────────╎────────┘────┼─────────────────────────╎──┘
+    /// └────────┘                    └−−−−−−−−−−−−−−−−−−−−−−−−−−−−−−−−−−−−−−−┘
+    ///    │                                        │
+    ///    ▼                                        │
+    /// ┌────────────┐                              │
+    /// │ Final    1 │◀─────────────────────────────┘
+    /// └────────────┘
+    /// ```
+    ///
+    /// Pipeline:
+    /// ```txt
+    ///                                                               ┌−−−−−−−−−−−−−−┐
+    ///                                                               ╎ ┌──────────┐ ╎
+    ///                                                               ╎ │ Unsafe 1 │ ╎
+    /// ┌────────┐      ┌───────┐      ┌─────────┐      ┌──────┐      ╎ └──────────┘ ╎
+    /// │ Main 5 │ ──▶  │ Cli 4 │ ──▶  │ Array 3 │ ──▶  │ IO 2 │ ──▶  ╎ ┌─────────┐  ╎
+    /// └────────┘      └───────┘      └─────────┘      └──────┘      ╎ │ Final 1 │  ╎
+    ///                                                               ╎ └─────────┘  ╎
+    ///                                                               └−−−−−−−−−−−−− ┘
+    /// ```
+    ///
+    /// Pseudo-result:
+    /// ```llvm
+    /// %final  ; preds = %io, %array, %cli, %main
+    ///   
+    ///
+    /// %unsafe ; preds = %io, %array, %cli, %main
+    ///  
+    ///
+    /// %io     ; preds = %array, %cli, %main
+    ///   ; succs = %unsafe, %final
+    ///
+    /// %array  ; preds = %cli, %main
+    ///   ; succs = %io, %unsafe, %final
+    ///
+    /// %cli    ; preds = %main
+    ///   ; succs = %array, %io, %unsafe, %final
+    ///
+    /// %main   
+    ///   ; succs = %cli, %array, %io, %unsafe, %final
+    /// ```
+    ///
+    ///
+    /// Pseudo-code:
+    /// ```js
+    /// d = dfs(entry)
+    /// stack = new deque of (node key)
+    /// result = new vec of (vec of (node key))
+    /// push_back stack (last index of d)
+    /// for n in d
+    ///   p = preds(n)
+    ///   s = succs(n)
+    ///   if let some x = pop stack
+    ///     if x != n and (p == preds(x) or s == succs(x))
+    ///       // unchecked, but aways true
+    ///       parallel = (last index of result)
+    ///       push parallel n
+    ///     else
+    ///       v = new vec
+    ///       push v n
+    ///       push result v
+    ///     push_back stack n
+    /// ```
+    ///
+    /// Manual reduction:
+    /// ```js
+    /// d = [Main, Cli, Array, IO, Unsafe, Final]
+    /// stack = new deque of (node key)
+    /// result = new vec of (vec of (node key))
+    /// push_back stack Final
+    /// for n in d // n = Main
+    ///   p = []
+    ///   s = [Cli, Array, IO, Unsafe, Final]
+    ///   if let some x = pop stack // x = Main
+    ///     if x != n and (p == preds(x) or s == succs(x))
+    ///       ...
+    ///     else
+    ///       v = new vec
+    ///       push v n
+    ///       push result v
+    ///     push_back stack n
+    /// for n in d // n = Cli
+    ///   p = [Main]
+    ///   s = [Array, IO, Unsafe, Final]
+    ///   if let some x = pop stack // x = Main
+    ///     // assume that
+    ///     //   x != n
+    ///     //   preds(x) = []
+    ///     //   succs(x) = [Cli, Array, IO, Unsafe, Final]
+    ///     // so
+    ///     //   p != preds(x)
+    ///     //   s != preds(s)
+    ///     if x != n and (p == preds(x) or s == succs(x))
+    ///       ...
+    ///     else
+    ///       v = new vec
+    ///       push v n
+    ///       push result v
+    ///     push_back stack n
+    /// for n in d // n = Array
+    ///   p = [Main, Cli]
+    ///   s = [IO, Unsafe, Final]
+    ///   if let some x = pop stack // x = Cli
+    ///     // assume that
+    ///     //   x != n
+    ///     //   preds(x) = [Main]
+    ///     //   succs(x) = [Array, IO, Unsafe, Final]
+    ///     // so
+    ///     //   p != preds(x)
+    ///     //   s != preds(s)
+    ///     if x != n and (p == preds(x) or s == succs(x))
+    ///       // unchecked, but aways true
+    ///       parallel = (last index of result)
+    ///       push parallel n
+    ///     else
+    ///       v = new vec
+    ///       push v n
+    ///       push result v
+    ///     push_back stack n
+    /// for n in d // n = IO
+    ///   p = [Main, Cli, Array]
+    ///   s = [Unsafe, Final]
+    ///   if let some x = pop stack // x = Array
+    ///     // assume that
+    ///     //   x != n
+    ///     //   preds(x) = [Main, Cli]
+    ///     //   succs(x) = [IO, Unsafe, Final]
+    ///     // so
+    ///     //   p != preds(x)
+    ///     //   s != preds(s)
+    ///     if x != n and (p == preds(x) or s == succs(x))
+    ///       ...
+    ///     else
+    ///       v = new vec
+    ///       push v n
+    ///       push result v
+    ///     push_back stack n
+    /// for n in d // n = Unsafe
+    ///   p = [Main, Cli, Array, IO]
+    ///   s = []
+    ///   if let some x = pop stack // x = IO
+    ///     // assume that
+    ///     //   x != n
+    ///     //   preds(x) = [Main, Cli, Array]
+    ///     //   succs(x) = [Unsafe, Final]
+    ///     // so
+    ///     //   p != preds(x)
+    ///     //   s != preds(s)
+    ///     if x != n and (p == preds(x) or s == succs(x))
+    ///       // unchecked, but aways true
+    ///       parallel = (last index of result)
+    ///       push parallel n
+    ///     else
+    ///       v = new vec
+    ///       push v n
+    ///       push result v
+    ///     push_back stack n
+    /// for n in d // n = Final
+    ///   p = [Main, Cli, Array, IO]
+    ///   s = []
+    ///   if let some x = pop stack // x = Unsafe
+    ///     // assume that
+    ///     //   x != n
+    ///     //   preds(x) = [Main, Cli, Array, IO]
+    ///     //   succs(x) = []
+    ///     // so
+    ///     //   p == preds(x)
+    ///     //   s != preds(s)
+    ///     if x != n and (p == preds(x) or s == succs(x))
+    ///       // unchecked, but aways true
+    ///       parallel = (last index of result)
+    ///       push parallel n
+    ///     else
+    ///       ...
+    ///     push_back stack n
+    /// ```
+    ///
+    /// First clarifying test (at least in my mind).
+    ///
+    /// ```txt
+    /// dfs(entry) = [Cli, Std.IO, Std.Final, Std.Array, Std.Unsafe]
+    ///  n = Cli ; 1448
+    ///    p = [6697]
+    ///    s = [1436, 6697, 1448, 6697, 3090, 1448, 6697]
+    ///  n = Std.IO ; 1436
+    ///    p = [6697, 1448, 6697]
+    ///    s = [1501, 1436, 6697, 1448, 6697, 4615, 1501, 1436, 6697, 1448, 6697, 1436, 6697, 1448, 6697]
+    ///  n = Std.Final ; 3090
+    ///    p = [1448, 6697]
+    ///    s = []
+    ///  n = Std.Array ; 1501
+    ///    p = [1436, 6697, 1448, 6697]
+    ///    s = [4615, 1501, 1436, 6697, 1448, 6697, 1436, 6697, 1448, 6697]
+    ///  n = Std.Unsafe ; 4615
+    ///    p = [1501, 1436, 6697, 1448, 6697, 1436, 6697, 1448, 6697]
+    ///    s = []
+    /// result = []
+    /// ```
+    ///
+    /// The topological sort differs from the another, I think I need to search over and over the
+    /// tree (forward and backwards) to find the compatible, or it may be impossible, because would
+    /// be too slow searching the entire tree over and over. [Jun 6 00:44]
     #[test]
     fn it_works() {
         let mut graph = Graph::default();
@@ -276,22 +527,22 @@ mod tests {
         let std_io = Arc::new(Node::new("Std.IO"));
         let std_array = Arc::new(Node::new("Std.Array"));
         let std_unsafe = Arc::new(Node::new("Std.Unsafe"));
+        let std_final = Arc::new(Node::new("Std.Final"));
 
         graph.link(&main, &std_io);
         graph.link(&main, &cli);
-        graph.link(&cli, &std_array);
         graph.link(&cli, &std_io);
-
-        graph.link(&std_io, &std_unsafe);
+        graph.link(&cli, &std_final);
         graph.link(&std_io, &std_array);
         graph.link(&std_array, &std_unsafe);
+        graph.link(&std_io, &std_unsafe);
 
         let pipeline = graph.search(cli);
         graph.run_pipeline(pipeline);
 
-        println!("---");
+        // println!("---");
 
-        let pipeline = graph.search(std_array);
-        graph.run_pipeline(pipeline);
+        // let pipeline = graph.search(std_array);
+        // graph.run_pipeline(pipeline);
     }
 }
