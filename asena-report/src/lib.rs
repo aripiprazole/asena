@@ -134,19 +134,3 @@ impl<E: InternalError> Diagnostic<E> {
             .unwrap();
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use crate::{ast::node::TreeKind, parser::error::ParseError};
-
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        let mut report = Report::new("", Spanned::new(0..0, Tree::new(TreeKind::Error)));
-        report.add_diagnostic(Spanned::new(0..0, ParseError::EofError));
-        report.add_diagnostic(Spanned::new(0..0, ParseError::EofError));
-        report.add_diagnostic(Spanned::new(0..0, ParseError::EofError));
-        report.dump();
-    }
-}

@@ -86,8 +86,17 @@ dependencies = [
 name = "asena-ast"
 version = "0.1.0"
 dependencies = [
+ "asena-derive",
  "asena-leaf",
  "asena-span",
+]
+
+[[package]]
+name = "asena-derive"
+version = "0.1.0"
+dependencies = [
+ "quote",
+ "syn",
 ]
 
 [[package]]
@@ -127,10 +136,6 @@ dependencies = [
  "asena-span",
  "thiserror",
 ]
-
-[[package]]
-name = "asena-proc-macro"
-version = "0.1.0"
 
 [[package]]
 name = "asena-query"
@@ -356,9 +361,9 @@ dependencies = [
 
 [[package]]
 name = "quote"
-version = "1.0.26"
+version = "1.0.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4424af4bf778aae2051a77b60283332f386554255d722233d09fbfc7e30da2fc"
+checksum = "1b9ab9c7eadfd8df19006f1cf1a4aed13540ed5cbc047010ece5826e10825488"
 dependencies = [
  "proc-macro2",
 ]
