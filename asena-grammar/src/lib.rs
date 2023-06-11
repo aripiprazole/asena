@@ -581,8 +581,12 @@ fn report_non_primary(p: &mut Parser, kind: TokenKind) -> Option<MarkClosed> {
         ElseKeyword => p.report(DanglingElseError),
         CaseKeyword => p.report(ReservedKeywordError(CaseKeyword)),
 
-        UseKeyword | TypeKeyword | RecordKeyword | ClassKeyword | TraitKeyword
-        | InstanceKeyword => p.report(DeclReservedKeywordError(TypeKeyword)),
+        UseKeyword => p.report(DeclReservedKeywordError(UseKeyword)),
+        TypeKeyword => p.report(DeclReservedKeywordError(TypeKeyword)),
+        RecordKeyword => p.report(DeclReservedKeywordError(RecordKeyword)),
+        ClassKeyword => p.report(DeclReservedKeywordError(ClassKeyword)),
+        TraitKeyword => p.report(DeclReservedKeywordError(TraitKeyword)),
+        InstanceKeyword => p.report(DeclReservedKeywordError(InstanceKeyword)),
 
         ReturnKeyword => p.report(StmtReservedKeywordError(ReturnKeyword)),
         WhereKeyword => p.report(StmtReservedKeywordError(WhereKeyword)),
