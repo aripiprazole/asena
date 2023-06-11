@@ -2,12 +2,10 @@ use std::fmt::Debug;
 
 use chumsky::prelude::*;
 
-use crate::ast::node::Token;
-use crate::ast::node::TokenKind::*;
+use asena_leaf::node::Token;
+use asena_leaf::token::TokenKind::*;
 
-use self::span::Spanned;
-
-pub mod span;
+use asena_span::Spanned;
 
 pub const SYMBOLS: &[&str] = &[
     "=", "!", ">", "<", "$", "#", "+", "-", "*", "/", "&", "|", ".", "@", "^", ":", "\\",
@@ -24,7 +22,7 @@ pub type LexError<'a> = extra::Err<Rich<'a, char, Span>>;
 #[derive(Debug, Clone)]
 pub struct Lexer<'a> {
     index: usize,
-    pub(crate) source: &'a str,
+    pub source: &'a str,
     pub tokens: Vec<Spanned<Token>>,
     pub errors: Vec<Rich<'a, char>>,
 }

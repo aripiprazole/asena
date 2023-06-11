@@ -1,8 +1,8 @@
 use std::error::Error;
 use std::path::PathBuf;
 
-use crate::ast::node::Tree;
-use crate::lexer::span::{Loc, Spanned};
+use asena_leaf::node::Tree;
+use asena_span::{Loc, Spanned};
 
 pub trait InternalError: Error {
     fn code(&self) -> u16 {

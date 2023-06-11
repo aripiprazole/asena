@@ -1,0 +1,9 @@
+
+[package]
+edition = "2021"
+name = "asena-ast"
+version = "0.1.0"
+
+[dependencies]
+asena-leaf = {path = "../asena-leaf"}
+asena-span = {path = "../asena-span"}

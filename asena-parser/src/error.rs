@@ -1,8 +1,8 @@
 use thiserror::Error;
 
-use crate::ast::node::TokenKind;
-use crate::lexer::span::Spanned;
-use crate::report::InternalError;
+use asena_leaf::node::TokenKind;
+use asena_report::InternalError;
+use asena_span::Spanned;
 
 pub type Result<T, E = Spanned<ParseError>> = std::result::Result<T, E>;
 
@@ -106,7 +106,7 @@ impl InternalError for ParseError {
         self.discriminant() as u16
     }
 
-    fn kind() -> crate::report::DiagnosticKind {
-        crate::report::DiagnosticKind::Error
+    fn kind() -> asena_report::DiagnosticKind {
+        asena_report::DiagnosticKind::Error
     }
 }

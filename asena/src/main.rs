@@ -4,13 +4,6 @@
 #![feature(lazy_cell)]
 #![feature(downcast_unchecked)]
 
-pub mod ast;
-pub mod graph;
-pub mod incremental;
-pub mod lexer;
-pub mod parser;
-pub mod report;
-
 use clap::{Args, Parser, Subcommand};
 
 #[derive(Parser, Debug)]
@@ -54,9 +47,9 @@ pub fn run_cli() {
         Command::Eval(args) => {
             let path = args.file;
             let file = std::fs::read_to_string(path).unwrap();
-            let lexer = lexer::Lexer::new(&file);
-            let mut parser = parser::Parser::from(lexer);
-            parser::grammar::expr(&mut parser);
+            let lexer = asena_lexer::Lexer::new(&file);
+            let mut parser = asena_parser::Parser::from(lexer);
+            asena_grammar::expr(&mut parser);
             let tree = parser.build_tree();
             println!("{:#?}", tree.data());
         }

@@ -1,4 +1,3 @@
-use crate::lexer::span::Spanned;
 use std::any::Any;
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -7,6 +6,8 @@ use std::hash::Hash;
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
+
+use asena_span::Spanned;
 
 use super::node::{Child, Tree};
 use super::spec::{Node, Spec, Terminal};

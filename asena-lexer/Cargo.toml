@@ -1,0 +1,10 @@
+
+[package]
+edition = "2021"
+name = "asena-lexer"
+version = "0.1.0"
+
+[dependencies]
+asena-leaf = {path = "../asena-leaf"}
+asena-span = {path = "../asena-span"}
+chumsky = {version = "1.0.0-alpha.4", features = ["label"]}

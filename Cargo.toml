@@ -1,17 +1,13 @@
-[package]
-edition = "2021"
-name = "asena"
-version = "0.1.0"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-anyhow = "1.0.71"
-ariadne = "0.2"
-chumsky = {version = "1.0.0-alpha.4", features = ["label"]}
-clap = {version = "4.2.7", features = ["derive"]}
-fxhash = "0.2.1"
-im = "15.1.0"
-itertools = "0.10.5"
-salsa = "0.16.1"
-thiserror = "1.0.40"
+[workspace]
+members = [
+  "asena",
+  "asena-ast",
+  "asena-grammar",
+  "asena-leaf",
+  "asena-lexer",
+  "asena-parser",
+  "asena-proc-macro",
+  "asena-query",
+  "asena-report",
+  "asena-span",
+]

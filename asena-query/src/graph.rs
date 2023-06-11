@@ -5,13 +5,12 @@ use std::hash::Hash;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex, RwLock};
 
-use chumsky::container::Container;
 use im::{hashset, HashSet};
 use itertools::Itertools;
 
-use crate::ast::{spec::Spec, AsenaFile, Decl};
 use crate::incremental::{query_ast, query_file_path};
-use crate::lexer::span::Spanned;
+use asena_ast::{spec::Spec, AsenaFile, Decl};
+use asena_span::Spanned;
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Copy)]
 pub struct Key(usize);

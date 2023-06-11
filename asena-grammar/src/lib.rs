@@ -1,11 +1,11 @@
-use crate::ast::node::TokenKind::*;
-use crate::ast::node::TreeKind;
-use crate::ast::node::TreeKind::*;
-use crate::ast::token::TokenKind;
+use asena_leaf::node::TokenKind::*;
+use asena_leaf::node::TreeKind;
+use asena_leaf::node::TreeKind::*;
+use asena_leaf::token::TokenKind;
 
-use super::error::ParseError::*;
-use super::event::MarkClosed;
-use super::Parser;
+use asena_parser::error::ParseError::*;
+use asena_parser::event::MarkClosed;
+use asena_parser::Parser;
 
 /// File = Decl*
 pub fn file(p: &mut Parser) {

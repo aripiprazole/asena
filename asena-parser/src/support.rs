@@ -1,23 +1,24 @@
 use std::borrow::Cow;
 use std::cell::Cell;
 
-use crate::ast::node::{Token, TokenKind, TreeKind};
-use crate::lexer::span::Spanned;
-use crate::parser::error::ParseError;
-use crate::report::{Diagnostic, DiagnosticKind};
+use crate::error::ParseError;
+
+use asena_leaf::node::{Token, TokenKind, TreeKind};
+use asena_report::{Diagnostic, DiagnosticKind};
+use asena_span::Spanned;
 
 use super::event::{Event, MarkClosed, MarkOpened};
 use super::Parser;
 
 impl<'a> Parser<'a> {
-    pub(crate) fn open(&mut self) -> MarkOpened {
+    pub fn open(&mut self) -> MarkOpened {
         let start = self.peek().into_owned();
         let mark = MarkOpened::new(self.events.len(), start.span.clone());
         self.events.push(Event::Open(start.swap(TreeKind::Error)));
         mark
     }
 
-    pub(crate) fn open_before(&mut self, mark: MarkClosed) -> MarkOpened {
+    pub fn open_before(&mut self, mark: MarkClosed) -> MarkOpened {
         let span = mark.span();
         let mark = MarkOpened::new(mark.index(), span.clone());
         let open_at = Spanned::new(span, TreeKind::Error);
@@ -25,15 +26,15 @@ impl<'a> Parser<'a> {
         mark
     }
 
-    pub(crate) fn ignore(&mut self, mark: MarkOpened) {
+    pub fn ignore(&mut self, mark: MarkOpened) {
         self.events.remove(mark.index());
     }
 
-    pub(crate) fn field(&mut self, name: &'static str) {
+    pub fn field(&mut self, name: &'static str) {
         self.events.push(Event::Field(name))
     }
 
-    pub(crate) fn close(&mut self, mark: MarkOpened, kind: TreeKind) -> MarkClosed {
+    pub fn close(&mut self, mark: MarkOpened, kind: TreeKind) -> MarkClosed {
         // Build tree position with the initial state, and the current
         let initial = mark.span();
         let current = self.peek().into_owned();
@@ -46,13 +47,13 @@ impl<'a> Parser<'a> {
         MarkClosed::new(mark.index(), mark.span())
     }
 
-    pub(crate) fn terminal(&mut self, kind: TreeKind) -> MarkClosed {
+    pub fn terminal(&mut self, kind: TreeKind) -> MarkClosed {
         let mark = self.open();
         self.advance();
         self.close(mark, kind)
     }
 
-    pub(crate) fn advance(&mut self) {
+    pub fn advance(&mut self) {
         #[cfg(debug_assertions)]
         assert!(!self.eof(), "Found eof at index {}", self.index);
 
@@ -61,11 +62,11 @@ impl<'a> Parser<'a> {
         self.index += 1;
     }
 
-    pub(crate) fn eof(&mut self) -> bool {
+    pub fn eof(&mut self) -> bool {
         self.tokens.len() == self.index
     }
 
-    pub(crate) fn savepoint(&self) -> Self {
+    pub fn savepoint(&self) -> Self {
         Self {
             errors: vec![],
             source: self.source,
@@ -76,13 +77,13 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub(crate) fn return_at(&mut self, point: Self) {
+    pub fn return_at(&mut self, point: Self) {
         self.index = point.index;
         self.fuel = point.fuel;
         self.events = point.events;
     }
 
-    pub(crate) fn eat(&mut self, kind: TokenKind) -> bool {
+    pub fn eat(&mut self, kind: TokenKind) -> bool {
         if self.at(kind) {
             self.advance();
             true
@@ -91,7 +92,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub(crate) fn expect(&mut self, kind: TokenKind) {
+    pub fn expect(&mut self, kind: TokenKind) {
         if self.eat(kind) {
             return;
         }
@@ -100,7 +101,7 @@ impl<'a> Parser<'a> {
         self.errors.push(Diagnostic::new(error));
     }
 
-    pub(crate) fn warning(&mut self, error: ParseError) -> Option<MarkClosed> {
+    pub fn warning(&mut self, error: ParseError) -> Option<MarkClosed> {
         let error = self.build_error(error);
         let mut error = Diagnostic::new(error);
         error.kind = DiagnosticKind::Warning;
@@ -108,7 +109,7 @@ impl<'a> Parser<'a> {
         None
     }
 
-    pub(crate) fn report(&mut self, error: ParseError) -> Option<MarkClosed> {
+    pub fn report(&mut self, error: ParseError) -> Option<MarkClosed> {
         if self.eof() {
             let error = self.build_error(error);
             self.errors.push(Diagnostic::new(error));
@@ -122,16 +123,16 @@ impl<'a> Parser<'a> {
         Some(self.close(mark, TreeKind::Error))
     }
 
-    pub(crate) fn at(&self, kind: TokenKind) -> bool {
+    pub fn at(&self, kind: TokenKind) -> bool {
         kind == self.lookahead(0)
     }
 
-    pub(crate) fn lookahead(&self, lookahead: usize) -> TokenKind {
+    pub fn lookahead(&self, lookahead: usize) -> TokenKind {
         self.nth(lookahead)
             .map_or(TokenKind::Eof, |token| token.value.kind)
     }
 
-    pub(crate) fn nth(&self, lookahead: usize) -> Option<&Spanned<Token>> {
+    pub fn nth(&self, lookahead: usize) -> Option<&Spanned<Token>> {
         #[cfg(debug_assertions)]
         if self.fuel.get() == 0 {
             panic!("parser is stuck")
@@ -141,7 +142,7 @@ impl<'a> Parser<'a> {
         self.tokens.get(self.index + lookahead)
     }
 
-    pub(crate) fn peek(&self) -> Cow<Spanned<Token>> {
+    pub fn peek(&self) -> Cow<Spanned<Token>> {
         self.nth(0).map(Cow::Borrowed).unwrap_or_else(|| {
             let start = self.source.len();
             let end = start;
@@ -150,7 +151,7 @@ impl<'a> Parser<'a> {
         })
     }
 
-    pub(crate) fn has_errors(&self) -> bool {
+    pub fn has_errors(&self) -> bool {
         !self.errors.is_empty()
     }
 

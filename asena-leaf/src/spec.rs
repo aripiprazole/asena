@@ -1,7 +1,7 @@
 use std::fmt::{Debug, Display};
 use std::ops::{ControlFlow, Deref, FromResidual, Try};
 
-use crate::lexer::span::Spanned;
+use asena_span::Spanned;
 
 use super::node::Tree;
 use super::token::Token;

@@ -1,10 +1,11 @@
 use std::fmt::Debug;
 
 use super::spec::{Node, Spec, Terminal};
-use crate::lexer::span::Spanned;
+
+use asena_span::Spanned;
 
 pub use super::kind::*;
-pub(crate) use super::macros::ast_enum;
+pub use super::macros::ast_enum;
 pub use super::named::*;
 pub use super::token::*;
 

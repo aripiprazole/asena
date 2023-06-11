@@ -1,3 +1,4 @@
+#[macro_export]
 macro_rules! ast_enum {
     (
         $(#[$outer:meta])*
@@ -29,4 +30,4 @@ macro_rules! ast_enum {
     }
 }
 
-pub(crate) use ast_enum;
+pub use ast_enum;

@@ -1,0 +1,11 @@
+
+[package]
+edition = "2021"
+name = "asena-grammar"
+version = "0.1.0"
+
+[dependencies]
+asena-ast = {path = "../asena-ast"}
+asena-leaf = {path = "../asena-leaf"}
+asena-lexer = {path = "../asena-lexer"}
+asena-parser = {path = "../asena-parser"}

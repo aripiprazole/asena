@@ -1,22 +1,11 @@
 use std::fmt::{Debug, Display, Formatter};
 use std::ops::{Deref, DerefMut};
 
-use node::TokenKind;
+use asena_span::{Loc, Spanned};
 
-use crate::lexer::span::{Loc, Spanned};
-
-use self::green::{Green, GreenTree};
-use self::node::{ast_enum, Tree, TreeKind};
-use self::spec::{Node, Spec, Terminal};
-use self::token::Token;
-
-pub mod green;
-pub mod kind;
-pub mod macros;
-pub mod named;
-pub mod node;
-pub mod spec;
-pub mod token;
+use asena_leaf::green::{Green, GreenTree};
+use asena_leaf::node::{ast_enum, Token, TokenKind, Tree, TreeKind};
+use asena_leaf::spec::{Node, Spec, Terminal};
 
 /// Represents a true-false value, just like an wrapper to [bool], this represents if an integer
 /// value is signed, or unsigned.

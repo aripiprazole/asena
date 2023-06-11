@@ -1,0 +1,10 @@
+
+[package]
+edition = "2021"
+name = "asena-query"
+version = "0.1.0"
+
+[dependencies]
+asena-ast = {path = "../asena-ast"}
+asena-span = {path = "../asena-span"}
+im = "15.1.0"

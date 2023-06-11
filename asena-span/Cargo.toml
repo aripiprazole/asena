@@ -1,0 +1,5 @@
+
+[package]
+edition = "2021"
+name = "asena-span"
+version = "0.1.0"
