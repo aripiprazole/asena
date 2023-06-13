@@ -1,9 +1,11 @@
 use std::path::PathBuf;
 
-use crate::{
-    ast::{green::GreenTree, AsenaFile},
-    graph::{Declaration, Graph},
-};
+use asena_ast::AsenaFile;
+
+use asena_leaf::green::GreenTree;
+
+use crate::graph::Graph;
+use crate::node::Declaration;
 
 pub fn query_file_path(_db: &Graph, _declaration: &Declaration) -> Option<PathBuf> {
     PathBuf::new().into()
