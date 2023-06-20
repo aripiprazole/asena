@@ -1,7 +1,5 @@
 use std::fmt::Debug;
 
-use super::spec::{Node, Spec, Terminal};
-
 use asena_span::Spanned;
 
 pub use super::kind::*;
@@ -62,50 +60,6 @@ impl Tree {
 
     pub fn is_single(&self) -> bool {
         self.children.len() == 1
-    }
-
-    pub fn filter<T: Spec>(&self) -> Vec<Node<Spanned<T>>> {
-        self.children
-            .iter()
-            .filter_map(|child| match child.value.clone() {
-                Child::Tree(tree) => Some(T::make(child.replace(tree))),
-                Child::Token(..) => None,
-            })
-            .filter(|node| !node.is_empty())
-            .collect()
-    }
-
-    pub fn filter_terminal<T: Terminal>(&self) -> Vec<Node<Spanned<T>>> {
-        self.children
-            .iter()
-            .filter_map(|child| match child.value.clone() {
-                Child::Tree(..) => None,
-                Child::Token(token) => Some(T::terminal(child.replace(token))),
-            })
-            .filter(|node| !node.is_empty())
-            .collect()
-    }
-
-    pub fn at<T: Spec>(&self, nth: usize) -> Node<Spanned<T>> {
-        let Some(child) = self.children.get(nth) else {
-            return Node::empty();
-        };
-
-        match &child.value {
-            Child::Tree(tree) => T::make(child.replace(tree.clone())),
-            Child::Token(..) => Node::empty(),
-        }
-    }
-
-    pub fn terminal<T: Terminal>(&self, nth: usize) -> Node<Spanned<T>> {
-        let Some(child) = self.children.get(nth) else {
-            return Node::empty();
-        };
-
-        match &child.value {
-            Child::Tree(..) => Node::empty(),
-            Child::Token(token) => T::terminal(child.replace(token.clone())),
-        }
     }
 
     pub fn matches(&self, nth: usize, kind: TokenKind) -> bool {

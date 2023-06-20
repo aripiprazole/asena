@@ -31,14 +31,16 @@ pub fn derive_leaf(input: TokenStream) -> TokenStream {
     // Build the output, possibly using quasi-quotation
     let expanded = quote! {
         impl #name {
-            pub fn new(tree: asena_leaf::green::GreenTree) -> Self {
-                Self(tree)
+            pub fn new<T: Into<asena_leaf::ast::GreenTree>>(tree: T) -> Self {
+                Self(tree.into())
             }
 
-            pub fn unwrap(self) -> asena_leaf::green::GreenTree {
+            pub fn unwrap(self) -> asena_leaf::ast::GreenTree {
                 self.0
             }
         }
+
+        impl asena_leaf::ast::Ast for #name {}
 
         impl std::ops::DerefMut for #name {
             fn deref_mut(&mut self) -> &mut Self::Target {
@@ -47,7 +49,7 @@ pub fn derive_leaf(input: TokenStream) -> TokenStream {
         }
 
         impl std::ops::Deref for #name {
-            type Target = asena_leaf::green::GreenTree;
+            type Target = asena_leaf::ast::GreenTree;
 
             fn deref(&self) -> &Self::Target {
                 &self.0
@@ -57,4 +59,9 @@ pub fn derive_leaf(input: TokenStream) -> TokenStream {
 
     // Hand the output tokens back to the compiler
     TokenStream::from(expanded)
+}
+
+#[proc_macro_attribute]
+pub fn node_leaf(_args: TokenStream, input: TokenStream) -> TokenStream {
+    input
 }

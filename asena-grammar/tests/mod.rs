@@ -1,5 +1,5 @@
 use asena_ast::{AsenaFile, Binary, Expr, Infix};
-use asena_leaf::spec::Spec;
+use asena_leaf::ast::Leaf;
 use asena_lexer::Lexer;
 use asena_parser::Parser;
 
@@ -10,13 +10,13 @@ fn it_works() {
     let mut parser = Parser::from(Lexer::new(code));
     asena_grammar::expr(&mut parser);
 
-    let infix = Infix::new(parser.build_tree().unwrap().into());
+    let infix = Infix::new(parser.build_tree().unwrap());
 
     let lhs = infix.lhs();
-    let rhs = infix.rhs().duplicate();
+    let rhs = infix.rhs().as_new_node();
 
-    infix.rhs().replace(lhs);
-    infix.lhs().replace(rhs);
+    infix.rhs().set(lhs);
+    infix.lhs().set(rhs);
 
     println!("{:#?}", infix);
 }
@@ -30,7 +30,7 @@ fn simple() {
     let file = parser.build_tree().unwrap();
     println!("{:#?}", file);
 
-    println!("{:#?}", AsenaFile::new(file.into()));
+    println!("{:#?}", AsenaFile::new(file));
 }
 
 #[test]
@@ -65,7 +65,7 @@ fn sigma_expr() {
 
 #[test]
 fn unicode_expr() {
-    let code = "Π (d: t) -> e";
+    let code = "Π (d: t) -> (e Π =>)";
 
     let mut parser = Parser::from(Lexer::new(code));
     asena_grammar::expr(&mut parser);

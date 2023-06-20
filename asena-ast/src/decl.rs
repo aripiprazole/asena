@@ -1,8 +1,7 @@
-use asena_derive::Leaf;
+use asena_derive::{node_leaf, Leaf};
+use asena_leaf::ast::Cursor;
 use asena_leaf::ast_enum;
-use asena_leaf::green::GreenTree;
 use asena_leaf::node::TreeKind;
-use asena_leaf::spec::Node;
 
 use asena_span::Spanned;
 
@@ -24,20 +23,24 @@ use crate::*;
 pub struct Signature(GreenTree);
 
 impl Signature {
-    pub fn name(&self) -> Node<Spanned<QualifiedPath>> {
-        self.filter::<QualifiedPath>().first().unwrap().clone()
+    #[node_leaf]
+    pub fn name(&self) -> Cursor<QualifiedPath> {
+        self.filter::<QualifiedPath>().first()
     }
 
-    pub fn parameters(&self) -> Vec<Node<Spanned<Parameter>>> {
+    #[node_leaf]
+    pub fn parameters(&self) -> Cursor<Vec<Parameter>> {
         self.filter::<Parameter>()
     }
 
-    pub fn return_type(&self) -> Option<Node<Spanned<Type>>> {
-        self.filter::<Type>().first().cloned()
+    #[node_leaf]
+    pub fn return_type(&self) -> Cursor<Type> {
+        self.filter::<Type>().first()
     }
 
     /// Holds, optionally the value of the [Signature], this is an sugar to [Assign].
-    pub fn body(&self) -> Vec<Node<Spanned<Stmt>>> {
+    #[node_leaf]
+    pub fn body(&self) -> Cursor<Vec<Stmt>> {
         self.filter::<Stmt>()
     }
 }
@@ -53,18 +56,20 @@ impl Signature {
 pub struct Assign(GreenTree);
 
 impl Assign {
-    pub fn name(&self) -> Node<Spanned<QualifiedPath>> {
-        self.filter::<QualifiedPath>().first().unwrap().clone()
+    #[node_leaf]
+    pub fn name(&self) -> Cursor<QualifiedPath> {
+        self.filter::<QualifiedPath>().first()
     }
 
-    pub fn patterns(&self) -> Vec<Node<Spanned<Pat>>> {
+    #[node_leaf]
+    pub fn patterns(&self) -> Cursor<Vec<Pat>> {
         self.filter::<Pat>()
     }
 
     /// Holds the value of the [Assign].
-    pub fn body(&self) -> Node<Spanned<Expr>> {
-        /*  */
-        self.filter::<Expr>().first().cloned().into()
+    #[node_leaf]
+    pub fn body(&self) -> Cursor<Expr> {
+        self.filter::<Expr>().first()
     }
 }
 
@@ -79,11 +84,13 @@ impl Assign {
 pub struct Command(GreenTree);
 
 impl Command {
-    pub fn name(&self) -> Node<QualifiedPath> {
+    #[node_leaf]
+    pub fn name(&self) -> Cursor<QualifiedPath> {
         todo!()
     }
 
-    pub fn arguments(&self) -> Node<Vec<Spanned<Expr>>> {
+    #[node_leaf]
+    pub fn arguments(&self) -> Cursor<Vec<Expr>> {
         todo!()
     }
 }
@@ -104,15 +111,18 @@ impl Command {
 pub struct Class(GreenTree);
 
 impl Class {
-    pub fn name(&self) -> Node<QualifiedPath> {
+    #[node_leaf]
+    pub fn name(&self) -> Cursor<QualifiedPath> {
         todo!()
     }
 
-    pub fn constraints(&self) -> Node<Vec<Spanned<Constraint>>> {
+    #[node_leaf]
+    pub fn constraints(&self) -> Cursor<Vec<Constraint>> {
         todo!()
     }
 
-    pub fn properties(&self) -> Node<Vec<Spanned<Property>>> {
+    #[node_leaf]
+    pub fn properties(&self) -> Cursor<Vec<Property>> {
         todo!()
     }
 }
@@ -127,8 +137,9 @@ impl Class {
 pub struct Use(GreenTree);
 
 impl Use {
-    pub fn path(&self) -> Node<Spanned<QualifiedPath>> {
-        self.filter::<QualifiedPath>().first().unwrap().clone()
+    #[node_leaf]
+    pub fn path(&self) -> Cursor<QualifiedPath> {
+        self.filter::<QualifiedPath>().first()
     }
 }
 
@@ -145,15 +156,18 @@ impl Use {
 pub struct Instance(GreenTree);
 
 impl Instance {
-    pub fn name(&self) -> Node<QualifiedPath> {
+    #[node_leaf]
+    pub fn name(&self) -> Cursor<QualifiedPath> {
         todo!()
     }
 
-    pub fn constraints(&self) -> Node<Vec<Spanned<Constraint>>> {
+    #[node_leaf]
+    pub fn constraints(&self) -> Cursor<Vec<Constraint>> {
         todo!()
     }
 
-    pub fn properties(&self) -> Node<Vec<Spanned<Method>>> {
+    #[node_leaf]
+    pub fn properties(&self) -> Cursor<Vec<Method>> {
         todo!()
     }
 }
@@ -183,7 +197,8 @@ pub type DeclRef = Spanned<Decl>;
 pub struct Constraint(GreenTree);
 
 impl Constraint {
-    pub fn value(&self) -> Node<Spanned<Expr>> {
+    #[node_leaf]
+    pub fn value(&self) -> Cursor<Expr> {
         todo!()
     }
 }
@@ -200,11 +215,13 @@ impl Constraint {
 pub struct Field(GreenTree);
 
 impl Field {
-    pub fn name(&self) -> Node<Local> {
+    #[node_leaf]
+    pub fn name(&self) -> Cursor<Local> {
         todo!()
     }
 
-    pub fn field_type(&self) -> Node<Spanned<Expr>> {
+    #[node_leaf]
+    pub fn field_type(&self) -> Cursor<Expr> {
         todo!()
     }
 }
@@ -225,27 +242,33 @@ impl Field {
 pub struct Method(GreenTree);
 
 impl Method {
-    pub fn name(&self) -> Node<Local> {
+    #[node_leaf]
+    pub fn name(&self) -> Cursor<Local> {
         todo!()
     }
 
-    pub fn implicit_parameters(&self) -> Node<Vec<Parameter>> {
+    #[node_leaf]
+    pub fn implicit_parameters(&self) -> Cursor<Vec<Parameter>> {
         todo!()
     }
 
-    pub fn explicit_parameters(&self) -> Node<Vec<Parameter>> {
+    #[node_leaf]
+    pub fn explicit_parameters(&self) -> Cursor<Vec<Parameter>> {
         todo!()
     }
 
-    pub fn where_clauses(&self) -> Node<Vec<Constraint>> {
+    #[node_leaf]
+    pub fn where_clauses(&self) -> Cursor<Vec<Constraint>> {
         todo!()
     }
 
-    pub fn return_type(&self) -> Node<Option<ExprRef>> {
+    #[node_leaf]
+    pub fn return_type(&self) -> Cursor<Option<Expr>> {
         todo!()
     }
 
-    pub fn method_body(&self) -> Node<Body> {
+    #[node_leaf]
+    pub fn method_body(&self) -> Cursor<Body> {
         todo!()
     }
 }

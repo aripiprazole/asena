@@ -1,9 +1,7 @@
-use asena_derive::Leaf;
+use asena_derive::{node_leaf, Leaf};
 
-use asena_leaf::green::GreenTree;
-use asena_leaf::spec::Node;
-
-use asena_span::Spanned;
+use asena_leaf::ast::{Cursor, GreenTree};
+use asena_leaf::token::TokenKind;
 
 use crate::*;
 
@@ -12,13 +10,15 @@ pub struct Parameter(GreenTree);
 
 impl Parameter {
     /// Optional parameter's name
-    pub fn name(&self) -> Option<Node<Spanned<Local>>> {
-        self.filter_terminal::<Local>().first().cloned()
+    #[node_leaf]
+    pub fn name(&self) -> Cursor<Local> {
+        self.filter_terminal::<Local>().first()
     }
 
     /// Parameter's type
-    pub fn parameter_type(&self) -> Node<Spanned<Type>> {
-        self.filter::<Type>().first().cloned().into()
+    #[node_leaf]
+    pub fn parameter_type(&self) -> Cursor<Type> {
+        self.filter::<Type>().first()
     }
 
     /// If the parameter is explicit, or if it's a constraint or a type that can have the hole filled

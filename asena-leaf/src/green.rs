@@ -9,8 +9,8 @@ use std::sync::Arc;
 
 use asena_span::Spanned;
 
+use super::ast::{Cursor, Spec, Terminal};
 use super::node::{Child, Tree};
-use super::spec::{Node, Spec, Terminal};
 
 pub type GreenChild = Green<Box<dyn Any>>;
 
@@ -63,72 +63,6 @@ impl GreenTree {
             children: named_children,
             lazy_names: Default::default(),
         }
-    }
-
-    pub fn has(&self, name: &'static str) -> bool {
-        matches!(self.children.get(name), Some(..))
-    }
-
-    pub fn named_at<T: Spec>(&self, name: &'static str) -> Node<Spanned<T>> {
-        let Some(child) = self.children.get(name) else {
-            return Node::empty();
-        };
-
-        match &child.value {
-            Child::Tree(tree) => T::make(child.replace(tree.clone())),
-            Child::Token(..) => Node::empty(),
-        }
-    }
-
-    pub fn named_terminal<T: Terminal>(&self, name: &'static str) -> Node<Spanned<T>> {
-        let Some(child) = self.children.get(name) else {
-            return Node::empty();
-        };
-
-        match &child.value {
-            Child::Tree(..) => Node::empty(),
-            Child::Token(token) => T::terminal(child.replace(token.clone())),
-        }
-    }
-
-    pub fn lazy<F, T: 'static>(&self, name: &'static str, f: F) -> Green<T>
-    where
-        T: Clone,
-        F: Fn(&Self) -> T,
-    {
-        if let Some(x) = self.lazy_names.borrow().get(name) {
-            return x.downcast_ref::<Green<T>>().unwrap().clone();
-        }
-
-        let cell: Arc<RefCell<T>> = Arc::new(RefCell::new(f(self)));
-        let node = Green::<T>(cell, PhantomData);
-
-        self.lazy_names
-            .borrow_mut()
-            .insert(name, Box::new(node.clone()));
-
-        node
-    }
-
-    fn compute_named_children(tree: &Spanned<Tree>) -> HashMap<&'static str, Spanned<Child>> {
-        let mut named_children = HashMap::new();
-
-        for child in &tree.children {
-            match child.value() {
-                Child::Tree(tree) => {
-                    if let Some(name) = tree.name {
-                        named_children.insert(name, child.clone());
-                    }
-                }
-                Child::Token(token) => {
-                    if let Some(name) = token.name {
-                        named_children.insert(name, child.clone());
-                    }
-                }
-            }
-        }
-
-        named_children
     }
 }
 

@@ -1,12 +1,11 @@
 use std::fmt::{Debug, Formatter};
 
-use crate::{binary::Binary, *};
-
+use crate::*;
 impl Debug for QualifiedPath {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "QualifiedPath ")?;
-        for segment in self.segments() {
-            write!(f, " ({:?})", segment.value)?;
+        for segment in self.segments().as_leaf().unwrap_or_default() {
+            write!(f, " ({:?})", segment.0)?;
         }
         Ok(())
     }

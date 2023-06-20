@@ -1,7 +1,7 @@
 use crate::Signed;
 
 /// Represents a language literal construct, can hold numbers, strings, booleans, etc.
-#[derive(Clone)]
+#[derive(Default, Clone)]
 pub enum Literal {
     Nat(u128), // <n>n
     String(String),
@@ -20,4 +20,7 @@ pub enum Literal {
     // booleans
     True,
     False,
+
+    #[default]
+    Error,
 }

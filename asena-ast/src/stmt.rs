@@ -1,8 +1,7 @@
-use asena_derive::Leaf;
+use asena_derive::{node_leaf, Leaf};
+use asena_leaf::ast::{Cursor, GreenTree};
 use asena_leaf::ast_enum;
-use asena_leaf::green::GreenTree;
 use asena_leaf::node::TreeKind;
-use asena_leaf::spec::Node;
 
 use asena_span::Spanned;
 
@@ -12,11 +11,13 @@ use crate::*;
 pub struct Ask(GreenTree);
 
 impl Ask {
-    pub fn pattern(&self) -> Node<Spanned<Pat>> {
+    #[node_leaf]
+    pub fn pattern(&self) -> Cursor<Pat> {
         todo!()
     }
 
-    pub fn value(&self) -> Node<Spanned<Expr>> {
+    #[node_leaf]
+    pub fn value(&self) -> Cursor<Expr> {
         todo!()
     }
 }
@@ -25,12 +26,14 @@ impl Ask {
 pub struct Set(GreenTree);
 
 impl Set {
-    pub fn pattern(&self) -> Node<Spanned<Pat>> {
-        self.filter::<Pat>().first().cloned().into()
+    #[node_leaf]
+    pub fn pattern(&self) -> Cursor<Pat> {
+        self.filter::<Pat>().first()
     }
 
-    pub fn value(&self) -> Node<Spanned<Expr>> {
-        self.filter::<Expr>().first().cloned().into()
+    #[node_leaf]
+    pub fn value(&self) -> Cursor<Expr> {
+        self.filter::<Expr>().first()
     }
 }
 
@@ -40,7 +43,8 @@ pub struct Return(GreenTree);
 impl Return {
     /// This is using directly [ExprRef] in the AST, because when expanded, this will generate
     /// and [Option] wrapped value.
-    pub fn value(&self) -> Node<Spanned<Expr>> {
+    #[node_leaf]
+    pub fn value(&self) -> Cursor<Expr> {
         todo!()
     }
 }
@@ -49,8 +53,9 @@ impl Return {
 pub struct Eval(GreenTree);
 
 impl Eval {
-    pub fn value(&self) -> Node<Spanned<Expr>> {
-        self.filter::<Expr>().first().cloned().into()
+    #[node_leaf]
+    pub fn value(&self) -> Cursor<Expr> {
+        self.filter::<Expr>().first()
     }
 }
 

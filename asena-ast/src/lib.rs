@@ -2,11 +2,7 @@ use std::fmt::{Debug, Formatter};
 
 use asena_derive::Leaf;
 
-use asena_span::Spanned;
-
-use asena_leaf::green::GreenTree;
-use asena_leaf::node::TokenKind;
-use asena_leaf::spec::Node;
+use asena_leaf::ast::{Cursor, GreenTree};
 
 /// Represents a true-false value, just like an wrapper to [bool], this represents if an integer
 /// value is signed, or unsigned.
@@ -21,7 +17,7 @@ pub enum Signed {
 pub struct AsenaFile(GreenTree);
 
 impl AsenaFile {
-    pub fn declarations(&self) -> Vec<Node<Spanned<Decl>>> {
+    pub fn declarations(&self) -> Cursor<Vec<Decl>> {
         self.filter()
     }
 }
@@ -34,7 +30,6 @@ impl Debug for AsenaFile {
     }
 }
 
-pub use binary::*;
 pub use binding::*;
 pub use body::*;
 pub use decl::*;
@@ -44,19 +39,26 @@ pub use literal::*;
 pub use parameter::*;
 pub use pat::*;
 pub use stmt::*;
+pub use traits::binary::*;
 
-pub mod binary;
 pub mod binding;
 pub mod body;
-pub mod debug;
 pub mod decl;
-pub mod display;
 pub mod expr;
 pub mod identifier;
 pub mod literal;
 pub mod parameter;
 pub mod pat;
-pub mod spec;
 pub mod stmt;
-pub mod stub;
-pub mod terminal;
+
+pub mod traits {
+    pub mod binary;
+}
+
+pub mod stub {
+    pub mod debug;
+    pub mod display;
+    pub mod enum_stub;
+    pub mod leaf;
+    pub mod terminal;
+}

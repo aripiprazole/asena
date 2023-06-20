@@ -1,8 +1,5 @@
-use asena_derive::Leaf;
-use asena_leaf::green::GreenTree;
-use asena_leaf::spec::Node;
-
-use asena_span::Spanned;
+use asena_derive::{node_leaf, Leaf};
+use asena_leaf::ast::Cursor;
 
 use crate::*;
 
@@ -10,13 +7,15 @@ use crate::*;
 pub struct Binding(GreenTree);
 
 impl Binding {
-    pub fn name(&self) -> Node<Local> {
+    #[node_leaf]
+    pub fn name(&self) -> Cursor<Local> {
         todo!()
     }
 
-    pub fn value(&self) -> Node<Spanned<Expr>> {
+    #[node_leaf]
+    pub fn value(&self) -> Cursor<Expr> {
         todo!()
     }
 }
 
-pub type BindingRef = Spanned<Binding>;
+pub type BindingRef = Binding;

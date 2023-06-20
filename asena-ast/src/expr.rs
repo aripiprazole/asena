@@ -1,8 +1,9 @@
-use asena_derive::Leaf;
+use std::ops::Deref;
+
+use asena_derive::{node_leaf, Leaf};
+use asena_leaf::ast::Cursor;
 use asena_leaf::ast_enum;
-use asena_leaf::green::{Green, GreenTree};
 use asena_leaf::node::TreeKind;
-use asena_leaf::spec::Node;
 
 use asena_span::Spanned;
 
@@ -32,7 +33,8 @@ pub enum Type {
 pub struct Group(GreenTree);
 
 impl Group {
-    pub fn value(&self) -> Node<ExprRef> {
+    #[node_leaf]
+    pub fn value(&self) -> Cursor<Expr> {
         self.at(1)
     }
 }
@@ -83,11 +85,13 @@ pub struct Accessor(GreenTree);
 pub struct App(GreenTree);
 
 impl App {
-    pub fn callee(&self) -> Node<ExprRef> {
+    #[node_leaf]
+    pub fn callee(&self) -> Cursor<Expr> {
         self.at(0)
     }
 
-    pub fn argument(&self) -> Node<ExprRef> {
+    #[node_leaf]
+    pub fn argument(&self) -> Cursor<Expr> {
         self.at(1)
     }
 }
@@ -109,15 +113,18 @@ impl App {
 pub struct Dsl(GreenTree);
 
 impl Dsl {
-    pub fn callee(&self) -> Node<ExprRef> {
+    #[node_leaf]
+    pub fn callee(&self) -> Cursor<Expr> {
         todo!()
     }
 
-    pub fn parameters(&self) -> Node<Vec<Parameter>> {
+    #[node_leaf]
+    pub fn parameters(&self) -> Cursor<Vec<Parameter>> {
         todo!()
     }
 
-    pub fn block(&self) -> Node<Vec<StmtRef>> {
+    #[node_leaf]
+    pub fn block(&self) -> Cursor<Vec<Stmt>> {
         todo!()
     }
 }
@@ -133,7 +140,8 @@ impl Dsl {
 pub struct Array(GreenTree);
 
 impl Array {
-    pub fn items(&self) -> Vec<Node<ExprRef>> {
+    #[node_leaf]
+    pub fn items(&self) -> Cursor<Vec<Expr>> {
         self.filter::<Expr>()
     }
 }
@@ -158,11 +166,13 @@ impl Array {
 pub struct Lam(GreenTree);
 
 impl Lam {
-    pub fn parameters(&self) -> Node<Vec<Local>> {
+    #[node_leaf]
+    pub fn parameters(&self) -> Cursor<Vec<Local>> {
         todo!()
     }
 
-    pub fn value(&self) -> Node<Spanned<Expr>> {
+    #[node_leaf]
+    pub fn value(&self) -> Cursor<Expr> {
         todo!()
     }
 }
@@ -179,11 +189,13 @@ impl Lam {
 pub struct Let(GreenTree);
 
 impl Let {
-    pub fn bindings(&self) -> Node<Vec<BindingRef>> {
+    #[node_leaf]
+    pub fn bindings(&self) -> Vec<Cursor<Binding>> {
         todo!()
     }
 
-    pub fn in_value(&self) -> Node<Spanned<Expr>> {
+    #[node_leaf]
+    pub fn in_value(&self) -> Cursor<Expr> {
         todo!()
     }
 }
@@ -199,11 +211,13 @@ impl Let {
 pub struct Ann(GreenTree);
 
 impl Ann {
-    pub fn value(&self) -> Node<Spanned<Expr>> {
+    #[node_leaf]
+    pub fn value(&self) -> Cursor<Expr> {
         todo!()
     }
 
-    pub fn against(&self) -> Node<Spanned<Expr>> {
+    #[node_leaf]
+    pub fn against(&self) -> Cursor<Expr> {
         todo!()
     }
 }
@@ -238,53 +252,56 @@ pub struct Qual(GreenTree);
 pub struct Pi(GreenTree);
 
 impl Pi {
-    pub fn parameter_name(&self) -> Node<Option<Local>> {
+    #[node_leaf]
+    pub fn parameter_name(&self) -> Option<Cursor<Local>> {
         if self.has("parameter_name") {
             let fn_id = self.named_terminal::<FunctionId>("parameter_name")?;
 
-            Node::new(Some(Local(fn_id)))
+            Some(Cursor::new(fn_id))
         } else {
-            Node::new(None)
+            None
         }
     }
 
-    pub fn parameter_type(&self) -> Green<Node<Spanned<Expr>>> {
-        self.lazy("parameter_type", |this| {
-            if self.parameter_name().is_some() {
-                this.named_at("parameter_type")
-            } else {
-                this.at(0)
-            }
-        })
+    #[node_leaf]
+    pub fn parameter_type(&self) -> Cursor<Expr> {
+        if self.parameter_name().is_some() {
+            self.named_at("parameter_type")
+        } else {
+            self.at(0)
+        }
     }
 
-    pub fn return_type(&self) -> Green<Node<Spanned<Expr>>> {
-        self.lazy("return_type", |this| {
-            if self.parameter_name().is_some() {
-                return self.named_at("return_type");
-            }
+    #[node_leaf]
+    pub fn return_type(&self) -> Cursor<Expr> {
+        if self.parameter_name().is_some() {
+            return self.named_at("return_type");
+        }
 
-            let mut rhs = this.clone();
+        let mut rhs = self.clone();
 
-            // Checks the integrity of the length for safety
-            match rhs.children.len() {
-                0 => return Node::empty(),
-                1 => return rhs.at(0),
-                _ => {}
-            }
+        let Some(children) = rhs.children() else {
+            return Cursor::empty();
+        };
 
-            // Remove the first twice
-            //   `->`
-            //   <type_expr>
-            rhs.children.remove(0);
-            rhs.children.remove(0);
+        // Checks the integrity of the length for safety
+        match children.len() {
+            0 => return Cursor::empty(),
+            1 => return rhs.at(0),
+            _ => {}
+        }
 
-            if rhs.is_single() {
-                rhs.at(0)
-            } else {
-                Node::new(this.replace(Expr::Pi(Self::new(rhs))))
-            }
-        })
+        // Remove the first twice
+        //   `->`
+        //   <type_expr>
+        children.remove(0);
+        children.remove(0);
+
+        if rhs.is_single() {
+            rhs.at(0)
+        } else {
+            Cursor::new(rhs.deref().clone())
+        }
     }
 }
 
@@ -304,18 +321,21 @@ impl Pi {
 pub struct Sigma(GreenTree);
 
 impl Sigma {
-    pub fn parameter_name(&self) -> Node<Local> {
+    #[node_leaf]
+    pub fn parameter_name(&self) -> Cursor<Local> {
         let fn_id = self.named_terminal::<FunctionId>("parameter_name")?;
 
-        Node::new(Local(fn_id))
+        Cursor::new(fn_id)
     }
 
-    pub fn parameter_type(&self) -> Green<Node<Spanned<Expr>>> {
-        self.lazy("parameter_type", |this| this.named_at("parameter_type"))
+    #[node_leaf]
+    pub fn parameter_type(&self) -> Cursor<Expr> {
+        self.named_at("parameter_type")
     }
 
-    pub fn return_type(&self) -> Green<Node<Spanned<Expr>>> {
-        self.lazy("return_type", |this| this.named_at("return_type"))
+    #[node_leaf]
+    pub fn return_type(&self) -> Cursor<Expr> {
+        self.named_at("parameter_type")
     }
 }
 
@@ -324,7 +344,8 @@ impl Sigma {
 pub struct Help(GreenTree);
 
 impl Help {
-    pub fn value(&self) -> Node<Spanned<Expr>> {
+    #[node_leaf]
+    pub fn value(&self) -> Cursor<Expr> {
         self.at(0)
     }
 }
@@ -354,5 +375,3 @@ ast_enum! {
 /// spaces. So if, match expressions, for example, aren't accepted here, only if they are grouped
 /// by parenthesis, like: `(if a then b else c)`
 pub type PrimaryRef = Spanned<Expr>;
-
-pub type ExprRef = Spanned<Expr>;

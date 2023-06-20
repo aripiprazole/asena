@@ -6,7 +6,7 @@ use std::{
 };
 
 use asena_ast::{AsenaFile, Decl};
-use asena_leaf::spec::Spec;
+use asena_leaf::ast::Leaf;
 use asena_span::Spanned;
 
 use crate::graph::Key;
@@ -24,8 +24,8 @@ pub struct Declaration {
     pub name: String,
     pub file: Option<PathBuf>,
 
-    pub file_leaf: Arc<asena_leaf::spec::Node<AsenaFile>>,
-    pub current_leaf: Arc<asena_leaf::spec::Node<Spanned<Decl>>>,
+    pub file_leaf: Arc<asena_leaf::ast::Cursor<AsenaFile>>,
+    pub current_leaf: Arc<asena_leaf::ast::Cursor<Spanned<Decl>>>,
 
     /// Recompile flag, if its true, all the other fields will be recompiled
     pub recompile: bool,

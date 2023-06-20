@@ -1,7 +1,6 @@
 use asena_derive::Leaf;
 
-use asena_leaf::green::GreenTree;
-use asena_leaf::spec::Node;
+use asena_leaf::ast::{Cursor, GreenTree};
 
 use asena_span::{Loc, Spanned};
 
@@ -18,7 +17,7 @@ pub struct ConstructorId(pub Vec<Spanned<FunctionId>>);
 /// Identifier's key to local identifier, that's not declared globally, almost everything with
 /// snake case, as a language pattern.
 #[derive(Clone)]
-pub struct Local(pub Spanned<FunctionId>);
+pub struct Local(pub Spanned<String>);
 
 /// Identifier's key to a global identifier, that's not declared locally, almost everything with
 /// Pascal Case, as a language pattern. This can contain symbols like: `Person.new`, as it can
@@ -48,7 +47,7 @@ impl ConstructorId {
 impl Local {
     /// Creates a new [Local] by a string
     pub fn new(span: Loc, id: &str) -> Self {
-        Self(Spanned::new(span, FunctionId::new(id)))
+        Self(Spanned::new(span, id.into()))
     }
 
     /// Gets the local's identifier as string borrow
@@ -58,7 +57,7 @@ impl Local {
 }
 
 impl QualifiedPath {
-    pub fn segments(&self) -> Vec<Node<Spanned<Local>>> {
+    pub fn segments(&self) -> Cursor<Vec<Local>> {
         self.filter_terminal()
     }
 }

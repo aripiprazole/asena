@@ -11,8 +11,10 @@ macro_rules! ast_enum {
         }
     ) => {
         $(#[$outer])*
-        #[derive(Clone)]
+        #[derive(Default, Clone)]
         pub enum $name {
+            #[default]
+            Error,
             $(
                 $(#[$field_outer])*
                 $variant($variant),

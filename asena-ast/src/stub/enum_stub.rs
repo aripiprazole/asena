@@ -5,6 +5,7 @@ use crate::*;
 impl Debug for Expr {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::Error => write!(f, "Error"),
             Self::QualifiedPath(expr) => write!(f, "{expr:#?}"),
             Self::Infix(expr) => write!(f, "{expr:#?}"),
             Self::Accessor(expr) => write!(f, "{expr:#?}"),
@@ -28,6 +29,7 @@ impl Debug for Expr {
 impl Debug for Literal {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::Error => write!(f, "!! ERROR !!"),
             Self::Nat(n) => write!(f, "{n}n"),
             Self::String(string) => write!(f, "\"{string}\""),
             Self::Int8(i8, Signed::Signed) => write!(f, "{i8}i8"),
@@ -51,6 +53,7 @@ impl Debug for Literal {
 impl Debug for Decl {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::Error => write!(f, "Error"),
             Self::Use(decl) => write!(f, "{decl:#?}"),
             Self::Signature(decl) => write!(f, "{decl:#?}"),
             Self::Assign(decl) => write!(f, "{decl:#?}"),
@@ -73,6 +76,7 @@ impl Debug for Type {
 impl Debug for Pat {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::Error => write!(f, "Error"),
             Self::Spread(spread) => write!(f, "{spread:#?}"),
             Self::Wildcard(wildcard) => write!(f, "{wildcard:#?}"),
             Self::Literal(literal) => write!(f, "{literal:#?}"),
@@ -87,6 +91,7 @@ impl Debug for Pat {
 impl Debug for Stmt {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::Error => write!(f, "Error"),
             Self::Ask(stmt) => write!(f, "{stmt:#?}"),
             Self::Set(stmt) => write!(f, "{stmt:#?}"),
             Self::Return(stmt) => write!(f, "{stmt:#?}"),

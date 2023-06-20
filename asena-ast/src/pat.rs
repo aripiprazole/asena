@@ -1,8 +1,6 @@
-use asena_derive::Leaf;
+use asena_derive::{node_leaf, Leaf};
 use asena_leaf::ast_enum;
-use asena_leaf::green::GreenTree;
 use asena_leaf::node::TreeKind;
-use asena_leaf::spec::Node;
 
 use asena_span::Spanned;
 
@@ -18,11 +16,13 @@ use crate::*;
 pub struct Constructor(GreenTree);
 
 impl Constructor {
-    pub fn name(&self) -> Node<ConstructorId> {
+    #[node_leaf]
+    pub fn name(&self) -> ConstructorId {
         todo!()
     }
 
-    pub fn arguments(&self) -> Node<Vec<Spanned<Pat>>> {
+    #[node_leaf]
+    pub fn arguments(&self) -> Vec<PatRef> {
         todo!()
     }
 }
@@ -37,7 +37,8 @@ impl Constructor {
 pub struct List(GreenTree);
 
 impl List {
-    pub fn items(&self) -> Node<Vec<Spanned<Pat>>> {
+    #[node_leaf]
+    pub fn items(&self) -> Vec<PatRef> {
         todo!()
     }
 }
