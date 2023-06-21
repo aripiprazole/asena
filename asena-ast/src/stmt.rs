@@ -7,9 +7,10 @@ use asena_span::Spanned;
 
 use crate::*;
 
-#[derive(Leaf, Clone)]
+#[derive(Default, Leaf, Clone)]
 pub struct Ask(GreenTree);
 
+#[ast_of]
 #[ast_debug]
 impl Ask {
     #[ast_leaf]
@@ -23,9 +24,10 @@ impl Ask {
     }
 }
 
-#[derive(Leaf, Clone)]
+#[derive(Default, Leaf, Clone)]
 pub struct Set(GreenTree);
 
+#[ast_of]
 #[ast_debug]
 impl Set {
     #[ast_leaf]
@@ -39,9 +41,10 @@ impl Set {
     }
 }
 
-#[derive(Leaf, Clone)]
+#[derive(Default, Leaf, Clone)]
 pub struct Return(GreenTree);
 
+#[ast_of]
 #[ast_debug]
 impl Return {
     /// This is using directly [ExprRef] in the AST, because when expanded, this will generate
@@ -52,9 +55,10 @@ impl Return {
     }
 }
 
-#[derive(Leaf, Clone)]
+#[derive(Default, Leaf, Clone)]
 pub struct Eval(GreenTree);
 
+#[ast_of]
 #[ast_debug]
 impl Eval {
     #[ast_leaf]

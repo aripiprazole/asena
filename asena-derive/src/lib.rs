@@ -3,6 +3,7 @@
 extern crate proc_macro;
 
 use proc_macro::TokenStream;
+use proc_macro2::Span;
 use quote::quote;
 use syn::{Data::Struct, *};
 
@@ -67,38 +68,47 @@ pub fn ast_leaf(_args: TokenStream, input: TokenStream) -> TokenStream {
 }
 
 #[proc_macro_attribute]
+pub fn ast_of(_args: TokenStream, input: TokenStream) -> TokenStream {
+    let mut input = parse_macro_input!(input as ItemImpl);
+
+    let parameters = iter_leaf(&input).into_iter().fold(quote!(), |acc, next| {
+        let name = Ident::new(&format!("_{}", next.name), Span::call_site());
+        let ty = next.leaf_type;
+        quote! { #acc #name: #ty, }
+    });
+
+    let _arguments = iter_leaf(&input).into_iter().fold(quote!(), |acc, next| {
+        let name = next.name;
+        let value = Ident::new(&format!("set_{}", name), Span::call_site());
+        quote! { #acc _local_new.#value(#name.into()); }
+    });
+
+    input.items.push(
+        syn::parse(
+            quote! {
+                pub fn of(#parameters) -> Self {
+                    let _local_new = Self::default();
+                    _local_new
+                }
+            }
+            .into(),
+        )
+        .unwrap(),
+    );
+
+    TokenStream::from(quote! {
+        #input
+    })
+}
+
+#[proc_macro_attribute]
 pub fn ast_debug(_args: TokenStream, input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as ItemImpl);
 
     #[allow(clippy::redundant_clone)]
     let self_ty = input.self_ty.clone();
 
-    let leaf_properties = input.items.iter().filter_map(|next| match next {
-        ImplItem::Fn(item) => {
-            let node_leaf_attr = item.attrs.iter().find_map(|a| match a.meta {
-                Meta::Path(ref name) if name.is_ident("ast_leaf") => Some(name.clone()),
-                _ => None,
-            });
-
-            node_leaf_attr.as_ref()?;
-
-            let name = item.sig.ident.clone();
-            let leaf_type = match item.sig.output.clone() {
-                ReturnType::Type(_, value) => quote! { #value },
-                ReturnType::Default => quote! { () },
-            };
-            let parameters = item.sig.inputs.clone().into_iter().collect::<Vec<_>>();
-
-            if let None | Some(FnArg::Typed(..)) = parameters.first().cloned() {
-                name.span()
-                    .unwrap()
-                    .error("The first argument of a `ast_leaf` function should be the receiver");
-            }
-
-            Some(NodeLeaf { name, leaf_type })
-        }
-        _ => None,
-    });
+    let leaf_properties = iter_leaf(&input).into_iter();
 
     let debug_code = leaf_properties.fold(quote!(), |acc, next| {
         let name = next.name.to_string();
@@ -119,7 +129,43 @@ pub fn ast_debug(_args: TokenStream, input: TokenStream) -> TokenStream {
     })
 }
 
+fn iter_leaf(input: &ItemImpl) -> Vec<NodeLeaf> {
+    input
+        .items
+        .iter()
+        .filter_map(|next| -> Option<NodeLeaf> {
+            match next {
+                ImplItem::Fn(item) => {
+                    let node_leaf_attr = item.attrs.iter().find_map(|a| match a.meta {
+                        Meta::Path(ref name) if name.is_ident("ast_leaf") => Some(name.clone()),
+                        _ => None,
+                    });
+
+                    node_leaf_attr.as_ref()?;
+
+                    let name = item.sig.ident.clone();
+                    let leaf_type = match item.sig.output.clone() {
+                        ReturnType::Type(_, value) => quote! { #value },
+                        ReturnType::Default => quote! { () },
+                    };
+                    let parameters = item.sig.inputs.clone().into_iter().collect::<Vec<_>>();
+
+                    if let None | Some(FnArg::Typed(..)) = parameters.first().cloned() {
+                        name.span().unwrap().error(
+                            "The first argument of a `ast_leaf` function should be the receiver",
+                        );
+                    }
+
+                    Some(NodeLeaf { name, leaf_type })
+                }
+                _ => None,
+            }
+        })
+        .collect()
+}
+
 #[allow(dead_code)]
+#[derive(Clone)]
 struct NodeLeaf {
     name: Ident,
     leaf_type: proc_macro2::TokenStream,

@@ -5,9 +5,10 @@ use asena_leaf::token::TokenKind;
 
 use crate::*;
 
-#[derive(Leaf, Clone)]
+#[derive(Default, Leaf, Clone)]
 pub struct Parameter(GreenTree);
 
+#[ast_of]
 #[ast_debug]
 impl Parameter {
     /// Optional parameter's name

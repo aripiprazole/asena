@@ -29,9 +29,10 @@ pub enum Type {
 /// ```haskell
 /// (a)
 /// ```
-#[derive(Leaf, Clone)]
+#[derive(Default, Leaf, Clone)]
 pub struct Group(GreenTree);
 
+#[ast_of]
 #[ast_debug]
 impl Group {
     #[ast_leaf]
@@ -59,7 +60,7 @@ impl Group {
 ///   - `*`, `/`
 ///   - `+`, `-`
 ///   Being the most important the first items.
-#[derive(Leaf, Clone)]
+#[derive(Default, Leaf, Clone)]
 pub struct Infix(GreenTree);
 
 impl Debug for Infix {
@@ -79,7 +80,7 @@ impl Debug for Infix {
 /// ```haskell
 /// person.data
 /// ```
-#[derive(Leaf, Clone)]
+#[derive(Default, Leaf, Clone)]
 pub struct Accessor(GreenTree);
 
 impl Debug for Accessor {
@@ -102,9 +103,10 @@ impl Debug for Accessor {
 ///
 /// The application expression is right associative, and can hold primary terms on the argument,
 /// this can be recursed until the infinite, like `something a b c ...`
-#[derive(Leaf, Clone)]
+#[derive(Default, Leaf, Clone)]
 pub struct App(GreenTree);
 
+#[ast_of]
 #[ast_debug]
 impl App {
     #[ast_leaf]
@@ -131,9 +133,10 @@ impl App {
 ///
 /// The application expression is right associative, and can hold primary terms on the argument,
 /// this can be recursed until the infinite, like `something a b c ...`
-#[derive(Leaf, Clone)]
+#[derive(Default, Leaf, Clone)]
 pub struct Dsl(GreenTree);
 
+#[ast_of]
 #[ast_debug]
 impl Dsl {
     #[ast_leaf]
@@ -159,9 +162,10 @@ impl Dsl {
 /// ```haskell
 /// [a, b, c]
 /// ```
-#[derive(Leaf, Clone)]
+#[derive(Default, Leaf, Clone)]
 pub struct Array(GreenTree);
 
+#[ast_of]
 #[ast_debug]
 impl Array {
     #[ast_leaf]
@@ -186,9 +190,10 @@ impl Array {
 /// ```haskell
 /// λa b. c
 /// ```
-#[derive(Leaf, Clone)]
+#[derive(Default, Leaf, Clone)]
 pub struct Lam(GreenTree);
 
+#[ast_of]
 #[ast_debug]
 impl Lam {
     #[ast_leaf]
@@ -210,9 +215,10 @@ impl Lam {
 /// let a = 10 in
 /// b + a...
 /// ```
-#[derive(Leaf, Clone)]
+#[derive(Default, Leaf, Clone)]
 pub struct Let(GreenTree);
 
+#[ast_of]
 #[ast_debug]
 impl Let {
     #[ast_leaf]
@@ -233,9 +239,10 @@ impl Let {
 /// ```haskell
 /// 10 : Int
 /// ```
-#[derive(Leaf, Clone)]
+#[derive(Default, Leaf, Clone)]
 pub struct Ann(GreenTree);
 
+#[ast_of]
 #[ast_debug]
 impl Ann {
     #[ast_leaf]
@@ -261,7 +268,7 @@ impl Ann {
 /// ```haskell
 /// ∀ (MonadIO m) -> Π (a: t) -> m b
 /// ```
-#[derive(Leaf, Clone)]
+#[derive(Default, Leaf, Clone)]
 pub struct Qual(GreenTree);
 
 impl Debug for Qual {
@@ -285,9 +292,10 @@ impl Debug for Qual {
 /// ```haskell
 /// Π (a: t) -> b
 /// ```
-#[derive(Leaf, Clone)]
+#[derive(Default, Leaf, Clone)]
 pub struct Pi(GreenTree);
 
+#[ast_of]
 #[ast_debug]
 impl Pi {
     #[ast_leaf]
@@ -355,9 +363,10 @@ impl Pi {
 /// ```haskell
 /// Σ (a: t) -> b
 /// ```
-#[derive(Leaf, Clone)]
+#[derive(Default, Leaf, Clone)]
 pub struct Sigma(GreenTree);
 
+#[ast_of]
 #[ast_debug]
 impl Sigma {
     #[ast_leaf]
@@ -379,9 +388,10 @@ impl Sigma {
 }
 
 /// Help syntax sugar to the debugger.
-#[derive(Leaf, Clone)]
+#[derive(Default, Leaf, Clone)]
 pub struct Help(GreenTree);
 
+#[ast_of]
 #[ast_debug]
 impl Help {
     #[ast_leaf]

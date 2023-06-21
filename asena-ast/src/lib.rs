@@ -1,6 +1,6 @@
 use std::fmt::{Debug, Formatter};
 
-use asena_derive::{ast_debug, ast_leaf, Leaf};
+use asena_derive::{ast_debug, ast_leaf, ast_of, Leaf};
 
 use asena_leaf::ast::{Cursor, GreenTree};
 
@@ -13,14 +13,17 @@ pub enum Signed {
 }
 
 /// Represents the root of the asena source code file, it contains a set of declarations.
-#[derive(Leaf, Clone)]
+#[derive(Default, Leaf, Clone)]
 pub struct AsenaFile(GreenTree);
 
+#[ast_of]
 #[ast_debug]
 impl AsenaFile {
     // fn declarations(&self) -> Vec<Decl>
     //
     // fn set_declarations(&self, value: Vec<Decl>)
+    //
+    // fn find_declarations(&self) -> Cursor<Vec<Decl>>
     #[ast_leaf]
     pub fn declarations(&self) -> Cursor<Vec<Decl>> {
         self.filter()

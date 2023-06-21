@@ -19,9 +19,10 @@ use crate::*;
 /// ```haskell
 /// Print : Person -> IO ()
 /// ```
-#[derive(Leaf, Clone)]
+#[derive(Default, Leaf, Clone)]
 pub struct Signature(GreenTree);
 
+#[ast_of]
 #[ast_debug]
 impl Signature {
     #[ast_leaf]
@@ -53,9 +54,10 @@ impl Signature {
 /// ```haskell
 /// Print person = pure ()
 /// ```
-#[derive(Leaf, Clone)]
+#[derive(Default, Leaf, Clone)]
 pub struct Assign(GreenTree);
 
+#[ast_of]
 #[ast_debug]
 impl Assign {
     #[ast_leaf]
@@ -82,9 +84,10 @@ impl Assign {
 /// ```haskell
 /// #eval 1 + 1 -- 2
 /// ```
-#[derive(Leaf, Clone)]
+#[derive(Default, Leaf, Clone)]
 pub struct Command(GreenTree);
 
+#[ast_of]
 #[ast_debug]
 impl Command {
     #[ast_leaf]
@@ -110,9 +113,10 @@ impl Command {
 ///   }
 /// }
 /// ```
-#[derive(Leaf, Clone)]
+#[derive(Default, Leaf, Clone)]
 pub struct Class(GreenTree);
 
+#[ast_of]
 #[ast_debug]
 impl Class {
     #[ast_leaf]
@@ -137,9 +141,10 @@ impl Class {
 /// ```haskell
 /// use IO;
 /// ```
-#[derive(Leaf, Clone)]
+#[derive(Default, Leaf, Clone)]
 pub struct Use(GreenTree);
 
+#[ast_of]
 #[ast_debug]
 impl Use {
     #[ast_leaf]
@@ -157,9 +162,10 @@ impl Use {
 ///   pure (a) { ... }
 /// }
 /// ```
-#[derive(Leaf, Clone)]
+#[derive(Default, Leaf, Clone)]
 pub struct Instance(GreenTree);
 
+#[ast_of]
 #[ast_debug]
 impl Instance {
     #[ast_leaf]
@@ -199,9 +205,10 @@ pub type DeclRef = Spanned<Decl>;
 /// ```
 ///
 /// The constraint node can be used on `where` clauses.
-#[derive(Leaf, Clone)]
+#[derive(Default, Leaf, Clone)]
 pub struct Constraint(GreenTree);
 
+#[ast_of]
 #[ast_debug]
 impl Constraint {
     #[ast_leaf]
@@ -218,9 +225,10 @@ impl Constraint {
 /// ```
 ///
 /// The constraint node should be wrote in a class context.
-#[derive(Leaf, Clone)]
+#[derive(Default, Leaf, Clone)]
 pub struct Field(GreenTree);
 
+#[ast_of]
 #[ast_debug]
 impl Field {
     #[ast_leaf]
@@ -246,9 +254,10 @@ impl Field {
 ///
 /// The method node is a simple sugar for declaring it on the top level with the class name concatenated,
 /// like: `sayHello`, in the `Person` class, should be simply `Person.sayHello`.
-#[derive(Leaf, Clone)]
+#[derive(Default, Leaf, Clone)]
 pub struct Method(GreenTree);
 
+#[ast_of]
 #[ast_debug]
 impl Method {
     #[ast_leaf]

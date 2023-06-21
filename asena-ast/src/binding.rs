@@ -3,9 +3,10 @@ use asena_leaf::ast::Cursor;
 
 use crate::*;
 
-#[derive(Leaf, Clone)]
+#[derive(Default, Leaf, Clone)]
 pub struct Binding(GreenTree);
 
+#[ast_of]
 #[ast_debug]
 impl Binding {
     #[ast_leaf]

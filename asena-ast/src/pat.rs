@@ -12,9 +12,10 @@ use crate::*;
 /// ```haskell
 /// Some x
 /// ```
-#[derive(Leaf, Clone)]
+#[derive(Default, Leaf, Clone)]
 pub struct Constructor(GreenTree);
 
+#[ast_of]
 #[ast_debug]
 impl Constructor {
     #[ast_leaf]
@@ -34,9 +35,10 @@ impl Constructor {
 /// ```haskell
 /// [x, ..]
 /// ```
-#[derive(Leaf, Clone)]
+#[derive(Default, Leaf, Clone)]
 pub struct List(GreenTree);
 
+#[ast_of]
 #[ast_debug]
 impl List {
     #[ast_leaf]
@@ -52,7 +54,7 @@ impl List {
 /// ```haskell
 /// [x, ..]
 /// ```
-#[derive(Leaf, Clone)]
+#[derive(Default, Leaf, Clone)]
 pub struct Spread(GreenTree);
 
 impl Debug for Spread {
@@ -62,7 +64,7 @@ impl Debug for Spread {
 }
 
 /// Wildcard pattern, is the same as `_` pattern [Pat::Local]
-#[derive(Leaf, Clone)]
+#[derive(Default, Leaf, Clone)]
 pub struct Wildcard(GreenTree);
 
 impl Debug for Wildcard {
