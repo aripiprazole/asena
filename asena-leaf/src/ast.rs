@@ -1,3 +1,4 @@
+use std::borrow::BorrowMut;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fmt::{Debug, Display};
@@ -49,7 +50,9 @@ impl<T: Leaf> Cursor<T> {
         Self::default()
     }
 
-    pub fn set(&self, value: Cursor<T>) {}
+    pub fn set(&self, value: Cursor<T>) {
+        self.value.replace(value.value.borrow().clone());
+    }
 
     pub fn new<I: Into<GreenTree>>(value: I) -> Self {
         Self {

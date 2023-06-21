@@ -1,6 +1,6 @@
 use std::fmt::{Debug, Formatter};
 
-use asena_derive::Leaf;
+use asena_derive::{ast_class, ast_leaf, Leaf};
 
 use asena_leaf::ast::{Cursor, GreenTree};
 
@@ -16,7 +16,12 @@ pub enum Signed {
 #[derive(Leaf, Clone)]
 pub struct AsenaFile(GreenTree);
 
+#[ast_class]
 impl AsenaFile {
+    // fn declarations(&self) -> Vec<Decl>
+    //
+    // fn set_declarations(&self, value: Vec<Decl>)
+    #[ast_leaf]
     pub fn declarations(&self) -> Cursor<Vec<Decl>> {
         self.filter()
     }

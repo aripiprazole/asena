@@ -1,4 +1,4 @@
-use asena_derive::{node_leaf, Leaf};
+use asena_derive::{ast_leaf, Leaf};
 
 use asena_leaf::ast::{Cursor, GreenTree};
 use asena_leaf::token::TokenKind;
@@ -8,15 +8,16 @@ use crate::*;
 #[derive(Leaf, Clone)]
 pub struct Parameter(GreenTree);
 
+#[ast_class]
 impl Parameter {
     /// Optional parameter's name
-    #[node_leaf]
+    #[ast_leaf]
     pub fn name(&self) -> Cursor<Local> {
         self.filter_terminal::<Local>().first()
     }
 
     /// Parameter's type
-    #[node_leaf]
+    #[ast_leaf]
     pub fn parameter_type(&self) -> Cursor<Type> {
         self.filter::<Type>().first()
     }

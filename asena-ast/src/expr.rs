@@ -1,6 +1,6 @@
 use std::ops::Deref;
 
-use asena_derive::{node_leaf, Leaf};
+use asena_derive::{ast_leaf, Leaf};
 use asena_leaf::ast::Cursor;
 use asena_leaf::ast_enum;
 use asena_leaf::node::TreeKind;
@@ -32,8 +32,9 @@ pub enum Type {
 #[derive(Leaf, Clone)]
 pub struct Group(GreenTree);
 
+#[ast_class]
 impl Group {
-    #[node_leaf]
+    #[ast_leaf]
     pub fn value(&self) -> Cursor<Expr> {
         self.at(1)
     }
@@ -84,13 +85,14 @@ pub struct Accessor(GreenTree);
 #[derive(Leaf, Clone)]
 pub struct App(GreenTree);
 
+#[ast_class]
 impl App {
-    #[node_leaf]
+    #[ast_leaf]
     pub fn callee(&self) -> Cursor<Expr> {
         self.at(0)
     }
 
-    #[node_leaf]
+    #[ast_leaf]
     pub fn argument(&self) -> Cursor<Expr> {
         self.at(1)
     }
@@ -112,18 +114,19 @@ impl App {
 #[derive(Leaf, Clone)]
 pub struct Dsl(GreenTree);
 
+#[ast_class]
 impl Dsl {
-    #[node_leaf]
+    #[ast_leaf]
     pub fn callee(&self) -> Cursor<Expr> {
         todo!()
     }
 
-    #[node_leaf]
+    #[ast_leaf]
     pub fn parameters(&self) -> Cursor<Vec<Parameter>> {
         todo!()
     }
 
-    #[node_leaf]
+    #[ast_leaf]
     pub fn block(&self) -> Cursor<Vec<Stmt>> {
         todo!()
     }
@@ -139,8 +142,9 @@ impl Dsl {
 #[derive(Leaf, Clone)]
 pub struct Array(GreenTree);
 
+#[ast_class]
 impl Array {
-    #[node_leaf]
+    #[ast_leaf]
     pub fn items(&self) -> Cursor<Vec<Expr>> {
         self.filter::<Expr>()
     }
@@ -165,13 +169,14 @@ impl Array {
 #[derive(Leaf, Clone)]
 pub struct Lam(GreenTree);
 
+#[ast_class]
 impl Lam {
-    #[node_leaf]
+    #[ast_leaf]
     pub fn parameters(&self) -> Cursor<Vec<Local>> {
         todo!()
     }
 
-    #[node_leaf]
+    #[ast_leaf]
     pub fn value(&self) -> Cursor<Expr> {
         todo!()
     }
@@ -188,13 +193,14 @@ impl Lam {
 #[derive(Leaf, Clone)]
 pub struct Let(GreenTree);
 
+#[ast_class]
 impl Let {
-    #[node_leaf]
+    #[ast_leaf]
     pub fn bindings(&self) -> Vec<Cursor<Binding>> {
         todo!()
     }
 
-    #[node_leaf]
+    #[ast_leaf]
     pub fn in_value(&self) -> Cursor<Expr> {
         todo!()
     }
@@ -210,13 +216,14 @@ impl Let {
 #[derive(Leaf, Clone)]
 pub struct Ann(GreenTree);
 
+#[ast_class]
 impl Ann {
-    #[node_leaf]
+    #[ast_leaf]
     pub fn value(&self) -> Cursor<Expr> {
         todo!()
     }
 
-    #[node_leaf]
+    #[ast_leaf]
     pub fn against(&self) -> Cursor<Expr> {
         todo!()
     }
@@ -251,8 +258,9 @@ pub struct Qual(GreenTree);
 #[derive(Leaf, Clone)]
 pub struct Pi(GreenTree);
 
+#[ast_class]
 impl Pi {
-    #[node_leaf]
+    #[ast_leaf]
     pub fn parameter_name(&self) -> Option<Cursor<Local>> {
         if self.has("parameter_name") {
             let fn_id = self.named_terminal::<FunctionId>("parameter_name")?;
@@ -263,7 +271,7 @@ impl Pi {
         }
     }
 
-    #[node_leaf]
+    #[ast_leaf]
     pub fn parameter_type(&self) -> Cursor<Expr> {
         if self.parameter_name().is_some() {
             self.named_at("parameter_type")
@@ -272,7 +280,7 @@ impl Pi {
         }
     }
 
-    #[node_leaf]
+    #[ast_leaf]
     pub fn return_type(&self) -> Cursor<Expr> {
         if self.parameter_name().is_some() {
             return self.named_at("return_type");
@@ -320,20 +328,21 @@ impl Pi {
 #[derive(Leaf, Clone)]
 pub struct Sigma(GreenTree);
 
+#[ast_class]
 impl Sigma {
-    #[node_leaf]
+    #[ast_leaf]
     pub fn parameter_name(&self) -> Cursor<Local> {
         let fn_id = self.named_terminal::<FunctionId>("parameter_name")?;
 
         Cursor::new(fn_id)
     }
 
-    #[node_leaf]
+    #[ast_leaf]
     pub fn parameter_type(&self) -> Cursor<Expr> {
         self.named_at("parameter_type")
     }
 
-    #[node_leaf]
+    #[ast_leaf]
     pub fn return_type(&self) -> Cursor<Expr> {
         self.named_at("parameter_type")
     }
@@ -343,8 +352,9 @@ impl Sigma {
 #[derive(Leaf, Clone)]
 pub struct Help(GreenTree);
 
+#[ast_class]
 impl Help {
-    #[node_leaf]
+    #[ast_leaf]
     pub fn value(&self) -> Cursor<Expr> {
         self.at(0)
     }

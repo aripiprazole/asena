@@ -1,4 +1,4 @@
-use asena_derive::{node_leaf, Leaf};
+use asena_derive::{ast_leaf, Leaf};
 use asena_leaf::ast_enum;
 use asena_leaf::node::TreeKind;
 
@@ -15,13 +15,14 @@ use crate::*;
 #[derive(Leaf, Clone)]
 pub struct Constructor(GreenTree);
 
+#[ast_class]
 impl Constructor {
-    #[node_leaf]
+    #[ast_leaf]
     pub fn name(&self) -> ConstructorId {
         todo!()
     }
 
-    #[node_leaf]
+    #[ast_leaf]
     pub fn arguments(&self) -> Vec<PatRef> {
         todo!()
     }
@@ -36,8 +37,9 @@ impl Constructor {
 #[derive(Leaf, Clone)]
 pub struct List(GreenTree);
 
+#[ast_class]
 impl List {
-    #[node_leaf]
+    #[ast_leaf]
     pub fn items(&self) -> Vec<PatRef> {
         todo!()
     }

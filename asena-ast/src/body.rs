@@ -1,4 +1,4 @@
-use asena_derive::{node_leaf, Leaf};
+use asena_derive::{ast_leaf, Leaf};
 
 use asena_leaf::ast::Cursor;
 use asena_leaf::ast_enum;
@@ -10,8 +10,9 @@ use crate::*;
 #[derive(Leaf, Clone)]
 pub struct Value(GreenTree);
 
+#[ast_class]
 impl Value {
-    #[node_leaf]
+    #[ast_leaf]
     pub fn value(&self) -> Cursor<Expr> {
         todo!()
     }
@@ -21,8 +22,9 @@ impl Value {
 #[derive(Leaf, Clone)]
 pub struct Do(GreenTree);
 
+#[ast_class]
 impl Do {
-    #[node_leaf]
+    #[ast_leaf]
     pub fn stmts(&self) -> Vec<Cursor<Stmt>> {
         todo!()
     }

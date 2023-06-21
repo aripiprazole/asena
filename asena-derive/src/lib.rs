@@ -62,6 +62,11 @@ pub fn derive_leaf(input: TokenStream) -> TokenStream {
 }
 
 #[proc_macro_attribute]
-pub fn node_leaf(_args: TokenStream, input: TokenStream) -> TokenStream {
+pub fn ast_leaf(_args: TokenStream, input: TokenStream) -> TokenStream {
+    input
+}
+
+#[proc_macro_attribute]
+pub fn ast_class(_args: TokenStream, input: TokenStream) -> TokenStream {
     input
 }

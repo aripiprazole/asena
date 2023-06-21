@@ -1,6 +1,7 @@
 use std::fmt::{Debug, Formatter};
 
 use crate::*;
+
 impl Debug for QualifiedPath {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "QualifiedPath ")?;
