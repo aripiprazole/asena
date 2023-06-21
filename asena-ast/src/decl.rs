@@ -292,7 +292,6 @@ impl Method {
 }
 
 ast_enum! {
-    #[derive(Debug)]
     pub enum Property {
         Field  <- TreeKind::Field,
         Method <- TreeKind::Method,

@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use std::fmt::{Debug, Display};
 
 use asena_derive::Leaf;
 
@@ -11,6 +11,12 @@ use asena_span::{Loc, Spanned};
 /// identifiers. Serves as a key on a graph, or the abstract syntax tree representation.
 #[derive(Clone)]
 pub struct FunctionId(pub String);
+
+impl Display for FunctionId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(f, "{}", self.0)
+    }
+}
 
 impl Debug for FunctionId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

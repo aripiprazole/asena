@@ -22,6 +22,15 @@ pub enum Type {
     Explicit(Expr),
 }
 
+impl std::fmt::Debug for Type {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Infer => write!(f, "Infer"),
+            Self::Explicit(expr) => write!(f, "Type({:#?})", expr),
+        }
+    }
+}
+
 /// Group expression, is an expression that is a call between two operands, and is surrounded by
 /// parenthesis.
 ///

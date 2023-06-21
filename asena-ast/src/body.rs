@@ -33,7 +33,6 @@ impl Do {
 }
 
 ast_enum! {
-    #[derive(Debug)]
     pub enum Body {
         Value <- TreeKind::BodyValue,
         Do    <- TreeKind::BodyDo,

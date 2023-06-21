@@ -56,8 +56,6 @@ pub mod traits {
 }
 
 pub mod stub {
-    pub mod display;
-    pub mod enum_stub;
     pub mod leaf;
     pub mod terminal;
 }
