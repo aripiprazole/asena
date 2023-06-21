@@ -9,7 +9,7 @@ use asena_span::{Loc, Spanned};
 //>>>Identifiers
 /// Identifier's key to a function (everything on the language), this can be abstracted in another
 /// identifiers. Serves as a key on a graph, or the abstract syntax tree representation.
-#[derive(Clone)]
+#[derive(Default, Clone)]
 pub struct FunctionId(pub String);
 
 impl Display for FunctionId {
@@ -25,7 +25,7 @@ impl Debug for FunctionId {
 }
 
 /// Identifier's key to a type constructor.
-#[derive(Clone)]
+#[derive(Default, Clone)]
 pub struct ConstructorId(pub Vec<Spanned<FunctionId>>);
 
 impl Debug for ConstructorId {
@@ -36,7 +36,7 @@ impl Debug for ConstructorId {
 
 /// Identifier's key to local identifier, that's not declared globally, almost everything with
 /// snake case, as a language pattern.
-#[derive(Clone)]
+#[derive(Default, Clone)]
 pub struct Local(pub Spanned<String>);
 
 impl Debug for Local {
@@ -48,7 +48,7 @@ impl Debug for Local {
 /// Identifier's key to a global identifier, that's not declared locally, almost everything with
 /// Pascal Case, as a language pattern. This can contain symbols like: `Person.new`, as it can
 /// contain `.`.
-#[derive(Leaf, Clone)]
+#[derive(Default, Leaf, Clone)]
 pub struct QualifiedPath(GreenTree);
 
 impl Debug for QualifiedPath {

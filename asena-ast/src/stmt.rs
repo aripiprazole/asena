@@ -1,5 +1,5 @@
 use asena_derive::{ast_debug, ast_leaf, Leaf};
-use asena_leaf::ast::{Cursor, GreenTree};
+use asena_leaf::ast::GreenTree;
 use asena_leaf::ast_enum;
 use asena_leaf::node::TreeKind;
 
@@ -14,12 +14,12 @@ pub struct Ask(GreenTree);
 #[ast_debug]
 impl Ask {
     #[ast_leaf]
-    pub fn pattern(&self) -> Cursor<Pat> {
+    pub fn pattern(&self) -> Pat {
         todo!()
     }
 
     #[ast_leaf]
-    pub fn value(&self) -> Cursor<Expr> {
+    pub fn value(&self) -> Expr {
         todo!()
     }
 }
@@ -31,12 +31,12 @@ pub struct Set(GreenTree);
 #[ast_debug]
 impl Set {
     #[ast_leaf]
-    pub fn pattern(&self) -> Cursor<Pat> {
+    pub fn pattern(&self) -> Pat {
         self.filter::<Pat>().first()
     }
 
     #[ast_leaf]
-    pub fn value(&self) -> Cursor<Expr> {
+    pub fn value(&self) -> Expr {
         self.filter::<Expr>().first()
     }
 }
@@ -50,7 +50,7 @@ impl Return {
     /// This is using directly [ExprRef] in the AST, because when expanded, this will generate
     /// and [Option] wrapped value.
     #[ast_leaf]
-    pub fn value(&self) -> Cursor<Expr> {
+    pub fn value(&self) -> Expr {
         todo!()
     }
 }
@@ -62,7 +62,7 @@ pub struct Eval(GreenTree);
 #[ast_debug]
 impl Eval {
     #[ast_leaf]
-    pub fn value(&self) -> Cursor<Expr> {
+    pub fn value(&self) -> Expr {
         self.filter::<Expr>().first()
     }
 }

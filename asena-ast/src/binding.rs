@@ -1,5 +1,4 @@
 use asena_derive::{ast_debug, ast_leaf, Leaf};
-use asena_leaf::ast::Cursor;
 
 use crate::*;
 
@@ -10,12 +9,12 @@ pub struct Binding(GreenTree);
 #[ast_debug]
 impl Binding {
     #[ast_leaf]
-    pub fn name(&self) -> Cursor<Local> {
+    pub fn name(&self) -> Local {
         todo!()
     }
 
     #[ast_leaf]
-    pub fn value(&self) -> Cursor<Expr> {
+    pub fn value(&self) -> Expr {
         todo!()
     }
 }

@@ -10,10 +10,10 @@ fn it_works() {
     let infix = Infix::new(parser.build_tree().unwrap());
 
     let lhs = infix.lhs();
-    let rhs = infix.rhs().as_new_node();
+    let rhs = infix.find_rhs().as_new_node();
 
-    infix.rhs().set(lhs);
-    infix.lhs().set(rhs);
+    infix.set_rhs(lhs);
+    infix.set_lhs(rhs.as_leaf());
 
     println!("{:#?}", infix);
 }

@@ -1,3 +1,4 @@
+#![feature(box_patterns)]
 #![feature(proc_macro_diagnostic)]
 
 extern crate proc_macro;
@@ -63,8 +64,44 @@ pub fn derive_leaf(input: TokenStream) -> TokenStream {
 }
 
 #[proc_macro_attribute]
+#[allow(clippy::redundant_clone)]
 pub fn ast_leaf(_args: TokenStream, input: TokenStream) -> TokenStream {
-    input
+    let mut input = parse_macro_input!(input as ItemFn);
+    let name = input.sig.ident.clone();
+    let cursor_name = Ident::new(&format!("find_{name}"), Span::call_site());
+    let output = match input.sig.output {
+        ReturnType::Default => quote!(()),
+        ReturnType::Type(_, ty) => quote!(#ty),
+    };
+
+    input.sig.output = parse(quote!(-> asena_leaf::ast::Cursor<#output>).into()).unwrap();
+
+    let mut impl_fn_tokens = input.clone();
+    impl_fn_tokens.sig.ident = Ident::new(&format!("_impl_{name}"), Span::call_site());
+
+    let mut get_fn_tokens = input.clone();
+    get_fn_tokens.sig.ident = Ident::new(&format!("{name}"), Span::call_site());
+    get_fn_tokens.sig.output = parse(quote!(-> #output).into()).unwrap();
+    get_fn_tokens.block = Box::new(parse(quote! {{self.#cursor_name().as_leaf()}}.into()).unwrap());
+
+    let mut set_fn_tokens = input.clone();
+    set_fn_tokens.sig.output = parse(quote!(-> ()).into()).unwrap();
+    set_fn_tokens
+        .sig
+        .inputs
+        .push(parse(quote!(value: #output).into()).unwrap());
+    set_fn_tokens.sig.ident = Ident::new(&format!("set_{name}"), Span::call_site());
+    set_fn_tokens.block = Box::new(parse(quote! {{todo!()}}.into()).unwrap());
+
+    let mut find_fn_tokens = input.clone();
+    find_fn_tokens.sig.ident = cursor_name;
+    find_fn_tokens.block = Box::new(parse(quote! {{todo!()}}.into()).unwrap());
+
+    TokenStream::from(quote! {
+        #get_fn_tokens
+        #set_fn_tokens
+        #find_fn_tokens
+    })
 }
 
 #[proc_macro_attribute]

@@ -1,5 +1,4 @@
 use asena_derive::{ast_debug, ast_leaf, Leaf};
-use asena_leaf::ast::Cursor;
 use asena_leaf::ast_enum;
 use asena_leaf::node::TreeKind;
 
@@ -26,23 +25,23 @@ pub struct Signature(GreenTree);
 #[ast_debug]
 impl Signature {
     #[ast_leaf]
-    pub fn name(&self) -> Cursor<QualifiedPath> {
+    pub fn name(&self) -> QualifiedPath {
         self.filter::<QualifiedPath>().first()
     }
 
     #[ast_leaf]
-    pub fn parameters(&self) -> Cursor<Vec<Parameter>> {
+    pub fn parameters(&self) -> Vec<Parameter> {
         self.filter::<Parameter>()
     }
 
     #[ast_leaf]
-    pub fn return_type(&self) -> Cursor<Type> {
+    pub fn return_type(&self) -> Type {
         self.filter::<Type>().first()
     }
 
     /// Holds, optionally the value of the [Signature], this is an sugar to [Assign].
     #[ast_leaf]
-    pub fn body(&self) -> Cursor<Vec<Stmt>> {
+    pub fn body(&self) -> Vec<Stmt> {
         self.filter::<Stmt>()
     }
 }
@@ -61,18 +60,18 @@ pub struct Assign(GreenTree);
 #[ast_debug]
 impl Assign {
     #[ast_leaf]
-    pub fn name(&self) -> Cursor<QualifiedPath> {
+    pub fn name(&self) -> QualifiedPath {
         self.filter::<QualifiedPath>().first()
     }
 
     #[ast_leaf]
-    pub fn patterns(&self) -> Cursor<Vec<Pat>> {
+    pub fn patterns(&self) -> Vec<Pat> {
         self.filter::<Pat>()
     }
 
     /// Holds the value of the [Assign].
     #[ast_leaf]
-    pub fn body(&self) -> Cursor<Expr> {
+    pub fn body(&self) -> Expr {
         self.filter::<Expr>().first()
     }
 }
@@ -91,12 +90,12 @@ pub struct Command(GreenTree);
 #[ast_debug]
 impl Command {
     #[ast_leaf]
-    pub fn name(&self) -> Cursor<QualifiedPath> {
+    pub fn name(&self) -> QualifiedPath {
         todo!()
     }
 
     #[ast_leaf]
-    pub fn arguments(&self) -> Cursor<Vec<Expr>> {
+    pub fn arguments(&self) -> Vec<Expr> {
         todo!()
     }
 }
@@ -120,17 +119,17 @@ pub struct Class(GreenTree);
 #[ast_debug]
 impl Class {
     #[ast_leaf]
-    pub fn name(&self) -> Cursor<QualifiedPath> {
+    pub fn name(&self) -> QualifiedPath {
         todo!()
     }
 
     #[ast_leaf]
-    pub fn constraints(&self) -> Cursor<Vec<Constraint>> {
+    pub fn constraints(&self) -> Vec<Constraint> {
         todo!()
     }
 
     #[ast_leaf]
-    pub fn properties(&self) -> Cursor<Vec<Property>> {
+    pub fn properties(&self) -> Vec<Property> {
         todo!()
     }
 }
@@ -148,7 +147,7 @@ pub struct Use(GreenTree);
 #[ast_debug]
 impl Use {
     #[ast_leaf]
-    pub fn path(&self) -> Cursor<QualifiedPath> {
+    pub fn path(&self) -> QualifiedPath {
         self.filter::<QualifiedPath>().first()
     }
 }
@@ -169,17 +168,17 @@ pub struct Instance(GreenTree);
 #[ast_debug]
 impl Instance {
     #[ast_leaf]
-    pub fn name(&self) -> Cursor<QualifiedPath> {
+    pub fn name(&self) -> QualifiedPath {
         todo!()
     }
 
     #[ast_leaf]
-    pub fn constraints(&self) -> Cursor<Vec<Constraint>> {
+    pub fn constraints(&self) -> Vec<Constraint> {
         todo!()
     }
 
     #[ast_leaf]
-    pub fn properties(&self) -> Cursor<Vec<Method>> {
+    pub fn properties(&self) -> Vec<Method> {
         todo!()
     }
 }
@@ -212,7 +211,7 @@ pub struct Constraint(GreenTree);
 #[ast_debug]
 impl Constraint {
     #[ast_leaf]
-    pub fn value(&self) -> Cursor<Expr> {
+    pub fn value(&self) -> Expr {
         todo!()
     }
 }
@@ -232,12 +231,12 @@ pub struct Field(GreenTree);
 #[ast_debug]
 impl Field {
     #[ast_leaf]
-    pub fn name(&self) -> Cursor<Local> {
+    pub fn name(&self) -> Local {
         todo!()
     }
 
     #[ast_leaf]
-    pub fn field_type(&self) -> Cursor<Expr> {
+    pub fn field_type(&self) -> Expr {
         todo!()
     }
 }
@@ -261,32 +260,32 @@ pub struct Method(GreenTree);
 #[ast_debug]
 impl Method {
     #[ast_leaf]
-    pub fn name(&self) -> Cursor<Local> {
+    pub fn name(&self) -> Local {
         todo!()
     }
 
     #[ast_leaf]
-    pub fn implicit_parameters(&self) -> Cursor<Vec<Parameter>> {
+    pub fn implicit_parameters(&self) -> Vec<Parameter> {
         todo!()
     }
 
     #[ast_leaf]
-    pub fn explicit_parameters(&self) -> Cursor<Vec<Parameter>> {
+    pub fn explicit_parameters(&self) -> Vec<Parameter> {
         todo!()
     }
 
     #[ast_leaf]
-    pub fn where_clauses(&self) -> Cursor<Vec<Constraint>> {
+    pub fn where_clauses(&self) -> Vec<Constraint> {
         todo!()
     }
 
     #[ast_leaf]
-    pub fn return_type(&self) -> Cursor<Option<Expr>> {
+    pub fn return_type(&self) -> Option<Expr> {
         todo!()
     }
 
     #[ast_leaf]
-    pub fn method_body(&self) -> Cursor<Body> {
+    pub fn method_body(&self) -> Body {
         todo!()
     }
 }

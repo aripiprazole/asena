@@ -24,7 +24,7 @@ impl Constructor {
     }
 
     #[ast_leaf]
-    pub fn arguments(&self) -> Vec<PatRef> {
+    pub fn arguments(&self) -> Pat {
         todo!()
     }
 }
@@ -42,7 +42,7 @@ pub struct List(GreenTree);
 #[ast_debug]
 impl List {
     #[ast_leaf]
-    pub fn items(&self) -> Vec<PatRef> {
+    pub fn items(&self) -> Vec<Pat> {
         todo!()
     }
 }

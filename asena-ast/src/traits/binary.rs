@@ -1,21 +1,21 @@
 use asena_derive::ast_leaf;
-use asena_leaf::ast::{Ast, Cursor};
+use asena_leaf::ast::Ast;
 
 use crate::*;
 
 pub trait Binary: Ast {
     #[ast_leaf]
-    fn lhs(&self) -> Cursor<Expr> {
+    fn lhs(&self) -> Expr {
         self.at(0)
     }
 
     #[ast_leaf]
-    fn fn_id(&self) -> Cursor<FunctionId> {
+    fn fn_id(&self) -> FunctionId {
         self.terminal(1)
     }
 
     #[ast_leaf]
-    fn rhs(&self) -> Cursor<Expr> {
+    fn rhs(&self) -> Expr {
         let mut rhs = self.clone();
         let Some(children) = rhs.children() else {
             return Cursor::empty();

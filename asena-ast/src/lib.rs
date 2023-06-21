@@ -2,7 +2,7 @@ use std::fmt::{Debug, Formatter};
 
 use asena_derive::{ast_debug, ast_leaf, ast_of, Leaf};
 
-use asena_leaf::ast::{Cursor, GreenTree};
+use asena_leaf::ast::GreenTree;
 
 /// Represents a true-false value, just like an wrapper to [bool], this represents if an integer
 /// value is signed, or unsigned.
@@ -19,13 +19,8 @@ pub struct AsenaFile(GreenTree);
 #[ast_of]
 #[ast_debug]
 impl AsenaFile {
-    // fn declarations(&self) -> Vec<Decl>
-    //
-    // fn set_declarations(&self, value: Vec<Decl>)
-    //
-    // fn find_declarations(&self) -> Cursor<Vec<Decl>>
     #[ast_leaf]
-    pub fn declarations(&self) -> Cursor<Vec<Decl>> {
+    pub fn declarations(&self) -> Vec<Decl> {
         self.filter()
     }
 }

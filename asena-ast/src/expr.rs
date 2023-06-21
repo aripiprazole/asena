@@ -1,7 +1,4 @@
-use std::ops::Deref;
-
 use asena_derive::{ast_debug, ast_leaf, Leaf};
-use asena_leaf::ast::Cursor;
 use asena_leaf::ast_enum;
 use asena_leaf::node::TreeKind;
 
@@ -16,8 +13,9 @@ use crate::*;
 /// ```
 ///
 /// B is a [Type].
-#[derive(Clone)]
+#[derive(Default, Clone)]
 pub enum Type {
+    #[default]
     Infer, // _
     Explicit(Expr),
 }
@@ -45,7 +43,7 @@ pub struct Group(GreenTree);
 #[ast_debug]
 impl Group {
     #[ast_leaf]
-    pub fn value(&self) -> Cursor<Expr> {
+    pub fn value(&self) -> Expr {
         self.at(1)
     }
 }
@@ -119,12 +117,12 @@ pub struct App(GreenTree);
 #[ast_debug]
 impl App {
     #[ast_leaf]
-    pub fn callee(&self) -> Cursor<Expr> {
+    pub fn callee(&self) -> Expr {
         self.at(0)
     }
 
     #[ast_leaf]
-    pub fn argument(&self) -> Cursor<Expr> {
+    pub fn argument(&self) -> Expr {
         self.at(1)
     }
 }
@@ -149,17 +147,17 @@ pub struct Dsl(GreenTree);
 #[ast_debug]
 impl Dsl {
     #[ast_leaf]
-    pub fn callee(&self) -> Cursor<Expr> {
+    pub fn callee(&self) -> Expr {
         todo!()
     }
 
     #[ast_leaf]
-    pub fn parameters(&self) -> Cursor<Vec<Parameter>> {
+    pub fn parameters(&self) -> Vec<Parameter> {
         todo!()
     }
 
     #[ast_leaf]
-    pub fn block(&self) -> Cursor<Vec<Stmt>> {
+    pub fn block(&self) -> Vec<Stmt> {
         todo!()
     }
 }
@@ -178,7 +176,7 @@ pub struct Array(GreenTree);
 #[ast_debug]
 impl Array {
     #[ast_leaf]
-    pub fn items(&self) -> Cursor<Vec<Expr>> {
+    pub fn items(&self) -> Vec<Expr> {
         self.filter::<Expr>()
     }
 }
@@ -206,12 +204,12 @@ pub struct Lam(GreenTree);
 #[ast_debug]
 impl Lam {
     #[ast_leaf]
-    pub fn parameters(&self) -> Cursor<Vec<Local>> {
+    pub fn parameters(&self) -> Vec<Local> {
         todo!()
     }
 
     #[ast_leaf]
-    pub fn value(&self) -> Cursor<Expr> {
+    pub fn value(&self) -> Expr {
         todo!()
     }
 }
@@ -231,12 +229,12 @@ pub struct Let(GreenTree);
 #[ast_debug]
 impl Let {
     #[ast_leaf]
-    pub fn bindings(&self) -> Vec<Cursor<Binding>> {
+    pub fn bindings(&self) -> Vec<Binding> {
         todo!()
     }
 
     #[ast_leaf]
-    pub fn in_value(&self) -> Cursor<Expr> {
+    pub fn in_value(&self) -> Expr {
         todo!()
     }
 }
@@ -255,12 +253,12 @@ pub struct Ann(GreenTree);
 #[ast_debug]
 impl Ann {
     #[ast_leaf]
-    pub fn value(&self) -> Cursor<Expr> {
+    pub fn value(&self) -> Expr {
         todo!()
     }
 
     #[ast_leaf]
-    pub fn against(&self) -> Cursor<Expr> {
+    pub fn against(&self) -> Expr {
         todo!()
     }
 }
@@ -308,28 +306,28 @@ pub struct Pi(GreenTree);
 #[ast_debug]
 impl Pi {
     #[ast_leaf]
-    pub fn parameter_name(&self) -> Option<Cursor<Local>> {
+    pub fn parameter_name(&self) -> Option<Local> {
         if self.has("parameter_name") {
             let fn_id = self.named_terminal::<FunctionId>("parameter_name")?;
 
-            Some(Cursor::new(fn_id))
+            Cursor::new(fn_id)
         } else {
-            None
+            Cursor::empty()
         }
     }
 
     #[ast_leaf]
-    pub fn parameter_type(&self) -> Cursor<Expr> {
-        if self.parameter_name().is_some() {
-            self.named_at("parameter_type")
-        } else {
+    pub fn parameter_type(&self) -> Expr {
+        if self.parameter_name().is_empty() {
             self.at(0)
+        } else {
+            self.named_at("parameter_type")
         }
     }
 
     #[ast_leaf]
-    pub fn return_type(&self) -> Cursor<Expr> {
-        if self.parameter_name().is_some() {
+    pub fn return_type(&self) -> Expr {
+        if !self.parameter_name().is_empty() {
             return self.named_at("return_type");
         }
 
@@ -379,19 +377,19 @@ pub struct Sigma(GreenTree);
 #[ast_debug]
 impl Sigma {
     #[ast_leaf]
-    pub fn parameter_name(&self) -> Cursor<Local> {
+    pub fn parameter_name(&self) -> Local {
         let fn_id = self.named_terminal::<FunctionId>("parameter_name")?;
 
         Cursor::new(fn_id)
     }
 
     #[ast_leaf]
-    pub fn parameter_type(&self) -> Cursor<Expr> {
+    pub fn parameter_type(&self) -> Expr {
         self.named_at("parameter_type")
     }
 
     #[ast_leaf]
-    pub fn return_type(&self) -> Cursor<Expr> {
+    pub fn return_type(&self) -> Expr {
         self.named_at("parameter_type")
     }
 }
@@ -404,7 +402,7 @@ pub struct Help(GreenTree);
 #[ast_debug]
 impl Help {
     #[ast_leaf]
-    pub fn value(&self) -> Cursor<Expr> {
+    pub fn value(&self) -> Expr {
         self.at(0)
     }
 }
