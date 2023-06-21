@@ -7,7 +7,6 @@ members = [
   "asena-leaf",
   "asena-lexer",
   "asena-parser",
-  "asena-query",
   "asena-report",
   "asena-span",
 ]
