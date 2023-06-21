@@ -1,4 +1,4 @@
-use asena_derive::{ast_leaf, Leaf};
+use asena_derive::{ast_debug, ast_leaf, Leaf};
 use asena_leaf::ast::Cursor;
 use asena_leaf::ast_enum;
 use asena_leaf::node::TreeKind;
@@ -22,7 +22,7 @@ use crate::*;
 #[derive(Leaf, Clone)]
 pub struct Signature(GreenTree);
 
-#[ast_class]
+#[ast_debug]
 impl Signature {
     #[ast_leaf]
     pub fn name(&self) -> Cursor<QualifiedPath> {
@@ -56,7 +56,7 @@ impl Signature {
 #[derive(Leaf, Clone)]
 pub struct Assign(GreenTree);
 
-#[ast_class]
+#[ast_debug]
 impl Assign {
     #[ast_leaf]
     pub fn name(&self) -> Cursor<QualifiedPath> {
@@ -85,7 +85,7 @@ impl Assign {
 #[derive(Leaf, Clone)]
 pub struct Command(GreenTree);
 
-#[ast_class]
+#[ast_debug]
 impl Command {
     #[ast_leaf]
     pub fn name(&self) -> Cursor<QualifiedPath> {
@@ -113,7 +113,7 @@ impl Command {
 #[derive(Leaf, Clone)]
 pub struct Class(GreenTree);
 
-#[ast_class]
+#[ast_debug]
 impl Class {
     #[ast_leaf]
     pub fn name(&self) -> Cursor<QualifiedPath> {
@@ -140,7 +140,7 @@ impl Class {
 #[derive(Leaf, Clone)]
 pub struct Use(GreenTree);
 
-#[ast_class]
+#[ast_debug]
 impl Use {
     #[ast_leaf]
     pub fn path(&self) -> Cursor<QualifiedPath> {
@@ -160,7 +160,7 @@ impl Use {
 #[derive(Leaf, Clone)]
 pub struct Instance(GreenTree);
 
-#[ast_class]
+#[ast_debug]
 impl Instance {
     #[ast_leaf]
     pub fn name(&self) -> Cursor<QualifiedPath> {
@@ -202,7 +202,7 @@ pub type DeclRef = Spanned<Decl>;
 #[derive(Leaf, Clone)]
 pub struct Constraint(GreenTree);
 
-#[ast_class]
+#[ast_debug]
 impl Constraint {
     #[ast_leaf]
     pub fn value(&self) -> Cursor<Expr> {
@@ -221,7 +221,7 @@ impl Constraint {
 #[derive(Leaf, Clone)]
 pub struct Field(GreenTree);
 
-#[ast_class]
+#[ast_debug]
 impl Field {
     #[ast_leaf]
     pub fn name(&self) -> Cursor<Local> {
@@ -249,7 +249,7 @@ impl Field {
 #[derive(Leaf, Clone)]
 pub struct Method(GreenTree);
 
-#[ast_class]
+#[ast_debug]
 impl Method {
     #[ast_leaf]
     pub fn name(&self) -> Cursor<Local> {

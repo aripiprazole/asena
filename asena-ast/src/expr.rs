@@ -1,6 +1,6 @@
 use std::ops::Deref;
 
-use asena_derive::{ast_leaf, Leaf};
+use asena_derive::{ast_debug, ast_leaf, Leaf};
 use asena_leaf::ast::Cursor;
 use asena_leaf::ast_enum;
 use asena_leaf::node::TreeKind;
@@ -32,7 +32,7 @@ pub enum Type {
 #[derive(Leaf, Clone)]
 pub struct Group(GreenTree);
 
-#[ast_class]
+#[ast_debug]
 impl Group {
     #[ast_leaf]
     pub fn value(&self) -> Cursor<Expr> {
@@ -62,6 +62,16 @@ impl Group {
 #[derive(Leaf, Clone)]
 pub struct Infix(GreenTree);
 
+impl Debug for Infix {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Infix")
+            .field("lhs", &self.lhs())
+            .field("fn_id", &self.fn_id())
+            .field("rhs", &self.rhs())
+            .finish()
+    }
+}
+
 /// Accessor expression, is an expression that is an accessor to a field in a struct, it can be
 /// represented by [GlobalId], since it can hold `.` too.
 ///
@@ -71,6 +81,16 @@ pub struct Infix(GreenTree);
 /// ```
 #[derive(Leaf, Clone)]
 pub struct Accessor(GreenTree);
+
+impl Debug for Accessor {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Accessor")
+            .field("lhs", &self.lhs())
+            .field("fn_id", &self.fn_id())
+            .field("rhs", &self.rhs())
+            .finish()
+    }
+}
 
 /// Application expression, is an expression that is simply a function application (or a call),
 /// they're both expressions
@@ -85,7 +105,7 @@ pub struct Accessor(GreenTree);
 #[derive(Leaf, Clone)]
 pub struct App(GreenTree);
 
-#[ast_class]
+#[ast_debug]
 impl App {
     #[ast_leaf]
     pub fn callee(&self) -> Cursor<Expr> {
@@ -114,7 +134,7 @@ impl App {
 #[derive(Leaf, Clone)]
 pub struct Dsl(GreenTree);
 
-#[ast_class]
+#[ast_debug]
 impl Dsl {
     #[ast_leaf]
     pub fn callee(&self) -> Cursor<Expr> {
@@ -142,7 +162,7 @@ impl Dsl {
 #[derive(Leaf, Clone)]
 pub struct Array(GreenTree);
 
-#[ast_class]
+#[ast_debug]
 impl Array {
     #[ast_leaf]
     pub fn items(&self) -> Cursor<Vec<Expr>> {
@@ -169,7 +189,7 @@ impl Array {
 #[derive(Leaf, Clone)]
 pub struct Lam(GreenTree);
 
-#[ast_class]
+#[ast_debug]
 impl Lam {
     #[ast_leaf]
     pub fn parameters(&self) -> Cursor<Vec<Local>> {
@@ -193,7 +213,7 @@ impl Lam {
 #[derive(Leaf, Clone)]
 pub struct Let(GreenTree);
 
-#[ast_class]
+#[ast_debug]
 impl Let {
     #[ast_leaf]
     pub fn bindings(&self) -> Vec<Cursor<Binding>> {
@@ -216,7 +236,7 @@ impl Let {
 #[derive(Leaf, Clone)]
 pub struct Ann(GreenTree);
 
-#[ast_class]
+#[ast_debug]
 impl Ann {
     #[ast_leaf]
     pub fn value(&self) -> Cursor<Expr> {
@@ -244,6 +264,16 @@ impl Ann {
 #[derive(Leaf, Clone)]
 pub struct Qual(GreenTree);
 
+impl Debug for Qual {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Qual")
+            .field("lhs", &self.lhs())
+            .field("fn_id", &self.fn_id())
+            .field("rhs_id", &self.rhs())
+            .finish()
+    }
+}
+
 /// Pi expression, is a dependent type expression, that abstracts a type into another return type.
 ///
 /// The syntax is like:
@@ -258,7 +288,7 @@ pub struct Qual(GreenTree);
 #[derive(Leaf, Clone)]
 pub struct Pi(GreenTree);
 
-#[ast_class]
+#[ast_debug]
 impl Pi {
     #[ast_leaf]
     pub fn parameter_name(&self) -> Option<Cursor<Local>> {
@@ -328,7 +358,7 @@ impl Pi {
 #[derive(Leaf, Clone)]
 pub struct Sigma(GreenTree);
 
-#[ast_class]
+#[ast_debug]
 impl Sigma {
     #[ast_leaf]
     pub fn parameter_name(&self) -> Cursor<Local> {
@@ -352,7 +382,7 @@ impl Sigma {
 #[derive(Leaf, Clone)]
 pub struct Help(GreenTree);
 
-#[ast_class]
+#[ast_debug]
 impl Help {
     #[ast_leaf]
     pub fn value(&self) -> Cursor<Expr> {

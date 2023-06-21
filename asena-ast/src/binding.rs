@@ -1,4 +1,4 @@
-use asena_derive::{ast_leaf, Leaf};
+use asena_derive::{ast_debug, ast_leaf, Leaf};
 use asena_leaf::ast::Cursor;
 
 use crate::*;
@@ -6,7 +6,7 @@ use crate::*;
 #[derive(Leaf, Clone)]
 pub struct Binding(GreenTree);
 
-#[ast_class]
+#[ast_debug]
 impl Binding {
     #[ast_leaf]
     pub fn name(&self) -> Cursor<Local> {

@@ -1,4 +1,4 @@
-use asena_derive::{ast_leaf, Leaf};
+use asena_derive::{ast_debug, ast_leaf, Leaf};
 use asena_leaf::ast_enum;
 use asena_leaf::node::TreeKind;
 
@@ -15,7 +15,7 @@ use crate::*;
 #[derive(Leaf, Clone)]
 pub struct Constructor(GreenTree);
 
-#[ast_class]
+#[ast_debug]
 impl Constructor {
     #[ast_leaf]
     pub fn name(&self) -> ConstructorId {
@@ -37,7 +37,7 @@ impl Constructor {
 #[derive(Leaf, Clone)]
 pub struct List(GreenTree);
 
-#[ast_class]
+#[ast_debug]
 impl List {
     #[ast_leaf]
     pub fn items(&self) -> Vec<PatRef> {
@@ -55,9 +55,21 @@ impl List {
 #[derive(Leaf, Clone)]
 pub struct Spread(GreenTree);
 
+impl Debug for Spread {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Spread").finish()
+    }
+}
+
 /// Wildcard pattern, is the same as `_` pattern [Pat::Local]
 #[derive(Leaf, Clone)]
 pub struct Wildcard(GreenTree);
+
+impl Debug for Wildcard {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Wildcard").finish()
+    }
+}
 
 ast_enum! {
     pub enum Pat {

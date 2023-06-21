@@ -41,6 +41,11 @@ impl<'a> Parser<'a> {
             events: Default::default(),
         }
     }
+
+    pub fn run(mut self, grammar: fn(&mut Parser)) -> Self {
+        grammar(&mut self);
+        self
+    }
 }
 
 impl<'a> From<Lexer<'a>> for Parser<'a> {

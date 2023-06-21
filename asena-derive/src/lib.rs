@@ -4,7 +4,7 @@ extern crate proc_macro;
 
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, Data::Struct, DeriveInput};
+use syn::{Data::Struct, *};
 
 #[proc_macro_derive(Leaf)]
 pub fn derive_leaf(input: TokenStream) -> TokenStream {
@@ -67,6 +67,60 @@ pub fn ast_leaf(_args: TokenStream, input: TokenStream) -> TokenStream {
 }
 
 #[proc_macro_attribute]
-pub fn ast_class(_args: TokenStream, input: TokenStream) -> TokenStream {
-    input
+pub fn ast_debug(_args: TokenStream, input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as ItemImpl);
+
+    #[allow(clippy::redundant_clone)]
+    let self_ty = input.self_ty.clone();
+
+    let leaf_properties = input.items.iter().filter_map(|next| match next {
+        ImplItem::Fn(item) => {
+            let node_leaf_attr = item.attrs.iter().find_map(|a| match a.meta {
+                Meta::Path(ref name) if name.is_ident("ast_leaf") => Some(name.clone()),
+                _ => None,
+            });
+
+            node_leaf_attr.as_ref()?;
+
+            let name = item.sig.ident.clone();
+            let leaf_type = match item.sig.output.clone() {
+                ReturnType::Type(_, value) => quote! { #value },
+                ReturnType::Default => quote! { () },
+            };
+            let parameters = item.sig.inputs.clone().into_iter().collect::<Vec<_>>();
+
+            if let None | Some(FnArg::Typed(..)) = parameters.first().cloned() {
+                name.span()
+                    .unwrap()
+                    .error("The first argument of a `ast_leaf` function should be the receiver");
+            }
+
+            Some(NodeLeaf { name, leaf_type })
+        }
+        _ => None,
+    });
+
+    let debug_code = leaf_properties.fold(quote!(), |acc, next| {
+        let name = next.name.to_string();
+        let value = next.name;
+        quote! { #acc debug_struct.field(#name, &self.#value()); }
+    });
+
+    TokenStream::from(quote! {
+        #input
+
+        impl std::fmt::Debug for #self_ty {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                let mut debug_struct = f.debug_struct(stringify!(#self_ty));
+                #debug_code
+                debug_struct.finish()
+            }
+        }
+    })
+}
+
+#[allow(dead_code)]
+struct NodeLeaf {
+    name: Ident,
+    leaf_type: proc_macro2::TokenStream,
 }

@@ -1,4 +1,4 @@
-use asena_derive::{ast_leaf, Leaf};
+use asena_derive::{ast_debug, ast_leaf, Leaf};
 
 use asena_leaf::ast::{Cursor, GreenTree};
 use asena_leaf::token::TokenKind;
@@ -8,7 +8,7 @@ use crate::*;
 #[derive(Leaf, Clone)]
 pub struct Parameter(GreenTree);
 
-#[ast_class]
+#[ast_debug]
 impl Parameter {
     /// Optional parameter's name
     #[ast_leaf]

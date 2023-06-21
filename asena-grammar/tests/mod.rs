@@ -6,10 +6,7 @@ use asena_parser::Parser;
 #[test]
 fn it_works() {
     let code = "53 + 75 + 42";
-
-    let mut parser = Parser::from(Lexer::new(code));
-    asena_grammar::expr(&mut parser);
-
+    let parser = Parser::from(Lexer::new(code)).run(asena_grammar::expr);
     let infix = Infix::new(parser.build_tree().unwrap());
 
     let lhs = infix.lhs();
@@ -24,21 +21,17 @@ fn it_works() {
 #[test]
 fn simple() {
     let code = include_str!("simple.ase");
-
-    let mut parser = Parser::from(Lexer::new(code));
-    asena_grammar::file(&mut parser);
+    let parser = Parser::from(Lexer::new(code)).run(asena_grammar::file);
     let file = parser.build_tree().unwrap();
-    println!("{:#?}", file);
 
+    println!("{:#?}", file);
     println!("{:#?}", AsenaFile::new(file));
 }
 
 #[test]
 fn sig_decl() {
     let code = "some_proof : 10 := 10 { proof }";
-
-    let mut parser = Parser::from(Lexer::new(code));
-    asena_grammar::decl(&mut parser);
+    let parser = Parser::from(Lexer::new(code)).run(asena_grammar::decl);
 
     println!("{:#?}", parser.build_tree().unwrap());
 }
@@ -46,9 +39,7 @@ fn sig_decl() {
 #[test]
 fn lam_expr() {
     let code = "\\a b -> c";
-
-    let mut parser = Parser::from(Lexer::new(code));
-    asena_grammar::expr(&mut parser);
+    let parser = Parser::from(Lexer::new(code)).run(asena_grammar::expr);
 
     println!("{:#?}", parser.build_tree().unwrap());
 }
@@ -56,9 +47,7 @@ fn lam_expr() {
 #[test]
 fn sigma_expr() {
     let code = "(awa {})";
-
-    let mut parser = Parser::from(Lexer::new(code));
-    asena_grammar::expr(&mut parser);
+    let parser = Parser::from(Lexer::new(code)).run(asena_grammar::expr);
 
     println!("{:#?}", parser.build_tree().unwrap());
 }
@@ -66,9 +55,7 @@ fn sigma_expr() {
 #[test]
 fn unicode_expr() {
     let code = "Π (d: t) -> (e Π =>)";
-
-    let mut parser = Parser::from(Lexer::new(code));
-    asena_grammar::expr(&mut parser);
+    let parser = Parser::from(Lexer::new(code)).run(asena_grammar::expr);
 
     println!("{:#?}", parser.build_tree().unwrap());
 }
@@ -76,10 +63,7 @@ fn unicode_expr() {
 #[test]
 fn qual_app_expr() {
     let code = "a b => a b";
-
-    let mut parser = Parser::from(Lexer::new(code));
-    asena_grammar::expr(&mut parser);
-
+    let parser = Parser::from(Lexer::new(code)).run(asena_grammar::expr);
     let tree = parser.build_tree().unwrap();
 
     println!("{:#?}", Expr::make(tree));
@@ -88,10 +72,7 @@ fn qual_app_expr() {
 #[test]
 fn app_expr() {
     let code = "a (@ b)";
-
-    let mut parser = Parser::from(Lexer::new(code));
-    asena_grammar::expr(&mut parser);
-
+    let parser = Parser::from(Lexer::new(code)).run(asena_grammar::expr);
     let tree = parser.build_tree().unwrap();
 
     println!("{:#?}", Expr::make(tree));
@@ -100,9 +81,7 @@ fn app_expr() {
 #[test]
 fn qual_expr() {
     let code = "a => b";
-
-    let mut parser = Parser::from(Lexer::new(code));
-    asena_grammar::expr(&mut parser);
+    let parser = Parser::from(Lexer::new(code)).run(asena_grammar::expr);
 
     println!("{:#?}", parser.build_tree().data());
 }
@@ -110,10 +89,7 @@ fn qual_expr() {
 #[test]
 fn group_expr() {
     let code = "(1 + 2)";
-
-    let mut parser = Parser::from(Lexer::new(code));
-    asena_grammar::expr(&mut parser);
-
+    let parser = Parser::from(Lexer::new(code)).run(asena_grammar::expr);
     let tree = parser.build_tree().unwrap();
 
     println!("{:#?}", Expr::make(tree));
@@ -122,10 +98,7 @@ fn group_expr() {
 #[test]
 fn pi_expr() {
     let code = "(a: t) -> (b: t) -> a b";
-
-    let mut parser = Parser::from(Lexer::new(code));
-    asena_grammar::expr(&mut parser);
-
+    let parser = Parser::from(Lexer::new(code)).run(asena_grammar::expr);
     let tree = parser.build_tree().unwrap();
 
     println!("{:#?}", Expr::make(tree));
@@ -134,10 +107,7 @@ fn pi_expr() {
 #[test]
 fn anonymous_pi_expr() {
     let code = "m -> a -> m a";
-
-    let mut parser = Parser::from(Lexer::new(code));
-    asena_grammar::expr(&mut parser);
-
+    let parser = Parser::from(Lexer::new(code)).run(asena_grammar::expr);
     let tree = parser.build_tree().unwrap();
 
     println!("{:#?}", Expr::make(tree));
@@ -146,10 +116,7 @@ fn anonymous_pi_expr() {
 #[test]
 fn ask_stmt() {
     let code = "do { (Just a) <- findUser 105 }";
-
-    let mut parser = Parser::from(Lexer::new(code));
-    asena_grammar::stmt(&mut parser);
-
+    let parser = Parser::from(Lexer::new(code)).run(asena_grammar::stmt);
     let tree = parser.build_tree().unwrap();
 
     println!("{:#?}", tree);

@@ -70,7 +70,7 @@ impl<T: Leaf> Cursor<T> {
         }
     }
 
-    pub fn as_leaf(&self) -> Option<T>
+    pub fn try_as_leaf(&self) -> Option<T>
     where
         T: Clone,
     {
@@ -78,6 +78,13 @@ impl<T: Leaf> Cursor<T> {
             GreenTree::Leaf { data, .. } => T::make(data),
             GreenTree::Error => None,
         }
+    }
+
+    pub fn as_leaf(&self) -> T
+    where
+        T: Clone + Default,
+    {
+        self.try_as_leaf().unwrap_or_default()
     }
 
     pub fn is_empty(&self) -> bool {
