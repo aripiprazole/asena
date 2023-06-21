@@ -41,7 +41,7 @@ impl<T: Leaf> Leaf for Option<T> {
 }
 
 impl<T: Leaf> Leaf for Vec<T> {
-    fn make(tree: Spanned<Tree>) -> Option<Self> {
+    fn make(_tree: Spanned<Tree>) -> Option<Self> {
         todo!()
     }
 }

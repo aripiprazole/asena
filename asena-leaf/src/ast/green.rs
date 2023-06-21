@@ -173,28 +173,3 @@ impl From<Spanned<Tree>> for GreenTree {
         GreenTree::new(value)
     }
 }
-
-fn compute_named_children(tree: &GreenTree) -> HashMap<LeafKey, Spanned<Child>> {
-    let GreenTree::Leaf { data, .. } = tree else {
-        return HashMap::new();
-    };
-
-    let mut named_children = HashMap::new();
-
-    for child in &data.children {
-        match child.value() {
-            Child::Tree(tree) => {
-                if let Some(name) = tree.name {
-                    named_children.insert(name, child.clone());
-                }
-            }
-            Child::Token(token) => {
-                if let Some(name) = token.name {
-                    named_children.insert(name, child.clone());
-                }
-            }
-        }
-    }
-
-    named_children
-}

@@ -24,9 +24,12 @@ impl<T: Leaf> Cursor<T> {
     }
 
     pub fn new<I: Into<GreenTree>>(value: I) -> Self {
+        let tree: GreenTree = value.into();
+        let children = compute_named_children(&tree);
+
         Self {
-            value: Arc::new(RefCell::new(Value::Ref(value.into()))),
-            children: Default::default(),
+            value: Arc::new(RefCell::new(Value::Ref(tree))),
+            children,
         }
     }
 
@@ -35,10 +38,14 @@ impl<T: Leaf> Cursor<T> {
         T: Clone,
     {
         let new_value = self.value.borrow().clone();
+        let children = match new_value {
+            Value::Ref(ref tree) => compute_named_children(tree),
+            Value::Value(..) => Default::default(),
+        };
 
         Self {
             value: Arc::new(RefCell::new(new_value)),
-            children: Default::default(),
+            children,
         }
     }
 
@@ -76,7 +83,7 @@ impl<T: Leaf> Cursor<Vec<T>> {
 }
 
 impl<T: Leaf> From<Vec<T>> for Cursor<Vec<T>> {
-    fn from(value: Vec<T>) -> Self {
+    fn from(_value: Vec<T>) -> Self {
         todo!()
     }
 }
@@ -144,4 +151,29 @@ impl<T: Leaf + IntoGreenTree> Try for Cursor<T> {
             }
         }
     }
+}
+
+fn compute_named_children(tree: &GreenTree) -> HashMap<LeafKey, Spanned<Child>> {
+    let GreenTree::Leaf { data, .. } = tree else {
+        return HashMap::new();
+    };
+
+    let mut named_children = HashMap::new();
+
+    for child in &data.children {
+        match child.value() {
+            Child::Tree(tree) => {
+                if let Some(name) = tree.name {
+                    named_children.insert(name, child.clone());
+                }
+            }
+            Child::Token(token) => {
+                if let Some(name) = token.name {
+                    named_children.insert(name, child.clone());
+                }
+            }
+        }
+    }
+
+    named_children
 }
