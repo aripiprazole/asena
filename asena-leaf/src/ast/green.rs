@@ -35,9 +35,9 @@ impl GreenTree {
 
     pub fn memoize<F, T: Leaf + Clone + 'static>(&self, name: &'static str, f: F) -> Cursor<T>
     where
-        F: Fn(&Spanned<Tree>) -> Cursor<T>,
+        F: Fn(&Self) -> Cursor<T>,
     {
-        let Self::Leaf { data, names, .. } = self else {
+        let tree @ Self::Leaf { names, .. } = self else {
             return Cursor::empty();
         };
 
@@ -45,7 +45,7 @@ impl GreenTree {
             return x.downcast_ref::<Cursor<T>>().unwrap().clone();
         }
 
-        let cursor = f(data);
+        let cursor = f(tree);
         names.borrow_mut().insert(name, Box::new(cursor.clone()));
         cursor
     }

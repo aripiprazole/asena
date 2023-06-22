@@ -105,8 +105,20 @@ pub fn ast_leaf(_args: TokenStream, input: TokenStream) -> TokenStream {
     );
 
     let mut find_fn_tokens = input.clone();
+    let key_name = name.to_string();
     find_fn_tokens.sig.ident = cursor_name;
-    find_fn_tokens.block = Box::new(parse(quote! {{ self.#impl_name() }}.into()).unwrap());
+    find_fn_tokens.block = Box::new(
+        parse(
+            quote! {{
+               self.memoize(#key_name, |this| {
+                   let this = Self::new(this.clone());
+                   this.#impl_name()
+               })
+            }}
+            .into(),
+        )
+        .unwrap(),
+    );
 
     TokenStream::from(quote! {
         #impl_fn_tokens
