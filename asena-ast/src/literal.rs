@@ -1,4 +1,10 @@
-use crate::Signed;
+use std::fmt::Debug;
+
+use asena_leaf::ast::Terminal;
+use asena_leaf::token::{Token, TokenKind::*};
+use asena_span::Spanned;
+
+use crate::Signed::{self, *};
 
 /// Represents a language literal construct, can hold numbers, strings, booleans, etc.
 #[derive(Default, Clone)]
@@ -25,7 +31,38 @@ pub enum Literal {
     Error,
 }
 
-impl std::fmt::Debug for Literal {
+impl Terminal for Literal {
+    fn terminal(from: Spanned<Token>) -> Option<Self> {
+        let text = from.text.clone();
+
+        match from.kind {
+            Nat => text.parse().map(Self::Nat).ok(),
+            Int8 => text.parse().map(|value| Self::Int8(value, Signed)).ok(),
+            UInt8 => text.parse().map(|value| Self::Int8(value, Unsigned)).ok(),
+            Int16 => text.parse().map(|value| Self::Int16(value, Signed)).ok(),
+            UInt16 => text.parse().map(|value| Self::Int16(value, Unsigned)).ok(),
+            Int32 => text.parse().map(|value| Self::Int32(value, Signed)).ok(),
+            UInt32 => text.parse().map(|value| Self::Int32(value, Unsigned)).ok(),
+            Int64 => text.parse().map(|value| Self::Int64(value, Signed)).ok(),
+            UInt64 => text.parse().map(|value| Self::Int64(value, Unsigned)).ok(),
+            Int128 => text.parse().map(|value| Self::Int128(value, Signed)).ok(),
+            UInt128 => text.parse().map(|value| Self::Int128(value, Unsigned)).ok(),
+            Float64 => text.parse().map(Self::Float64).ok(),
+            Float32 => text.parse().map(Self::Float32).ok(),
+            TrueKeyword => Some(Self::True),
+            FalseKeyword => Some(Self::False),
+            Str => {
+                let text = &from.text[1..(text.len() - 1)];
+                let text = text.to_string();
+
+                Some(Self::String(text))
+            }
+            _ => None,
+        }
+    }
+}
+
+impl Debug for Literal {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Error => write!(f, "Error"),

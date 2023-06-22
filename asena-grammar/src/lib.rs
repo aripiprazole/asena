@@ -173,7 +173,7 @@ pub fn stmt_expr(p: &mut Parser) {
 pub fn type_expr(p: &mut Parser) {
     let m = p.open();
     expr(p);
-    p.close(m, Type);
+    p.close(m, TypeExplicit);
 }
 
 /// Expr =
@@ -537,7 +537,7 @@ pub fn pat(p: &mut Parser) -> Option<MarkClosed> {
 /// | Float 'f64'? | 'true' | 'false'
 pub fn lit(p: &mut Parser, kind: TreeKind) -> Option<MarkClosed> {
     let result = match p.lookahead(0) {
-        String => p.terminal(kind),
+        Str => p.terminal(kind),
         TrueKeyword => p.terminal(kind),
         FalseKeyword => p.terminal(kind),
         Int8 => p.terminal(kind),

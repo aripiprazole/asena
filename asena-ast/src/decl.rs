@@ -1,6 +1,7 @@
 use asena_derive::{ast_debug, ast_leaf, Leaf};
+use asena_leaf::ast::Leaf;
 use asena_leaf::ast_enum;
-use asena_leaf::node::TreeKind;
+use asena_leaf::node::{Tree, TreeKind::*};
 
 use asena_span::Spanned;
 
@@ -185,12 +186,26 @@ impl Instance {
 
 ast_enum! {
     pub enum Decl {
-        Use       <- TreeKind::DeclUse,
-        Signature <- TreeKind::DeclSignature,
-        Assign    <- TreeKind::DeclAssign,
-        Command   <- TreeKind::DeclCommand,
-        Class     <- TreeKind::DeclClass,
-        Instance  <- TreeKind::DeclInstance,
+        Use       <- DeclUse,
+        Signature <- DeclSignature,
+        Assign    <- DeclAssign,
+        Command   <- DeclCommand,
+        Class     <- DeclClass,
+        Instance  <- DeclInstance,
+    }
+}
+
+impl Leaf for Decl {
+    fn make(tree: Spanned<Tree>) -> Option<Self> {
+        Some(match tree.kind {
+            DeclUse => Self::Use(Use::new(tree)),
+            DeclSignature => Self::Signature(Signature::new(tree)),
+            DeclAssign => Self::Assign(Assign::new(tree)),
+            DeclCommand => Self::Command(Command::new(tree)),
+            DeclClass => Self::Class(Class::new(tree)),
+            DeclInstance => Self::Instance(Instance::new(tree)),
+            _ => return None,
+        })
     }
 }
 
@@ -212,6 +227,12 @@ pub struct Constraint(GreenTree);
 impl Constraint {
     #[ast_leaf]
     pub fn value(&self) -> Expr {
+        todo!()
+    }
+}
+
+impl Leaf for Constraint {
+    fn make(_tree: Spanned<Tree>) -> Option<Self> {
         todo!()
     }
 }
@@ -290,9 +311,21 @@ impl Method {
     }
 }
 
+impl Leaf for Method {
+    fn make(_tree: Spanned<Tree>) -> Option<Self> {
+        todo!()
+    }
+}
+
 ast_enum! {
     pub enum Property {
-        Field  <- TreeKind::Field,
-        Method <- TreeKind::Method,
+        Field  <- PropertyField,
+        Method <- PropertyMethod,
+    }
+}
+
+impl Leaf for Property {
+    fn make(_tree: Spanned<Tree>) -> Option<Self> {
+        todo!()
     }
 }

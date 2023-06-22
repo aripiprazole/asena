@@ -1,7 +1,7 @@
 use asena_derive::{ast_debug, ast_leaf, Leaf};
-use asena_leaf::ast::GreenTree;
+use asena_leaf::ast::{GreenTree, Leaf};
 use asena_leaf::ast_enum;
-use asena_leaf::node::TreeKind;
+use asena_leaf::node::{Tree, TreeKind::*};
 
 use asena_span::Spanned;
 
@@ -69,10 +69,22 @@ impl Eval {
 
 ast_enum! {
     pub enum Stmt {
-        Ask    <- TreeKind::StmtAsk,    // <local_id> <- <expr>
-        Set    <- TreeKind::StmtLet,    // let <local_id> = <expr>
-        Return <- TreeKind::StmtReturn, // return <expr?>
-        Eval   <- TreeKind::StmtExpr,   // <expr?>
+        Ask    <- StmtAsk,    // <local_id> <- <expr>
+        Set    <- StmtLet,    // let <local_id> = <expr>
+        Return <- StmtReturn, // return <expr?>
+        Eval   <- StmtExpr,   // <expr?>
+    }
+}
+
+impl Leaf for Stmt {
+    fn make(tree: Spanned<Tree>) -> Option<Self> {
+        Some(match tree.kind {
+            StmtExpr => Self::Eval(Eval::new(tree)),
+            StmtLet => Self::Set(Set::new(tree)),
+            StmtAsk => Self::Ask(Ask::new(tree)),
+            StmtReturn => Self::Return(Return::new(tree)),
+            _ => return None,
+        })
     }
 }
 

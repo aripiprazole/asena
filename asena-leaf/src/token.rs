@@ -78,7 +78,7 @@ pub enum TokenKind {
     // literals
     Symbol,
     Identifier,
-    String,
+    Str,
 
     // end of file
     Eof,

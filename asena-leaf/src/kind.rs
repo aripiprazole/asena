@@ -60,7 +60,7 @@ pub enum TreeKind {
     StmtReturn,
     StmtExpr,
 
-    Binding,
+    LetBinding,
 
     BodyValue,
     BodyDo,
@@ -75,13 +75,13 @@ pub enum TreeKind {
     Param,
     LamParam,
 
-    Constraint,
+    TypeConstraint,
 
-    Field,
-    Method,
+    PropertyField,
+    PropertyMethod,
 
     TypeInfer,
-    Type,
+    TypeExplicit,
 }
 
 impl Named for TreeKind {}

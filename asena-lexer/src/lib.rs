@@ -38,7 +38,7 @@ pub fn lexer<'a>() -> impl Parser<'a, &'a str, TokenSet, LexError<'a>> {
     let string = just('"')
         .ignore_then(none_of('"').repeated())
         .then_ignore(just('"'))
-        .map_slice(|string: &str| Token::new(String, string))
+        .map_slice(|string: &str| Token::new(Str, string))
         .labelled("string literal");
 
     let symbol = one_of(SYMBOLS.join(""))

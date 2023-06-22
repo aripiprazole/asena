@@ -2,8 +2,10 @@ use std::fmt::{Debug, Display};
 
 use asena_derive::Leaf;
 
-use asena_leaf::ast::{Cursor, GreenTree};
+use asena_leaf::ast::{Cursor, GreenTree, Leaf, Terminal};
+use asena_leaf::node::{Tree, TreeKind::*};
 
+use asena_leaf::token::{Token, TokenKind};
 use asena_span::{Loc, Spanned};
 
 //>>>Identifiers
@@ -11,6 +13,26 @@ use asena_span::{Loc, Spanned};
 /// identifiers. Serves as a key on a graph, or the abstract syntax tree representation.
 #[derive(Default, Clone)]
 pub struct FunctionId(pub String);
+
+impl FunctionId {
+    /// Creates a new [FunctionId] by a string
+    pub fn new(id: &str) -> Self {
+        Self(id.into())
+    }
+
+    /// Gets the local's identifier as string borrow
+    pub fn as_str(&self) -> &str {
+        self.0.as_str()
+    }
+}
+
+impl Terminal for FunctionId {
+    fn terminal(token: Spanned<Token>) -> Option<Self> {
+        let text = token.text.clone();
+
+        Some(FunctionId(text))
+    }
+}
 
 impl Display for FunctionId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
@@ -28,6 +50,22 @@ impl Debug for FunctionId {
 #[derive(Default, Clone)]
 pub struct ConstructorId(pub Vec<Spanned<FunctionId>>);
 
+impl ConstructorId {
+    /// Creates a new [ConstructorId] by a string
+    pub fn new(span: Loc, id: &str) -> Self {
+        Self(vec![Spanned::new(span, FunctionId::new(id))])
+    }
+}
+
+impl Terminal for ConstructorId {
+    fn terminal(token: Spanned<Token>) -> Option<Self> {
+        let text = token.text.clone();
+        let span = token.span;
+
+        Some(ConstructorId::new(span, &text))
+    }
+}
+
 impl Debug for ConstructorId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "ConstructorId {:#?}", self.0)
@@ -38,47 +76,6 @@ impl Debug for ConstructorId {
 /// snake case, as a language pattern.
 #[derive(Default, Clone)]
 pub struct Local(pub String);
-
-impl Debug for Local {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "LocalId {:#?}", self.0)
-    }
-}
-
-/// Identifier's key to a global identifier, that's not declared locally, almost everything with
-/// Pascal Case, as a language pattern. This can contain symbols like: `Person.new`, as it can
-/// contain `.`.
-#[derive(Default, Leaf, Clone)]
-pub struct QualifiedPath(GreenTree);
-
-impl Debug for QualifiedPath {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "QualifiedPath ")?;
-        for segment in self.segments().as_leaf() {
-            write!(f, " ({:?})", segment.0)?;
-        }
-        Ok(())
-    }
-}
-
-impl FunctionId {
-    /// Creates a new [FunctionId] by a string
-    pub fn new(id: &str) -> Self {
-        Self(id.into())
-    }
-
-    /// Gets the local's identifier as string borrow
-    pub fn as_str(&self) -> &str {
-        self.0.as_str()
-    }
-}
-
-impl ConstructorId {
-    /// Creates a new [ConstructorId] by a string
-    pub fn new(span: Loc, id: &str) -> Self {
-        Self(vec![Spanned::new(span, FunctionId::new(id))])
-    }
-}
 
 impl Local {
     /// Creates a new [Local] by a string
@@ -93,8 +90,52 @@ impl Local {
     }
 }
 
+impl Terminal for Local {
+    fn terminal(token: Spanned<Token>) -> Option<Self> {
+        if token.kind != TokenKind::Identifier {
+            todo!();
+        }
+
+        let text = token.text.clone();
+        let span = token.span;
+
+        Some(Local::new(span, &text))
+    }
+}
+
+impl Debug for Local {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "LocalId {:#?}", self.0)
+    }
+}
+
+/// Identifier's key to a global identifier, that's not declared locally, almost everything with
+/// Pascal Case, as a language pattern. This can contain symbols like: `Person.new`, as it can
+/// contain `.`.
+#[derive(Default, Leaf, Clone)]
+pub struct QualifiedPath(GreenTree);
+
 impl QualifiedPath {
     pub fn segments(&self) -> Cursor<Vec<Local>> {
         self.filter_terminal()
+    }
+}
+
+impl Debug for QualifiedPath {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "QualifiedPath ")?;
+        for segment in self.segments().as_leaf() {
+            write!(f, " ({:?})", segment.0)?;
+        }
+        Ok(())
+    }
+}
+
+impl Leaf for QualifiedPath {
+    fn make(tree: Spanned<Tree>) -> Option<Self> {
+        Some(match tree.kind {
+            TreeQualifiedPath => QualifiedPath::new(tree),
+            _ => return None,
+        })
     }
 }

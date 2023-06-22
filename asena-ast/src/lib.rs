@@ -49,8 +49,3 @@ pub mod stmt;
 pub mod traits {
     pub mod binary;
 }
-
-pub mod stub {
-    pub mod leaf;
-    pub mod terminal;
-}

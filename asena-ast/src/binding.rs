@@ -1,4 +1,6 @@
 use asena_derive::{ast_debug, ast_leaf, Leaf};
+use asena_leaf::{ast::Leaf, node::Tree};
+use asena_span::Spanned;
 
 use crate::*;
 
@@ -15,6 +17,12 @@ impl Binding {
 
     #[ast_leaf]
     pub fn value(&self) -> Expr {
+        todo!()
+    }
+}
+
+impl Leaf for Binding {
+    fn make(_tree: Spanned<Tree>) -> Option<Self> {
         todo!()
     }
 }
