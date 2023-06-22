@@ -47,7 +47,10 @@ pub fn expand_ast_derive_walker(input: TokenStream) -> TokenStream {
             let fn_name = to_camel_case(format!("walk{name}{variant_name}"));
             let fn_name = Ident::new(&fn_name, Span::call_site()); // to_camel_case
 
-            quote!(#acc Self::#variant_name(value) => walker.#fn_name(value),)
+            quote!(#acc Self::#variant_name(value) => {
+                asena_leaf::ast::Walkable::walk(value, walker);
+                walker.#fn_name(value);
+            },)
         });
 
     let fns = data
@@ -62,7 +65,6 @@ pub fn expand_ast_derive_walker(input: TokenStream) -> TokenStream {
             quote! {
                 #acc
                 fn #fn_name(&mut self, value: &#variant_name) #constraints {
-                    asena_leaf::ast::Walkable::walk(value, self)
                 }
             }
         });

@@ -7,43 +7,30 @@ pub struct AsenaPrecStep;
 
 impl ExprWalker for AsenaPrecStep {
     fn walk_expr_infix(&mut self, value: &Infix) {
-        value.walk(self);
         impl_reorder_prec(value);
     }
 
     fn walk_expr_accessor(&mut self, value: &Accessor) {
-        value.walk(self);
         impl_reorder_prec(value);
     }
 
     fn walk_expr_ann(&mut self, value: &Ann) {
-        value.walk(self);
         impl_reorder_prec(value);
     }
 
     fn walk_expr_qual(&mut self, value: &Qual) {
-        value.walk(self);
         impl_reorder_prec(value);
     }
 }
 
 fn impl_reorder_prec(binary: &impl Binary) {
-    println!("<= {binary:?}");
     let lhs = binary.find_lhs();
     let rhs = binary.find_rhs();
-    println!("  - lhs {lhs:?}");
-    println!("  - rhs {rhs:?}");
 
-    let s = lhs.as_new_node();
-    println!("  - sss {s:?}");
-    let s = rhs.as_new_node();
-    println!("  - sss {s:?}");
+    let new_rhs = rhs.as_new_node();
 
     rhs.set(lhs.clone());
-    lhs.set(s);
-
-    println!("  => {binary:?}");
-    println!();
+    lhs.set(new_rhs);
 }
 
 #[cfg(test)]
