@@ -195,20 +195,6 @@ ast_enum! {
     }
 }
 
-impl Leaf for Decl {
-    fn make(tree: Spanned<Tree>) -> Option<Self> {
-        Some(match tree.kind {
-            DeclUse => Self::Use(Use::new(tree)),
-            DeclSignature => Self::Signature(Signature::new(tree)),
-            DeclAssign => Self::Assign(Assign::new(tree)),
-            DeclCommand => Self::Command(Command::new(tree)),
-            DeclClass => Self::Class(Class::new(tree)),
-            DeclInstance => Self::Instance(Instance::new(tree)),
-            _ => return None,
-        })
-    }
-}
-
 pub type DeclRef = Spanned<Decl>;
 
 /// A constraint is a part of the abstract syntax tree, that represents an unnamed implicit [Parameter].
@@ -321,11 +307,5 @@ ast_enum! {
     pub enum Property {
         Field  <- PropertyField,
         Method <- PropertyMethod,
-    }
-}
-
-impl Leaf for Property {
-    fn make(_tree: Spanned<Tree>) -> Option<Self> {
-        todo!()
     }
 }

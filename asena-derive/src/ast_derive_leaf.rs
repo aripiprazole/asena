@@ -10,7 +10,7 @@ pub fn expand_derive_leaf(input: TokenStream) -> TokenStream {
 
     match input.data {
         Data::Struct(data) => expand_struct(name, data),
-        Data::Enum(data) => todo!(),
+        Data::Enum(data) => expand_enum(name, data),
         Data::Union(..) => {
             name.span().unwrap().error("The leaf should not be a union");
 
@@ -60,30 +60,54 @@ fn expand_struct(name: Ident, data: DataStruct) -> TokenStream {
 }
 
 fn expand_enum(name: Ident, data: DataEnum) -> TokenStream {
+    let patterns = data.variants.into_iter().filter_map(|next| {
+        let ast_build_fn = next.attrs.iter().find_map(|attr| {
+            let expr: Expr = if attr.path().is_ident("ast_build_fn") {
+                attr.parse_args().ok()?
+            } else {
+                return None;
+            };
+
+            Some(expr)
+        });
+
+        let ast_from = next.attrs.iter().find_map(|attr| {
+            let expr: Expr = if attr.path().is_ident("ast_from") {
+                attr.parse_args().ok()?
+            } else {
+                return None;
+            };
+
+            Some(expr)
+        });
+
+        if let Some(ast_from) = ast_from {
+            let name = next.ident;
+            let body = ast_build_fn
+                .map(|awa| quote! { return #awa(tree) })
+                .unwrap_or_else(|| {
+                    quote! { Self::#name(#name::new(tree)) }
+                });
+
+            Some(quote! { #ast_from => #body, })
+        } else {
+            next.ident
+                .span()
+                .unwrap()
+                .error("All variants of `Leaf` node should be annotated with `ast_from`");
+
+            None
+        }
+    });
+    let patterns = patterns.reduce(|acc, next| quote!(#acc #next));
+
     let expanded = quote! {
-        impl #name {
-            pub fn new<T: Into<asena_leaf::ast::GreenTree>>(tree: T) -> Self {
-                Self(tree.into())
-            }
-
-            pub fn unwrap(self) -> asena_leaf::ast::GreenTree {
-                self.0
-            }
-        }
-
-        impl asena_leaf::ast::Ast for #name {}
-
-        impl std::ops::DerefMut for #name {
-            fn deref_mut(&mut self) -> &mut Self::Target {
-                &mut self.0
-            }
-        }
-
-        impl std::ops::Deref for #name {
-            type Target = asena_leaf::ast::GreenTree;
-
-            fn deref(&self) -> &Self::Target {
-                &self.0
+        impl asena_leaf::ast::Leaf for #name {
+            fn make(tree: asena_span::Spanned<asena_leaf::node::Tree>) -> Option<Self> {
+                Some(match tree.kind {
+                    #patterns
+                    _ => return None,
+                })
             }
         }
     };

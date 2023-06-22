@@ -1,9 +1,7 @@
 use asena_derive::{ast_debug, ast_leaf, Leaf};
 
-use asena_leaf::ast::Leaf;
 use asena_leaf::ast_enum;
-use asena_leaf::node::{Tree, TreeKind};
-use asena_span::Spanned;
+use asena_leaf::node::TreeKind::*;
 
 use crate::*;
 
@@ -35,13 +33,7 @@ impl Do {
 
 ast_enum! {
     pub enum Body {
-        Value <- TreeKind::BodyValue,
-        Do    <- TreeKind::BodyDo,
-    }
-}
-
-impl Leaf for Body {
-    fn make(_tree: Spanned<Tree>) -> Option<Self> {
-        todo!()
+        Value <- BodyValue,
+        Do    <- BodyDo,
     }
 }

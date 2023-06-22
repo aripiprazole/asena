@@ -5,20 +5,22 @@ use proc_macro::TokenStream;
 
 extern crate proc_macro;
 
+mod ast_build_fn;
 mod ast_debug;
 mod ast_derive_leaf;
+mod ast_from;
 mod ast_leaf;
 mod ast_of;
 pub(crate) mod util;
 
+#[proc_macro_derive(Leaf, attributes(ast_from, ast_build_fn))]
+pub fn derive_leaf(input: TokenStream) -> TokenStream {
+    ast_derive_leaf::expand_derive_leaf(input)
+}
+
 #[proc_macro_attribute]
 pub fn ast_debug(args: TokenStream, input: TokenStream) -> TokenStream {
     ast_debug::expand_ast_debug(args, input)
-}
-
-#[proc_macro_derive(Leaf)]
-pub fn derive_leaf(input: TokenStream) -> TokenStream {
-    ast_derive_leaf::expand_derive_leaf(input)
 }
 
 #[proc_macro_attribute]
@@ -29,4 +31,14 @@ pub fn ast_leaf(args: TokenStream, input: TokenStream) -> TokenStream {
 #[proc_macro_attribute]
 pub fn ast_of(args: TokenStream, input: TokenStream) -> TokenStream {
     ast_of::expand_ast_of(args, input)
+}
+
+#[proc_macro_attribute]
+pub fn ast_from(args: TokenStream, input: TokenStream) -> TokenStream {
+    ast_from::expand_ast_from(args, input)
+}
+
+#[proc_macro_attribute]
+pub fn ast_build_fn(args: TokenStream, input: TokenStream) -> TokenStream {
+    ast_build_fn::expand_ast_build_fn(args, input)
 }

@@ -1,5 +1,4 @@
 use asena_derive::{ast_debug, ast_leaf, Leaf};
-use asena_leaf::ast::Leaf;
 use asena_leaf::ast_enum;
 use asena_leaf::node::{Tree, TreeKind::*};
 
@@ -76,27 +75,26 @@ impl Debug for Wildcard {
 
 ast_enum! {
     pub enum Pat {
-        Wildcard      <- PatWildcard,    // _
-        Spread        <- PatSpread,      // ..
-        Literal       <- PatLit,         // <literal>
-        Local         <- PatGlobal,      // <local>
-        QualifiedPath <- PatGlobal,      // <global>
-        Constructor   <- PatConstructor, // (<global_id> <pattern...>)
-        List          <- PatList,        // [<pattern...>]
+        Wildcard      <- PatWildcard,                         // _
+        Spread        <- PatSpread,                           // ..
+        Constructor   <- PatConstructor,                      // (<global_id> <pattern...>)
+        List          <- PatList,                             // [<pattern...>]
+        Literal       <- PatLit    => [Pat::build_literal],   // <literal>
+        QualifiedPath <- PatGlobal => [Pat::build_global],    // <global>
     }
 }
 
-impl Leaf for Pat {
-    fn make(tree: Spanned<Tree>) -> Option<Self> {
-        Some(match tree.kind {
-            PatList => Self::List(List::new(tree)),
-            PatWildcard => Self::Wildcard(Wildcard::new(tree)),
-            PatSpread => Self::Spread(Spread::new(tree)),
-            PatConstructor => Self::Constructor(Constructor::new(tree)),
-            PatGlobal => Self::QualifiedPath(tree.at::<QualifiedPath>(0).try_as_leaf()?),
-            PatLit => Self::Literal(tree.filter_terminal::<Literal>().first().try_as_leaf()?),
-            _ => return None,
-        })
+impl Pat {
+    fn build_global(tree: Spanned<Tree>) -> Option<Pat> {
+        let global = tree.at::<QualifiedPath>(0).try_as_leaf()?;
+
+        Some(Self::QualifiedPath(global))
+    }
+
+    fn build_literal(tree: Spanned<Tree>) -> Option<Pat> {
+        let literal = tree.filter_terminal::<Literal>().first().try_as_leaf()?;
+
+        Some(Self::Literal(literal))
     }
 }
 

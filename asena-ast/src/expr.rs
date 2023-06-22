@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 use std::ops::Deref;
 
-use asena_derive::{ast_debug, ast_leaf, Leaf};
+use asena_derive::{ast_debug, ast_from, ast_leaf, Leaf};
 use asena_leaf::ast::{Cursor, Leaf};
 use asena_leaf::ast_enum;
 use asena_leaf::node::{Tree, TreeKind::*};
@@ -28,7 +28,8 @@ impl Leaf for Type {
     fn make(tree: Spanned<Tree>) -> Option<Self> {
         Some(match tree.kind {
             TypeExplicit => Self::Explicit(tree.at::<Expr>(0).try_as_leaf()?),
-            _ => Self::Infer,
+            TypeInfer => Self::Infer,
+            _ => return None,
         })
     }
 }
@@ -422,7 +423,7 @@ impl Help {
 
 ast_enum! {
     pub enum Expr {
-        QualifiedPath   <- TreeQualifiedPath,
+        QualifiedPath   <- QualifiedPathTree,
         Group           <- ExprGroup,
         Infix           <- ExprBinary,
         Accessor        <- ExprAccessor,
@@ -431,37 +432,25 @@ ast_enum! {
         Dsl             <- ExprDsl,
         Lam             <- ExprLam,
         Let             <- ExprLet,
-        Local           <- ExprLocal,
-        Literal         <- ExprLit,
         Ann             <- ExprAnn,
         Qual            <- ExprQual,
         Pi              <- ExprPi,
         Sigma           <- ExprSigma,
         Help            <- ExprHelp,
+        Local           <- ExprLocal => [Expr::build_local],
+        Literal         <- ExprLit   => [Expr::build_literal],
     }
 }
 
-impl Leaf for Expr {
-    fn make(tree: Spanned<Tree>) -> Option<Self> {
-        Some(match tree.kind {
-            ExprGroup => Self::Group(Group::new(tree)),
-            ExprBinary => Self::Infix(Infix::new(tree)),
-            ExprAccessor => Self::Accessor(Accessor::new(tree)),
-            ExprApp => Self::App(App::new(tree)),
-            ExprArray => Self::Array(Array::new(tree)),
-            ExprDsl => Self::Dsl(Dsl::new(tree)),
-            ExprLam => Self::Lam(Lam::new(tree)),
-            ExprLet => Self::Let(Let::new(tree)),
-            ExprAnn => Self::Ann(Ann::new(tree)),
-            ExprQual => Self::Qual(Qual::new(tree)),
-            ExprPi => Self::Pi(Pi::new(tree)),
-            ExprSigma => Self::Sigma(Sigma::new(tree)),
-            ExprHelp => Self::Help(Help::new(tree)),
-            ExprLocal => Self::Local(tree.terminal::<Local>(0).try_as_leaf()?),
-            ExprLit => Self::Literal(tree.filter_terminal::<Literal>().first().try_as_leaf()?),
-            TreeQualifiedPath => Self::QualifiedPath(QualifiedPath::new(tree)),
-            _ => return None,
-        })
+impl Expr {
+    fn build_local(tree: Spanned<Tree>) -> Option<Expr> {
+        let local = tree.terminal::<Local>(0).try_as_leaf()?;
+        Some(Expr::Local(local))
+    }
+
+    fn build_literal(tree: Spanned<Tree>) -> Option<Expr> {
+        let literal = tree.filter_terminal::<Literal>().first().try_as_leaf()?;
+        Some(Expr::Literal(literal))
     }
 }
 

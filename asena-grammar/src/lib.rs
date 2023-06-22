@@ -560,7 +560,7 @@ pub fn lit(p: &mut Parser, kind: TreeKind) -> Option<MarkClosed> {
 
 /// Global = <<Terminal>>
 pub fn global(p: &mut Parser) {
-    p.terminal(TreeQualifiedPath);
+    p.terminal(QualifiedPathTree);
 }
 
 /// Symbol = <<Terminal>>

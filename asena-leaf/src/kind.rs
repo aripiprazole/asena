@@ -30,7 +30,7 @@ pub enum TreeKind {
     LitString,
 
     SymbolIdentifier,
-    TreeQualifiedPath,
+    QualifiedPathTree,
 
     ExprGroup,
     ExprBinary,

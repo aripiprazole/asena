@@ -5,18 +5,20 @@ macro_rules! ast_enum {
         pub enum $name:ident {
             $(
                 $(#[$field_outer:meta])*
-                $variant:ident <- $kind:expr
+                $variant:ident <- $kind:expr $(=> [$f:expr])?
             ),*
             $(,)?
         }
     ) => {
         $(#[$outer])*
-        #[derive(Default, Clone)]
+        #[derive(asena_derive::Leaf, Default, Clone)]
         pub enum $name {
             #[default]
             Error,
             $(
                 $(#[$field_outer])*
+                $(#[ast_build_fn($f)])?
+                #[ast_from($kind)]
                 $variant($variant),
             )*
         }
@@ -25,8 +27,10 @@ macro_rules! ast_enum {
             #[allow(dead_code)]
             #[allow(path_statements)]
             #[allow(clippy::no_effect)]
+            #[doc(hidden)]
             fn __show_type_info() {
-                $($kind;)*
+                $(let _: asena_leaf::node::TreeKind = $kind;)*
+                $($(let _: fn(asena_span::Spanned<asena_leaf::node::Tree>) -> Option<$name> = $f;)*)*;
             }
         }
 

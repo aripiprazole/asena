@@ -134,7 +134,7 @@ impl Debug for QualifiedPath {
 impl Leaf for QualifiedPath {
     fn make(tree: Spanned<Tree>) -> Option<Self> {
         Some(match tree.kind {
-            TreeQualifiedPath => QualifiedPath::new(tree),
+            QualifiedPathTree => QualifiedPath::new(tree),
             _ => return None,
         })
     }
