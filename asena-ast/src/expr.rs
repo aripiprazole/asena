@@ -1,47 +1,14 @@
 use std::fmt::Debug;
 use std::ops::Deref;
 
-use asena_derive::{ast_debug, ast_from, ast_leaf, Leaf};
-use asena_leaf::ast::{Cursor, Leaf};
+use asena_derive::{ast_debug, ast_from, ast_leaf, ast_walkable, Leaf, Walker};
+use asena_leaf::ast::{Cursor, Leaf, Walkable};
 use asena_leaf::ast_enum;
 use asena_leaf::node::{Tree, TreeKind::*};
 
 use asena_span::Spanned;
 
 use crate::*;
-
-/// Type expression, is an expression that is found in the type level.
-///
-/// ```haskell
-/// a : B
-/// ```
-///
-/// B is a [Type].
-#[derive(Default, Clone)]
-pub enum Type {
-    #[default]
-    Infer, // _
-    Explicit(Expr),
-}
-
-impl Leaf for Type {
-    fn make(tree: Spanned<Tree>) -> Option<Self> {
-        Some(match tree.kind {
-            TypeExplicit => Self::Explicit(tree.at::<Expr>(0).try_as_leaf()?),
-            TypeInfer => Self::Infer,
-            _ => return None,
-        })
-    }
-}
-
-impl Debug for Type {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Infer => write!(f, "Infer"),
-            Self::Explicit(expr) => write!(f, "Type({:#?})", expr),
-        }
-    }
-}
 
 /// Group expression, is an expression that is a call between two operands, and is surrounded by
 /// parenthesis.
@@ -55,6 +22,7 @@ pub struct Group(GreenTree);
 
 #[ast_of]
 #[ast_debug]
+#[ast_walkable(PatWalker, StmtWalker, ExprWalker)]
 impl Group {
     #[ast_leaf]
     pub fn value(&self) -> Expr {
@@ -84,6 +52,14 @@ impl Group {
 #[derive(Default, Leaf, Clone)]
 pub struct Infix(GreenTree);
 
+impl<W: ExprWalker + PatWalker + StmtWalker> Walkable<W> for Infix {
+    fn walk(&self, walker: &W) {
+        self.lhs().walk(walker);
+        self.fn_id().walk(walker);
+        self.rhs().walk(walker);
+    }
+}
+
 impl Debug for Infix {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Infix")
@@ -103,6 +79,14 @@ impl Debug for Infix {
 /// ```
 #[derive(Default, Leaf, Clone)]
 pub struct Accessor(GreenTree);
+
+impl<W: ExprWalker + PatWalker + StmtWalker> Walkable<W> for Accessor {
+    fn walk(&self, walker: &W) {
+        self.lhs().walk(walker);
+        self.fn_id().walk(walker);
+        self.rhs().walk(walker);
+    }
+}
 
 impl Debug for Accessor {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
@@ -129,6 +113,7 @@ pub struct App(GreenTree);
 
 #[ast_of]
 #[ast_debug]
+#[ast_walkable(PatWalker, StmtWalker, ExprWalker)]
 impl App {
     #[ast_leaf]
     pub fn callee(&self) -> Expr {
@@ -159,6 +144,7 @@ pub struct Dsl(GreenTree);
 
 #[ast_of]
 #[ast_debug]
+#[ast_walkable(PatWalker, StmtWalker, ExprWalker)]
 impl Dsl {
     #[ast_leaf]
     pub fn callee(&self) -> Expr {
@@ -188,6 +174,7 @@ pub struct Array(GreenTree);
 
 #[ast_of]
 #[ast_debug]
+#[ast_walkable(PatWalker, StmtWalker, ExprWalker)]
 impl Array {
     #[ast_leaf]
     pub fn items(&self) -> Vec<Expr> {
@@ -216,6 +203,7 @@ pub struct Lam(GreenTree);
 
 #[ast_of]
 #[ast_debug]
+#[ast_walkable(PatWalker, StmtWalker, ExprWalker)]
 impl Lam {
     #[ast_leaf]
     pub fn parameters(&self) -> Vec<Local> {
@@ -241,6 +229,7 @@ pub struct Let(GreenTree);
 
 #[ast_of]
 #[ast_debug]
+#[ast_walkable(PatWalker, StmtWalker, ExprWalker)]
 impl Let {
     #[ast_leaf]
     pub fn bindings(&self) -> Vec<Binding> {
@@ -265,6 +254,7 @@ pub struct Ann(GreenTree);
 
 #[ast_of]
 #[ast_debug]
+#[ast_walkable(PatWalker, StmtWalker, ExprWalker)]
 impl Ann {
     #[ast_leaf]
     pub fn value(&self) -> Expr {
@@ -292,6 +282,14 @@ impl Ann {
 #[derive(Default, Leaf, Clone)]
 pub struct Qual(GreenTree);
 
+impl<W: ExprWalker + PatWalker + StmtWalker> Walkable<W> for Qual {
+    fn walk(&self, walker: &W) {
+        self.lhs().walk(walker);
+        self.fn_id().walk(walker);
+        self.rhs().walk(walker);
+    }
+}
+
 impl Debug for Qual {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Qual")
@@ -318,6 +316,7 @@ pub struct Pi(GreenTree);
 
 #[ast_of]
 #[ast_debug]
+#[ast_walkable(PatWalker, StmtWalker, ExprWalker)]
 impl Pi {
     #[ast_leaf]
     pub fn parameter_name(&self) -> Option<Local> {
@@ -389,6 +388,7 @@ pub struct Sigma(GreenTree);
 
 #[ast_of]
 #[ast_debug]
+#[ast_walkable(PatWalker, StmtWalker, ExprWalker)]
 impl Sigma {
     #[ast_leaf]
     pub fn parameter_name(&self) -> Local {
@@ -414,6 +414,7 @@ pub struct Help(GreenTree);
 
 #[ast_of]
 #[ast_debug]
+#[ast_walkable(PatWalker, StmtWalker, ExprWalker)]
 impl Help {
     #[ast_leaf]
     pub fn value(&self) -> Expr {
@@ -422,6 +423,8 @@ impl Help {
 }
 
 ast_enum! {
+    #[derive(Walker)]
+    #[ast_walker_traits(PatWalker, StmtWalker)]
     pub enum Expr {
         QualifiedPath   <- QualifiedPathTree,
         Group           <- ExprGroup,
@@ -458,3 +461,45 @@ impl Expr {
 /// spaces. So if, match expressions, for example, aren't accepted here, only if they are grouped
 /// by parenthesis, like: `(if a then b else c)`
 pub type PrimaryRef = Spanned<Expr>;
+
+/// Type expression, is an expression that is found in the type level.
+///
+/// ```haskell
+/// a : B
+/// ```
+///
+/// B is a [Type].
+#[derive(Default, Clone)]
+pub enum Type {
+    #[default]
+    Infer, // _
+    Explicit(Expr),
+}
+
+impl Leaf for Type {
+    fn make(tree: Spanned<Tree>) -> Option<Self> {
+        Some(match tree.kind {
+            TypeExplicit => Self::Explicit(tree.at::<Expr>(0).try_as_leaf()?),
+            TypeInfer => Self::Infer,
+            _ => return None,
+        })
+    }
+}
+
+impl Debug for Type {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Infer => write!(f, "Infer"),
+            Self::Explicit(expr) => write!(f, "Type({:#?})", expr),
+        }
+    }
+}
+
+impl<W: ExprWalker + PatWalker + StmtWalker> Walkable<W> for Type {
+    fn walk(&self, walker: &W) {
+        match self {
+            Type::Infer => {}
+            Type::Explicit(value) => value.walk(walker),
+        }
+    }
+}

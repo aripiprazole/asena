@@ -66,8 +66,10 @@ mod cursor;
 mod green;
 mod tree;
 mod value;
+mod walk;
 
 pub use cursor::*;
 pub use green::*;
 pub use tree::*;
 pub use value::*;
+pub use walk::*;

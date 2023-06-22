@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use asena_leaf::ast::Terminal;
+use asena_leaf::ast::{Terminal, Walkable};
 use asena_leaf::token::{Token, TokenKind::*};
 use asena_span::Spanned;
 
@@ -29,6 +29,10 @@ pub enum Literal {
 
     #[default]
     Error,
+}
+
+impl<W> Walkable<W> for Literal {
+    fn walk(&self, _walker: &W) {}
 }
 
 impl Terminal for Literal {

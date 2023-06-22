@@ -42,3 +42,17 @@ pub fn iter_leaf(input: &ItemImpl) -> Vec<NodeLeaf> {
         })
         .collect()
 }
+
+pub fn to_camel_case(s: String) -> String {
+    s.chars()
+        .enumerate()
+        .flat_map(|(i, char)| {
+            if char.is_uppercase() && i > 0 {
+                vec!['_', char]
+            } else {
+                vec![char]
+            }
+        })
+        .collect::<String>()
+        .to_lowercase()
+}

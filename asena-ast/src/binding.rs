@@ -1,5 +1,8 @@
 use asena_derive::{ast_debug, ast_leaf, Leaf};
-use asena_leaf::{ast::Leaf, node::Tree};
+use asena_leaf::{
+    ast::{Leaf, Walkable},
+    node::Tree,
+};
 use asena_span::Spanned;
 
 use crate::*;
@@ -24,5 +27,11 @@ impl Binding {
 impl Leaf for Binding {
     fn make(_tree: Spanned<Tree>) -> Option<Self> {
         todo!()
+    }
+}
+
+impl<W: ExprWalker + StmtWalker + PatWalker> Walkable<W> for Binding {
+    fn walk(&self, walker: &W) {
+        self.value().walk(walker)
     }
 }

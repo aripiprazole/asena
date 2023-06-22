@@ -1,4 +1,5 @@
-use asena_derive::{ast_debug, ast_leaf, Leaf};
+use asena_derive::{ast_debug, ast_leaf, ast_walkable, Leaf, Walker};
+use asena_leaf::ast::Walkable;
 use asena_leaf::ast_enum;
 use asena_leaf::node::{Tree, TreeKind::*};
 
@@ -17,6 +18,7 @@ pub struct Constructor(GreenTree);
 
 #[ast_of]
 #[ast_debug]
+#[ast_walkable(PatWalker)]
 impl Constructor {
     #[ast_leaf]
     pub fn name(&self) -> ConstructorId {
@@ -40,6 +42,7 @@ pub struct List(GreenTree);
 
 #[ast_of]
 #[ast_debug]
+#[ast_walkable(PatWalker)]
 impl List {
     #[ast_leaf]
     pub fn items(&self) -> Vec<Pat> {
@@ -57,6 +60,10 @@ impl List {
 #[derive(Default, Leaf, Clone)]
 pub struct Spread(GreenTree);
 
+impl<W: PatWalker> Walkable<W> for Spread {
+    fn walk(&self, _walker: &W) {}
+}
+
 impl Debug for Spread {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Spread").finish()
@@ -67,6 +74,10 @@ impl Debug for Spread {
 #[derive(Default, Leaf, Clone)]
 pub struct Wildcard(GreenTree);
 
+impl<W: PatWalker> Walkable<W> for Wildcard {
+    fn walk(&self, _walker: &W) {}
+}
+
 impl Debug for Wildcard {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Wildcard").finish()
@@ -74,6 +85,7 @@ impl Debug for Wildcard {
 }
 
 ast_enum! {
+    #[derive(Walker)]
     pub enum Pat {
         Wildcard      <- PatWildcard,                         // _
         Spread        <- PatSpread,                           // ..

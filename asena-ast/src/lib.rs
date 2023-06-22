@@ -45,6 +45,7 @@ pub mod literal;
 pub mod parameter;
 pub mod pat;
 pub mod stmt;
+pub mod walker;
 
 pub mod traits {
     pub mod binary;

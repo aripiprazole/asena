@@ -1,4 +1,4 @@
-use asena_derive::{ast_debug, ast_leaf, Leaf};
+use asena_derive::{ast_debug, ast_leaf, ast_walkable, Leaf, Walker};
 use asena_leaf::ast::GreenTree;
 use asena_leaf::ast_enum;
 use asena_leaf::node::TreeKind::*;
@@ -12,6 +12,7 @@ pub struct Ask(GreenTree);
 
 #[ast_of]
 #[ast_debug]
+#[ast_walkable(PatWalker, ExprWalker, StmtWalker)]
 impl Ask {
     #[ast_leaf]
     pub fn pattern(&self) -> Pat {
@@ -29,6 +30,7 @@ pub struct Set(GreenTree);
 
 #[ast_of]
 #[ast_debug]
+#[ast_walkable(PatWalker, ExprWalker, StmtWalker)]
 impl Set {
     #[ast_leaf]
     pub fn pattern(&self) -> Pat {
@@ -46,6 +48,7 @@ pub struct Return(GreenTree);
 
 #[ast_of]
 #[ast_debug]
+#[ast_walkable(ExprWalker, PatWalker, StmtWalker)]
 impl Return {
     /// This is using directly [ExprRef] in the AST, because when expanded, this will generate
     /// and [Option] wrapped value.
@@ -60,6 +63,7 @@ pub struct Eval(GreenTree);
 
 #[ast_of]
 #[ast_debug]
+#[ast_walkable(ExprWalker, PatWalker, StmtWalker)]
 impl Eval {
     #[ast_leaf]
     pub fn value(&self) -> Expr {
@@ -68,6 +72,8 @@ impl Eval {
 }
 
 ast_enum! {
+    #[derive(Walker)]
+    #[ast_walker_traits(PatWalker, ExprWalker)]
     pub enum Stmt {
         Ask    <- StmtAsk,    // <local_id> <- <expr>
         Set    <- StmtLet,    // let <local_id> = <expr>

@@ -23,6 +23,14 @@ macro_rules! ast_enum {
             )*
         }
 
+        $(
+            impl From<$variant> for $name {
+                fn from(value: $variant) -> Self {
+                    Self::$variant(value)
+                }
+            }
+        )*
+
         impl $name {
             #[allow(dead_code)]
             #[allow(path_statements)]

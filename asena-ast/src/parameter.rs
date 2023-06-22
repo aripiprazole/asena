@@ -1,4 +1,4 @@
-use asena_derive::{ast_debug, ast_leaf, Leaf};
+use asena_derive::{ast_debug, ast_leaf, ast_walkable, Leaf};
 
 use asena_leaf::ast::{GreenTree, Leaf};
 use asena_leaf::node::Tree;
@@ -13,6 +13,7 @@ pub struct Parameter(GreenTree);
 
 #[ast_of]
 #[ast_debug]
+#[ast_walkable(PatWalker, StmtWalker, ExprWalker)]
 impl Parameter {
     /// Optional parameter's name
     #[ast_leaf]

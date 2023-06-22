@@ -155,7 +155,11 @@ name = "asena-prec"
 version = "0.1.0"
 dependencies = [
  "asena-ast",
+ "asena-derive",
+ "asena-grammar",
  "asena-leaf",
+ "asena-lexer",
+ "asena-parser",
  "asena-span",
  "fxhash",
  "im",
