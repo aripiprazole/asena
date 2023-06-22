@@ -92,6 +92,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "asena-coverage"
+version = "0.1.0"
+dependencies = [
+ "asena-ast",
+ "asena-leaf",
+ "asena-span",
+ "fxhash",
+ "im",
+ "itertools",
+]
+
+[[package]]
 name = "asena-derive"
 version = "0.1.0"
 dependencies = [
@@ -139,6 +151,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "asena-prec"
+version = "0.1.0"
+dependencies = [
+ "asena-ast",
+ "asena-leaf",
+ "asena-span",
+ "fxhash",
+ "im",
+ "itertools",
+]
+
+[[package]]
 name = "asena-query"
 version = "0.1.0"
 dependencies = [
@@ -162,6 +186,18 @@ dependencies = [
 [[package]]
 name = "asena-span"
 version = "0.1.0"
+
+[[package]]
+name = "asena-typer"
+version = "0.1.0"
+dependencies = [
+ "asena-ast",
+ "asena-leaf",
+ "asena-span",
+ "fxhash",
+ "im",
+ "itertools",
+]
 
 [[package]]
 name = "bitflags"
