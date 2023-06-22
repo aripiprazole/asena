@@ -1,13 +1,4 @@
-use std::{
-    fmt::Debug,
-    hash::Hash,
-    path::PathBuf,
-    sync::{Arc, RwLock},
-};
-
-use asena_ast::{AsenaFile, Decl};
-use asena_leaf::ast::Leaf;
-use asena_span::Spanned;
+use std::{fmt::Debug, hash::Hash, path::PathBuf, sync::RwLock};
 
 use crate::graph::Key;
 
@@ -19,28 +10,13 @@ pub struct Vertex {
     pub predecessors: RwLock<Vec<Key>>,
 }
 
-#[derive(Clone)]
+#[derive(Default, Clone)]
 pub struct Declaration {
     pub name: String,
     pub file: Option<PathBuf>,
 
-    pub file_leaf: Arc<asena_leaf::ast::Cursor<AsenaFile>>,
-    pub current_leaf: Arc<asena_leaf::ast::Cursor<Spanned<Decl>>>,
-
     /// Recompile flag, if its true, all the other fields will be recompiled
     pub recompile: bool,
-}
-
-impl Default for Declaration {
-    fn default() -> Self {
-        Declaration {
-            name: Default::default(),
-            file: None,
-            file_leaf: Arc::new(AsenaFile::new(Default::default()).into()),
-            current_leaf: Arc::new(Decl::make(Default::default())),
-            recompile: false,
-        }
-    }
 }
 
 impl Vertex {

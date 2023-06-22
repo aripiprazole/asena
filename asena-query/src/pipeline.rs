@@ -1,7 +1,4 @@
-use std::sync::Arc;
-
 use crate::graph::Graph;
-use crate::incremental::{query_ast, query_file_path};
 use crate::node::Declaration;
 use crate::search::Search;
 
@@ -30,10 +27,7 @@ impl Graph {
                         ..Default::default()
                     };
 
-                    let declaration = declaration.as_mut().unwrap_or(&mut default_value);
-
-                    declaration.file = query_file_path(self, declaration);
-                    declaration.file_leaf = Arc::new(query_ast(self, declaration).into());
+                    let _declaration = declaration.as_mut().unwrap_or(&mut default_value);
                 }
             }
         }
