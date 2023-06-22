@@ -6,6 +6,10 @@ use crate::node::{Child, Tree};
 
 use super::*;
 
+/// A wrapper for the [Tree] to make it mutable and have mutable named children.
+///
+/// It is used to traverse the tree, and to modify it, and can be an [GreenTree::Error] node,
+/// that is used to mark the tree as invalid, and not fail the compiler.
 #[derive(Default)]
 pub enum GreenTree {
     Leaf {
@@ -33,6 +37,11 @@ impl GreenTree {
         }
     }
 
+    /// Memoizes the value of the given function, and returns a new [Cursor] instance, and
+    /// if the value is already memoized, it will return the memoized value.
+    ///
+    /// This function is used to memoize the values of the named children, to make the tree
+    /// mutable.
     pub fn memoize<F, T: Leaf + Clone + 'static>(&self, name: &'static str, f: F) -> Cursor<T>
     where
         F: Fn(&Self) -> Cursor<T>,
@@ -50,6 +59,7 @@ impl GreenTree {
         cursor
     }
 
+    /// Returns if the value is the only element in the tree.
     pub fn is_single(&self) -> bool {
         match self {
             GreenTree::Leaf { data, .. } => data.is_single(),
@@ -57,6 +67,7 @@ impl GreenTree {
         }
     }
 
+    /// Returns the tree children, if it's not an error node.
     pub fn children(&mut self) -> Option<&mut Vec<Spanned<Child>>> {
         match self {
             GreenTree::Leaf { data, .. } => Some(&mut data.children),
@@ -64,6 +75,7 @@ impl GreenTree {
         }
     }
 
+    /// Returns filtered cursor to the children, if it's not an error node.
     pub fn filter<T: Leaf>(&self) -> Cursor<Vec<T>> {
         match self {
             GreenTree::Leaf { data, .. } => data.filter(),
@@ -71,6 +83,7 @@ impl GreenTree {
         }
     }
 
+    /// Returns a terminal node, if it's not an error node.
     pub fn terminal<T: Terminal + Clone>(&self, nth: usize) -> Cursor<T> {
         match self {
             GreenTree::Leaf { data, .. } => data.terminal(nth),
@@ -78,6 +91,7 @@ impl GreenTree {
         }
     }
 
+    /// Returns terminal filtered cursor to the children, if it's not an error node.
     pub fn filter_terminal<T: Terminal + Leaf>(&self) -> Cursor<Vec<T>> {
         match self {
             GreenTree::Leaf { data, .. } => data.filter_terminal(),
@@ -85,6 +99,7 @@ impl GreenTree {
         }
     }
 
+    /// Returns a leaf node, if it's not an error node.
     pub fn at<T: Leaf>(&self, nth: usize) -> Cursor<T> {
         match self {
             GreenTree::Leaf { data, .. } => data.at(nth),
@@ -92,6 +107,7 @@ impl GreenTree {
         }
     }
 
+    /// Returns if the tree has the given name in the current name hash map.
     pub fn has(&self, name: LeafKey) -> bool {
         match self {
             GreenTree::Leaf { names, .. } => matches!(names.borrow().get(name), Some(..)),
@@ -99,6 +115,7 @@ impl GreenTree {
         }
     }
 
+    /// Returns a cursor to the named child, if it's not an error node.
     pub fn named_at<A: Leaf + 'static>(&self, name: LeafKey) -> Cursor<A> {
         match self {
             GreenTree::Leaf { names, .. } => {
@@ -119,6 +136,7 @@ impl GreenTree {
         }
     }
 
+    /// Returns a cursor to the named terminal, if it's not an error node.
     pub fn named_terminal<A: Terminal + Leaf + 'static>(&self, name: LeafKey) -> Cursor<A> {
         match self {
             GreenTree::Leaf { names, .. } => {
@@ -148,6 +166,8 @@ impl GreenTree {
         }
     }
 
+    /// Returns the [Spanned] value of the tree, if it's not an error node, then it should
+    /// return the default value.
     pub fn or_empty(self) -> Spanned<Tree> {
         match self {
             GreenTree::Leaf { data, .. } => data,

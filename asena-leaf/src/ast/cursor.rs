@@ -2,6 +2,9 @@ use std::rc::Rc;
 
 use super::*;
 
+/// A cursor is a reference to a node in the tree.
+///
+/// It is used to traverse the tree, and to modify it.
 pub struct Cursor<T> {
     pub(crate) value: Arc<RefCell<Value<T>>>,
 
@@ -10,14 +13,17 @@ pub struct Cursor<T> {
 }
 
 impl<T: Leaf> Cursor<T> {
+    /// Creates a new cursor without any value.
     pub fn empty() -> Self {
         Self::default()
     }
 
+    /// Updates the value of the current cursor with a new [Cursor].
     pub fn set(&self, value: Cursor<T>) {
         self.value.replace(value.value.borrow().clone());
     }
 
+    /// Creates a new cursor with the given value.
     pub fn of(value: T) -> Self {
         Self {
             value: Arc::new(RefCell::new(Value::Value(Rc::new(value)))),
@@ -25,6 +31,7 @@ impl<T: Leaf> Cursor<T> {
         }
     }
 
+    /// Creates a new cursor with the given [Rc] value.
     pub fn from_rc(value: Rc<T>) -> Self {
         Self {
             value: Arc::new(RefCell::new(Value::Value(value))),
@@ -32,6 +39,8 @@ impl<T: Leaf> Cursor<T> {
         }
     }
 
+    /// Creates a new cursor with a reference to the `concrete syntax tree`, using
+    /// the wrapper [GreenTree].
     pub fn new<I: Into<GreenTree>>(value: I) -> Self {
         let tree: GreenTree = value.into();
         let children = compute_named_children(&tree);
@@ -42,6 +51,7 @@ impl<T: Leaf> Cursor<T> {
         }
     }
 
+    /// Deeply duplicates the current cursor and returns a new [Cursor] instance.
     pub fn as_new_node(&self) -> Self
     where
         T: Clone,
@@ -58,6 +68,7 @@ impl<T: Leaf> Cursor<T> {
         }
     }
 
+    /// Returns the current cursor if it's not empty, otherwise returns [None].
     pub fn try_as_leaf(&self) -> Option<Rc<T>>
     where
         T: Clone,
@@ -69,6 +80,7 @@ impl<T: Leaf> Cursor<T> {
         }
     }
 
+    /// Returns the current cursor if it's not empty, otherwise returns a default value.
     pub fn as_leaf(&self) -> Rc<T>
     where
         T: Clone + Default,
@@ -76,6 +88,7 @@ impl<T: Leaf> Cursor<T> {
         self.try_as_leaf().unwrap_or_default()
     }
 
+    /// Returns the current cursor if it's not empty, otherwise returns false.
     pub fn is_empty(&self) -> bool {
         match &*self.value.borrow() {
             Value::Ref(GreenTree::Leaf { .. }) => true,
