@@ -1,5 +1,5 @@
 use asena_derive::ast_leaf;
-use asena_leaf::ast::Ast;
+use asena_leaf::ast::{Ast, Cursor};
 
 use crate::*;
 

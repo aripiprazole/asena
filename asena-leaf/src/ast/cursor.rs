@@ -78,13 +78,13 @@ impl<T: Leaf> Cursor<T> {
 
 impl<T: Leaf> Cursor<Vec<T>> {
     pub fn first(self) -> Cursor<T> {
-        todo!()
+        self.as_leaf().first().cloned().into()
     }
 }
 
 impl<T: Leaf> From<Vec<T>> for Cursor<Vec<T>> {
-    fn from(_value: Vec<T>) -> Self {
-        todo!()
+    fn from(value: Vec<T>) -> Self {
+        Cursor::of(value)
     }
 }
 
@@ -124,7 +124,7 @@ impl<T: Leaf> Clone for Cursor<T> {
     }
 }
 
-impl<T: Leaf + IntoGreenTree> FromResidual for Cursor<T> {
+impl<T: Leaf> FromResidual for Cursor<T> {
     fn from_residual(residual: <Self as Try>::Residual) -> Self {
         match residual {
             Some(_) => unreachable!(),
@@ -133,22 +133,23 @@ impl<T: Leaf + IntoGreenTree> FromResidual for Cursor<T> {
     }
 }
 
-impl<T: Leaf + IntoGreenTree> Try for Cursor<T> {
-    type Output = Spanned<Tree>;
+impl<T: Leaf> Try for Cursor<T> {
+    type Output = T;
 
     type Residual = Option<std::convert::Infallible>;
 
     fn from_output(output: Self::Output) -> Self {
-        Self::new(GreenTree::new(output))
+        Self::of(output)
     }
 
     fn branch(self) -> ControlFlow<Self::Residual, Self::Output> {
         match &*self.value.borrow() {
-            Value::Ref(GreenTree::Leaf { data, .. }) => ControlFlow::Continue(data.clone()),
+            Value::Ref(GreenTree::Leaf { data, .. }) => match T::make(data.clone()) {
+                Some(value) => ControlFlow::Continue(value),
+                None => ControlFlow::Break(None),
+            },
             Value::Ref(GreenTree::Error) => ControlFlow::Break(None),
-            Value::Value(value) => {
-                ControlFlow::Continue(value.clone().into_green_tree().or_empty())
-            }
+            Value::Value(value) => ControlFlow::Continue(value.clone()),
         }
     }
 }

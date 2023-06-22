@@ -37,7 +37,7 @@ impl Debug for ConstructorId {
 /// Identifier's key to local identifier, that's not declared globally, almost everything with
 /// snake case, as a language pattern.
 #[derive(Default, Clone)]
-pub struct Local(pub Spanned<String>);
+pub struct Local(pub String);
 
 impl Debug for Local {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -82,13 +82,14 @@ impl ConstructorId {
 
 impl Local {
     /// Creates a new [Local] by a string
-    pub fn new(span: Loc, id: &str) -> Self {
-        Self(Spanned::new(span, id.into()))
+    pub fn new(_span: Loc, id: &str) -> Self {
+        Self(id.into())
+        // Self(Spanned::new(span, id.into()))
     }
 
     /// Gets the local's identifier as string borrow
     pub fn as_str(&self) -> &str {
-        self.0.value().as_str()
+        self.0.as_str()
     }
 }
 

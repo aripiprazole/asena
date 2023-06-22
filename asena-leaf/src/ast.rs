@@ -41,8 +41,15 @@ impl<T: Leaf> Leaf for Option<T> {
 }
 
 impl<T: Leaf> Leaf for Vec<T> {
-    fn make(_tree: Spanned<Tree>) -> Option<Self> {
-        todo!()
+    fn make(tree: Spanned<Tree>) -> Option<Self> {
+        let mut items = vec![];
+        for child in &tree.children {
+            match &child.value {
+                Child::Tree(tree) => items.push(T::make(child.replace(tree.clone()))?),
+                Child::Token(..) => {}
+            }
+        }
+        Some(items)
     }
 }
 

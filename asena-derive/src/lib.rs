@@ -79,10 +79,13 @@ pub fn ast_leaf(_args: TokenStream, input: TokenStream) -> TokenStream {
     let mut impl_fn_tokens = input.clone();
     impl_fn_tokens.sig.ident = Ident::new(&format!("_impl_{name}"), Span::call_site());
 
+    let impl_name = impl_fn_tokens.sig.ident.clone();
+
     let mut get_fn_tokens = input.clone();
     get_fn_tokens.sig.ident = Ident::new(&format!("{name}"), Span::call_site());
     get_fn_tokens.sig.output = parse(quote!(-> #output).into()).unwrap();
-    get_fn_tokens.block = Box::new(parse(quote! {{self.#cursor_name().as_leaf()}}.into()).unwrap());
+    get_fn_tokens.block =
+        Box::new(parse(quote! {{ self.#cursor_name().as_leaf() }}.into()).unwrap());
 
     let mut set_fn_tokens = input.clone();
     set_fn_tokens.sig.output = parse(quote!(-> ()).into()).unwrap();
@@ -91,13 +94,22 @@ pub fn ast_leaf(_args: TokenStream, input: TokenStream) -> TokenStream {
         .inputs
         .push(parse(quote!(value: #output).into()).unwrap());
     set_fn_tokens.sig.ident = Ident::new(&format!("set_{name}"), Span::call_site());
-    set_fn_tokens.block = Box::new(parse(quote! {{todo!()}}.into()).unwrap());
+    set_fn_tokens.block = Box::new(
+        parse(
+            quote! {{
+                self.#cursor_name().set(asena_leaf::ast::Cursor::of(value))
+            }}
+            .into(),
+        )
+        .unwrap(),
+    );
 
     let mut find_fn_tokens = input.clone();
     find_fn_tokens.sig.ident = cursor_name;
-    find_fn_tokens.block = Box::new(parse(quote! {{todo!()}}.into()).unwrap());
+    find_fn_tokens.block = Box::new(parse(quote! {{ self.#impl_name() }}.into()).unwrap());
 
     TokenStream::from(quote! {
+        #impl_fn_tokens
         #get_fn_tokens
         #set_fn_tokens
         #find_fn_tokens

@@ -1,4 +1,7 @@
+use std::ops::Deref;
+
 use asena_derive::{ast_debug, ast_leaf, Leaf};
+use asena_leaf::ast::Cursor;
 use asena_leaf::ast_enum;
 use asena_leaf::node::TreeKind;
 
@@ -310,7 +313,7 @@ impl Pi {
         if self.has("parameter_name") {
             let fn_id = self.named_terminal::<FunctionId>("parameter_name")?;
 
-            Cursor::new(fn_id)
+            Cursor::of(Some(Local(fn_id.0)))
         } else {
             Cursor::empty()
         }
@@ -318,7 +321,7 @@ impl Pi {
 
     #[ast_leaf]
     pub fn parameter_type(&self) -> Expr {
-        if self.parameter_name().is_empty() {
+        if self.find_parameter_name().is_empty() {
             self.at(0)
         } else {
             self.named_at("parameter_type")
@@ -327,7 +330,7 @@ impl Pi {
 
     #[ast_leaf]
     pub fn return_type(&self) -> Expr {
-        if !self.parameter_name().is_empty() {
+        if !self.find_parameter_name().is_empty() {
             return self.named_at("return_type");
         }
 
@@ -380,7 +383,7 @@ impl Sigma {
     pub fn parameter_name(&self) -> Local {
         let fn_id = self.named_terminal::<FunctionId>("parameter_name")?;
 
-        Cursor::new(fn_id)
+        Cursor::of(Local(fn_id.0))
     }
 
     #[ast_leaf]
