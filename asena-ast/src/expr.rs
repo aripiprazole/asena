@@ -323,7 +323,7 @@ impl Pi {
         if self.has("parameter_name") {
             let fn_id = self.named_terminal::<FunctionId>("parameter_name")?;
 
-            Cursor::of(Some(Local(fn_id.0)))
+            Cursor::of(Some(Local(fn_id.0.clone())))
         } else {
             Cursor::empty()
         }
@@ -394,7 +394,7 @@ impl Sigma {
     pub fn parameter_name(&self) -> Local {
         let fn_id = self.named_terminal::<FunctionId>("parameter_name")?;
 
-        Cursor::of(Local(fn_id.0))
+        Cursor::of(Local(fn_id.0.clone()))
     }
 
     #[ast_leaf]
@@ -447,13 +447,13 @@ ast_enum! {
 
 impl Expr {
     fn build_local(tree: Spanned<Tree>) -> Option<Expr> {
-        let local = tree.terminal::<Local>(0).try_as_leaf()?;
-        Some(Expr::Local(local))
+        let local = &*tree.terminal::<Local>(0).try_as_leaf()?;
+        Some(Expr::Local(local.clone()))
     }
 
     fn build_literal(tree: Spanned<Tree>) -> Option<Expr> {
-        let literal = tree.filter_terminal::<Literal>().first().try_as_leaf()?;
-        Some(Expr::Literal(literal))
+        let literal = &*tree.filter_terminal::<Literal>().first().try_as_leaf()?;
+        Some(Expr::Literal(literal.clone()))
     }
 }
 
@@ -479,7 +479,7 @@ pub enum Type {
 impl Leaf for Type {
     fn make(tree: Spanned<Tree>) -> Option<Self> {
         Some(match tree.kind {
-            TypeExplicit => Self::Explicit(tree.at::<Expr>(0).try_as_leaf()?),
+            TypeExplicit => Self::Explicit((*tree.at::<Expr>(0).try_as_leaf()?).clone()),
             TypeInfer => Self::Infer,
             _ => return None,
         })

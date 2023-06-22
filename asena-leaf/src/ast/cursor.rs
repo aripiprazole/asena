@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use super::*;
 
 pub struct Cursor<T> {
@@ -17,6 +19,13 @@ impl<T: Leaf> Cursor<T> {
     }
 
     pub fn of(value: T) -> Self {
+        Self {
+            value: Arc::new(RefCell::new(Value::Value(Rc::new(value)))),
+            children: Default::default(),
+        }
+    }
+
+    pub fn from_rc(value: Rc<T>) -> Self {
         Self {
             value: Arc::new(RefCell::new(Value::Value(value))),
             children: Default::default(),
@@ -49,18 +58,18 @@ impl<T: Leaf> Cursor<T> {
         }
     }
 
-    pub fn try_as_leaf(&self) -> Option<T>
+    pub fn try_as_leaf(&self) -> Option<Rc<T>>
     where
         T: Clone,
     {
-        match self.value.borrow().clone() {
-            Value::Ref(GreenTree::Leaf { data, .. }) => T::make(data),
+        match &*self.value.borrow() {
+            Value::Ref(GreenTree::Leaf { data, .. }) => T::make(data.clone()).map(Rc::new),
             Value::Ref(GreenTree::Error) => None,
-            Value::Value(value) => Some(value),
+            Value::Value(value) => Some(value.clone()),
         }
     }
 
-    pub fn as_leaf(&self) -> T
+    pub fn as_leaf(&self) -> Rc<T>
     where
         T: Clone + Default,
     {
@@ -74,6 +83,11 @@ impl<T: Leaf> Cursor<T> {
             Value::Value(..) => true,
         }
     }
+}
+
+pub enum CursorCow<'a, T> {
+    Owned(T),
+    Borrowed(&'a T),
 }
 
 impl<T: Leaf> Cursor<Vec<T>> {
@@ -134,18 +148,18 @@ impl<T: Leaf> FromResidual for Cursor<T> {
 }
 
 impl<T: Leaf> Try for Cursor<T> {
-    type Output = T;
+    type Output = Rc<T>;
 
     type Residual = Option<std::convert::Infallible>;
 
     fn from_output(output: Self::Output) -> Self {
-        Self::of(output)
+        Self::from_rc(output)
     }
 
     fn branch(self) -> ControlFlow<Self::Residual, Self::Output> {
         match &*self.value.borrow() {
             Value::Ref(GreenTree::Leaf { data, .. }) => match T::make(data.clone()) {
-                Some(value) => ControlFlow::Continue(value),
+                Some(value) => ControlFlow::Continue(Rc::new(value)),
                 None => ControlFlow::Break(None),
             },
             Value::Ref(GreenTree::Error) => ControlFlow::Break(None),

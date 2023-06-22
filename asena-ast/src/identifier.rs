@@ -47,9 +47,7 @@ impl Debug for FunctionId {
 }
 
 impl<W> Walkable<W> for FunctionId {
-    fn walk(&self, _walker: &mut W) {
-        todo!()
-    }
+    fn walk(&self, _walker: &mut W) {}
 }
 
 /// Identifier's key to a type constructor.
@@ -140,7 +138,7 @@ impl QualifiedPath {
 impl Debug for QualifiedPath {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "QualifiedPath ")?;
-        for segment in self.segments() {
+        for segment in self.segments().iter() {
             write!(f, " ({:?})", segment.0)?;
         }
         Ok(())
@@ -158,7 +156,7 @@ impl Leaf for QualifiedPath {
 
 impl<W> Walkable<W> for QualifiedPath {
     fn walk(&self, walker: &mut W) {
-        for ele in self.segments() {
+        for ele in self.segments().iter() {
             ele.walk(walker)
         }
     }

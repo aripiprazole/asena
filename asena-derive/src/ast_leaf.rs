@@ -22,7 +22,7 @@ pub fn expand_ast_leaf(_args: TokenStream, input: TokenStream) -> TokenStream {
 
     let mut get_fn_tokens = input.clone();
     get_fn_tokens.sig.ident = Ident::new(&format!("{name}"), Span::call_site());
-    get_fn_tokens.sig.output = parse_quote!(-> #output);
+    get_fn_tokens.sig.output = parse_quote!(-> std::rc::Rc<#output>);
     get_fn_tokens.block = Box::new(parse_quote! {{ self.#cursor_name().as_leaf() }});
 
     let mut set_fn_tokens = input.clone();
@@ -30,10 +30,10 @@ pub fn expand_ast_leaf(_args: TokenStream, input: TokenStream) -> TokenStream {
     set_fn_tokens
         .sig
         .inputs
-        .push(parse(quote!(value: #output).into()).unwrap());
+        .push(parse(quote!(value: std::rc::Rc<#output>).into()).unwrap());
     set_fn_tokens.sig.ident = Ident::new(&format!("set_{name}"), Span::call_site());
     set_fn_tokens.block = Box::new(parse_quote! {{
-        self.#cursor_name().set(asena_leaf::ast::Cursor::of(value))
+        self.#cursor_name().set(asena_leaf::ast::Cursor::from_rc(value))
     }});
 
     let mut find_fn_tokens = input.clone();

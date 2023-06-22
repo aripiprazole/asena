@@ -1,4 +1,5 @@
 use asena_derive::{ast_debug, ast_leaf, ast_walkable, Leaf, Walker};
+
 use asena_leaf::ast::Walkable;
 use asena_leaf::ast_enum;
 use asena_leaf::node::{Tree, TreeKind::*};
@@ -98,13 +99,13 @@ ast_enum! {
 
 impl Pat {
     fn build_global(tree: Spanned<Tree>) -> Option<Pat> {
-        let global = tree.at::<QualifiedPath>(0).try_as_leaf()?;
-        Some(Self::QualifiedPath(global))
+        let global = &*tree.at::<QualifiedPath>(0).try_as_leaf()?;
+        Some(Self::QualifiedPath(global.clone()))
     }
 
     fn build_literal(tree: Spanned<Tree>) -> Option<Pat> {
-        let literal = tree.filter_terminal::<Literal>().first().try_as_leaf()?;
-        Some(Self::Literal(literal))
+        let literal = &*tree.filter_terminal::<Literal>().first().try_as_leaf()?;
+        Some(Self::Literal(literal.clone()))
     }
 }
 
