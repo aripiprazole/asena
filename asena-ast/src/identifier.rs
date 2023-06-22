@@ -47,7 +47,7 @@ impl Debug for FunctionId {
 }
 
 impl<W> Walkable<W> for FunctionId {
-    fn walk(&self, _walker: &W) {
+    fn walk(&self, _walker: &mut W) {
         todo!()
     }
 }
@@ -79,7 +79,7 @@ impl Debug for ConstructorId {
 }
 
 impl<W> Walkable<W> for ConstructorId {
-    fn walk(&self, _walker: &W) {}
+    fn walk(&self, _walker: &mut W) {}
 }
 
 /// Identifier's key to local identifier, that's not declared globally, almost everything with
@@ -120,7 +120,7 @@ impl Debug for Local {
 }
 
 impl<W> Walkable<W> for Local {
-    fn walk(&self, _walker: &W) {}
+    fn walk(&self, _walker: &mut W) {}
 }
 
 /// Identifier's key to a global identifier, that's not declared locally, almost everything with
@@ -157,7 +157,7 @@ impl Leaf for QualifiedPath {
 }
 
 impl<W> Walkable<W> for QualifiedPath {
-    fn walk(&self, walker: &W) {
+    fn walk(&self, walker: &mut W) {
         for ele in self.segments() {
             ele.walk(walker)
         }

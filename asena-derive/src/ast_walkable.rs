@@ -56,7 +56,7 @@ pub fn expand_ast_walkable(args: TokenStream, input: TokenStream) -> TokenStream
         #input
 
         impl<W> asena_leaf::ast::Walkable<W> for #name #constraints {
-            fn walk(&self, walker: &W) {
+            fn walk(&self, walker: &mut W) {
                 #leaf_properties
             }
         }

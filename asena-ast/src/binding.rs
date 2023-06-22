@@ -31,7 +31,7 @@ impl Leaf for Binding {
 }
 
 impl<W: ExprWalker + StmtWalker + PatWalker> Walkable<W> for Binding {
-    fn walk(&self, walker: &W) {
+    fn walk(&self, walker: &mut W) {
         self.value().walk(walker)
     }
 }

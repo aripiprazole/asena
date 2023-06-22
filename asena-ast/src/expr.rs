@@ -53,7 +53,7 @@ impl Group {
 pub struct Infix(GreenTree);
 
 impl<W: ExprWalker + PatWalker + StmtWalker> Walkable<W> for Infix {
-    fn walk(&self, walker: &W) {
+    fn walk(&self, walker: &mut W) {
         self.lhs().walk(walker);
         self.fn_id().walk(walker);
         self.rhs().walk(walker);
@@ -81,7 +81,7 @@ impl Debug for Infix {
 pub struct Accessor(GreenTree);
 
 impl<W: ExprWalker + PatWalker + StmtWalker> Walkable<W> for Accessor {
-    fn walk(&self, walker: &W) {
+    fn walk(&self, walker: &mut W) {
         self.lhs().walk(walker);
         self.fn_id().walk(walker);
         self.rhs().walk(walker);
@@ -283,7 +283,7 @@ impl Ann {
 pub struct Qual(GreenTree);
 
 impl<W: ExprWalker + PatWalker + StmtWalker> Walkable<W> for Qual {
-    fn walk(&self, walker: &W) {
+    fn walk(&self, walker: &mut W) {
         self.lhs().walk(walker);
         self.fn_id().walk(walker);
         self.rhs().walk(walker);
@@ -496,7 +496,7 @@ impl Debug for Type {
 }
 
 impl<W: ExprWalker + PatWalker + StmtWalker> Walkable<W> for Type {
-    fn walk(&self, walker: &W) {
+    fn walk(&self, walker: &mut W) {
         match self {
             Type::Infer => {}
             Type::Explicit(value) => value.walk(walker),

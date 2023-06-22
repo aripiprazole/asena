@@ -61,7 +61,7 @@ impl List {
 pub struct Spread(GreenTree);
 
 impl<W: PatWalker> Walkable<W> for Spread {
-    fn walk(&self, _walker: &W) {}
+    fn walk(&self, _walker: &mut W) {}
 }
 
 impl Debug for Spread {
@@ -75,7 +75,7 @@ impl Debug for Spread {
 pub struct Wildcard(GreenTree);
 
 impl<W: PatWalker> Walkable<W> for Wildcard {
-    fn walk(&self, _walker: &W) {}
+    fn walk(&self, _walker: &mut W) {}
 }
 
 impl Debug for Wildcard {

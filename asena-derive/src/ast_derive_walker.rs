@@ -61,7 +61,7 @@ pub fn expand_ast_derive_walker(input: TokenStream) -> TokenStream {
 
             quote! {
                 #acc
-                fn #fn_name(&self, value: &#variant_name) #constraints {
+                fn #fn_name(&mut self, value: &#variant_name) #constraints {
                     asena_leaf::ast::Walkable::walk(value, self)
                 }
             }
@@ -73,7 +73,7 @@ pub fn expand_ast_derive_walker(input: TokenStream) -> TokenStream {
         }
 
         impl<W: Sized + #walker_name> asena_leaf::ast::Walkable<W> for #name #w_constraints {
-            fn walk(&self, walker: &W) {
+            fn walk(&self, walker: &mut W) {
                 match self {
                     Self::Error => {},
                     #patterns

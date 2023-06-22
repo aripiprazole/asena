@@ -32,7 +32,7 @@ pub enum Literal {
 }
 
 impl<W> Walkable<W> for Literal {
-    fn walk(&self, _walker: &W) {}
+    fn walk(&self, _walker: &mut W) {}
 }
 
 impl Terminal for Literal {

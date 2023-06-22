@@ -2,22 +2,22 @@ use asena_ast::{Accessor, Ann, Binary, ExprWalker, Infix, PatWalker, Qual, StmtW
 use asena_derive::ast_step;
 
 #[ast_step(PatWalker, StmtWalker)]
-pub struct StepAsenaPrec;
+pub struct AsenaPrecStep;
 
-impl ExprWalker for StepAsenaPrec {
-    fn walk_expr_infix(&self, value: &Infix) {
+impl ExprWalker for AsenaPrecStep {
+    fn walk_expr_infix(&mut self, value: &Infix) {
         impl_reorder_prec(value);
     }
 
-    fn walk_expr_accessor(&self, value: &Accessor) {
+    fn walk_expr_accessor(&mut self, value: &Accessor) {
         impl_reorder_prec(value);
     }
 
-    fn walk_expr_ann(&self, value: &Ann) {
+    fn walk_expr_ann(&mut self, value: &Ann) {
         impl_reorder_prec(value);
     }
 
-    fn walk_expr_qual(&self, value: &Qual) {
+    fn walk_expr_qual(&mut self, value: &Qual) {
         impl_reorder_prec(value);
     }
 }
@@ -35,7 +35,7 @@ mod tests {
     use asena_lexer::Lexer;
     use asena_parser::Parser;
 
-    use crate::StepAsenaPrec;
+    use crate::AsenaPrecStep;
 
     #[test]
     fn it_works() {
@@ -45,7 +45,7 @@ mod tests {
             .unwrap();
 
         let tree = Expr::from(Infix::new(tree));
-        tree.walk(&StepAsenaPrec);
+        tree.run(AsenaPrecStep);
 
         println!("{tree:?}")
     }
