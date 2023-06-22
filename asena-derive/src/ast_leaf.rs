@@ -13,7 +13,7 @@ pub fn expand_ast_leaf(_args: TokenStream, input: TokenStream) -> TokenStream {
         ReturnType::Type(_, ty) => quote!(#ty),
     };
 
-    input.sig.output = parse(quote!(-> asena_leaf::ast::Cursor<#output>).into()).unwrap();
+    input.sig.output = parse_quote!(-> asena_leaf::ast::Cursor<#output>);
 
     let mut impl_fn_tokens = input.clone();
     impl_fn_tokens.sig.ident = Ident::new(&format!("_impl_{name}"), Span::call_site());
@@ -22,42 +22,29 @@ pub fn expand_ast_leaf(_args: TokenStream, input: TokenStream) -> TokenStream {
 
     let mut get_fn_tokens = input.clone();
     get_fn_tokens.sig.ident = Ident::new(&format!("{name}"), Span::call_site());
-    get_fn_tokens.sig.output = parse(quote!(-> #output).into()).unwrap();
-    get_fn_tokens.block =
-        Box::new(parse(quote! {{ self.#cursor_name().as_leaf() }}.into()).unwrap());
+    get_fn_tokens.sig.output = parse_quote!(-> #output);
+    get_fn_tokens.block = Box::new(parse_quote! {{ self.#cursor_name().as_leaf() }});
 
     let mut set_fn_tokens = input.clone();
-    set_fn_tokens.sig.output = parse(quote!(-> ()).into()).unwrap();
+    set_fn_tokens.sig.output = parse_quote!(-> ());
     set_fn_tokens
         .sig
         .inputs
         .push(parse(quote!(value: #output).into()).unwrap());
     set_fn_tokens.sig.ident = Ident::new(&format!("set_{name}"), Span::call_site());
-    set_fn_tokens.block = Box::new(
-        parse(
-            quote! {{
-                self.#cursor_name().set(asena_leaf::ast::Cursor::of(value))
-            }}
-            .into(),
-        )
-        .unwrap(),
-    );
+    set_fn_tokens.block = Box::new(parse_quote! {{
+        self.#cursor_name().set(asena_leaf::ast::Cursor::of(value))
+    }});
 
     let mut find_fn_tokens = input.clone();
     let key_name = name.to_string();
     find_fn_tokens.sig.ident = cursor_name;
-    find_fn_tokens.block = Box::new(
-        parse(
-            quote! {{
-               self.memoize(#key_name, |this| {
-                   let this = Self::new(this.clone());
-                   this.#impl_name()
-               })
-            }}
-            .into(),
-        )
-        .unwrap(),
-    );
+    find_fn_tokens.block = Box::new(parse_quote! {{
+       self.memoize(#key_name, |this| {
+           let this = Self::new(this.clone());
+           this.#impl_name()
+       })
+    }});
 
     TokenStream::from(quote! {
         #impl_fn_tokens

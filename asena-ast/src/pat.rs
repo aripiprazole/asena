@@ -87,13 +87,11 @@ ast_enum! {
 impl Pat {
     fn build_global(tree: Spanned<Tree>) -> Option<Pat> {
         let global = tree.at::<QualifiedPath>(0).try_as_leaf()?;
-
         Some(Self::QualifiedPath(global))
     }
 
     fn build_literal(tree: Spanned<Tree>) -> Option<Pat> {
         let literal = tree.filter_terminal::<Literal>().first().try_as_leaf()?;
-
         Some(Self::Literal(literal))
     }
 }
