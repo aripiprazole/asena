@@ -48,8 +48,7 @@ mod tests {
             .build_tree()
             .unwrap();
 
-        let tree = Expr::from(Infix::new(tree));
-        tree.run(AsenaPrecStep);
+        let tree = Expr::from(Infix::new(tree)).walks(AsenaPrecStep);
 
         println!("{tree:#?}")
     }

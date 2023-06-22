@@ -4,6 +4,14 @@ pub trait Walkable<T> {
     fn run(&self, mut walker: T) {
         self.walk(&mut walker)
     }
+
+    fn walks(self, mut walker: T) -> Self
+    where
+        Self: Sized,
+    {
+        self.walk(&mut walker);
+        self
+    }
 }
 
 impl<W, T: Walkable<W>> Walkable<W> for Vec<T> {
