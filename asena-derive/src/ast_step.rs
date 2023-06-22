@@ -10,9 +10,11 @@ pub fn expand_ast_step(args: TokenStream, input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as ItemStruct);
     let name = input.ident.clone();
 
+    let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
+
     let constraints = constraints.vars.into_iter().fold(quote!(), |acc, walker| {
         quote! { #acc
-            impl #walker for #name {}
+            impl #impl_generics #walker for #name #ty_generics #where_clause {}
         }
     });
 
