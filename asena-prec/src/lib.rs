@@ -1,6 +1,5 @@
 use asena_ast::{Accessor, Ann, Binary, ExprWalker, Infix, PatWalker, Qual, StmtWalker};
 use asena_derive::ast_step;
-use asena_leaf::ast::Walkable;
 
 #[ast_step(PatWalker, StmtWalker)]
 pub struct AsenaPrecStep;

@@ -47,7 +47,7 @@ macro_rules! ast_enum {
                 match self {
                     Self::Error => write!(f, "Error"),
                     $(
-                        Self::$variant(value) => write!(f, "{value:?}"),
+                        Self::$variant(value) => std::fmt::Debug::fmt(value, f),
                     )*
                 }
             }
