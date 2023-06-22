@@ -425,6 +425,7 @@ impl Help {
 ast_enum! {
     #[derive(Walker)]
     #[ast_walker_traits(PatWalker, StmtWalker)]
+    /// The expression enum, it is the main type of the language.
     pub enum Expr {
         QualifiedPath   <- QualifiedPathTree,
         Group           <- ExprGroup,

@@ -12,7 +12,13 @@ macro_rules! ast_enum {
     ) => {
         $(#[$outer])*
         #[derive(asena_derive::Leaf, Default, Clone)]
+        ///
+        /// Generates node for the AST, it can be used to build a tree node using the trait
+        /// leaf [Leaf].
+        ///
+        /// It should be possible to build using the [From] trait too.
         pub enum $name {
+            /// Default error node for the node.
             #[default]
             Error,
             $(
