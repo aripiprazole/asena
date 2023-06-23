@@ -22,18 +22,18 @@ pub fn expand_ast_leaf(_args: TokenStream, input: TokenStream) -> TokenStream {
 
     let mut get_fn_tokens = input.clone();
     get_fn_tokens.sig.ident = Ident::new(&format!("{name}"), Span::call_site());
-    get_fn_tokens.sig.output = parse_quote!(-> std::rc::Rc<#output>);
-    get_fn_tokens.block = Box::new(parse_quote! {{ self.#cursor_name().as_leaf() }});
+    get_fn_tokens.sig.output = parse_quote!(-> asena_leaf::ast::Bow<'_, #output>);
+    get_fn_tokens.block = Box::new(parse_quote! {{ self.#cursor_name().as_leaf().unsafe_copy() }});
 
     let mut set_fn_tokens = input.clone();
     set_fn_tokens.sig.output = parse_quote!(-> ());
     set_fn_tokens
         .sig
         .inputs
-        .push(parse(quote!(value: std::rc::Rc<#output>).into()).unwrap());
+        .push(parse(quote!(value: asena_leaf::ast::Bow<'_, #output>).into()).unwrap());
     set_fn_tokens.sig.ident = Ident::new(&format!("set_{name}"), Span::call_site());
     set_fn_tokens.block = Box::new(parse_quote! {{
-        self.#cursor_name().set(asena_leaf::ast::Cursor::from_rc(value))
+        self.#cursor_name().set(asena_leaf::ast::Cursor::from_bow(value))
     }});
 
     let mut find_fn_tokens = input.clone();
@@ -42,7 +42,10 @@ pub fn expand_ast_leaf(_args: TokenStream, input: TokenStream) -> TokenStream {
     find_fn_tokens.block = Box::new(parse_quote! {{
        self.memoize(#key_name, |this| {
            let this = Self::new(this.clone());
-           this.#impl_name()
+           let x = this.#impl_name();
+           let y = x.dup();
+
+           y
        })
     }});
 

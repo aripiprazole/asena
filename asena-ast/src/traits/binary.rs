@@ -17,7 +17,10 @@ pub trait Binary: Ast {
     }
 
     #[ast_leaf]
-    fn rhs(&self) -> Expr {
+    fn rhs(&self) -> Expr
+    where
+        Self: 'static,
+    {
         let mut rhs = self.clone();
         let Some(children) = rhs.children() else {
             return Cursor::empty();
@@ -26,7 +29,7 @@ pub trait Binary: Ast {
         // Checks the integrity of the length for safety
         match children.len() {
             0 => return Cursor::empty(),
-            1 => return rhs.at(0),
+            1 => return rhs.at(0).dup(),
             _ => {}
         }
 
@@ -35,7 +38,7 @@ pub trait Binary: Ast {
         children.remove(0);
 
         if rhs.is_single() {
-            rhs.at(0)
+            rhs.at(0).dup()
         } else {
             Cursor::new(rhs.deref().clone())
         }

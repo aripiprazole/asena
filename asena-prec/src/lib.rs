@@ -22,7 +22,7 @@ impl ExprWalker for AsenaPrecStep {
     }
 }
 
-fn impl_reorder_prec(binary: &impl Binary) {
+fn impl_reorder_prec<B: Binary + 'static>(binary: &B) {
     let lhs = binary.find_lhs();
     let rhs = binary.find_rhs();
 

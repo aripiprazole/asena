@@ -42,9 +42,10 @@ impl GreenTree {
     ///
     /// This function is used to memoize the values of the named children, to make the tree
     /// mutable.
-    pub fn memoize<F, T: Leaf + Clone + 'static>(&self, name: &'static str, f: F) -> Cursor<T>
+    pub fn memoize<'b, F, T>(&self, name: LeafKey, f: F) -> Cursor<'b, T>
     where
-        F: Fn(&Self) -> Cursor<T>,
+        T: Leaf + Clone + 'static,
+        F: Fn(&Self) -> Cursor<'static, T>,
     {
         let tree @ Self::Leaf { names, .. } = self else {
             return Cursor::empty();

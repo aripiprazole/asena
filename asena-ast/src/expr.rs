@@ -353,7 +353,7 @@ impl Pi {
         // Checks the integrity of the length for safety
         match children.len() {
             0 => return Cursor::empty(),
-            1 => return rhs.at(0),
+            1 => return rhs.at(0).dup(),
             _ => {}
         }
 
@@ -364,7 +364,7 @@ impl Pi {
         children.remove(0);
 
         if rhs.is_single() {
-            rhs.at(0)
+            rhs.at(0).dup()
         } else {
             Cursor::new(rhs.deref().clone())
         }
@@ -448,13 +448,13 @@ ast_enum! {
 
 impl Expr {
     fn build_local(tree: Spanned<Tree>) -> Option<Expr> {
-        let local = &*tree.terminal::<Local>(0).try_as_leaf()?;
-        Some(Expr::Local(local.clone()))
+        let local = tree.terminal::<Local>(0).to_leaf()?;
+        Some(Expr::Local(local.deref().clone()))
     }
 
     fn build_literal(tree: Spanned<Tree>) -> Option<Expr> {
-        let literal = &*tree.filter_terminal::<Literal>().first().try_as_leaf()?;
-        Some(Expr::Literal(literal.clone()))
+        let literal = tree.filter_terminal::<Literal>().first().to_leaf()?;
+        Some(Expr::Literal(literal.deref().clone()))
     }
 }
 

@@ -1,3 +1,5 @@
+use std::ops::{Deref, DerefMut};
+
 use asena_derive::{ast_debug, ast_leaf, ast_walkable, Leaf, Walker};
 
 use asena_leaf::ast::Walkable;
@@ -99,13 +101,13 @@ ast_enum! {
 
 impl Pat {
     fn build_global(tree: Spanned<Tree>) -> Option<Pat> {
-        let global = &*tree.at::<QualifiedPath>(0).try_as_leaf()?;
-        Some(Self::QualifiedPath(global.clone()))
+        let global = tree.at::<QualifiedPath>(0).to_leaf()?;
+        Some(Self::QualifiedPath(global.deref().clone()))
     }
 
     fn build_literal(tree: Spanned<Tree>) -> Option<Pat> {
-        let literal = &*tree.filter_terminal::<Literal>().first().try_as_leaf()?;
-        Some(Self::Literal(literal.clone()))
+        let literal = tree.filter_terminal::<Literal>().first().to_leaf()?;
+        Some(Self::Literal(literal.deref().clone()))
     }
 }
 
