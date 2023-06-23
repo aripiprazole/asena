@@ -1,6 +1,8 @@
 use asena_ast::{Accessor, Ann, Binary, ExprWalker, Infix, PatWalker, Qual, StmtWalker};
 use asena_derive::ast_step;
 
+pub mod commands;
+
 #[ast_step(PatWalker, StmtWalker)]
 pub struct AsenaPrecStep;
 
@@ -39,14 +41,18 @@ mod tests {
     use asena_lexer::Lexer;
     use asena_parser::Parser;
 
-    use crate::AsenaPrecStep;
+    use crate::{commands::AsenaInfixCommandStep, AsenaPrecStep};
 
     #[test]
     fn it_works() {
+        let mut prec_table = AsenaInfixCommandStep::default_prec_table();
+
         let tree = Parser::from(Lexer::new("(2 + 3) + 1"))
             .run(asena_grammar::expr)
             .build_tree()
             .unwrap();
+
+        let _infix_step = AsenaInfixCommandStep::new(&mut prec_table);
 
         let tree = Expr::from(Infix::new(tree)).walks(AsenaPrecStep);
 

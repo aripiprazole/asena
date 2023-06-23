@@ -11,7 +11,7 @@ use asena_span::{Loc, Spanned};
 //>>>Identifiers
 /// Identifier's key to a function (everything on the language), this can be abstracted in another
 /// identifiers. Serves as a key on a graph, or the abstract syntax tree representation.
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Hash, PartialEq, Eq)]
 pub struct FunctionId(pub String);
 
 impl FunctionId {
@@ -132,6 +132,10 @@ impl QualifiedPath {
     #[ast_leaf]
     pub fn segments(&self) -> Vec<Local> {
         self.filter_terminal()
+    }
+
+    pub fn to_fn_id(&self) -> FunctionId {
+        todo!()
     }
 }
 

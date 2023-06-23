@@ -35,6 +35,17 @@ macro_rules! ast_enum {
                     Self::$variant(value)
                 }
             }
+
+            impl TryFrom<$name> for $variant {
+                type Error = String;
+
+                fn try_from(value: $name) -> Result<Self, String> {
+                    match value {
+                        $name::$variant(value) => Ok(value),
+                        _ => Err("invalid node".into()),
+                    }
+                }
+            }
         )*
 
         impl $name {

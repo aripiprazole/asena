@@ -1,4 +1,4 @@
-use asena_derive::{ast_debug, ast_leaf, Leaf};
+use asena_derive::{ast_debug, ast_leaf, ast_walkable, Leaf, Walker};
 use asena_leaf::ast::Leaf;
 use asena_leaf::ast_enum;
 use asena_leaf::node::{Tree, TreeKind::*};
@@ -6,6 +6,8 @@ use asena_leaf::node::{Tree, TreeKind::*};
 use asena_span::Spanned;
 
 use crate::*;
+
+pub mod command;
 
 /// Signature is the type signature of a set of [Assign] declarations, or using [Body], can be used
 /// itself as a Body.
@@ -24,6 +26,7 @@ pub struct Signature(GreenTree);
 
 #[ast_of]
 #[ast_debug]
+#[ast_walkable(PropertyWalker, ExprWalker, PatWalker, StmtWalker)]
 impl Signature {
     #[ast_leaf]
     pub fn name(&self) -> QualifiedPath {
@@ -59,6 +62,7 @@ pub struct Assign(GreenTree);
 
 #[ast_of]
 #[ast_debug]
+#[ast_walkable(PropertyWalker, ExprWalker, PatWalker, StmtWalker)]
 impl Assign {
     #[ast_leaf]
     pub fn name(&self) -> QualifiedPath {
@@ -89,6 +93,7 @@ pub struct Command(GreenTree);
 
 #[ast_of]
 #[ast_debug]
+#[ast_walkable(PropertyWalker, ExprWalker, PatWalker, StmtWalker)]
 impl Command {
     #[ast_leaf]
     pub fn name(&self) -> QualifiedPath {
@@ -118,6 +123,7 @@ pub struct Class(GreenTree);
 
 #[ast_of]
 #[ast_debug]
+#[ast_walkable(BodyWalker, PropertyWalker, ExprWalker, PatWalker, StmtWalker)]
 impl Class {
     #[ast_leaf]
     pub fn name(&self) -> QualifiedPath {
@@ -146,6 +152,7 @@ pub struct Use(GreenTree);
 
 #[ast_of]
 #[ast_debug]
+#[ast_walkable(BodyWalker, PropertyWalker, ExprWalker, PatWalker, StmtWalker)]
 impl Use {
     #[ast_leaf]
     pub fn path(&self) -> QualifiedPath {
@@ -167,6 +174,7 @@ pub struct Instance(GreenTree);
 
 #[ast_of]
 #[ast_debug]
+#[ast_walkable(BodyWalker, PropertyWalker, ExprWalker, PatWalker, StmtWalker)]
 impl Instance {
     #[ast_leaf]
     pub fn name(&self) -> QualifiedPath {
@@ -185,6 +193,8 @@ impl Instance {
 }
 
 ast_enum! {
+    #[derive(Walker)]
+    #[ast_walker_traits(BodyWalker, PropertyWalker, ExprWalker, PatWalker, StmtWalker)]
     pub enum Decl {
         Use       <- DeclUse,
         Signature <- DeclSignature,
@@ -210,6 +220,7 @@ pub struct Constraint(GreenTree);
 
 #[ast_of]
 #[ast_debug]
+#[ast_walkable(BodyWalker, ExprWalker, PatWalker, StmtWalker)]
 impl Constraint {
     #[ast_leaf]
     pub fn value(&self) -> Expr {
@@ -236,6 +247,7 @@ pub struct Field(GreenTree);
 
 #[ast_of]
 #[ast_debug]
+#[ast_walkable(BodyWalker, ExprWalker, PatWalker, StmtWalker)]
 impl Field {
     #[ast_leaf]
     pub fn name(&self) -> Local {
@@ -265,6 +277,7 @@ pub struct Method(GreenTree);
 
 #[ast_of]
 #[ast_debug]
+#[ast_walkable(BodyWalker, ExprWalker, PatWalker, StmtWalker)]
 impl Method {
     #[ast_leaf]
     pub fn name(&self) -> Local {
@@ -304,6 +317,8 @@ impl Leaf for Method {
 }
 
 ast_enum! {
+    #[derive(Walker)]
+    #[ast_walker_traits(BodyWalker, ExprWalker, PatWalker, StmtWalker)]
     pub enum Property {
         Field  <- PropertyField,
         Method <- PropertyMethod,

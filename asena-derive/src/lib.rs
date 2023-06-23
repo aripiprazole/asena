@@ -6,6 +6,7 @@ use proc_macro::TokenStream;
 extern crate proc_macro;
 
 mod ast_build_fn;
+mod ast_command;
 mod ast_debug;
 mod ast_derive_leaf;
 mod ast_derive_walker;
@@ -59,4 +60,9 @@ pub fn ast_walkable(args: TokenStream, input: TokenStream) -> TokenStream {
 #[proc_macro_attribute]
 pub fn ast_build_fn(args: TokenStream, input: TokenStream) -> TokenStream {
     ast_build_fn::expand_ast_build_fn(args, input)
+}
+
+#[proc_macro_attribute]
+pub fn ast_command(args: TokenStream, input: TokenStream) -> TokenStream {
+    ast_command::expand_ast_command(args, input)
 }

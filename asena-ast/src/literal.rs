@@ -31,6 +31,20 @@ pub enum Literal {
     Error,
 }
 
+impl Literal {
+    pub fn to_u8(&self) -> Option<u8> {
+        todo!()
+    }
+
+    pub fn to_u32(&self) -> Option<u32> {
+        todo!()
+    }
+
+    pub fn to_u64(&self) -> Option<u64> {
+        todo!()
+    }
+}
+
 impl<W> Walkable<W> for Literal {
     fn walk(&self, _walker: &mut W) {}
 }
