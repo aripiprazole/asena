@@ -7,9 +7,6 @@ use super::*;
 /// It is used to traverse the tree, and to modify it.
 pub struct Cursor<T> {
     pub(crate) value: Arc<RefCell<Value<T>>>,
-
-    /// Children marked with name, to be accessed fast.
-    pub(crate) children: HashMap<LeafKey, Spanned<Child>>,
 }
 
 impl<T: Leaf> Cursor<T> {
@@ -27,7 +24,6 @@ impl<T: Leaf> Cursor<T> {
     pub fn of(value: T) -> Self {
         Self {
             value: Arc::new(RefCell::new(Value::Value(Rc::new(value)))),
-            children: Default::default(),
         }
     }
 
@@ -35,7 +31,6 @@ impl<T: Leaf> Cursor<T> {
     pub fn from_rc(value: Rc<T>) -> Self {
         Self {
             value: Arc::new(RefCell::new(Value::Value(value))),
-            children: Default::default(),
         }
     }
 
@@ -43,11 +38,9 @@ impl<T: Leaf> Cursor<T> {
     /// the wrapper [GreenTree].
     pub fn new<I: Into<GreenTree>>(value: I) -> Self {
         let tree: GreenTree = value.into();
-        let children = compute_named_children(&tree);
 
         Self {
             value: Arc::new(RefCell::new(Value::Ref(tree))),
-            children,
         }
     }
 
@@ -57,14 +50,9 @@ impl<T: Leaf> Cursor<T> {
         T: Clone,
     {
         let new_value = self.value.borrow().clone();
-        let children = match new_value {
-            Value::Ref(ref tree) => compute_named_children(tree),
-            Value::Value(..) => Default::default(),
-        };
 
         Self {
             value: Arc::new(RefCell::new(new_value)),
-            children,
         }
     }
 
@@ -98,9 +86,12 @@ impl<T: Leaf> Cursor<T> {
     }
 }
 
-pub enum CursorCow<'a, T> {
-    Owned(T),
-    Borrowed(&'a T),
+impl<T: Leaf> Default for Cursor<T> {
+    fn default() -> Self {
+        Self {
+            value: Arc::new(RefCell::new(Default::default())),
+        }
+    }
 }
 
 impl<T: Leaf> Cursor<Vec<T>> {
@@ -146,7 +137,6 @@ impl<T: Leaf> Clone for Cursor<T> {
     fn clone(&self) -> Self {
         Self {
             value: self.value.clone(),
-            children: self.children.clone(),
         }
     }
 }
@@ -179,29 +169,4 @@ impl<T: Leaf> Try for Cursor<T> {
             Value::Value(value) => ControlFlow::Continue(value.clone()),
         }
     }
-}
-
-fn compute_named_children(tree: &GreenTree) -> HashMap<LeafKey, Spanned<Child>> {
-    let GreenTree::Leaf { data, .. } = tree else {
-        return HashMap::new();
-    };
-
-    let mut named_children = HashMap::new();
-
-    for child in &data.children {
-        match child.value() {
-            Child::Tree(tree) => {
-                if let Some(name) = tree.name {
-                    named_children.insert(name, child.clone());
-                }
-            }
-            Child::Token(token) => {
-                if let Some(name) = token.name {
-                    named_children.insert(name, child.clone());
-                }
-            }
-        }
-    }
-
-    named_children
 }

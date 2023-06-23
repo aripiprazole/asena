@@ -1,5 +1,4 @@
 use std::cell::RefCell;
-use std::collections::HashMap;
 use std::fmt::{Debug, Display};
 use std::ops::{ControlFlow, Deref, DerefMut, FromResidual, Try};
 use std::sync::Arc;
@@ -73,15 +72,6 @@ impl<T: Leaf> Leaf for Vec<T> {
             }
         }
         Some(items)
-    }
-}
-
-impl<T: Leaf> Default for Cursor<T> {
-    fn default() -> Self {
-        Self {
-            value: Arc::new(RefCell::new(Default::default())),
-            children: Default::default(),
-        }
     }
 }
 
