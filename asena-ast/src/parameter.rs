@@ -37,7 +37,7 @@ impl Parameter {
 impl Leaf for Parameter {
     fn make(tree: Spanned<Tree>) -> Option<Self> {
         Some(match tree.kind {
-            QualifiedPathTree => Parameter::new(tree),
+            Param => Parameter::new(tree),
             _ => return None,
         })
     }
