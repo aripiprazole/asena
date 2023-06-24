@@ -131,7 +131,7 @@ macro_rules! ast_make_variant {
 #[macro_export]
 macro_rules! ast_make_pattern {
     ($terminal:expr, $variant:ident, $f:expr) => {{
-        use asena_leaf::ast::Terminal;
+        use asena_leaf::ast::Leaf;
         asena_leaf::ast::Lexeme::<$variant>::terminal($terminal.clone())
     }};
     ($terminal:expr, $variant:ident) => {

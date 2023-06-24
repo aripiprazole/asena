@@ -34,6 +34,10 @@ pub type LeafKey = &'static str;
 /// ```
 pub trait Leaf: Sized + Clone {
     fn make(tree: Spanned<Tree>) -> Option<Self>;
+
+    fn terminal(_token: Spanned<Token>) -> Option<Self> {
+        None
+    }
 }
 
 /// Represents a type that can creates a new terminal if matched the certain conditions,
@@ -63,13 +67,21 @@ impl<T: Terminal + Clone> Leaf for T {
             return None;
         }
 
-        <T as Terminal>::terminal(from.clone().swap(from.single().clone()))
+        Self::terminal(from.clone().swap(from.single().clone()))
+    }
+
+    fn terminal(token: Spanned<Token>) -> Option<Self> {
+        <T as Terminal>::terminal(token)
     }
 }
 
 impl<T: Leaf> Leaf for Option<T> {
     fn make(from: Spanned<Tree>) -> Option<Self> {
         Some(T::make(from))
+    }
+
+    fn terminal(token: Spanned<Token>) -> Option<Self> {
+        None
     }
 }
 
@@ -79,10 +91,16 @@ impl<T: Leaf> Leaf for Vec<T> {
         for child in &tree.children {
             match &child.value {
                 Child::Tree(tree) => items.push(T::make(child.replace(tree.clone()))?),
-                Child::Token(..) => {}
+                Child::Token(..) => {
+                    println!("abuble")
+                }
             }
         }
         Some(items)
+    }
+
+    fn terminal(token: Spanned<Token>) -> Option<Self> {
+        None
     }
 }
 

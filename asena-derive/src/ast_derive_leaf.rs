@@ -1,5 +1,5 @@
 use proc_macro::TokenStream;
-use quote::quote;
+use quote::{quote, ToTokens};
 use syn::*;
 
 pub fn expand_derive_leaf(input: TokenStream) -> TokenStream {
@@ -67,6 +67,66 @@ fn expand_struct(name: Ident, data: DataStruct) -> TokenStream {
 }
 
 fn expand_enum(name: Ident, data: DataEnum) -> TokenStream {
+    let terminal_patterns = data.variants.clone().into_iter().filter_map(|next| {
+        let ast_build_fn = next.attrs.iter().find_map(|attr| {
+            let expr: Expr = if attr.path().is_ident("ast_build_fn") {
+                attr.parse_args().ok()?
+            } else {
+                return None;
+            };
+
+            Some(expr)
+        });
+
+        let ast_terminal = next.attrs.iter().any(|attr| {
+            if attr.path().is_ident("ast_terminal") {
+                attr.meta.to_token_stream().to_string().contains("<")
+            } else {
+                false
+            }
+        });
+
+        let ast_from = next.attrs.iter().find_map(|attr| {
+            let expr: Expr = if attr.path().is_ident("ast_from") {
+                attr.parse_args().ok()?
+            } else {
+                return None;
+            };
+
+            Some(expr)
+        });
+
+        if let Some(ast_from) = ast_from {
+            let name = next.ident;
+            let body = ast_build_fn
+                .map(|awa| quote! { return #awa(tree) })
+                .unwrap_or_else(|| {
+                    quote! { Self::#name(#name::new(tree)) }
+                });
+
+            if ast_terminal {
+                let pattern = quote! {{
+                    use asena_leaf::ast::Leaf;
+                    asena_leaf::ast::Lexeme::<$variant>::terminal(token)
+                }};
+                Some(quote! {
+                   if let Some(value) = #pattern {
+                       return Some(Self::#name(value));
+                   };
+                })
+            } else {
+                None
+            }
+        } else {
+            next.ident
+                .span()
+                .unwrap()
+                .error("All variants of `Leaf` node should be annotated with `ast_from`");
+
+            None
+        }
+    });
+
     let patterns = data.variants.into_iter().filter_map(|next| {
         let ast_build_fn = next.attrs.iter().find_map(|attr| {
             let expr: Expr = if attr.path().is_ident("ast_build_fn") {
@@ -106,6 +166,7 @@ fn expand_enum(name: Ident, data: DataEnum) -> TokenStream {
             None
         }
     });
+    let terminal_patterns = terminal_patterns.reduce(|acc, next| quote!(#acc #next));
     let patterns = patterns.reduce(|acc, next| quote!(#acc #next));
 
     let expanded = quote! {
@@ -116,6 +177,12 @@ fn expand_enum(name: Ident, data: DataEnum) -> TokenStream {
                     #patterns
                     _ => return None,
                 })
+            }
+
+            fn terminal(token: asena_span::Spanned<asena_leaf::token::Token>) -> Option<Self> {
+                use asena_leaf::ast::Node;
+                #terminal_patterns
+                None
             }
         }
     };

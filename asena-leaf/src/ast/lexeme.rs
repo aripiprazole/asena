@@ -12,6 +12,15 @@ pub struct Lexeme<T> {
     pub value: T,
 }
 
+impl<T: Default> Default for Lexeme<T> {
+    fn default() -> Self {
+        Self {
+            token: Spanned::new(Loc::default(), Token::new(TokenKind::Error, "")),
+            value: Default::default(),
+        }
+    }
+}
+
 impl<T> Lexeme<T> {
     pub fn map<U>(self, f: impl FnOnce(T) -> U) -> Lexeme<U> {
         Lexeme {
@@ -80,7 +89,7 @@ impl<T: Debug> Debug for Lexeme<T> {
     }
 }
 
-impl<T: Terminal + Clone> Terminal for Lexeme<T> {
+impl<T: Terminal + Clone> Leaf for Lexeme<T> {
     fn terminal(token: Spanned<Token>) -> Option<Self> {
         let spanned = token.clone();
         let terminal = T::terminal(token)?;
@@ -89,6 +98,10 @@ impl<T: Terminal + Clone> Terminal for Lexeme<T> {
             token: spanned,
             value: terminal,
         })
+    }
+
+    fn make(tree: Spanned<Tree>) -> Option<Self> {
+        None
     }
 }
 
