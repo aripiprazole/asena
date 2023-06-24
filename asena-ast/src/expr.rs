@@ -321,9 +321,10 @@ impl Pi {
     #[ast_leaf]
     pub fn parameter_name(&self) -> Option<Local> {
         if self.has("parameter_name") {
-            let fn_id = self.named_terminal::<FunctionId>("parameter_name")?;
+            let fn_id = self.named_terminal::<FunctionId>("parameter_name");
+            let loc = fn_id.location();
 
-            Cursor::of(Some(Local(fn_id.0.clone())))
+            Cursor::of(Some(Local(fn_id?.0.clone(), loc.span)))
         } else {
             Cursor::empty()
         }
@@ -392,9 +393,10 @@ pub struct Sigma(GreenTree);
 impl Sigma {
     #[ast_leaf]
     pub fn parameter_name(&self) -> Local {
-        let fn_id = self.named_terminal::<FunctionId>("parameter_name")?;
+        let fn_id = self.named_terminal::<FunctionId>("parameter_name");
+        let loc = fn_id.location();
 
-        Cursor::of(Local(fn_id.0.clone()))
+        Cursor::of(Local(fn_id?.0.clone(), loc.span))
     }
 
     #[ast_leaf]

@@ -1,5 +1,7 @@
-use std::error::Error;
+use std::fmt::Debug;
 use std::path::PathBuf;
+use std::rc::Rc;
+use std::{error::Error, fmt::Display};
 
 use asena_leaf::node::Tree;
 use asena_span::{Loc, Spanned};
@@ -9,7 +11,34 @@ pub trait InternalError: Error {
         0
     }
 
-    fn kind() -> DiagnosticKind;
+    fn kind(&self) -> DiagnosticKind;
+}
+
+#[derive(Clone)]
+pub struct BoxInternalError(pub Rc<dyn InternalError>);
+
+impl Debug for BoxInternalError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Debug::fmt(&self.0, f)
+    }
+}
+
+impl Display for BoxInternalError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(&self.0, f)
+    }
+}
+
+impl Error for BoxInternalError {}
+
+impl InternalError for BoxInternalError {
+    fn code(&self) -> u16 {
+        self.0.code()
+    }
+
+    fn kind(&self) -> DiagnosticKind {
+        self.0.kind()
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -38,6 +67,7 @@ pub enum DiagnosticKind {
     Deprecated = 5,
     Info = 6,
     Tip = 7,
+    Meta = 8,
 }
 
 impl<E: InternalError> Report<E> {
@@ -52,7 +82,7 @@ impl<E: InternalError> Report<E> {
 
     pub fn add_diagnostic(&mut self, message: Spanned<E>) -> &mut Diagnostic<E> {
         self.diagnostics.push(Diagnostic {
-            kind: E::kind(),
+            kind: message.kind(),
             code: message.code(),
             message,
             children: vec![],
@@ -79,7 +109,7 @@ impl<E: InternalError> Report<E> {
 impl<E: InternalError> Diagnostic<E> {
     pub fn new(error: Spanned<E>) -> Self {
         Self {
-            kind: E::kind(),
+            kind: error.kind(),
             code: error.code(),
             message: error,
             children: vec![],
@@ -88,7 +118,7 @@ impl<E: InternalError> Diagnostic<E> {
 
     pub fn add_child(mut self, message: Spanned<E>) -> Self {
         self.children.push(Diagnostic {
-            kind: E::kind(),
+            kind: message.kind(),
             code: message.code(),
             message,
             children: vec![],

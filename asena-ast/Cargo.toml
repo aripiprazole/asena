@@ -7,4 +7,6 @@ version = "0.1.0"
 [dependencies]
 asena-derive = {path = "../asena-derive"}
 asena-leaf = {path = "../asena-leaf"}
+asena-report = {path = "../asena-report"}
 asena-span = {path = "../asena-span"}
+thiserror = "1.0.40"

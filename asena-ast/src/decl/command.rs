@@ -1,12 +1,16 @@
+use asena_report::{DiagnosticKind, InternalError};
+use thiserror::Error;
+
 use crate::{
-    BodyWalker, Command, DeclWalker, Expr, ExprWalker, FunctionId, PatWalker, PropertyWalker,
-    StmtWalker,
+    walker::Reporter, BodyWalker, Command, DeclWalker, Expr, ExprWalker, FunctionId, PatWalker,
+    PropertyWalker, StmtWalker,
 };
 
 pub type Result<T = ()> = std::result::Result<T, CommandError>;
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum CommandError {
+    #[error("invalid argument type: expected {expected_node_type}")]
     InvalidArgument { expected_node_type: &'static str },
 }
 
@@ -27,15 +31,25 @@ impl Command {
     }
 }
 
+impl InternalError for CommandError {
+    fn kind(&self) -> DiagnosticKind {
+        DiagnosticKind::Meta
+    }
+}
+
 pub trait CommandWalker: BodyWalker + PropertyWalker + ExprWalker + PatWalker + StmtWalker {
     fn on_command(&mut self, _value: &Command) -> Result {
         Ok(())
     }
 }
 
-impl<T: CommandWalker> DeclWalker for T {
+impl<T: CommandWalker + Reporter> DeclWalker for T {
     fn walk_decl_command(&mut self, value: &Command) {
-        // TODO: use a trait to report the error.
-        self.on_command(value).unwrap();
+        let name = value.find_name();
+
+        match self.on_command(value) {
+            Ok(()) => {}
+            Err(err) => self.diagnostic(err, name.location()),
+        }
     }
 }

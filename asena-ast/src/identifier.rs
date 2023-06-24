@@ -1,8 +1,9 @@
+use std::borrow::Cow;
 use std::fmt::{Debug, Display};
 
 use asena_derive::{ast_leaf, ast_of, Leaf};
 
-use asena_leaf::ast::{GreenTree, Leaf, Terminal, Walkable};
+use asena_leaf::ast::{GreenTree, Leaf, Located, Terminal, Walkable};
 use asena_leaf::node::{Tree, TreeKind::*};
 
 use asena_leaf::token::{Token, TokenKind};
@@ -13,6 +14,12 @@ use asena_span::{Loc, Spanned};
 /// identifiers. Serves as a key on a graph, or the abstract syntax tree representation.
 #[derive(Default, Clone, Hash, PartialEq, Eq)]
 pub struct FunctionId(pub String);
+
+impl Located for FunctionId {
+    fn location(&self) -> std::borrow::Cow<'_, Loc> {
+        Cow::Owned(0..0)
+    }
+}
 
 impl FunctionId {
     /// Creates a new [FunctionId] by a string
@@ -83,12 +90,12 @@ impl<W> Walkable<W> for ConstructorId {
 /// Identifier's key to local identifier, that's not declared globally, almost everything with
 /// snake case, as a language pattern.
 #[derive(Default, Clone)]
-pub struct Local(pub String);
+pub struct Local(pub String, pub Loc);
 
 impl Local {
     /// Creates a new [Local] by a string
-    pub fn new(_span: Loc, id: &str) -> Self {
-        Self(id.into())
+    pub fn new(span: Loc, id: &str) -> Self {
+        Self(id.into(), span)
         // Self(Spanned::new(span, id.into()))
     }
 
@@ -99,6 +106,12 @@ impl Local {
 
     pub fn to_fn_id(&self) -> FunctionId {
         FunctionId::new(&self.0)
+    }
+}
+
+impl Located for Local {
+    fn location(&self) -> std::borrow::Cow<'_, Loc> {
+        Cow::Borrowed(&self.1)
     }
 }
 
@@ -141,7 +154,7 @@ impl QualifiedPath {
 
     pub fn to_fn_id(&self) -> FunctionId {
         let mut paths = Vec::new();
-        for Local(segment) in self.segments().iter() {
+        for Local(segment, ..) in self.segments().iter() {
             paths.push(segment.clone())
         }
 

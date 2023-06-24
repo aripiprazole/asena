@@ -1,4 +1,4 @@
-use std::{cell::RefCell, collections::HashMap};
+use std::{borrow::Cow, cell::RefCell, collections::HashMap};
 
 use asena_span::Spanned;
 
@@ -34,6 +34,13 @@ impl GreenTree {
         Self::Leaf {
             data,
             names: RefCell::new(HashMap::new()),
+        }
+    }
+
+    pub fn location(&self) -> Cow<'_, Loc> {
+        match self {
+            GreenTree::Leaf { ref data, .. } => Cow::Borrowed(&data.span),
+            GreenTree::Error => Cow::Owned(0..0),
         }
     }
 

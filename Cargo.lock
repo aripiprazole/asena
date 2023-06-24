@@ -88,7 +88,9 @@ version = "0.1.0"
 dependencies = [
  "asena-derive",
  "asena-leaf",
+ "asena-report",
  "asena-span",
+ "thiserror",
 ]
 
 [[package]]
@@ -120,6 +122,8 @@ dependencies = [
  "asena-leaf",
  "asena-lexer",
  "asena-parser",
+ "asena-report",
+ "asena-span",
 ]
 
 [[package]]
@@ -160,6 +164,7 @@ dependencies = [
  "asena-leaf",
  "asena-lexer",
  "asena-parser",
+ "asena-report",
  "asena-span",
  "fxhash",
  "im",

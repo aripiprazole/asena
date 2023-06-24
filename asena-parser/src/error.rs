@@ -106,7 +106,7 @@ impl InternalError for ParseError {
         self.discriminant() as u16
     }
 
-    fn kind() -> asena_report::DiagnosticKind {
+    fn kind(&self) -> asena_report::DiagnosticKind {
         asena_report::DiagnosticKind::Error
     }
 }

@@ -9,6 +9,7 @@ pub fn expand_ast_command(args: TokenStream, input: TokenStream) -> TokenStream 
     let names = parse_macro_input!(args as Args);
     let mut input = parse_macro_input!(input as ItemImpl);
 
+    let (impl_generics, _, where_clause) = input.generics.split_for_impl();
     let self_ty = input.self_ty.clone();
 
     let handle = input.items.iter().cloned().find_map(|item| match item {
@@ -55,7 +56,7 @@ pub fn expand_ast_command(args: TokenStream, input: TokenStream) -> TokenStream 
     TokenStream::from(quote! {
         #input
 
-        impl #self_ty {
+        impl #impl_generics #self_ty #where_clause {
             #handle
         }
     })

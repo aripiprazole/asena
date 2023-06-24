@@ -56,6 +56,25 @@ impl<T: Leaf> Cursor<T> {
         }
     }
 
+    pub fn location(&self) -> Spanned<Rc<T>>
+    where
+        T: Default,
+        T: Located,
+    {
+        match &*self.value.borrow() {
+            Value::Ref(GreenTree::Leaf { data, .. }) => match T::make(data.clone()).map(Rc::new) {
+                Some(value) => data.replace(value),
+                None => Spanned::default(),
+            },
+            Value::Ref(GreenTree::Error) => Spanned::default(),
+            Value::Value(value) => {
+                let location: Loc = value.location().into_owned();
+
+                Spanned::new(location, value.clone())
+            }
+        }
+    }
+
     /// Returns the current cursor if it's not empty, otherwise returns [None].
     pub fn try_as_leaf(&self) -> Option<Rc<T>>
     where

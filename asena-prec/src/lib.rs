@@ -1,5 +1,6 @@
-use asena_ast::{command::CommandWalker, *};
+use asena_ast::{command::CommandWalker, walker::Reporter, *};
 use asena_derive::ast_step;
+use asena_report::InternalError;
 
 pub mod commands;
 
@@ -11,9 +12,11 @@ pub mod commands;
     PatWalker,
     StmtWalker
 )]
-pub struct AsenaPrecStep;
+pub struct AsenaPrecStep<'a, R: Reporter> {
+    reporter: &'a mut R,
+}
 
-impl ExprWalker for AsenaPrecStep {
+impl<'a, R: Reporter> ExprWalker for AsenaPrecStep<'a, R> {
     fn walk_expr_infix(&mut self, value: &Infix) {
         impl_reorder_prec(value);
     }
@@ -41,27 +44,48 @@ fn impl_reorder_prec(binary: &impl Binary) {
     lhs.set(new_rhs);
 }
 
+impl<'a, R: Reporter + Clone> AsenaPrecStep<'a, R> {
+    pub fn new(reporter: &'a mut R) -> Self {
+        Self { reporter }
+    }
+}
+
+impl<'a, R: Reporter> Reporter for AsenaPrecStep<'a, R> {
+    fn diagnostic<E: InternalError, T>(&mut self, error: E, at: asena_span::Spanned<T>)
+    where
+        E: 'static,
+    {
+        self.reporter.diagnostic(error, at);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use asena_ast::AsenaFile;
     use asena_grammar::asena_file;
     use asena_leaf::ast::Walkable;
 
-    use crate::{commands::AsenaInfixCommandStep, AsenaPrecStep};
+    use crate::{
+        commands::{default_prec_table, AsenaInfixCommandStep},
+        AsenaPrecStep,
+    };
 
     #[test]
     fn it_works() {
-        let mut prec_table = AsenaInfixCommandStep::default_prec_table();
-
-        let file = AsenaFile::new(asena_file! {
+        let mut prec_table = default_prec_table();
+        let mut tree = asena_file! {
             #infixr +, 10;
 
             Main {
                 Println "hello world"
             }
-        })
-        .walks(AsenaInfixCommandStep::new(&mut prec_table))
-        .walks(AsenaPrecStep);
+        };
+
+        let file = AsenaFile::new(tree.clone().unwrap())
+            .walks(AsenaInfixCommandStep::new(&mut tree, &mut prec_table))
+            .walks(AsenaPrecStep::new(&mut tree));
+
+        tree.reporter.dump();
 
         println!("{file:#?}")
     }

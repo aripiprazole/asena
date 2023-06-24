@@ -48,6 +48,17 @@ macro_rules! ast_enum {
             }
         )*
 
+        impl asena_leaf::ast::Located for $name {
+            fn location(&self) -> std::borrow::Cow<'_, asena_span::Loc> {
+                match self {
+                    Self::Error => std::borrow::Cow::Owned(asena_span::Loc::default()),
+                    $(
+                        Self::$variant(value) => asena_leaf::ast::Located::location(value),
+                    )*
+                }
+            }
+        }
+
         impl $name {
             #[allow(dead_code)]
             #[allow(path_statements)]

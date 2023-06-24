@@ -9,3 +9,5 @@ asena-ast = {path = "../asena-ast"}
 asena-leaf = {path = "../asena-leaf"}
 asena-lexer = {path = "../asena-lexer"}
 asena-parser = {path = "../asena-parser"}
+asena-report = {path = "../asena-report"}
+asena-span = {path = "../asena-span"}

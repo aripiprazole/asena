@@ -1,9 +1,10 @@
+use std::borrow::Cow;
 use std::cell::RefCell;
 use std::fmt::{Debug, Display};
 use std::ops::{ControlFlow, Deref, DerefMut, FromResidual, Try};
 use std::sync::Arc;
 
-use asena_span::Spanned;
+use asena_span::{Loc, Spanned};
 
 use crate::node::Child;
 use crate::token::TokenKind;
@@ -43,8 +44,8 @@ pub trait Terminal: Sized {
     fn terminal(token: Spanned<Token>) -> Option<Self>;
 }
 
-pub trait IntoGreenTree {
-    fn into_green_tree(self) -> GreenTree;
+pub trait Located {
+    fn location(&self) -> Cow<'_, Loc>;
 }
 
 /// Represents a green tree used on the [Leaf] enum variants.
