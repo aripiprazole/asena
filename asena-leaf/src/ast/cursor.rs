@@ -95,11 +95,15 @@ impl<T: Leaf> Cursor<T> {
     /// Returns the current cursor if it's not empty, otherwise returns a default value.
     pub fn as_leaf(&self) -> T
     where
-        T: Debug + Clone + Default + Node,
+        T: Debug + Clone + Node,
     {
         let tree = &*self.value.borrow();
 
         T::new(tree.clone())
+    }
+
+    pub fn clone_tree(&self) -> GreenTree {
+        self.value.borrow().clone()
     }
 
     /// Returns the current cursor if it's not empty, otherwise returns false.
