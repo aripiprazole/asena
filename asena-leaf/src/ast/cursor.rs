@@ -9,7 +9,7 @@ use super::*;
 /// It is used to traverse the tree, and to modify it.
 pub struct Cursor<T> {
     pub(crate) value: Rc<RefCell<GreenTree>>,
-    pub(crate) _marker: PhantomData<T>,
+    _marker: PhantomData<T>,
 }
 
 impl<T: Leaf> Cursor<T> {
@@ -21,36 +21,6 @@ impl<T: Leaf> Cursor<T> {
     /// Updates the value of the current cursor with a new [Cursor].
     pub fn set(&self, value: Cursor<T>) {
         self.value.replace(value.value.borrow().clone());
-    }
-
-    /// Updates the value of the current cursor with a new [T].
-    pub fn replace(&self, value: T)
-    where
-        T: Node,
-    {
-        self.value.replace(value.unwrap());
-    }
-
-    /// Creates a new cursor with the given value.
-    pub fn of(value: T) -> Self
-    where
-        T: Node,
-    {
-        Self {
-            value: Rc::new(RefCell::new(value.unwrap())),
-            _marker: PhantomData,
-        }
-    }
-
-    /// Creates a new cursor with the given [Rc] value.
-    pub fn from_rc(value: Rc<T>) -> Self
-    where
-        T: Node,
-    {
-        Self {
-            value: Rc::new(RefCell::new((*value).clone().unwrap())),
-            _marker: PhantomData,
-        }
     }
 
     /// Creates a new cursor with a reference to the `concrete syntax tree`, using
@@ -65,10 +35,7 @@ impl<T: Leaf> Cursor<T> {
     }
 
     /// Deeply duplicates the current cursor and returns a new [Cursor] instance.
-    pub fn as_new_node(&self) -> Self
-    where
-        T: Clone,
-    {
+    pub fn as_new_node(&self) -> Self {
         let new_value = self.value.borrow().clone();
 
         Self {
@@ -77,9 +44,24 @@ impl<T: Leaf> Cursor<T> {
         }
     }
 
+    /// Returns the current cursor if it's not empty, otherwise returns false.
+    pub fn is_empty(&self) -> bool {
+        match &*self.value.borrow() {
+            GreenTree::Leaf { data, .. } => !data.children.is_empty(),
+            GreenTree::Token(..) => false,
+            GreenTree::Empty => false,
+        }
+    }
+
+    pub fn clone_tree(&self) -> GreenTree {
+        self.value.borrow().clone()
+    }
+}
+
+impl<T: Node + Leaf> Cursor<T> {
     pub fn location(&self) -> Spanned<T>
     where
-        T: Default + Node + Located + 'static,
+        T: Located + 'static,
     {
         match &*self.value.borrow() {
             GreenTree::Leaf { data, .. } => data.replace(T::new(data.clone())),
@@ -94,27 +76,32 @@ impl<T: Leaf> Cursor<T> {
         }
     }
 
+    /// Updates the value of the current cursor with a new [T].
+    pub fn replace(&self, value: T) {
+        self.value.replace(value.unwrap());
+    }
+
+    /// Creates a new cursor with the given value.
+    pub fn of(value: T) -> Self {
+        Self {
+            value: Rc::new(RefCell::new(value.unwrap())),
+            _marker: PhantomData,
+        }
+    }
+
+    /// Creates a new cursor with the given [Rc] value.
+    pub fn from_rc(value: Rc<T>) -> Self {
+        Self {
+            value: Rc::new(RefCell::new((*value).clone().unwrap())),
+            _marker: PhantomData,
+        }
+    }
+
     /// Returns the current cursor if it's not empty, otherwise returns a default value.
-    pub fn as_leaf(&self) -> T
-    where
-        T: Debug + Clone + Node,
-    {
+    pub fn as_leaf(&self) -> T {
         let tree = &*self.value.borrow();
 
         T::new(tree.clone())
-    }
-
-    pub fn clone_tree(&self) -> GreenTree {
-        self.value.borrow().clone()
-    }
-
-    /// Returns the current cursor if it's not empty, otherwise returns false.
-    pub fn is_empty(&self) -> bool {
-        match &*self.value.borrow() {
-            GreenTree::Leaf { data, .. } => !data.children.is_empty(),
-            GreenTree::Token(..) => false,
-            GreenTree::Empty => false,
-        }
     }
 }
 
@@ -127,7 +114,7 @@ impl<T: Leaf> Default for Cursor<T> {
     }
 }
 
-impl<T: Default + Debug + Leaf + Node> Cursor<Vec<T>> {
+impl<T: Node + Leaf> Cursor<Vec<T>> {
     pub fn first(self) -> Cursor<T> {
         self.as_leaf().first().cloned().into()
     }
@@ -142,13 +129,13 @@ impl<T: Default + Debug + Leaf + Node> Cursor<Vec<T>> {
     }
 }
 
-impl<T: Default + Leaf + Node> From<Vec<T>> for Cursor<Vec<T>> {
+impl<T: Node + Leaf> From<Vec<T>> for Cursor<Vec<T>> {
     fn from(value: Vec<T>) -> Self {
         Cursor::of(value)
     }
 }
 
-impl<T: Default + Leaf + Node> Node for Vec<T> {
+impl<T: Node + Leaf> Node for Vec<T> {
     fn new<I: Into<GreenTree>>(tree: I) -> Self {
         let tree: GreenTree = tree.into();
 
@@ -187,7 +174,7 @@ impl<T: Default + Leaf + Node> Node for Vec<T> {
     }
 }
 
-impl<T: Leaf + Node> From<Option<T>> for Cursor<T> {
+impl<T: Node + Leaf> From<Option<T>> for Cursor<T> {
     fn from(value: Option<T>) -> Self {
         match value {
             Some(value) => Self::of(value),
@@ -196,13 +183,13 @@ impl<T: Leaf + Node> From<Option<T>> for Cursor<T> {
     }
 }
 
-impl<T: Node + Leaf + Debug + Default> Display for Cursor<T> {
+impl<T: Node + Leaf> Display for Cursor<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:?}", self.as_leaf())
     }
 }
 
-impl<T: Node + Leaf + Debug + Default> Debug for Cursor<T> {
+impl<T: Node + Leaf> Debug for Cursor<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Cursor({:?})", self.as_leaf())
     }

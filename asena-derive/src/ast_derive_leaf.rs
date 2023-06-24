@@ -68,61 +68,25 @@ fn expand_struct(name: Ident, data: DataStruct) -> TokenStream {
 
 fn expand_enum(name: Ident, data: DataEnum) -> TokenStream {
     let terminal_patterns = data.variants.clone().into_iter().filter_map(|next| {
-        let ast_build_fn = next.attrs.iter().find_map(|attr| {
-            let expr: Expr = if attr.path().is_ident("ast_build_fn") {
-                attr.parse_args().ok()?
-            } else {
-                return None;
-            };
-
-            Some(expr)
-        });
-
         let ast_terminal = next.attrs.iter().any(|attr| {
             if attr.path().is_ident("ast_terminal") {
-                attr.meta.to_token_stream().to_string().contains("<")
+                attr.meta.to_token_stream().to_string().contains('<')
             } else {
                 false
             }
         });
 
-        let ast_from = next.attrs.iter().find_map(|attr| {
-            let expr: Expr = if attr.path().is_ident("ast_from") {
-                attr.parse_args().ok()?
-            } else {
-                return None;
-            };
-
-            Some(expr)
-        });
-
-        if let Some(ast_from) = ast_from {
-            let name = next.ident;
-            let body = ast_build_fn
-                .map(|awa| quote! { return #awa(tree) })
-                .unwrap_or_else(|| {
-                    quote! { Self::#name(#name::new(tree)) }
-                });
-
-            if ast_terminal {
-                let pattern = quote! {{
-                    use asena_leaf::ast::Leaf;
-                    asena_leaf::ast::Lexeme::<$variant>::terminal(token)
-                }};
-                Some(quote! {
-                   if let Some(value) = #pattern {
-                       return Some(Self::#name(value));
-                   };
-                })
-            } else {
-                None
-            }
+        if ast_terminal {
+            let pattern = quote! {{
+                use asena_leaf::ast::Leaf;
+                asena_leaf::ast::Lexeme::<$variant>::terminal(token)
+            }};
+            Some(quote! {
+               if let Some(value) = #pattern {
+                   return Some(Self::#name(value));
+               };
+            })
         } else {
-            next.ident
-                .span()
-                .unwrap()
-                .error("All variants of `Leaf` node should be annotated with `ast_from`");
-
             None
         }
     });

@@ -32,8 +32,10 @@ pub type LeafKey = &'static str;
 ///
 /// impl Leaf for Expr { ... }
 /// ```
-pub trait Leaf: Sized + Clone {
-    fn make(tree: Spanned<Tree>) -> Option<Self>;
+pub trait Leaf: Debug + Sized + Clone + Default {
+    fn make(_tree: Spanned<Tree>) -> Option<Self> {
+        None
+    }
 
     fn terminal(_token: Spanned<Token>) -> Option<Self> {
         None
@@ -44,7 +46,7 @@ pub trait Leaf: Sized + Clone {
 /// atherwise returns `None`.
 ///
 /// A `Literal` enum should be a good example for this trait.
-pub trait Terminal: Sized {
+pub trait Terminal: Leaf + Sized + Debug + Sized + Clone + Default {
     fn terminal(token: Spanned<Token>) -> Option<Self>;
 }
 
@@ -55,21 +57,22 @@ pub trait Located {
 /// Represents a green tree used on the [Leaf] enum variants.
 pub trait Ast: Node + Deref<Target = GreenTree> + DerefMut + Clone + Debug {}
 
-pub trait Node: Sized {
+pub trait Node: Sized + Debug + Clone {
     fn new<I: Into<GreenTree>>(tree: I) -> Self;
 
     fn unwrap(self) -> GreenTree;
 }
 
-impl<T: Terminal + Clone> Leaf for T {
+impl<T: Terminal + Debug + Default + Clone + 'static> Leaf for T {
     fn make(from: Spanned<Tree>) -> Option<Self> {
         if from.children.is_empty() {
             return None;
         }
 
-        Self::terminal(from.clone().swap(from.single().clone()))
+        <Self as Leaf>::terminal(from.clone().swap(from.single().clone()))
     }
 
+    #[inline(always)]
     fn terminal(token: Spanned<Token>) -> Option<Self> {
         <T as Terminal>::terminal(token)
     }
@@ -78,10 +81,6 @@ impl<T: Terminal + Clone> Leaf for T {
 impl<T: Leaf> Leaf for Option<T> {
     fn make(from: Spanned<Tree>) -> Option<Self> {
         Some(T::make(from))
-    }
-
-    fn terminal(token: Spanned<Token>) -> Option<Self> {
-        None
     }
 }
 
@@ -97,10 +96,6 @@ impl<T: Leaf> Leaf for Vec<T> {
             }
         }
         Some(items)
-    }
-
-    fn terminal(token: Spanned<Token>) -> Option<Self> {
-        None
     }
 }
 

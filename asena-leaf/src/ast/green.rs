@@ -1,4 +1,4 @@
-use std::{any::Any, borrow::Cow, cell::RefCell, collections::HashMap, rc::Rc};
+use std::{borrow::Cow, cell::RefCell, collections::HashMap, rc::Rc};
 
 use asena_span::Spanned;
 
@@ -25,7 +25,7 @@ pub enum GreenTree {
         names: Rc<RefCell<HashMap<LeafKey, Box<dyn std::any::Any>>>>,
     },
 
-    Token(Lexeme<Rc<dyn Any>>),
+    Token(Lexeme<Rc<dyn std::any::Any>>),
 
     #[default]
     Empty,
@@ -89,7 +89,7 @@ impl GreenTree {
     }
 
     /// Returns filtered cursor to the children, if it's not an error node.
-    pub fn filter<T: Default + Node + Leaf>(&self) -> Cursor<Vec<T>> {
+    pub fn filter<T: Leaf + Node>(&self) -> Cursor<Vec<T>> {
         match self {
             GreenTree::Leaf { data, .. } => data.filter(),
             GreenTree::Token(..) => Cursor::empty(),
@@ -98,10 +98,7 @@ impl GreenTree {
     }
 
     /// Returns a terminal node, if it's not an error node.
-    pub fn terminal<T>(&self, nth: usize) -> Cursor<Lexeme<T>>
-    where
-        T: Debug + Terminal + Default + Clone + 'static,
-    {
+    pub fn terminal<T: Terminal + 'static>(&self, nth: usize) -> Cursor<Lexeme<T>> {
         match self {
             GreenTree::Leaf { data, .. } => data.terminal(nth),
             GreenTree::Token(..) => Cursor::empty(),
@@ -110,10 +107,7 @@ impl GreenTree {
     }
 
     /// Returns terminal filtered cursor to the children, if it's not an error node.
-    pub fn filter_terminal<T>(&self) -> Cursor<Vec<Lexeme<T>>>
-    where
-        T: Debug + Terminal + Default + Clone + 'static,
-    {
+    pub fn filter_terminal<T: Terminal + 'static>(&self) -> Cursor<Vec<Lexeme<T>>> {
         match self {
             GreenTree::Leaf { data, .. } => data.filter_terminal(),
             GreenTree::Token(..) => Cursor::empty(),
@@ -140,7 +134,7 @@ impl GreenTree {
     }
 
     /// Returns a cursor to the named child, if it's not an error node.
-    pub fn named_at<A: Node + Leaf + 'static>(&self, name: LeafKey) -> Cursor<A> {
+    pub fn named_at<A: Leaf + Node + 'static>(&self, name: LeafKey) -> Cursor<A> {
         match self {
             GreenTree::Leaf { names, .. } => {
                 let borrow = names.borrow();
@@ -162,10 +156,7 @@ impl GreenTree {
     }
 
     /// Returns a cursor to the named terminal, if it's not an error node.
-    pub fn named_terminal<A>(&self, name: LeafKey) -> Cursor<Lexeme<A>>
-    where
-        A: Debug + Default + Leaf + Terminal + 'static,
-    {
+    pub fn named_terminal<A: Terminal + 'static>(&self, name: LeafKey) -> Cursor<Lexeme<A>> {
         match self {
             GreenTree::Leaf { names, .. } => {
                 let borrow = names.borrow();

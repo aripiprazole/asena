@@ -258,12 +258,12 @@ pub struct Ann(GreenTree);
 impl Ann {
     #[ast_leaf]
     pub fn value(&self) -> Expr {
-        todo!()
+        self.find_lhs()
     }
 
     #[ast_leaf]
     pub fn against(&self) -> Expr {
-        todo!()
+        self.find_rhs()
     }
 }
 
