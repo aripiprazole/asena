@@ -489,7 +489,11 @@ pub enum Type {
 
 impl Node for Type {
     fn new<I: Into<GreenTree>>(tree: I) -> Self {
-        Self::Explicit(Expr::new(tree))
+        let value = Expr::new(tree);
+        match value {
+            Expr::Error => Self::Infer,
+            _ => Self::Explicit(value),
+        }
     }
 
     fn unwrap(self) -> GreenTree {
