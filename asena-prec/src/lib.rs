@@ -79,10 +79,10 @@ mod tests {
     fn it_works() {
         let mut prec_table = default_prec_table();
         let mut tree = asena_file! {
-            #infixr "+", 10;
+            #infixr "+", (10 + 3);
 
             Main {
-                let x = 4 + 2;
+                let x = 4 + 1;
                 Println "hello world"
             }
         };

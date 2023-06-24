@@ -5,7 +5,7 @@ use chumsky::prelude::*;
 use asena_leaf::node::Token;
 use asena_leaf::token::TokenKind::*;
 
-use asena_span::Spanned;
+use asena_span::{Loc, Spanned};
 
 pub const SYMBOLS: &[&str] = &[
     "=", "!", ">", "<", "$", "#", "+", "-", "*", "/", "&", "|", ".", "@", "^", ":", "\\",
@@ -145,7 +145,7 @@ impl<'a> Lexer<'a> {
             tokens: tokens
                 .unwrap_or_default()
                 .into_iter()
-                .map(|(value, span)| Spanned::new(span.into_range(), value))
+                .map(|(value, span)| Spanned::new(span.into_range().into(), value))
                 .collect(),
             errors: errs,
         }
@@ -164,11 +164,13 @@ impl<'a> Iterator for Lexer<'a> {
             }
 
             // eof case
-            None if self.source.is_empty() => Some(Spanned::new(0..0, Token::new(Eof, ""))),
+            None if self.source.is_empty() => {
+                Some(Spanned::new(Loc::Concrete(0..0), Token::new(Eof, "")))
+            }
             None => {
                 let start = self.source.len() - 1;
                 let end = self.source.len();
-                Some(Spanned::new(start..end, Token::new(Eof, "")))
+                Some(Spanned::new(Loc::Concrete(start..end), Token::new(Eof, "")))
             }
         }
     }

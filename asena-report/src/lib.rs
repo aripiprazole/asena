@@ -1,10 +1,11 @@
 use std::fmt::Debug;
+use std::ops::Range;
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::{error::Error, fmt::Display};
 
 use asena_leaf::node::Tree;
-use asena_span::{Loc, Spanned};
+use asena_span::Spanned;
 
 pub trait InternalError: Error {
     fn code(&self) -> u16 {
@@ -128,7 +129,7 @@ impl<E: InternalError> Diagnostic<E> {
     }
 
     fn as_label(&self, colors: &mut ariadne::ColorGenerator) -> ariadne::Label {
-        ariadne::Label::new(self.message.span.clone())
+        ariadne::Label::new(self.message.span.clone().into_ranged().unwrap_or_default())
             .with_message(self.message.value.to_string())
             .with_color(match self.kind {
                 DiagnosticKind::Warning | DiagnosticKind::Deprecated => ariadne::Color::Yellow,
@@ -151,7 +152,7 @@ impl<E: InternalError> Diagnostic<E> {
         children.push(self.clone());
         children.extend(self.children.clone());
 
-        Report::<Loc>::build(ReportKind::Error, (), 0)
+        Report::<Range<usize>>::build(ReportKind::Error, (), 0)
             .with_code(format!("E{:03X}", self.code))
             .with_message(self.message.value().to_string())
             .with_labels(

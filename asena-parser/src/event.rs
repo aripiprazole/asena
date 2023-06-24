@@ -41,7 +41,8 @@ impl<'a> Parser<'a> {
                 println!("{:?}", event_debugger);
             };
             let error = ParseError::EmptyStackError;
-            self.errors.push(Diagnostic::new(Spanned::new(0..0, error)))
+            self.errors
+                .push(Diagnostic::new(Spanned::new((0..0).into(), error)))
         }
 
         for event in events {
@@ -102,7 +103,8 @@ impl<'a> Parser<'a> {
 
         if stack.len() != 1 {
             let error = ParseError::StackError(stack.len());
-            self.errors.push(Diagnostic::new(Spanned::new(0..0, error)))
+            self.errors
+                .push(Diagnostic::new(Spanned::new((0..0).into(), error)))
         }
 
         if let Some(token) = tokens.next() {

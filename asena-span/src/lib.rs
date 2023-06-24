@@ -3,7 +3,12 @@ use std::{
     ops::{Deref, DerefMut, Range},
 };
 
-pub type Loc = Range<usize>;
+#[derive(Default, Clone, PartialEq, Eq, Hash)]
+pub enum Loc {
+    #[default]
+    Synthetic,
+    Concrete(Range<usize>),
+}
 
 pub trait Span {
     fn on(&self, end: Loc) -> Self;
@@ -72,6 +77,30 @@ impl<T> Deref for Spanned<T> {
     }
 }
 
+impl Loc {
+    pub fn into_ranged(self) -> Option<Range<usize>> {
+        match self {
+            Self::Concrete(range) => Some(range),
+            _ => None,
+        }
+    }
+}
+
+impl From<Range<usize>> for Loc {
+    fn from(value: Range<usize>) -> Self {
+        Loc::Concrete(value)
+    }
+}
+
+impl Debug for Loc {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Synthetic => write!(f, "Synthetic"),
+            Self::Concrete(range) => write!(f, "{:?}", range),
+        }
+    }
+}
+
 impl<T: Debug> Debug for Spanned<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:#?}", self.value())?;
@@ -82,6 +111,9 @@ impl<T: Debug> Debug for Spanned<T> {
 
 impl Span for Loc {
     fn on(&self, end: Loc) -> Self {
-        self.start..end.end
+        match (self, end) {
+            (Loc::Concrete(a), Loc::Concrete(b)) => Loc::Concrete(a.start..b.end),
+            (_, _) => Loc::Synthetic,
+        }
     }
 }

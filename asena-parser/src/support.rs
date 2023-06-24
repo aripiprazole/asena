@@ -38,10 +38,11 @@ impl<'a> Parser<'a> {
         // Build tree position with the initial state, and the current
         let initial = mark.span();
         let current = self.peek().into_owned();
-        let position = initial.start..current.span.end;
+        let position = initial.into_ranged().unwrap_or_default().start
+            ..current.span.into_ranged().unwrap_or_default().end;
 
         // Replace the state in the tree builder
-        self.events[mark.index()] = Event::Open(Spanned::new(position, kind));
+        self.events[mark.index()] = Event::Open(Spanned::new(position.into(), kind));
         self.events.push(Event::Close);
 
         MarkClosed::new(mark.index(), mark.span())
@@ -147,7 +148,7 @@ impl<'a> Parser<'a> {
             let start = self.source.len();
             let end = start;
 
-            Cow::Owned(Spanned::new(start..end, Token::eof()))
+            Cow::Owned(Spanned::new((start..end).into(), Token::eof()))
         })
     }
 

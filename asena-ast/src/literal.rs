@@ -3,7 +3,7 @@ use std::fmt::Debug;
 
 use asena_leaf::ast::{Located, Terminal, Walkable};
 use asena_leaf::token::{Token, TokenKind::*};
-use asena_span::Spanned;
+use asena_span::{Loc, Spanned};
 
 use crate::Signed::{self, *};
 
@@ -74,7 +74,7 @@ impl Literal {
 
 impl Located for Literal {
     fn location(&self) -> std::borrow::Cow<'_, asena_span::Loc> {
-        Cow::Owned(0..0)
+        Cow::Owned(Loc::default())
     }
 }
 

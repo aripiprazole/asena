@@ -40,7 +40,7 @@ impl GreenTree {
     pub fn location(&self) -> Cow<'_, Loc> {
         match self {
             GreenTree::Leaf { ref data, .. } => Cow::Borrowed(&data.span),
-            GreenTree::Error => Cow::Owned(0..0),
+            GreenTree::Error => Cow::Owned(Loc::Synthetic),
         }
     }
 

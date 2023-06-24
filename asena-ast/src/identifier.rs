@@ -17,7 +17,7 @@ pub struct FunctionId(pub String);
 
 impl Located for FunctionId {
     fn location(&self) -> std::borrow::Cow<'_, Loc> {
-        Cow::Owned(0..0)
+        Cow::Owned((0..0).into())
     }
 }
 
