@@ -48,6 +48,8 @@ pub enum TreeKind {
     ExprSigma,
     ExprHelp,
 
+    IdSymbol,
+
     PatWildcard,
     PatSpread,
     PatLit,

@@ -1,6 +1,8 @@
 use asena_ast::{command::CommandWalker, walker::Reporter, *};
 use asena_derive::ast_step;
 use asena_report::InternalError;
+use commands::Entry;
+use im::HashMap;
 
 pub mod commands;
 
@@ -13,40 +15,46 @@ pub mod commands;
     StmtWalker
 )]
 pub struct AsenaPrecStep<'a, R: Reporter> {
+    prec_table: &'a HashMap<FunctionId, Entry>,
     reporter: &'a mut R,
 }
 
 impl<'a, R: Reporter> ExprWalker for AsenaPrecStep<'a, R> {
     fn walk_expr_infix(&mut self, value: &Infix) {
-        impl_reorder_prec(value);
+        self.impl_reorder_prec(value);
     }
 
     fn walk_expr_accessor(&mut self, value: &Accessor) {
-        impl_reorder_prec(value);
+        self.impl_reorder_prec(value);
     }
 
     fn walk_expr_ann(&mut self, value: &Ann) {
-        impl_reorder_prec(value);
+        self.impl_reorder_prec(value);
     }
 
     fn walk_expr_qual(&mut self, value: &Qual) {
-        impl_reorder_prec(value);
+        self.impl_reorder_prec(value);
     }
 }
 
-fn impl_reorder_prec(binary: &impl Binary) {
-    let lhs = binary.find_lhs();
-    let rhs = binary.find_rhs();
+impl<'a, R: Reporter> AsenaPrecStep<'a, R> {
+    pub fn new(reporter: &'a mut R, prec_table: &'a HashMap<FunctionId, Entry>) -> Self {
+        Self {
+            reporter,
+            prec_table,
+        }
+    }
 
-    let new_rhs = rhs.as_new_node();
+    fn impl_reorder_prec(&mut self, binary: &impl Binary) {
+        println!("current prec table  {:?}", self.prec_table);
 
-    rhs.set(lhs.clone());
-    lhs.set(new_rhs);
-}
+        let lhs = binary.find_lhs();
+        let rhs = binary.find_rhs();
 
-impl<'a, R: Reporter + Clone> AsenaPrecStep<'a, R> {
-    pub fn new(reporter: &'a mut R) -> Self {
-        Self { reporter }
+        let new_rhs = rhs.as_new_node();
+
+        rhs.set(lhs.clone());
+        lhs.set(new_rhs);
     }
 }
 
@@ -65,25 +73,23 @@ mod tests {
     use asena_grammar::asena_file;
     use asena_leaf::ast::Walkable;
 
-    use crate::{
-        commands::{default_prec_table, AsenaInfixCommandStep},
-        AsenaPrecStep,
-    };
+    use crate::{commands::*, AsenaPrecStep};
 
     #[test]
     fn it_works() {
         let mut prec_table = default_prec_table();
         let mut tree = asena_file! {
-            #infixr +, 10;
+            #infixr "+", 10;
 
             Main {
+                let x = 4 + 2;
                 Println "hello world"
             }
         };
 
         let file = AsenaFile::new(tree.clone().unwrap())
             .walks(AsenaInfixCommandStep::new(&mut tree, &mut prec_table))
-            .walks(AsenaPrecStep::new(&mut tree));
+            .walks(AsenaPrecStep::new(&mut tree, &prec_table));
 
         tree.reporter.dump();
 

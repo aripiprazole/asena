@@ -454,12 +454,6 @@ pub fn primary(p: &mut Parser) -> Option<MarkClosed> {
             p.close(m, ExprLocal)
         }
 
-        Symbol => {
-            let m = p.open();
-            p.advance();
-            p.close(m, ExprLocal)
-        }
-
         // Parse array or named sigma expressions
         // - Sigma
         // - Array

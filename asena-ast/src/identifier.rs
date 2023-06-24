@@ -118,7 +118,7 @@ impl Located for Local {
 impl Terminal for Local {
     fn terminal(token: Spanned<Token>) -> Option<Self> {
         Some(match token.kind {
-            TokenKind::Identifier | TokenKind::Symbol => {
+            TokenKind::Identifier => {
                 let text = token.text.clone();
                 let span = token.span;
 

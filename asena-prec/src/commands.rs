@@ -19,7 +19,7 @@ pub struct AsenaInfixCommandStep<'a, R: Reporter> {
 #[ast_command(infixl, infixr)]
 impl<'a, R: Reporter> CommandWalker for AsenaInfixCommandStep<'a, R> {
     fn on_command(&mut self, command: &Command) -> Result {
-        let name = command.at::<Local>(0)?.to_fn_id();
+        let name = command.at::<Literal>(0)?.contents();
         let order = command.at::<Literal>(1)?.to_u8().unwrap_or_default();
         let mut entry = Entry::new(Assoc::Left, order);
 
@@ -27,7 +27,7 @@ impl<'a, R: Reporter> CommandWalker for AsenaInfixCommandStep<'a, R> {
             entry = Entry::new(Assoc::Right, order);
         }
 
-        self.prec_table.insert(name, entry);
+        self.prec_table.insert(FunctionId::new(&name), entry);
 
         Ok(())
     }
