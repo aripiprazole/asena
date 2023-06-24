@@ -42,8 +42,17 @@ impl DefaultReporter {
     }
 
     pub fn dump(&mut self) {
+        if self.errors.is_empty() {
+            return;
+        }
+
         let mut report = Report::<BoxInternalError>::new(&self.src, self.tree.clone());
         report.diagnostics = self.errors.clone();
+        report.dump();
+    }
+
+    pub fn dump_tree(&mut self) {
+        let mut report = Report::<BoxInternalError>::new(&self.src, self.tree.clone());
         report.dump();
     }
 }
