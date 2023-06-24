@@ -96,24 +96,29 @@ impl Local {
     pub fn as_str(&self) -> &str {
         self.0.as_str()
     }
+
+    pub fn to_fn_id(&self) -> FunctionId {
+        FunctionId::new(&self.0)
+    }
 }
 
 impl Terminal for Local {
     fn terminal(token: Spanned<Token>) -> Option<Self> {
-        if token.kind != TokenKind::Identifier {
-            todo!();
-        }
+        Some(match token.kind {
+            TokenKind::Identifier | TokenKind::Symbol => {
+                let text = token.text.clone();
+                let span = token.span;
 
-        let text = token.text.clone();
-        let span = token.span;
-
-        Some(Local::new(span, &text))
+                Local::new(span, &text)
+            }
+            _ => return None,
+        })
     }
 }
 
 impl Debug for Local {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "LocalId {:#?}", self.0)
+        write!(f, "Local {:#?}", self.0)
     }
 }
 
@@ -146,7 +151,7 @@ impl QualifiedPath {
 
 impl Debug for QualifiedPath {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "QualifiedPath ")?;
+        write!(f, "QualifiedPath")?;
         for segment in self.segments().iter() {
             write!(f, " ({:?})", segment.0)?;
         }

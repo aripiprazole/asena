@@ -22,7 +22,7 @@ pub fn derive_leaf(input: TokenStream) -> TokenStream {
     ast_derive_leaf::expand_derive_leaf(input)
 }
 
-#[proc_macro_derive(Walker, attributes(ast_walker_traits))]
+#[proc_macro_derive(Walker, attributes(ast_walker_traits, ast_impl_trait))]
 pub fn derive_ast_walker(input: TokenStream) -> TokenStream {
     ast_derive_walker::expand_ast_derive_walker(input)
 }

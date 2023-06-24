@@ -97,12 +97,12 @@ pub struct Command(GreenTree);
 impl Command {
     #[ast_leaf]
     pub fn name(&self) -> QualifiedPath {
-        todo!()
+        self.filter::<QualifiedPath>().first()
     }
 
     #[ast_leaf]
     pub fn arguments(&self) -> Vec<Expr> {
-        todo!()
+        self.filter::<Expr>().skip(1)
     }
 }
 
@@ -194,6 +194,7 @@ impl Instance {
 
 ast_enum! {
     #[derive(Walker)]
+    #[ast_impl_trait]
     #[ast_walker_traits(BodyWalker, PropertyWalker, ExprWalker, PatWalker, StmtWalker)]
     pub enum Decl {
         Use       <- DeclUse,

@@ -98,6 +98,15 @@ impl<T: Leaf> Cursor<Vec<T>> {
     pub fn first(self) -> Cursor<T> {
         self.as_leaf().first().cloned().into()
     }
+
+    pub fn skip(self, n: usize) -> Cursor<Vec<T>> {
+        self.as_leaf()
+            .iter()
+            .skip(n)
+            .cloned()
+            .collect::<Vec<_>>()
+            .into()
+    }
 }
 
 impl<T: Leaf> From<Vec<T>> for Cursor<Vec<T>> {

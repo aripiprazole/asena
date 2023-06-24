@@ -21,7 +21,7 @@ impl Command {
             .get(nth)
             .cloned()
             .and_then(|x| x.try_into().ok())
-            .ok_or(CommandError::InvalidArgument {
+            .ok_or_else(|| CommandError::InvalidArgument {
                 expected_node_type: std::any::type_name::<T>(),
             })
     }

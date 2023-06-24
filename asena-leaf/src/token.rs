@@ -54,6 +54,7 @@ pub enum TokenKind {
     Dot,          // .
     Help,         // ?
     Equal,        // =
+    Hash,         // #
 
     DoubleArrow, // =>
     RightArrow,  // ->

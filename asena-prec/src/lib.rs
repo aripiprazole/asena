@@ -1,9 +1,16 @@
-use asena_ast::{Accessor, Ann, Binary, ExprWalker, Infix, PatWalker, Qual, StmtWalker};
+use asena_ast::{command::CommandWalker, *};
 use asena_derive::ast_step;
 
 pub mod commands;
 
-#[ast_step(PatWalker, StmtWalker)]
+#[ast_step(
+    CommandWalker,
+    FileWalker,
+    BodyWalker,
+    PropertyWalker,
+    PatWalker,
+    StmtWalker
+)]
 pub struct AsenaPrecStep;
 
 impl ExprWalker for AsenaPrecStep {
@@ -36,10 +43,9 @@ fn impl_reorder_prec(binary: &impl Binary) {
 
 #[cfg(test)]
 mod tests {
-    use asena_ast::{Expr, Infix};
+    use asena_ast::AsenaFile;
+    use asena_grammar::asena_file;
     use asena_leaf::ast::Walkable;
-    use asena_lexer::Lexer;
-    use asena_parser::Parser;
 
     use crate::{commands::AsenaInfixCommandStep, AsenaPrecStep};
 
@@ -47,15 +53,16 @@ mod tests {
     fn it_works() {
         let mut prec_table = AsenaInfixCommandStep::default_prec_table();
 
-        let tree = Parser::from(Lexer::new("(2 + 3) + 1"))
-            .run(asena_grammar::expr)
-            .build_tree()
-            .unwrap();
+        let file = AsenaFile::new(asena_file! {
+            #infixr +, 10;
 
-        let _infix_step = AsenaInfixCommandStep::new(&mut prec_table);
+            Main {
+                Println "hello world"
+            }
+        })
+        .walks(AsenaInfixCommandStep::new(&mut prec_table))
+        .walks(AsenaPrecStep);
 
-        let tree = Expr::from(Infix::new(tree)).walks(AsenaPrecStep);
-
-        println!("{tree:#?}")
+        println!("{file:#?}")
     }
 }

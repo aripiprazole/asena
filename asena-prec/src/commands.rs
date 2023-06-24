@@ -2,7 +2,14 @@ use asena_ast::{command::CommandWalker, *};
 use asena_derive::{ast_command, ast_step};
 use im::HashMap;
 
-#[ast_step(BodyWalker, PropertyWalker, ExprWalker, PatWalker, StmtWalker)]
+#[ast_step(
+    FileWalker,
+    BodyWalker,
+    PropertyWalker,
+    ExprWalker,
+    PatWalker,
+    StmtWalker
+)]
 pub struct AsenaInfixCommandStep<'a> {
     pub prec_table: &'a mut HashMap<FunctionId, PrecedenceEntry>,
 }
@@ -10,8 +17,8 @@ pub struct AsenaInfixCommandStep<'a> {
 #[ast_command(infixl, infixr)]
 impl CommandWalker for AsenaInfixCommandStep<'_> {
     fn on_command(&mut self, command: &Command) -> asena_ast::decl::command::Result {
-        let name = command.at::<QualifiedPath>(0)?.to_fn_id();
-        let order = command.at::<Literal>(0)?.to_u8().unwrap_or_default();
+        let name = command.at::<Local>(0)?.to_fn_id();
+        let order = command.at::<Literal>(1)?.to_u8().unwrap_or_default();
         let mut entry = PrecedenceEntry::new(Assoc::Left, order);
 
         if command.is_command("infixr") {

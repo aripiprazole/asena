@@ -7,6 +7,10 @@ use asena_parser::error::ParseError::*;
 use asena_parser::event::MarkClosed;
 use asena_parser::Parser;
 
+pub mod macros;
+
+pub use macros::*;
+
 /// File = Decl*
 pub fn file(p: &mut Parser) {
     let m = p.open();
@@ -22,10 +26,15 @@ pub fn file(p: &mut Parser) {
     p.close(m, File);
 }
 
-/// Decl = DeclSignature | DeclAssign
+/// Decl = DeclCommand | DeclSignature | DeclAssign
 pub fn decl(p: &mut Parser) {
     if p.at(UseKeyword) {
         decl_use(p);
+        return;
+    }
+
+    if p.at(Hash) {
+        decl_command(p);
         return;
     }
 
@@ -38,7 +47,24 @@ pub fn decl(p: &mut Parser) {
 
     decl_assign(p);
 }
-/// DeclUse = 'Use' Global
+
+/// DeclCommand = '#' Global Expr* ';'
+pub fn decl_command(p: &mut Parser) {
+    let m = p.open();
+    p.expect(Hash);
+    global(p);
+    expr(p);
+    while p.at(Comma) {
+        p.expect(Comma);
+        if p.at(Semi) || p.eof() {
+            break;
+        }
+        expr(p);
+    }
+    p.close(m, DeclCommand);
+}
+
+/// DeclUse = 'use' Global
 pub fn decl_use(p: &mut Parser) {
     let m = p.open();
     p.expect(UseKeyword);
@@ -423,6 +449,12 @@ pub fn primary(p: &mut Parser) -> Option<MarkClosed> {
 
     let result = match token.value.kind {
         Identifier => {
+            let m = p.open();
+            p.advance();
+            p.close(m, ExprLocal)
+        }
+
+        Symbol => {
             let m = p.open();
             p.advance();
             p.close(m, ExprLocal)

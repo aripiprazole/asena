@@ -50,6 +50,7 @@ pub fn lexer<'a>() -> impl Parser<'a, &'a str, TokenSet, LexError<'a>> {
             "<-" => Token::new(LeftArrow, content),
             "=" => Token::new(Equal, content),
             ":" => Token::new(Colon, content),
+            "#" => Token::new(Hash, content),
             _ => Token::new(Symbol, content),
         })
         .labelled("symbol");

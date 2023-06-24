@@ -32,18 +32,22 @@ pub enum Literal {
 }
 
 impl Literal {
+    /// Transforms the literal into a u8 if possible.
     pub fn to_u8(&self) -> Option<u8> {
         self.contents().parse().ok()
     }
 
+    /// Transforms the literal into a u32 if possible.
     pub fn to_u32(&self) -> Option<u32> {
         self.contents().parse().ok()
     }
 
+    /// Transforms the literal into a u64 if possible.
     pub fn to_u64(&self) -> Option<u64> {
         self.contents().parse().ok()
     }
 
+    /// Returns the contents of the literal as a string.
     pub fn contents(&self) -> String {
         match self {
             Literal::Nat(n) => n.to_string(),

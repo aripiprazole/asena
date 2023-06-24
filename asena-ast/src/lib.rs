@@ -1,8 +1,6 @@
-use std::fmt::{Debug, Formatter};
-
 use asena_derive::{ast_debug, ast_leaf, ast_of, Leaf};
-
-use asena_leaf::ast::GreenTree;
+use asena_leaf::ast::{GreenTree, Walkable};
+use std::fmt::{Debug, Formatter};
 
 /// Represents a true-false value, just like an wrapper to [bool], this represents if an integer
 /// value is signed, or unsigned.
@@ -25,8 +23,29 @@ impl AsenaFile {
     }
 }
 
+pub trait FileWalker:
+    BodyWalker + PropertyWalker + ExprWalker + PatWalker + StmtWalker + CommandWalker
+{
+    fn walk_file(&mut self, _value: &AsenaFile) {}
+}
+
+/// NOTE: implemented on hand, because of the [AsenaFile] is a root node, and it's not a [Decl],
+/// and it would be painful to list every walker trait on the macro call.
+impl<W: FileWalker> Walkable<W> for AsenaFile
+where
+    W: BodyWalker + PropertyWalker + ExprWalker + PatWalker + StmtWalker + CommandWalker,
+{
+    fn walk(&self, walker: &mut W) {
+        for decl in self.declarations().iter() {
+            decl.walk(walker);
+        }
+        walker.walk_file(self);
+    }
+}
+
 pub use binding::*;
 pub use body::*;
+use decl::command::CommandWalker;
 pub use decl::*;
 pub use expr::*;
 pub use identifier::*;
