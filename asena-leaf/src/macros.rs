@@ -31,8 +31,8 @@ macro_rules! ast_enum {
         }
 
         $(
-            impl From<$variant> for $name {
-                fn from(value: $variant) -> Self {
+            impl From<$crate::macros::ast_make_variant!($variant $(, $f)?)> for $name {
+                fn from(value: $crate::macros::ast_make_variant!($variant $(, $f)?)) -> Self {
                     Self::$variant(value.into())
                 }
             }

@@ -322,14 +322,12 @@ impl Pi {
     pub fn parameter_name(&self) -> Option<Lexeme<Local>> {
         if self.has("parameter_name") {
             let fn_id = self
-                .named_terminal::<Lexeme<FunctionId>>("parameter_name")
+                .named_terminal::<FunctionId>("parameter_name")
                 .as_leaf();
 
-            let value = (*fn_id)
-                .clone()
-                .map_token(|x, token| Local(x.to_string(), token.span.clone()));
+            let local = fn_id.map_token(|x, token| Local(x.to_string(), token.span.clone()));
 
-            Cursor::of(Some(value))
+            Cursor::of(Some(local))
         } else {
             Cursor::empty()
         }
@@ -464,7 +462,7 @@ impl Expr {
     }
 
     fn build_literal(tree: Spanned<Tree>) -> Option<Expr> {
-        let literal = tree.filter_terminal::<Literal>().first().as_leaf();
+        let literal = tree.terminal::<Literal>(0).as_leaf();
 
         Some(Expr::Literal(literal))
     }

@@ -2,7 +2,7 @@ use std::{any::Any, borrow::Cow, cell::RefCell, collections::HashMap, rc::Rc};
 
 use asena_span::Spanned;
 
-use crate::node::{Child, Tree};
+use crate::node::{Child, Named, Tree};
 
 use super::*;
 
@@ -208,5 +208,23 @@ impl GreenTree {
 impl From<Spanned<Tree>> for GreenTree {
     fn from(value: Spanned<Tree>) -> Self {
         GreenTree::new(value)
+    }
+}
+
+impl Debug for GreenTree {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Leaf { data, names } => f
+                .debug_struct("Leaf")
+                .field("data", data)
+                .field("names", names)
+                .finish(),
+            Self::Token(lexeme) => f
+                .debug_struct("Token")
+                .field("kind", &lexeme.token.kind.name())
+                .field("value", lexeme)
+                .finish(),
+            Self::Error => write!(f, "Error"),
+        }
     }
 }

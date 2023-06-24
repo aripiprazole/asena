@@ -62,24 +62,6 @@ impl<T: Node> Node for Option<T> {
     }
 }
 
-impl<T: Default> Default for Lexeme<T> {
-    fn default() -> Self {
-        Lexeme {
-            token: Spanned::new(Loc::Synthetic, Token::eof()),
-            value: T::default(),
-        }
-    }
-}
-
-impl<T: Terminal> From<T> for Lexeme<T> {
-    fn from(value: T) -> Self {
-        Lexeme {
-            token: Spanned::new(Loc::Synthetic, Token::eof()),
-            value,
-        }
-    }
-}
-
 impl<T> Located for Lexeme<T> {
     fn location(&self) -> Cow<'_, Loc> {
         Cow::Borrowed(&self.token.span)
@@ -120,7 +102,7 @@ impl<T: Debug + Leaf + Default + 'static> Node for Lexeme<T> {
             GreenTree::Token(lexeme) => {
                 let value = match lexeme.value.downcast_ref::<T>() {
                     Some(value) => value.clone(),
-                    None => return Self::default(),
+                    None => todo!(),
                 };
 
                 Self {
@@ -128,7 +110,7 @@ impl<T: Debug + Leaf + Default + 'static> Node for Lexeme<T> {
                     value,
                 }
             }
-            GreenTree::Error => Self::default(),
+            GreenTree::Error => todo!(),
         }
     }
 
