@@ -1,5 +1,6 @@
 use crate::{
-    BodyWalker, Command, DeclWalker, Expr, ExprWalker, PatWalker, PropertyWalker, StmtWalker,
+    BodyWalker, Command, DeclWalker, Expr, ExprWalker, FunctionId, PatWalker, PropertyWalker,
+    StmtWalker,
 };
 
 pub type Result<T = ()> = std::result::Result<T, CommandError>;
@@ -10,9 +11,9 @@ pub enum CommandError {
 }
 
 impl Command {
-    /// Checks if the command is the given argument.
-    pub fn is_command(&self, _arg: &str) -> bool {
-        todo!()
+    /// Checks if the command is the given name.
+    pub fn is_command(&self, name: &str) -> bool {
+        self.name().to_fn_id() == FunctionId::new(name)
     }
 
     pub fn at<T: TryFrom<Expr>>(&self, nth: usize) -> Result<T> {
@@ -34,6 +35,7 @@ pub trait CommandWalker: BodyWalker + PropertyWalker + ExprWalker + PatWalker + 
 
 impl<T: CommandWalker> DeclWalker for T {
     fn walk_decl_command(&mut self, value: &Command) {
+        // TODO: use a trait to report the error.
         self.on_command(value).unwrap();
     }
 }

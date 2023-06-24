@@ -135,7 +135,12 @@ impl QualifiedPath {
     }
 
     pub fn to_fn_id(&self) -> FunctionId {
-        todo!()
+        let mut paths = Vec::new();
+        for Local(segment) in self.segments().iter() {
+            paths.push(segment.clone())
+        }
+
+        FunctionId::new(&paths.join("."))
     }
 }
 

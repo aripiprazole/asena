@@ -33,15 +33,37 @@ pub enum Literal {
 
 impl Literal {
     pub fn to_u8(&self) -> Option<u8> {
-        todo!()
+        self.contents().parse().ok()
     }
 
     pub fn to_u32(&self) -> Option<u32> {
-        todo!()
+        self.contents().parse().ok()
     }
 
     pub fn to_u64(&self) -> Option<u64> {
-        todo!()
+        self.contents().parse().ok()
+    }
+
+    pub fn contents(&self) -> String {
+        match self {
+            Literal::Nat(n) => n.to_string(),
+            Literal::String(s) => s.to_string(),
+            Literal::Int8(n, Signed::Signed) => (*n as i8).to_string(),
+            Literal::Int8(n, Signed::Unsigned) => n.to_string(),
+            Literal::Int16(n, Signed::Signed) => (*n as i16).to_string(),
+            Literal::Int16(n, Signed::Unsigned) => n.to_string(),
+            Literal::Int32(n, Signed::Signed) => (*n as i32).to_string(),
+            Literal::Int32(n, Signed::Unsigned) => n.to_string(),
+            Literal::Int64(n, Signed::Signed) => (*n as i64).to_string(),
+            Literal::Int64(n, Signed::Unsigned) => n.to_string(),
+            Literal::Int128(n, Signed::Signed) => (*n as i128).to_string(),
+            Literal::Int128(n, Signed::Unsigned) => n.to_string(),
+            Literal::Float32(f) => f.to_string(),
+            Literal::Float64(f) => f.to_string(),
+            Literal::True => "true".to_string(),
+            Literal::False => "false".to_string(),
+            Literal::Error => "".to_string(),
+        }
     }
 }
 
