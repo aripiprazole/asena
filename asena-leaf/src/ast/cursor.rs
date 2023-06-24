@@ -77,7 +77,7 @@ impl<T: Leaf> Cursor<T> {
         }
     }
 
-    pub fn location(&self) -> Spanned<Rc<T>>
+    pub fn location(&self) -> Spanned<T>
     where
         T: Default,
         T: Located,
@@ -86,47 +86,27 @@ impl<T: Leaf> Cursor<T> {
             return Spanned::default();
         };
 
-        match T::make(data.clone()).map(Rc::new) {
+        match T::make(data.clone()) {
             Some(value) => data.replace(value),
             None => Spanned::default(),
         }
     }
 
-    pub fn offset(&self) -> Option<Lexeme<T>>
-    where
-        T: Default,
-    {
-        let tree @ GreenTree::Leaf { .. } = &*self.value.borrow() else {
-            return None;
-        };
-
-        Some(Lexeme::new(tree.clone()))
-    }
-
-    /// Returns the current cursor if it's not empty, otherwise returns [None].
-    pub fn try_as_leaf(&self) -> Option<Rc<T>>
-    where
-        T: Clone,
-    {
-        let GreenTree::Leaf { data, .. } =  &*self.value.borrow() else {
-            return None;
-        };
-
-        T::make(data.clone()).map(Rc::new)
-    }
-
     /// Returns the current cursor if it's not empty, otherwise returns a default value.
-    pub fn as_leaf(&self) -> Rc<T>
+    pub fn as_leaf(&self) -> T
     where
-        T: Clone + Default,
+        T: Debug + Clone + Default + Node,
     {
-        self.try_as_leaf().unwrap_or_default()
+        let tree = &*self.value.borrow();
+
+        T::new(tree.clone())
     }
 
     /// Returns the current cursor if it's not empty, otherwise returns false.
     pub fn is_empty(&self) -> bool {
         match &*self.value.borrow() {
-            GreenTree::Leaf { .. } => true,
+            GreenTree::Leaf { data, .. } => !data.children.is_empty(),
+            GreenTree::Token(..) => false,
             GreenTree::Error => false,
         }
     }
@@ -141,7 +121,7 @@ impl<T: Leaf> Default for Cursor<T> {
     }
 }
 
-impl<T: Leaf + Node> Cursor<Vec<T>> {
+impl<T: Leaf + Debug + Node> Cursor<Vec<T>> {
     pub fn first(self) -> Cursor<T> {
         self.as_leaf().first().cloned().into()
     }
@@ -168,6 +148,7 @@ impl<T: Leaf + Node> Node for Vec<T> {
 
         match tree {
             GreenTree::Error => vec![],
+            GreenTree::Token(..) => vec![],
             GreenTree::Leaf { data, .. } => data
                 .children
                 .iter()
@@ -208,13 +189,13 @@ impl<T: Leaf + Node> From<Option<T>> for Cursor<T> {
     }
 }
 
-impl<T: Leaf + Display + Default> Display for Cursor<T> {
+impl<T: Node + Leaf + Debug + Default> Display for Cursor<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.as_leaf())
+        write!(f, "{:?}", self.as_leaf())
     }
 }
 
-impl<T: Leaf + Debug + Default> Debug for Cursor<T> {
+impl<T: Node + Leaf + Debug + Default> Debug for Cursor<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Cursor({:?})", self.as_leaf())
     }
@@ -235,7 +216,7 @@ impl<T: Leaf> Clone for Cursor<T> {
     }
 }
 
-impl<T: Leaf + Node> FromResidual for Cursor<T> {
+impl<T: Default + Leaf + Node + 'static> FromResidual for Cursor<T> {
     fn from_residual(residual: <Self as Try>::Residual) -> Self {
         match residual {
             Some(_) => unreachable!(),
@@ -244,23 +225,26 @@ impl<T: Leaf + Node> FromResidual for Cursor<T> {
     }
 }
 
-impl<T: Leaf + Node> Try for Cursor<T> {
-    type Output = Rc<T>;
+impl<T: Default + Leaf + Node + 'static> Try for Cursor<T> {
+    type Output = T;
 
     type Residual = Option<std::convert::Infallible>;
 
     fn from_output(output: Self::Output) -> Self {
-        Self::from_rc(output)
+        Self::of(output)
     }
 
     fn branch(self) -> ControlFlow<Self::Residual, Self::Output> {
-        let GreenTree::Leaf { data, .. } = &*self.value.borrow() else {
-            return ControlFlow::Break(None);
-        };
-
-        match T::make(data.clone()) {
-            Some(value) => ControlFlow::Continue(Rc::new(value)),
-            None => ControlFlow::Break(None),
+        match &*self.value.borrow() {
+            GreenTree::Leaf { data, .. } => match T::make(data.clone()) {
+                Some(value) => ControlFlow::Continue(value),
+                None => ControlFlow::Break(None),
+            },
+            GreenTree::Token(lexeme) => match lexeme.downcast_ref::<T>() {
+                Some(value) => ControlFlow::Continue(value.clone()),
+                None => ControlFlow::Break(None),
+            },
+            GreenTree::Error => ControlFlow::Break(None),
         }
     }
 }

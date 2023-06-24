@@ -52,8 +52,23 @@ macro_rules! ast_enum {
         impl asena_leaf::ast::Node for $name {
             fn new<I: Into<asena_leaf::ast::GreenTree>>(value: I) -> Self {
                 let tree: asena_leaf::ast::GreenTree = value.into();
-                let opt: Option<Self> = asena_leaf::ast::Leaf::make(tree.or_empty());
-                opt.unwrap_or_default()
+                match tree {
+                    asena_leaf::ast::GreenTree::Leaf { data, .. } => {
+                        asena_leaf::ast::Leaf::make(data).unwrap_or_default()
+                    }
+                    asena_leaf::ast::GreenTree::Token(lexeme) => {
+                        let terminal = lexeme.token;
+                        let mut fallback = Self::default();
+                        $(
+                            if let Some(value) = $crate::macros::ast_make_pattern!(terminal, $variant $(, $f)?) {
+                                return Self::$variant(value);
+                            };
+                        )*;
+
+                        fallback
+                    },
+                    asena_leaf::ast::GreenTree::Error => Self::default(),
+                }
             }
 
             fn unwrap(self) -> asena_leaf::ast::GreenTree {
@@ -113,5 +128,17 @@ macro_rules! ast_make_variant {
     ($variant:ident) => { $variant }
 }
 
+#[macro_export]
+macro_rules! ast_make_pattern {
+    ($terminal:expr, $variant:ident, $f:expr) => {{
+        use asena_leaf::ast::Terminal;
+        asena_leaf::ast::Lexeme::<$variant>::terminal($terminal.clone())
+    }};
+    ($terminal:expr, $variant:ident) => {
+        None
+    };
+}
+
 pub use ast_enum;
+pub use ast_make_pattern;
 pub use ast_make_variant;

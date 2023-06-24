@@ -99,11 +99,9 @@ ast_enum! {
 
 impl Pat {
     fn build_literal(tree: Spanned<Tree>) -> Option<Pat> {
-        let literal = tree
-            .filter_terminal::<Lexeme<Literal>>()
-            .first()
-            .try_as_leaf()?;
-        Some(Self::Literal((*literal).clone()))
+        let literal = tree.filter_terminal::<Literal>().first().as_leaf();
+
+        Some(Self::Literal(literal))
     }
 }
 

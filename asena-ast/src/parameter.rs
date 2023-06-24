@@ -18,7 +18,7 @@ impl Parameter {
     /// Optional parameter's name
     #[ast_leaf]
     pub fn name(&self) -> Lexeme<Local> {
-        self.filter_terminal::<Lexeme<Local>>().first()
+        self.filter_terminal::<Local>().first()
     }
 
     /// Parameter's type
