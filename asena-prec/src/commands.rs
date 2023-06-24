@@ -7,8 +7,8 @@ pub struct AsenaInfixCommandStep<'a> {
     pub prec_table: &'a mut HashMap<FunctionId, PrecedenceEntry>,
 }
 
+#[ast_command(infixl, infixr)]
 impl CommandWalker for AsenaInfixCommandStep<'_> {
-    #[ast_command(infixl, infixr)]
     fn on_command(&mut self, command: &Command) -> asena_ast::decl::command::Result {
         let name = command.at::<QualifiedPath>(0)?.to_fn_id();
         let order = command.at::<Literal>(0)?.to_u8().unwrap_or_default();
