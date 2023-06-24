@@ -89,7 +89,7 @@ impl GreenTree {
     }
 
     /// Returns filtered cursor to the children, if it's not an error node.
-    pub fn filter<T: Node + Leaf>(&self) -> Cursor<Vec<T>> {
+    pub fn filter<T: Default + Node + Leaf>(&self) -> Cursor<Vec<T>> {
         match self {
             GreenTree::Leaf { data, .. } => data.filter(),
             GreenTree::Token(..) => Cursor::empty(),
@@ -201,6 +201,14 @@ impl GreenTree {
             GreenTree::Leaf { data, .. } => data,
             GreenTree::Token(..) => Spanned::default(),
             GreenTree::Empty => Spanned::default(),
+        }
+    }
+
+    pub fn as_child(self) -> Spanned<Child> {
+        match self {
+            GreenTree::Leaf { data, .. } => data.map(Child::Tree),
+            GreenTree::Token(lexeme) => lexeme.token.map(Child::Token),
+            GreenTree::Empty => Spanned::new(Loc::default(), Child::Tree(Tree::default())),
         }
     }
 }

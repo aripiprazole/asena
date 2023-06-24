@@ -26,7 +26,7 @@ impl Tree {
         }
     }
 
-    pub fn filter<T: Node + Leaf>(&self) -> Cursor<Vec<T>> {
+    pub fn filter<T: Default + Node + Leaf>(&self) -> Cursor<Vec<T>> {
         self.children
             .iter()
             .filter_map(|child| match child.value.clone() {

@@ -127,7 +127,7 @@ impl<T: Leaf> Default for Cursor<T> {
     }
 }
 
-impl<T: Leaf + Debug + Node> Cursor<Vec<T>> {
+impl<T: Default + Debug + Leaf + Node> Cursor<Vec<T>> {
     pub fn first(self) -> Cursor<T> {
         self.as_leaf().first().cloned().into()
     }
@@ -142,13 +142,13 @@ impl<T: Leaf + Debug + Node> Cursor<Vec<T>> {
     }
 }
 
-impl<T: Leaf + Node> From<Vec<T>> for Cursor<Vec<T>> {
+impl<T: Default + Leaf + Node> From<Vec<T>> for Cursor<Vec<T>> {
     fn from(value: Vec<T>) -> Self {
         Cursor::of(value)
     }
 }
 
-impl<T: Leaf + Node> Node for Vec<T> {
+impl<T: Default + Leaf + Node> Node for Vec<T> {
     fn new<I: Into<GreenTree>>(tree: I) -> Self {
         let tree: GreenTree = tree.into();
 
@@ -158,9 +158,11 @@ impl<T: Leaf + Node> Node for Vec<T> {
             GreenTree::Leaf { data, .. } => data
                 .children
                 .iter()
-                .filter_map(|child| match child.value {
-                    Child::Tree(ref tree) => T::make(child.replace(tree.clone())),
-                    Child::Token(_) => None,
+                .map(|child| match child.value {
+                    Child::Tree(ref tree) => T::new(child.replace(tree.clone())),
+                    Child::Token(ref token) => {
+                        T::terminal(child.replace(token.clone())).unwrap_or_default()
+                    }
                 })
                 .collect::<Vec<_>>(),
         }
@@ -169,18 +171,17 @@ impl<T: Leaf + Node> Node for Vec<T> {
     fn unwrap(self) -> GreenTree {
         let children = self
             .into_iter()
-            .map(|x| x.unwrap().or_empty().map(Child::Tree))
+            .map(|x| x.unwrap().as_child())
             .collect::<Vec<_>>();
 
+        let tree = Tree {
+            name: None,
+            kind: TreeKind::ListTree,
+            children,
+        };
+
         GreenTree::Leaf {
-            data: Spanned::new(
-                Loc::Synthetic,
-                Tree {
-                    name: None,
-                    kind: TreeKind::ListTree,
-                    children,
-                },
-            ),
+            data: Spanned::new(Loc::default(), tree),
             names: Rc::default(),
         }
     }
