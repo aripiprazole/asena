@@ -79,16 +79,18 @@ impl<T: Leaf> Cursor<T> {
 
     pub fn location(&self) -> Spanned<T>
     where
-        T: Default,
-        T: Located,
+        T: Default + Node + Located + 'static,
     {
-        let GreenTree::Leaf { data, .. } =  &*self.value.borrow() else {
-            return Spanned::default();
-        };
+        match &*self.value.borrow() {
+            GreenTree::Leaf { data, .. } => data.replace(T::new(data.clone())),
+            GreenTree::Token(lexeme) => {
+                let Some(value) = lexeme.downcast_ref::<T>() else {
+                    return Spanned::default();
+                };
 
-        match T::make(data.clone()) {
-            Some(value) => data.replace(value),
-            None => Spanned::default(),
+                lexeme.token.clone().swap(value.clone())
+            }
+            GreenTree::Empty => Spanned::default(),
         }
     }
 
