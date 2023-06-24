@@ -41,6 +41,7 @@ pub fn expand_ast_leaf(_args: TokenStream, input: TokenStream) -> TokenStream {
     find_fn_tokens.sig.ident = cursor_name;
     find_fn_tokens.block = Box::new(parse_quote! {{
        self.memoize(#key_name, |this| {
+           use asena_leaf::ast::Node;
            let this = Self::new(this.clone());
            this.#impl_name()
        })

@@ -3,7 +3,7 @@ use std::fmt::{Debug, Display};
 
 use asena_derive::{ast_leaf, ast_of, Leaf};
 
-use asena_leaf::ast::{GreenTree, Leaf, Located, Terminal, Walkable};
+use asena_leaf::ast::{GreenTree, Leaf, Lexeme, Located, Node, Terminal, Walkable};
 use asena_leaf::node::{Tree, TreeKind::*};
 
 use asena_leaf::token::{Token, TokenKind};
@@ -148,14 +148,14 @@ pub struct QualifiedPath(GreenTree);
 #[ast_of]
 impl QualifiedPath {
     #[ast_leaf]
-    pub fn segments(&self) -> Vec<Local> {
+    pub fn segments(&self) -> Vec<Lexeme<Local>> {
         self.filter_terminal()
     }
 
     pub fn to_fn_id(&self) -> FunctionId {
         let mut paths = Vec::new();
-        for Local(segment, ..) in self.segments().iter() {
-            paths.push(segment.clone())
+        for lexeme in self.segments().iter() {
+            paths.push(lexeme.0.clone())
         }
 
         FunctionId::new(&paths.join("."))
@@ -166,7 +166,7 @@ impl Debug for QualifiedPath {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "QualifiedPath")?;
         for segment in self.segments().iter() {
-            write!(f, " ({:?})", segment.0)?;
+            write!(f, " [{:?}]", segment.0)?;
         }
         Ok(())
     }

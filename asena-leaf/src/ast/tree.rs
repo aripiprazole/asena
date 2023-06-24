@@ -1,7 +1,7 @@
 use super::*;
 
 impl Tree {
-    pub fn at<T: Leaf>(&self, nth: usize) -> Cursor<T> {
+    pub fn at<T: Node + Leaf>(&self, nth: usize) -> Cursor<T> {
         let Some(child) = self.children.get(nth) else {
             return Cursor::empty();
         };
@@ -12,7 +12,7 @@ impl Tree {
         }
     }
 
-    pub fn terminal<T: Terminal + Clone>(&self, nth: usize) -> Cursor<T> {
+    pub fn terminal<T: Node + Terminal + Clone>(&self, nth: usize) -> Cursor<T> {
         let Some(child) = self.children.get(nth) else {
             return Cursor::empty();
         };
@@ -23,7 +23,7 @@ impl Tree {
         }
     }
 
-    pub fn filter<T: Leaf>(&self) -> Cursor<Vec<T>> {
+    pub fn filter<T: Node + Leaf>(&self) -> Cursor<Vec<T>> {
         self.children
             .iter()
             .filter_map(|child| match child.value.clone() {
@@ -34,7 +34,7 @@ impl Tree {
             .into()
     }
 
-    pub fn filter_terminal<T: Terminal + Clone>(&self) -> Cursor<Vec<T>> {
+    pub fn filter_terminal<T: Node + Terminal + Clone>(&self) -> Cursor<Vec<T>> {
         self.children
             .iter()
             .filter_map(|child| match child.value.clone() {

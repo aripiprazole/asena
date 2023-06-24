@@ -1,18 +1,16 @@
 use asena_derive::ast_leaf;
-use asena_leaf::ast::{Ast, Cursor};
+use asena_leaf::ast::{Ast, Cursor, Lexeme};
 
 use crate::*;
 
 pub trait Binary: Ast {
-    fn new(tree: GreenTree) -> Self;
-
     #[ast_leaf]
     fn lhs(&self) -> Expr {
         self.at(0)
     }
 
     #[ast_leaf]
-    fn fn_id(&self) -> FunctionId {
+    fn fn_id(&self) -> Lexeme<FunctionId> {
         self.terminal(1)
     }
 
@@ -43,26 +41,10 @@ pub trait Binary: Ast {
 }
 
 /// Binary operation represented by `fn_id`: `.`, and the two operands: `receiver`, `name`
-impl Binary for Accessor {
-    fn new(tree: GreenTree) -> Self {
-        Self::new(tree)
-    }
-}
+impl Binary for Accessor {}
 
-impl Binary for Infix {
-    fn new(tree: GreenTree) -> Self {
-        Self::new(tree)
-    }
-}
+impl Binary for Infix {}
 
-impl Binary for Ann {
-    fn new(tree: GreenTree) -> Self {
-        Self::new(tree)
-    }
-}
+impl Binary for Ann {}
 
-impl Binary for Qual {
-    fn new(tree: GreenTree) -> Self {
-        Self::new(tree)
-    }
-}
+impl Binary for Qual {}

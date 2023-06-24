@@ -9,6 +9,8 @@ pub enum TreeKind {
 
     File,
 
+    ListTree,
+
     LitNat,
     LitInt8,
     LitUInt8,

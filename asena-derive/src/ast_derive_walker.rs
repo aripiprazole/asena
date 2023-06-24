@@ -1,7 +1,7 @@
 use proc_macro::TokenStream;
 use proc_macro2::{Ident, Span};
 use quote::quote;
-use syn::{parse_macro_input, Data, DeriveInput};
+use syn::{parse_macro_input, parse_quote, Data, DeriveInput, Type};
 
 use crate::{ast_walkable::Args, util::to_camel_case};
 
@@ -58,13 +58,30 @@ pub fn expand_ast_derive_walker(input: TokenStream) -> TokenStream {
         .into_iter()
         .filter(|variant| variant.ident != "Error")
         .fold(quote!(), |acc, next| {
+            let terminal = next
+                .attrs
+                .into_iter()
+                .find_map(|attr| {
+                    if attr.path().is_ident("ast_terminal") {
+                        attr.parse_args::<Type>().ok()
+                    } else {
+                        None
+                    }
+                })
+                .unwrap_or_else(|| {
+                    let name = next.ident.clone();
+                    parse_quote! {
+                        #name
+                    }
+                });
+
             let variant_name = next.ident;
             let fn_name = to_camel_case(format!("walk{name}{variant_name}"));
             let fn_name = Ident::new(&fn_name, Span::call_site()); // to_camel_case
 
             quote! {
                 #acc
-                fn #fn_name(&mut self, value: &#variant_name) #constraints {
+                fn #fn_name(&mut self, value: &#terminal) #constraints {
                 }
             }
         });

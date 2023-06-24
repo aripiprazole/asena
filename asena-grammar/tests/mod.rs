@@ -1,5 +1,5 @@
 use asena_ast::{AsenaFile, Binary, Expr, Infix};
-use asena_leaf::ast::Leaf;
+use asena_leaf::ast::{Ast, Leaf, Node};
 use asena_lexer::Lexer;
 use asena_parser::Parser;
 

@@ -1,6 +1,6 @@
 use asena_derive::{ast_debug, ast_leaf, ast_walkable, Leaf};
 
-use asena_leaf::ast::{GreenTree, Leaf};
+use asena_leaf::ast::{GreenTree, Leaf, Lexeme, Node};
 use asena_leaf::node::Tree;
 use asena_leaf::node::TreeKind::*;
 use asena_leaf::token::TokenKind;
@@ -17,8 +17,8 @@ pub struct Parameter(GreenTree);
 impl Parameter {
     /// Optional parameter's name
     #[ast_leaf]
-    pub fn name(&self) -> Local {
-        self.filter_terminal::<Local>().first()
+    pub fn name(&self) -> Lexeme<Local> {
+        self.filter_terminal::<Lexeme<Local>>().first()
     }
 
     /// Parameter's type
