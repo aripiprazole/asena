@@ -494,7 +494,7 @@ impl Node for Type {
 
     fn unwrap(self) -> GreenTree {
         match self {
-            Type::Infer => GreenTree::Error,
+            Type::Infer => GreenTree::Empty,
             Type::Explicit(explicit) => explicit.unwrap(),
         }
     }

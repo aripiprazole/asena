@@ -67,13 +67,13 @@ macro_rules! ast_enum {
 
                         fallback
                     },
-                    asena_leaf::ast::GreenTree::Error => Self::default(),
+                    asena_leaf::ast::GreenTree::Empty => Self::default(),
                 }
             }
 
             fn unwrap(self) -> asena_leaf::ast::GreenTree {
                 match self {
-                    Self::Error => asena_leaf::ast::GreenTree::Error,
+                    Self::Error => asena_leaf::ast::GreenTree::Empty,
                     $(
                         Self::$variant(value) => asena_leaf::ast::Node::unwrap(value),
                     )*

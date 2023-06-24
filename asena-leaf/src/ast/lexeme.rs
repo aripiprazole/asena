@@ -57,7 +57,7 @@ impl<T: Node> Node for Option<T> {
     fn unwrap(self) -> GreenTree {
         match self {
             Some(vale) => vale.unwrap(),
-            None => GreenTree::Error,
+            None => GreenTree::Empty,
         }
     }
 }
@@ -102,7 +102,12 @@ impl<T: Debug + Leaf + Default + 'static> Node for Lexeme<T> {
             GreenTree::Token(lexeme) => {
                 let value = match lexeme.value.downcast_ref::<T>() {
                     Some(value) => value.clone(),
-                    None => todo!(),
+                    None => {
+                        return Self {
+                            token: Spanned::new(Loc::default(), Token::new(TokenKind::Error, "")),
+                            value: T::default(),
+                        }
+                    }
                 };
 
                 Self {
@@ -110,7 +115,10 @@ impl<T: Debug + Leaf + Default + 'static> Node for Lexeme<T> {
                     value,
                 }
             }
-            GreenTree::Error => todo!(),
+            GreenTree::Empty => Self {
+                token: Spanned::new(Loc::default(), Token::new(TokenKind::Error, "")),
+                value: T::default(),
+            },
         }
     }
 
