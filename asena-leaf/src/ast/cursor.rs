@@ -111,7 +111,7 @@ impl<T: Leaf> Cursor<T> {
         match &*self.value.borrow() {
             GreenTree::Leaf { data, .. } => !data.children.is_empty(),
             GreenTree::Token(..) => false,
-            GreenTree::Error => false,
+            GreenTree::Empty => false,
         }
     }
 }
@@ -151,7 +151,7 @@ impl<T: Leaf + Node> Node for Vec<T> {
         let tree: GreenTree = tree.into();
 
         match tree {
-            GreenTree::Error => vec![],
+            GreenTree::Empty => vec![],
             GreenTree::Token(..) => vec![],
             GreenTree::Leaf { data, .. } => data
                 .children
@@ -248,7 +248,7 @@ impl<T: Default + Leaf + Node + 'static> Try for Cursor<T> {
                 Some(value) => ControlFlow::Continue(value.clone()),
                 None => ControlFlow::Break(None),
             },
-            GreenTree::Error => ControlFlow::Break(None),
+            GreenTree::Empty => ControlFlow::Break(None),
         }
     }
 }
