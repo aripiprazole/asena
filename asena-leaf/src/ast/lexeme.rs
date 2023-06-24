@@ -1,24 +1,14 @@
-use std::ops::Deref;
-
 use asena_span::Spanned;
 
 use crate::token::Token;
 
 use super::*;
 
+/// Represents a lexeme, a token with a value, represented in the Rust language.
 #[derive(Clone)]
 pub struct Lexeme<T> {
     pub token: Spanned<Token>,
     pub value: T,
-}
-
-impl<T: Default> Default for Lexeme<T> {
-    fn default() -> Self {
-        Self {
-            token: Spanned::new(Loc::default(), Token::new(TokenKind::Error, "")),
-            value: Default::default(),
-        }
-    }
 }
 
 impl<T> Lexeme<T> {
@@ -29,6 +19,23 @@ impl<T> Lexeme<T> {
         }
     }
 
+    /// Maps the token and the value of the lexeme.
+    ///
+    /// # Example
+    /// ```rust,norun
+    /// use asena_span::{Loc, Spanned};
+    /// use asena_ast::token::{Token, TokenKind};
+    /// use asena_ast::ast::Lexeme;
+    ///
+    /// let lexeme = Lexeme::<String> {
+    ///    token: Spanned::new(Loc::default(), Token::new(TokenKind::Error, "")),
+    ///    value: "hello".to_string(),
+    /// };
+    ///
+    /// let lexeme = lexeme.map_token(|s, t| {
+    ///    format!("{}: {:?}", s, t)
+    /// });
+    /// ```
     pub fn map_token<U>(self, f: impl FnOnce(T, &Spanned<Token>) -> U) -> Lexeme<U> {
         let value = f(self.value, &self.token);
         Lexeme {
@@ -38,17 +45,12 @@ impl<T> Lexeme<T> {
     }
 }
 
-impl<T> Deref for Lexeme<T> {
-    type Target = T;
-
-    fn deref(&self) -> &Self::Target {
-        &self.value
-    }
-}
-
-impl<T> std::borrow::Borrow<T> for Lexeme<T> {
-    fn borrow(&self) -> &T {
-        &self.value
+impl<T: Default> Default for Lexeme<T> {
+    fn default() -> Self {
+        Self {
+            token: Spanned::new(Loc::default(), Token::new(TokenKind::Error, "")),
+            value: Default::default(),
+        }
     }
 }
 
@@ -77,35 +79,45 @@ impl<T> Located for Lexeme<T> {
     }
 }
 
-impl<T: Display> Display for Lexeme<T> {
+impl<T: std::fmt::Display> std::fmt::Display for Lexeme<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        Display::fmt(&self.value, f)
+        std::fmt::Display::fmt(&self.value, f)
     }
 }
 
-impl<T: Debug> Debug for Lexeme<T> {
+impl<T: std::fmt::Debug> std::fmt::Debug for Lexeme<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        Debug::fmt(&self.value, f)
+        std::fmt::Debug::fmt(&self.value, f)
     }
 }
 
-impl<T: Terminal + Clone> Leaf for Lexeme<T> {
+impl<T> std::ops::Deref for Lexeme<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        &self.value
+    }
+}
+
+impl<T> std::borrow::Borrow<T> for Lexeme<T> {
+    fn borrow(&self) -> &T {
+        &self.value
+    }
+}
+
+impl<T: Terminal + 'static> Leaf for Lexeme<T> {
     fn terminal(token: Spanned<Token>) -> Option<Self> {
         let spanned = token.clone();
-        let terminal = T::terminal(token)?;
+        let terminal = <T as Terminal>::terminal(token)?;
 
         Some(Self {
             token: spanned,
             value: terminal,
         })
     }
-
-    fn make(tree: Spanned<Tree>) -> Option<Self> {
-        None
-    }
 }
 
-impl<T: Debug + Leaf + Default + 'static> Node for Lexeme<T> {
+impl<T: Leaf + 'static> Node for Lexeme<T> {
     fn new<I: Into<GreenTree>>(tree: I) -> Self {
         match tree.into() {
             GreenTree::Leaf { data, .. } => Self {
