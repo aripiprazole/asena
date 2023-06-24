@@ -28,9 +28,6 @@ fn expand_struct(name: Ident, data: DataStruct) -> TokenStream {
 
     // Build the output, possibly using quasi-quotation
     let expanded = quote! {
-        impl #name {
-        }
-
         impl asena_leaf::ast::Ast for #name {
         }
 

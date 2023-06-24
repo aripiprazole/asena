@@ -1,4 +1,4 @@
-use std::{borrow::Cow, cell::RefCell, collections::HashMap, rc::Rc};
+use std::{any::Any, borrow::Cow, cell::RefCell, collections::HashMap, rc::Rc};
 
 use asena_span::Spanned;
 
@@ -25,6 +25,8 @@ pub enum GreenTree {
         names: Rc<RefCell<HashMap<LeafKey, Box<dyn std::any::Any>>>>,
     },
 
+    Token(Lexeme<Rc<dyn Any>>),
+
     #[default]
     Error,
 }
@@ -40,6 +42,7 @@ impl GreenTree {
     pub fn location(&self) -> Cow<'_, Loc> {
         match self {
             GreenTree::Leaf { ref data, .. } => Cow::Borrowed(&data.span),
+            GreenTree::Token(ref lexeme) => Cow::Borrowed(&lexeme.token.span),
             GreenTree::Error => Cow::Owned(Loc::Synthetic),
         }
     }
@@ -71,6 +74,7 @@ impl GreenTree {
     pub fn is_single(&self) -> bool {
         match self {
             GreenTree::Leaf { data, .. } => data.is_single(),
+            GreenTree::Token(..) => true,
             GreenTree::Error => false,
         }
     }
@@ -79,6 +83,7 @@ impl GreenTree {
     pub fn children(&mut self) -> Option<&mut Vec<Spanned<Child>>> {
         match self {
             GreenTree::Leaf { data, .. } => Some(&mut data.children),
+            GreenTree::Token(..) => None,
             GreenTree::Error => None,
         }
     }
@@ -87,22 +92,31 @@ impl GreenTree {
     pub fn filter<T: Node + Leaf>(&self) -> Cursor<Vec<T>> {
         match self {
             GreenTree::Leaf { data, .. } => data.filter(),
+            GreenTree::Token(..) => Cursor::empty(),
             GreenTree::Error => Cursor::empty(),
         }
     }
 
     /// Returns a terminal node, if it's not an error node.
-    pub fn terminal<T: Node + Terminal + Clone>(&self, nth: usize) -> Cursor<T> {
+    pub fn terminal<T>(&self, nth: usize) -> Cursor<Lexeme<T>>
+    where
+        T: Debug + Terminal + Default + Clone + 'static,
+    {
         match self {
             GreenTree::Leaf { data, .. } => data.terminal(nth),
+            GreenTree::Token(..) => Cursor::empty(),
             GreenTree::Error => Cursor::empty(),
         }
     }
 
     /// Returns terminal filtered cursor to the children, if it's not an error node.
-    pub fn filter_terminal<T: Node + Terminal + Leaf>(&self) -> Cursor<Vec<T>> {
+    pub fn filter_terminal<T>(&self) -> Cursor<Vec<Lexeme<T>>>
+    where
+        T: Debug + Terminal + Default + Clone + 'static,
+    {
         match self {
             GreenTree::Leaf { data, .. } => data.filter_terminal(),
+            GreenTree::Token(..) => Cursor::empty(),
             GreenTree::Error => Cursor::empty(),
         }
     }
@@ -111,6 +125,7 @@ impl GreenTree {
     pub fn at<T: Node + Leaf>(&self, nth: usize) -> Cursor<T> {
         match self {
             GreenTree::Leaf { data, .. } => data.at(nth),
+            GreenTree::Token(..) => Cursor::empty(),
             GreenTree::Error => Cursor::empty(),
         }
     }
@@ -119,6 +134,7 @@ impl GreenTree {
     pub fn has(&self, name: LeafKey) -> bool {
         match self {
             GreenTree::Leaf { names, .. } => matches!(names.borrow().get(name), Some(..)),
+            GreenTree::Token(..) => false,
             GreenTree::Error => false,
         }
     }
@@ -136,31 +152,36 @@ impl GreenTree {
 
                 match &*value {
                     GreenTree::Leaf { data, .. } => A::make(data.clone()).into(),
+                    GreenTree::Token(..) => Cursor::empty(),
                     GreenTree::Error => Cursor::empty(),
                 }
             }
+            GreenTree::Token(..) => Cursor::empty(),
             GreenTree::Error => Cursor::empty(),
         }
     }
 
     /// Returns a cursor to the named terminal, if it's not an error node.
-    pub fn named_terminal<A: Node + Terminal + Leaf + 'static>(&self, name: LeafKey) -> Cursor<A> {
+    pub fn named_terminal<A>(&self, name: LeafKey) -> Cursor<Lexeme<A>>
+    where
+        A: Debug + Default + Leaf + Terminal + 'static,
+    {
         match self {
             GreenTree::Leaf { names, .. } => {
                 let borrow = names.borrow();
-                let Some(child) = borrow.get(name).and_then(|x| x.downcast_ref::<Cursor<A>>()) else {
+                let Some(child) = borrow.get(name).and_then(|x| x.downcast_ref::<Cursor<Lexeme<A>>>()) else {
                     return Cursor::empty();
                 };
 
                 let value = child.value.borrow();
 
                 match &*value {
-                    GreenTree::Leaf { data, .. } => {
-                        A::terminal(data.replace(data.single().clone())).into()
-                    }
+                    GreenTree::Leaf { .. } => Cursor::empty(),
+                    GreenTree::Token(lexeme) => Lexeme::<A>::terminal(lexeme.token.clone()).into(),
                     GreenTree::Error => Cursor::empty(),
                 }
             }
+            GreenTree::Token(..) => Cursor::empty(),
             GreenTree::Error => Cursor::empty(),
         }
     }
@@ -168,6 +189,7 @@ impl GreenTree {
     pub fn matches(&self, nth: usize, kind: TokenKind) -> bool {
         match self {
             GreenTree::Leaf { data, .. } => data.matches(nth, kind),
+            GreenTree::Token(..) => false,
             GreenTree::Error => false,
         }
     }
@@ -177,6 +199,7 @@ impl GreenTree {
     pub fn or_empty(self) -> Spanned<Tree> {
         match self {
             GreenTree::Leaf { data, .. } => data,
+            GreenTree::Token(..) => Spanned::default(),
             GreenTree::Error => Spanned::default(),
         }
     }

@@ -323,7 +323,7 @@ impl Pi {
         if self.has("parameter_name") {
             let fn_id = self
                 .named_terminal::<Lexeme<FunctionId>>("parameter_name")
-                .try_as_leaf()?;
+                .as_leaf();
 
             let value = (*fn_id)
                 .clone()
@@ -399,12 +399,10 @@ impl Sigma {
     #[ast_leaf]
     pub fn parameter_name(&self) -> Lexeme<Local> {
         let fn_id = self
-            .named_terminal::<Lexeme<FunctionId>>("parameter_name")
-            .try_as_leaf()?;
+            .named_terminal::<FunctionId>("parameter_name")
+            .as_leaf();
 
-        let value = (*fn_id)
-            .clone()
-            .map_token(|x, token| Local(x.to_string(), token.span.clone()));
+        let value = fn_id.map_token(|x, token| Local(x.to_string(), token.span.clone()));
 
         Cursor::of(value)
     }
@@ -460,16 +458,15 @@ ast_enum! {
 
 impl Expr {
     fn build_local(tree: Spanned<Tree>) -> Option<Expr> {
-        let local = tree.terminal::<Lexeme<Local>>(0).try_as_leaf()?;
-        Some(Expr::Local((*local).clone()))
+        let local = tree.terminal::<Local>(0).as_leaf();
+
+        Some(Expr::Local(local))
     }
 
     fn build_literal(tree: Spanned<Tree>) -> Option<Expr> {
-        let literal = tree
-            .filter_terminal::<Lexeme<Literal>>()
-            .first()
-            .try_as_leaf()?;
-        Some(Expr::Literal((*literal).clone()))
+        let literal = tree.filter_terminal::<Literal>().first().as_leaf();
+
+        Some(Expr::Literal(literal))
     }
 }
 
@@ -508,10 +505,7 @@ impl Node for Type {
 impl Leaf for Type {
     fn make(tree: Spanned<Tree>) -> Option<Self> {
         Some(match tree.kind {
-            TypeExplicit => {
-                let expr = tree.at::<Expr>(0).try_as_leaf()?;
-                Self::Explicit((*expr).clone())
-            }
+            TypeExplicit => Self::Explicit(tree.at::<Expr>(0).as_leaf()),
             TypeInfer => Self::Infer,
             _ => return None,
         })

@@ -98,8 +98,10 @@ mod tests {
 
     #[test]
     fn expr_works() {
-        let tree = asena_expr! { 1 + 1 };
-        let expr = Expr::from(Infix::new(tree.unwrap()));
+        let mut tree = asena_expr!(a(1 + b));
+        let expr = Expr::from(App::new(tree.clone().unwrap()));
+
+        tree.reporter.dump_tree();
 
         println!("{expr:#?}")
     }

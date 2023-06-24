@@ -12,14 +12,17 @@ impl Tree {
         }
     }
 
-    pub fn terminal<T: Node + Terminal + Clone>(&self, nth: usize) -> Cursor<T> {
+    pub fn terminal<T>(&self, nth: usize) -> Cursor<Lexeme<T>>
+    where
+        T: Debug + Terminal + Default + Clone + 'static,
+    {
         let Some(child) = self.children.get(nth) else {
             return Cursor::empty();
         };
 
         match &child.value {
             Child::Tree(..) => Cursor::empty(),
-            Child::Token(token) => T::terminal(child.replace(token.clone())).into(),
+            Child::Token(token) => Lexeme::<T>::terminal(child.replace(token.clone())).into(),
         }
     }
 
@@ -34,12 +37,15 @@ impl Tree {
             .into()
     }
 
-    pub fn filter_terminal<T: Node + Terminal + Clone>(&self) -> Cursor<Vec<T>> {
+    pub fn filter_terminal<T>(&self) -> Cursor<Vec<Lexeme<T>>>
+    where
+        T: Debug + Terminal + Default + Clone + 'static,
+    {
         self.children
             .iter()
             .filter_map(|child| match child.value.clone() {
                 Child::Tree(..) => None,
-                Child::Token(token) => Some(T::terminal(child.replace(token))?),
+                Child::Token(token) => Some(Lexeme::<T>::terminal(child.replace(token))?),
             })
             .collect::<Vec<_>>()
             .into()
