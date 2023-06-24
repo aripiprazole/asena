@@ -25,18 +25,19 @@ macro_rules! ast_enum {
                 $(#[$field_outer])*
                 $(#[ast_build_fn($f)])?
                 #[ast_from($kind)]
-                $variant($variant),
+                #[ast_terminal($crate::macros::ast_make_variant!($variant $(, $f)?))]
+                $variant($crate::macros::ast_make_variant!($variant $(, $f)?)),
             )*
         }
 
         $(
             impl From<$variant> for $name {
                 fn from(value: $variant) -> Self {
-                    Self::$variant(value)
+                    Self::$variant(value.into())
                 }
             }
 
-            impl TryFrom<$name> for $variant {
+            impl TryFrom<$name> for $crate::macros::ast_make_variant!($variant $(, $f)?) {
                 type Error = String;
 
                 fn try_from(value: $name) -> Result<Self, String> {
@@ -47,6 +48,23 @@ macro_rules! ast_enum {
                 }
             }
         )*
+
+        impl asena_leaf::ast::Node for $name {
+            fn new<I: Into<asena_leaf::ast::GreenTree>>(value: I) -> Self {
+                let tree: asena_leaf::ast::GreenTree = value.into();
+                let opt: Option<Self> = asena_leaf::ast::Leaf::make(tree.or_empty());
+                opt.unwrap_or_default()
+            }
+
+            fn unwrap(self) -> asena_leaf::ast::GreenTree {
+                match self {
+                    Self::Error => asena_leaf::ast::GreenTree::Error,
+                    $(
+                        Self::$variant(value) => asena_leaf::ast::Node::unwrap(value),
+                    )*
+                }
+            }
+        }
 
         impl asena_leaf::ast::Located for $name {
             fn location(&self) -> std::borrow::Cow<'_, asena_span::Loc> {
@@ -83,4 +101,17 @@ macro_rules! ast_enum {
     }
 }
 
+#[macro_export]
+macro_rules! ast_should_be_terminal {
+    ($f:expr) => { #[ast_terminal] };
+    () => {}
+}
+
+#[macro_export]
+macro_rules! ast_make_variant {
+    ($variant:ident, $f:expr) => { asena_leaf::ast::Lexeme<$variant> };
+    ($variant:ident) => { $variant }
+}
+
 pub use ast_enum;
+pub use ast_make_variant;

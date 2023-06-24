@@ -29,16 +29,20 @@ fn expand_struct(name: Ident, data: DataStruct) -> TokenStream {
     // Build the output, possibly using quasi-quotation
     let expanded = quote! {
         impl #name {
-            pub fn new<T: Into<asena_leaf::ast::GreenTree>>(tree: T) -> Self {
+        }
+
+        impl asena_leaf::ast::Ast for #name {
+        }
+
+        impl asena_leaf::ast::Node for #name {
+            fn new<T: Into<asena_leaf::ast::GreenTree>>(tree: T) -> Self {
                 Self(tree.into())
             }
 
-            pub fn unwrap(self) -> asena_leaf::ast::GreenTree {
+            fn unwrap(self) -> asena_leaf::ast::GreenTree {
                 self.0
             }
         }
-
-        impl asena_leaf::ast::Ast for #name {}
 
         impl asena_leaf::ast::Located for #name {
             fn location(&self) -> std::borrow::Cow<'_, asena_span::Loc> {
@@ -110,6 +114,7 @@ fn expand_enum(name: Ident, data: DataEnum) -> TokenStream {
     let expanded = quote! {
         impl asena_leaf::ast::Leaf for #name {
             fn make(tree: asena_span::Spanned<asena_leaf::node::Tree>) -> Option<Self> {
+                use asena_leaf::ast::Node;
                 Some(match tree.kind {
                     #patterns
                     _ => return None,

@@ -69,9 +69,9 @@ impl<'a, R: Reporter> Reporter for AsenaPrecStep<'a, R> {
 
 #[cfg(test)]
 mod tests {
-    use asena_ast::AsenaFile;
-    use asena_grammar::asena_file;
-    use asena_leaf::ast::Walkable;
+    use asena_ast::*;
+    use asena_grammar::{asena_expr, asena_file};
+    use asena_leaf::ast::*;
 
     use crate::{commands::*, AsenaPrecStep};
 
@@ -94,5 +94,13 @@ mod tests {
         tree.reporter.dump();
 
         println!("{file:#?}")
+    }
+
+    #[test]
+    fn expr_works() {
+        let tree = asena_expr! { 1 + 1 };
+        let expr = Expr::from(Infix::new(tree.unwrap()));
+
+        println!("{expr:#?}")
     }
 }

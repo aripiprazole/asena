@@ -1,5 +1,5 @@
 use asena_derive::{ast_debug, ast_leaf, ast_walkable, Leaf, Walker};
-use asena_leaf::ast::Leaf;
+use asena_leaf::ast::{Leaf, Lexeme};
 use asena_leaf::ast_enum;
 use asena_leaf::node::{Tree, TreeKind::*};
 
@@ -251,7 +251,7 @@ pub struct Field(GreenTree);
 #[ast_walkable(BodyWalker, ExprWalker, PatWalker, StmtWalker)]
 impl Field {
     #[ast_leaf]
-    pub fn name(&self) -> Local {
+    pub fn name(&self) -> Lexeme<Local> {
         todo!()
     }
 
@@ -281,7 +281,7 @@ pub struct Method(GreenTree);
 #[ast_walkable(BodyWalker, ExprWalker, PatWalker, StmtWalker)]
 impl Method {
     #[ast_leaf]
-    pub fn name(&self) -> Local {
+    pub fn name(&self) -> Lexeme<Local> {
         todo!()
     }
 

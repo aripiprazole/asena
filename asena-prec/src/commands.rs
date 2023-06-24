@@ -1,5 +1,6 @@
 use asena_ast::{command::CommandWalker, decl::command::Result, walker::Reporter, *};
 use asena_derive::{ast_command, ast_step};
+use asena_leaf::ast::Lexeme;
 use asena_report::InternalError;
 use im::HashMap;
 
@@ -19,8 +20,11 @@ pub struct AsenaInfixCommandStep<'a, R: Reporter> {
 #[ast_command(infixl, infixr)]
 impl<'a, R: Reporter> CommandWalker for AsenaInfixCommandStep<'a, R> {
     fn on_command(&mut self, command: &Command) -> Result {
-        let name = command.at::<Literal>(0)?.contents();
-        let order = command.at::<Literal>(1)?.to_u8().unwrap_or_default();
+        let name = command.at::<Lexeme<Literal>>(0)?.contents();
+        let order = command
+            .at::<Lexeme<Literal>>(1)?
+            .to_u8()
+            .unwrap_or_default();
         let mut entry = Entry::new(Assoc::Left, order);
 
         if command.is_command("infixr") {

@@ -1,6 +1,6 @@
 use asena_derive::{ast_debug, ast_leaf, Leaf};
 use asena_leaf::{
-    ast::{Leaf, Walkable},
+    ast::{Leaf, Lexeme, Walkable},
     node::Tree,
 };
 use asena_span::Spanned;
@@ -14,7 +14,7 @@ pub struct Binding(GreenTree);
 #[ast_debug]
 impl Binding {
     #[ast_leaf]
-    pub fn name(&self) -> Local {
+    pub fn name(&self) -> Lexeme<Local> {
         todo!()
     }
 

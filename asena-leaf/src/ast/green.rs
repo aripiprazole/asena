@@ -1,4 +1,4 @@
-use std::{borrow::Cow, cell::RefCell, collections::HashMap};
+use std::{borrow::Cow, cell::RefCell, collections::HashMap, rc::Rc};
 
 use asena_span::Spanned;
 
@@ -10,7 +10,7 @@ use super::*;
 ///
 /// It is used to traverse the tree, and to modify it, and can be an [GreenTree::Error] node,
 /// that is used to mark the tree as invalid, and not fail the compiler.
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub enum GreenTree {
     Leaf {
         data: Spanned<Tree>,
@@ -22,7 +22,7 @@ pub enum GreenTree {
         /// ```rs
         /// binary.lhs()
         /// ```
-        names: RefCell<HashMap<LeafKey, Box<dyn std::any::Any>>>,
+        names: Rc<RefCell<HashMap<LeafKey, Box<dyn std::any::Any>>>>,
     },
 
     #[default]
@@ -33,7 +33,7 @@ impl GreenTree {
     pub fn new(data: Spanned<Tree>) -> Self {
         Self::Leaf {
             data,
-            names: RefCell::new(HashMap::new()),
+            names: Rc::new(RefCell::new(HashMap::new())),
         }
     }
 
@@ -52,6 +52,7 @@ impl GreenTree {
     pub fn memoize<F, T: Leaf + Clone + 'static>(&self, name: &'static str, f: F) -> Cursor<T>
     where
         F: Fn(&Self) -> Cursor<T>,
+        T: Node,
     {
         let tree @ Self::Leaf { names, .. } = self else {
             return Cursor::empty();
@@ -83,7 +84,7 @@ impl GreenTree {
     }
 
     /// Returns filtered cursor to the children, if it's not an error node.
-    pub fn filter<T: Leaf>(&self) -> Cursor<Vec<T>> {
+    pub fn filter<T: Node + Leaf>(&self) -> Cursor<Vec<T>> {
         match self {
             GreenTree::Leaf { data, .. } => data.filter(),
             GreenTree::Error => Cursor::empty(),
@@ -91,7 +92,7 @@ impl GreenTree {
     }
 
     /// Returns a terminal node, if it's not an error node.
-    pub fn terminal<T: Terminal + Clone>(&self, nth: usize) -> Cursor<T> {
+    pub fn terminal<T: Node + Terminal + Clone>(&self, nth: usize) -> Cursor<T> {
         match self {
             GreenTree::Leaf { data, .. } => data.terminal(nth),
             GreenTree::Error => Cursor::empty(),
@@ -99,7 +100,7 @@ impl GreenTree {
     }
 
     /// Returns terminal filtered cursor to the children, if it's not an error node.
-    pub fn filter_terminal<T: Terminal + Leaf>(&self) -> Cursor<Vec<T>> {
+    pub fn filter_terminal<T: Node + Terminal + Leaf>(&self) -> Cursor<Vec<T>> {
         match self {
             GreenTree::Leaf { data, .. } => data.filter_terminal(),
             GreenTree::Error => Cursor::empty(),
@@ -107,7 +108,7 @@ impl GreenTree {
     }
 
     /// Returns a leaf node, if it's not an error node.
-    pub fn at<T: Leaf>(&self, nth: usize) -> Cursor<T> {
+    pub fn at<T: Node + Leaf>(&self, nth: usize) -> Cursor<T> {
         match self {
             GreenTree::Leaf { data, .. } => data.at(nth),
             GreenTree::Error => Cursor::empty(),
@@ -123,7 +124,7 @@ impl GreenTree {
     }
 
     /// Returns a cursor to the named child, if it's not an error node.
-    pub fn named_at<A: Leaf + 'static>(&self, name: LeafKey) -> Cursor<A> {
+    pub fn named_at<A: Node + Leaf + 'static>(&self, name: LeafKey) -> Cursor<A> {
         match self {
             GreenTree::Leaf { names, .. } => {
                 let borrow = names.borrow();
@@ -134,9 +135,8 @@ impl GreenTree {
                 let value = child.value.borrow();
 
                 match &*value {
-                    Value::Ref(GreenTree::Leaf { data, .. }) => A::make(data.clone()).into(),
-                    Value::Ref(GreenTree::Error) => Cursor::empty(),
-                    Value::Value(..) => child.clone(),
+                    GreenTree::Leaf { data, .. } => A::make(data.clone()).into(),
+                    GreenTree::Error => Cursor::empty(),
                 }
             }
             GreenTree::Error => Cursor::empty(),
@@ -144,7 +144,7 @@ impl GreenTree {
     }
 
     /// Returns a cursor to the named terminal, if it's not an error node.
-    pub fn named_terminal<A: Terminal + Leaf + 'static>(&self, name: LeafKey) -> Cursor<A> {
+    pub fn named_terminal<A: Node + Terminal + Leaf + 'static>(&self, name: LeafKey) -> Cursor<A> {
         match self {
             GreenTree::Leaf { names, .. } => {
                 let borrow = names.borrow();
@@ -155,11 +155,10 @@ impl GreenTree {
                 let value = child.value.borrow();
 
                 match &*value {
-                    Value::Ref(GreenTree::Leaf { data, .. }) => {
+                    GreenTree::Leaf { data, .. } => {
                         A::terminal(data.replace(data.single().clone())).into()
                     }
-                    Value::Ref(GreenTree::Error) => Cursor::empty(),
-                    Value::Value(..) => child.clone(),
+                    GreenTree::Error => Cursor::empty(),
                 }
             }
             GreenTree::Error => Cursor::empty(),
@@ -179,18 +178,6 @@ impl GreenTree {
         match self {
             GreenTree::Leaf { data, .. } => data,
             GreenTree::Error => Spanned::default(),
-        }
-    }
-}
-
-impl Clone for GreenTree {
-    fn clone(&self) -> Self {
-        match self {
-            Self::Leaf { data, .. } => Self::Leaf {
-                data: data.clone(),
-                names: RefCell::new(HashMap::new()),
-            },
-            Self::Error => Self::Error,
         }
     }
 }

@@ -1,6 +1,6 @@
-use asena_derive::{ast_debug, ast_leaf, ast_walkable, Leaf, Walker};
+use asena_derive::{ast_debug, ast_leaf, ast_terminal, ast_walkable, Leaf, Walker};
 
-use asena_leaf::ast::Walkable;
+use asena_leaf::ast::{Lexeme, Walkable};
 use asena_leaf::ast_enum;
 use asena_leaf::node::{Tree, TreeKind::*};
 
@@ -22,7 +22,7 @@ pub struct Constructor(GreenTree);
 #[ast_walkable(PatWalker)]
 impl Constructor {
     #[ast_leaf]
-    pub fn name(&self) -> ConstructorId {
+    pub fn name(&self) -> Lexeme<ConstructorId> {
         todo!()
     }
 
@@ -92,20 +92,18 @@ ast_enum! {
         Spread        <- PatSpread,                           // ..
         Constructor   <- PatConstructor,                      // (<global_id> <pattern...>)
         List          <- PatList,                             // [<pattern...>]
+        QualifiedPath <- PatGlobal,                           // <global>
         Literal       <- PatLit    => [Pat::build_literal],   // <literal>
-        QualifiedPath <- PatGlobal => [Pat::build_global],    // <global>
     }
 }
 
 impl Pat {
-    fn build_global(tree: Spanned<Tree>) -> Option<Pat> {
-        let global = &*tree.at::<QualifiedPath>(0).try_as_leaf()?;
-        Some(Self::QualifiedPath(global.clone()))
-    }
-
     fn build_literal(tree: Spanned<Tree>) -> Option<Pat> {
-        let literal = &*tree.filter_terminal::<Literal>().first().try_as_leaf()?;
-        Some(Self::Literal(literal.clone()))
+        let literal = tree
+            .filter_terminal::<Lexeme<Literal>>()
+            .first()
+            .try_as_leaf()?;
+        Some(Self::Literal((*literal).clone()))
     }
 }
 

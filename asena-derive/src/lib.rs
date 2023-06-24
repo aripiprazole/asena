@@ -14,10 +14,11 @@ mod ast_from;
 mod ast_leaf;
 mod ast_of;
 mod ast_step;
+mod ast_terminal;
 mod ast_walkable;
 pub(crate) mod util;
 
-#[proc_macro_derive(Leaf, attributes(ast_from, ast_build_fn))]
+#[proc_macro_derive(Leaf, attributes(ast_terminal, ast_from, ast_build_fn))]
 pub fn derive_leaf(input: TokenStream) -> TokenStream {
     ast_derive_leaf::expand_derive_leaf(input)
 }
@@ -45,6 +46,11 @@ pub fn ast_leaf(args: TokenStream, input: TokenStream) -> TokenStream {
 #[proc_macro_attribute]
 pub fn ast_of(args: TokenStream, input: TokenStream) -> TokenStream {
     ast_of::expand_ast_of(args, input)
+}
+
+#[proc_macro_attribute]
+pub fn ast_terminal(args: TokenStream, input: TokenStream) -> TokenStream {
+    ast_terminal::expand_ast_terminal(args, input)
 }
 
 #[proc_macro_attribute]
