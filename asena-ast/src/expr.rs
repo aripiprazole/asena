@@ -332,7 +332,7 @@ impl Pi {
 
             Cursor::of(Some(local))
         } else {
-            Cursor::of(None)
+            Cursor::from(None)
         }
     }
 

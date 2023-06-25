@@ -29,6 +29,8 @@ pub enum GreenTree {
 
     Token(Lexeme<Rc<dyn std::any::Any>>),
 
+    None,
+
     #[default]
     Empty,
 }
@@ -46,6 +48,7 @@ impl GreenTree {
         match self {
             GreenTree::Leaf { ref data, .. } => Cow::Borrowed(&data.span),
             GreenTree::Token(ref lexeme) => Cow::Borrowed(&lexeme.token.span),
+            GreenTree::None => Cow::Owned(Loc::Synthetic),
             GreenTree::Empty => Cow::Owned(Loc::Synthetic),
         }
     }
@@ -78,6 +81,7 @@ impl GreenTree {
         match self {
             GreenTree::Leaf { data, .. } => data.is_single(),
             GreenTree::Token(..) => true,
+            GreenTree::None => false,
             GreenTree::Empty => false,
         }
     }
@@ -87,6 +91,7 @@ impl GreenTree {
         match self {
             GreenTree::Leaf { data, .. } => Some(&mut data.children),
             GreenTree::Token(..) => None,
+            GreenTree::None => None,
             GreenTree::Empty => None,
         }
     }
@@ -96,6 +101,7 @@ impl GreenTree {
         match self {
             GreenTree::Leaf { data, .. } => data.filter(),
             GreenTree::Token(..) => Cursor::empty(),
+            GreenTree::None => Cursor::empty(),
             GreenTree::Empty => Cursor::empty(),
         }
     }
@@ -105,6 +111,7 @@ impl GreenTree {
         match self {
             GreenTree::Leaf { data, .. } => data.terminal(nth),
             GreenTree::Token(..) => Cursor::empty(),
+            GreenTree::None => Cursor::empty(),
             GreenTree::Empty => Cursor::empty(),
         }
     }
@@ -114,6 +121,7 @@ impl GreenTree {
         match self {
             GreenTree::Leaf { data, .. } => data.filter_terminal(),
             GreenTree::Token(..) => Cursor::empty(),
+            GreenTree::None => Cursor::empty(),
             GreenTree::Empty => Cursor::empty(),
         }
     }
@@ -123,6 +131,7 @@ impl GreenTree {
         match self {
             GreenTree::Leaf { data, .. } => data.at(nth),
             GreenTree::Token(..) => Cursor::empty(),
+            GreenTree::None => Cursor::empty(),
             GreenTree::Empty => Cursor::empty(),
         }
     }
@@ -132,6 +141,7 @@ impl GreenTree {
         match self {
             GreenTree::Leaf { children, .. } => matches!(children.get(name), Some(..)),
             GreenTree::Token(..) => false,
+            GreenTree::None => false,
             GreenTree::Empty => false,
         }
     }
@@ -158,10 +168,12 @@ impl GreenTree {
                 match &*value {
                     GreenTree::Leaf { data, .. } => A::make(data.clone()).into(),
                     GreenTree::Token(..) => Cursor::empty(),
+                    GreenTree::None => Cursor::empty(),
                     GreenTree::Empty => Cursor::empty(),
                 }
             }
             GreenTree::Token(..) => Cursor::empty(),
+            GreenTree::None => Cursor::empty(),
             GreenTree::Empty => Cursor::empty(),
         }
     }
@@ -188,10 +200,12 @@ impl GreenTree {
                 match &*value {
                     GreenTree::Leaf { .. } => Cursor::empty(),
                     GreenTree::Token(lexeme) => Lexeme::<A>::terminal(lexeme.token.clone()).into(),
+                    GreenTree::None => Cursor::empty(),
                     GreenTree::Empty => Cursor::empty(),
                 }
             }
             GreenTree::Token(..) => Cursor::empty(),
+            GreenTree::None => Cursor::empty(),
             GreenTree::Empty => Cursor::empty(),
         }
     }
@@ -200,6 +214,7 @@ impl GreenTree {
         match self {
             GreenTree::Leaf { data, .. } => data.matches(nth, kind),
             GreenTree::Token(..) => false,
+            GreenTree::None => false,
             GreenTree::Empty => false,
         }
     }
@@ -210,6 +225,7 @@ impl GreenTree {
         match self {
             GreenTree::Leaf { data, .. } => data,
             GreenTree::Token(..) => Spanned::default(),
+            GreenTree::None => Spanned::default(),
             GreenTree::Empty => Spanned::default(),
         }
     }
@@ -219,6 +235,7 @@ impl GreenTree {
             GreenTree::Leaf { data, .. } => data.map(Child::Tree),
             GreenTree::Token(lexeme) => lexeme.token.map(Child::Token),
             GreenTree::Empty => Spanned::new(Loc::default(), Child::Tree(Tree::default())),
+            GreenTree::None => Spanned::new(Loc::default(), Child::Tree(Tree::default())),
         }
     }
 }
@@ -248,6 +265,7 @@ impl Debug for GreenTree {
                 .field("value", lexeme)
                 .finish(),
             Self::Empty => write!(f, "Empty"),
+            Self::None => write!(f, "None"),
         }
     }
 }

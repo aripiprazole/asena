@@ -68,6 +68,7 @@ macro_rules! ast_enum {
                         fallback
                     },
                     asena_leaf::ast::GreenTree::Empty => Self::default(),
+                    asena_leaf::ast::GreenTree::None => Self::default(),
                 }
             }
 

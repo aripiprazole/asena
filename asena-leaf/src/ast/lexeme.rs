@@ -140,7 +140,7 @@ impl<T: Leaf + 'static> Node for Lexeme<T> {
                     value,
                 }
             }
-            GreenTree::Empty => Self {
+            GreenTree::Empty | GreenTree::None => Self {
                 token: Spanned::new(Loc::default(), Token::new(TokenKind::Error, "")),
                 value: T::default(),
             },

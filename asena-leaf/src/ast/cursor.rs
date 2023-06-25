@@ -50,6 +50,7 @@ impl<T: Leaf> Cursor<T> {
             GreenTree::Leaf { data, .. } => !data.children.is_empty(),
             GreenTree::Token(..) => false,
             GreenTree::Empty => false,
+            GreenTree::None => false,
         }
     }
 
@@ -73,6 +74,7 @@ impl<T: Node + Leaf> Cursor<T> {
                 lexeme.token.clone().swap(value.clone())
             }
             GreenTree::Empty => Spanned::default(),
+            GreenTree::None => Spanned::default(),
         }
     }
 
@@ -141,6 +143,7 @@ impl<T: Node + Leaf> Node for Vec<T> {
 
         match tree {
             GreenTree::Empty => vec![],
+            GreenTree::None => vec![],
             GreenTree::Token(..) => vec![],
             GreenTree::Leaf { data, .. } => data
                 .children
@@ -179,7 +182,10 @@ impl<T: Node + Leaf> From<Option<T>> for Cursor<T> {
     fn from(value: Option<T>) -> Self {
         match value {
             Some(value) => Self::of(value),
-            None => Self::empty(),
+            None => Self {
+                value: Rc::new(RefCell::new(GreenTree::None)),
+                _marker: PhantomData,
+            },
         }
     }
 }
@@ -240,6 +246,7 @@ impl<T: Default + Leaf + Node + 'static> Try for Cursor<T> {
                 None => ControlFlow::Break(None),
             },
             GreenTree::Empty => ControlFlow::Break(None),
+            GreenTree::None => ControlFlow::Break(None),
         }
     }
 }
