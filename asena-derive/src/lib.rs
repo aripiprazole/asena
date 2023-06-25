@@ -9,6 +9,7 @@ mod ast_build_fn;
 mod ast_command;
 mod ast_debug;
 mod ast_derive_leaf;
+mod ast_derive_step;
 mod ast_derive_walker;
 mod ast_from;
 mod ast_leaf;
@@ -26,6 +27,11 @@ pub fn derive_leaf(input: TokenStream) -> TokenStream {
 #[proc_macro_derive(Walker, attributes(ast_walker_traits, ast_impl_trait))]
 pub fn derive_ast_walker(input: TokenStream) -> TokenStream {
     ast_derive_walker::expand_ast_derive_walker(input)
+}
+
+#[proc_macro_derive(Reporter, attributes(ast_reporter))]
+pub fn ast_derive_step(input: TokenStream) -> TokenStream {
+    ast_derive_step::expand_ast_derive_step(input)
 }
 
 #[proc_macro_attribute]
@@ -71,4 +77,9 @@ pub fn ast_build_fn(args: TokenStream, input: TokenStream) -> TokenStream {
 #[proc_macro_attribute]
 pub fn ast_command(args: TokenStream, input: TokenStream) -> TokenStream {
     ast_command::expand_ast_command(args, input)
+}
+
+#[proc_macro_attribute]
+pub fn ast_reporter(_args: TokenStream, input: TokenStream) -> TokenStream {
+    input
 }
