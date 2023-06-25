@@ -9,6 +9,7 @@ use super::*;
 pub struct Lexeme<T> {
     pub token: Spanned<Token>,
     pub value: T,
+    pub is_none: bool,
 }
 
 impl<T> Lexeme<T> {
@@ -16,6 +17,7 @@ impl<T> Lexeme<T> {
         Lexeme {
             token: self.token,
             value: f(self.value),
+            is_none: false,
         }
     }
 
@@ -40,6 +42,7 @@ impl<T> Lexeme<T> {
         let value = f(self.value, &self.token);
         Lexeme {
             token: self.token,
+            is_none: false,
             value,
         }
     }
@@ -50,6 +53,7 @@ impl<T: Default> Default for Lexeme<T> {
         Self {
             token: Spanned::new(Loc::default(), Token::new(TokenKind::Error, "")),
             value: Default::default(),
+            is_none: false,
         }
     }
 }
@@ -62,13 +66,19 @@ impl<W, T: Walkable<W>> Walkable<W> for Lexeme<T> {
 
 impl<T: Node> Node for Option<T> {
     fn new<I: Into<GreenTree>>(tree: I) -> Self {
-        Some(T::new(tree))
+        let tree: GreenTree = tree.into();
+
+        match tree {
+            GreenTree::None => None,
+            GreenTree::Empty => None,
+            _ => Some(T::new(tree)),
+        }
     }
 
     fn unwrap(self) -> GreenTree {
         match self {
             Some(vale) => vale.unwrap(),
-            None => GreenTree::Empty,
+            None => GreenTree::None,
         }
     }
 }
@@ -81,13 +91,21 @@ impl<T> Located for Lexeme<T> {
 
 impl<T: std::fmt::Display> std::fmt::Display for Lexeme<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        std::fmt::Display::fmt(&self.value, f)
+        if self.is_none {
+            write!(f, "None[{}]", std::any::type_name::<T>())
+        } else {
+            std::fmt::Display::fmt(&self.value, f)
+        }
     }
 }
 
 impl<T: std::fmt::Debug> std::fmt::Debug for Lexeme<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        std::fmt::Debug::fmt(&self.value, f)
+        if self.is_none {
+            write!(f, "None[{}]", std::any::type_name::<T>())
+        } else {
+            std::fmt::Debug::fmt(&self.value, f)
+        }
     }
 }
 
@@ -113,6 +131,7 @@ impl<T: Terminal + 'static> Leaf for Lexeme<T> {
         Some(Self {
             token: spanned,
             value: terminal,
+            is_none: false,
         })
     }
 }
@@ -123,6 +142,7 @@ impl<T: Leaf + 'static> Node for Lexeme<T> {
             GreenTree::Leaf { data, .. } => Self {
                 token: data.clone().swap(data.single().clone()),
                 value: T::make(data).unwrap_or_default(),
+                is_none: false,
             },
             GreenTree::Token(lexeme) => {
                 let value = match lexeme.value.downcast_ref::<T>() {
@@ -130,6 +150,7 @@ impl<T: Leaf + 'static> Node for Lexeme<T> {
                     None => {
                         return Self {
                             token: Spanned::new(Loc::default(), Token::new(TokenKind::Error, "")),
+                            is_none: false,
                             value: T::default(),
                         }
                     }
@@ -137,12 +158,19 @@ impl<T: Leaf + 'static> Node for Lexeme<T> {
 
                 Self {
                     token: lexeme.token,
+                    is_none: false,
                     value,
                 }
             }
-            GreenTree::Empty | GreenTree::None => Self {
+            GreenTree::Empty => Self {
                 token: Spanned::new(Loc::default(), Token::new(TokenKind::Error, "")),
                 value: T::default(),
+                is_none: false,
+            },
+            GreenTree::None => Self {
+                token: Spanned::new(Loc::default(), Token::new(TokenKind::Error, "")),
+                value: T::default(),
+                is_none: true,
             },
         }
     }
@@ -151,6 +179,7 @@ impl<T: Leaf + 'static> Node for Lexeme<T> {
         GreenTree::Token(Lexeme {
             token: self.token,
             value: Rc::new(self.value),
+            is_none: self.is_none,
         })
     }
 }

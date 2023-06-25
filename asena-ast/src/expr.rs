@@ -325,7 +325,7 @@ impl Pi {
             let fn_id = fn_id.as_leaf();
 
             if fn_id.as_str().is_empty() {
-                return Cursor::of(None);
+                return Cursor::from(None);
             }
 
             let local = fn_id.map_token(|x, token| Local(x.to_string(), token.span.clone()));

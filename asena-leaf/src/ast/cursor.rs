@@ -54,6 +54,15 @@ impl<T: Leaf> Cursor<T> {
         }
     }
 
+    pub fn is_none(&self) -> bool {
+        match &*self.value.borrow() {
+            GreenTree::Leaf { .. } => false,
+            GreenTree::Token(..) => false,
+            GreenTree::Empty => false,
+            GreenTree::None => true,
+        }
+    }
+
     pub fn clone_tree(&self) -> GreenTree {
         self.value.borrow().clone()
     }
