@@ -140,6 +140,20 @@ macro_rules! ast_make_pattern {
     };
 }
 
+/// FIXME: This macro is a workaround for the current (i dont know what i did today), but it
+/// works, so i will keep it for now.
+#[macro_export]
+macro_rules! ast_make_match {
+    ($terminal:expr, $crate :: macros :: ast_make_variant! ($variant:ty, $x:expr)) => {{
+        use asena_leaf::ast::Leaf;
+        asena_leaf::ast::Lexeme::<$variant>::terminal($terminal.clone())
+    }};
+    ($terminal:expr, $($s:tt)*) => {
+        None
+    };
+}
+
 pub use ast_enum;
+pub use ast_make_match;
 pub use ast_make_pattern;
 pub use ast_make_variant;

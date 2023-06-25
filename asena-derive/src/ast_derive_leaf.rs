@@ -1,5 +1,5 @@
 use proc_macro::TokenStream;
-use quote::{quote, ToTokens};
+use quote::quote;
 use syn::*;
 
 pub fn expand_derive_leaf(input: TokenStream) -> TokenStream {
@@ -68,27 +68,22 @@ fn expand_struct(name: Ident, data: DataStruct) -> TokenStream {
 
 fn expand_enum(name: Ident, data: DataEnum) -> TokenStream {
     let terminal_patterns = data.variants.clone().into_iter().filter_map(|next| {
-        let ast_terminal = next.attrs.iter().any(|attr| {
-            if attr.path().is_ident("ast_terminal") {
-                attr.meta.to_token_stream().to_string().contains('<')
+        let name = next.ident;
+        let ast_terminal = next.attrs.iter().find_map(|attr| {
+            let tt: Type = if attr.path().is_ident("ast_terminal") {
+                attr.parse_args().ok()?
             } else {
-                false
-            }
-        });
+                return None;
+            };
 
-        if ast_terminal {
-            let pattern = quote! {{
-                use asena_leaf::ast::Leaf;
-                asena_leaf::ast::Lexeme::<$variant>::terminal(token)
-            }};
-            Some(quote! {
-               if let Some(value) = #pattern {
-                   return Some(Self::#name(value));
-               };
-            })
-        } else {
-            None
-        }
+            Some(tt)
+        })?;
+
+        Some(quote! {
+           if let Some(value) = asena_leaf::macros::ast_make_match!(token.clone(), #ast_terminal) {
+               return Some(Self::#name(value));
+           };
+        })
     });
 
     let patterns = data.variants.into_iter().filter_map(|next| {
@@ -100,6 +95,16 @@ fn expand_enum(name: Ident, data: DataEnum) -> TokenStream {
             };
 
             Some(expr)
+        });
+
+        let ast_terminal = next.attrs.iter().find_map(|attr| {
+            let tt: Type = if attr.path().is_ident("ast_terminal") {
+                attr.parse_args().ok()?
+            } else {
+                return None;
+            };
+
+            Some(tt)
         });
 
         let ast_from = next.attrs.iter().find_map(|attr| {
@@ -117,7 +122,7 @@ fn expand_enum(name: Ident, data: DataEnum) -> TokenStream {
             let body = ast_build_fn
                 .map(|awa| quote! { return #awa(tree) })
                 .unwrap_or_else(|| {
-                    quote! { Self::#name(#name::new(tree)) }
+                    quote! { Self::#name(<#ast_terminal>::new(tree)) }
                 });
 
             Some(quote! { #ast_from => #body, })
@@ -130,6 +135,7 @@ fn expand_enum(name: Ident, data: DataEnum) -> TokenStream {
             None
         }
     });
+    let c = terminal_patterns.clone().count();
     let terminal_patterns = terminal_patterns.reduce(|acc, next| quote!(#acc #next));
     let patterns = patterns.reduce(|acc, next| quote!(#acc #next));
 
@@ -145,7 +151,9 @@ fn expand_enum(name: Ident, data: DataEnum) -> TokenStream {
 
             fn terminal(token: asena_span::Spanned<asena_leaf::token::Token>) -> Option<Self> {
                 use asena_leaf::ast::Node;
-                #terminal_patterns
+                use asena_leaf::ast::Leaf;
+                #terminal_patterns;
+                println!("deu erro {}", #c);
                 None
             }
         }
