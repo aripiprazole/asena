@@ -321,30 +321,33 @@ impl Pi {
     #[ast_leaf]
     pub fn parameter_name(&self) -> Option<Lexeme<Local>> {
         if self.has("parameter_name") {
-            let fn_id = self
-                .named_terminal::<FunctionId>("parameter_name")
-                .as_leaf();
+            let fn_id = self.named_terminal::<FunctionId>("parameter_name");
+            let fn_id = fn_id.as_leaf();
+
+            if fn_id.as_str().is_empty() {
+                return Cursor::of(None);
+            }
 
             let local = fn_id.map_token(|x, token| Local(x.to_string(), token.span.clone()));
 
             Cursor::of(Some(local))
         } else {
-            Cursor::empty()
+            Cursor::of(None)
         }
     }
 
     #[ast_leaf]
     pub fn parameter_type(&self) -> Expr {
-        if self.find_parameter_name().is_empty() {
-            self.at(0)
-        } else {
+        if self.has("parameter_type") {
             self.named_at("parameter_type")
+        } else {
+            self.at(0)
         }
     }
 
     #[ast_leaf]
     pub fn return_type(&self) -> Expr {
-        if !self.find_parameter_name().is_empty() {
+        if self.has("parameter_name") {
             return self.named_at("return_type");
         }
 

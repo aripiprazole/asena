@@ -106,7 +106,7 @@ macro_rules! ast_enum {
         impl std::fmt::Debug for $name {
             fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                 match self {
-                    Self::Error => write!(f, "Error"),
+                    Self::Error => write!(f, "Error[{}]", stringify!($name)),
                     $(
                         Self::$variant(value) => std::fmt::Debug::fmt(value, f),
                     )*

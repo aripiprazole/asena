@@ -148,7 +148,7 @@ pub struct QualifiedPath(GreenTree);
 #[ast_of]
 impl QualifiedPath {
     #[ast_leaf]
-    pub fn segments(&self) -> Vec<Lexeme<Local>> {
+    pub fn segments(&self) -> Vec<Lexeme<FunctionId>> {
         self.filter_terminal()
     }
 

@@ -24,7 +24,6 @@ fn simple() {
     let parser = Parser::from(Lexer::new(code)).run(asena_grammar::file);
     let file = parser.build_tree().unwrap();
 
-    println!("{:#?}", file);
     println!("{:#?}", AsenaFile::new(file));
 }
 

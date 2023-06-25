@@ -170,6 +170,7 @@ impl<T: Node + Leaf> Node for Vec<T> {
         GreenTree::Leaf {
             data: Spanned::new(Loc::default(), tree),
             names: Rc::default(),
+            children: Default::default(),
         }
     }
 }

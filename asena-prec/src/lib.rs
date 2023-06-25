@@ -99,7 +99,7 @@ mod tests {
     #[test]
     fn expr_works() {
         let mut tree = asena_expr!(a(1 + b));
-        let expr = Expr::from(App::new(tree.clone().unwrap()));
+        let expr = Expr::new(tree.clone().unwrap());
 
         tree.reporter.dump_tree();
 

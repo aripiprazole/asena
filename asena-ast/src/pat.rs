@@ -8,6 +8,25 @@ use asena_span::Spanned;
 
 use crate::*;
 
+/// Global pattern, is a global name.
+///
+/// The syntax is like:
+/// ```haskell
+/// Some
+/// ```
+#[derive(Default, Leaf, Clone)]
+pub struct Global(GreenTree);
+
+#[ast_of]
+#[ast_debug]
+#[ast_walkable(PatWalker)]
+impl Global {
+    #[ast_leaf]
+    pub fn name(&self) -> QualifiedPath {
+        self.at(0)
+    }
+}
+
 /// Constructor pattern, is a pattern that deconstructs a enum pattern.
 ///
 /// The syntax is like:
@@ -92,14 +111,14 @@ ast_enum! {
         Spread        <- PatSpread,                           // ..
         Constructor   <- PatConstructor,                      // (<global_id> <pattern...>)
         List          <- PatList,                             // [<pattern...>]
-        QualifiedPath <- PatGlobal,                           // <global>
+        Global        <- PatGlobal,                           // <global>
         Literal       <- PatLit    => [Pat::build_literal],   // <literal>
     }
 }
 
 impl Pat {
     fn build_literal(tree: Spanned<Tree>) -> Option<Pat> {
-        let literal = tree.filter_terminal::<Literal>().first().as_leaf();
+        let literal = tree.terminal::<Literal>(0).as_leaf();
 
         Some(Self::Literal(literal))
     }

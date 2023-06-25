@@ -15,6 +15,8 @@ pub enum GreenTree {
     Leaf {
         data: Spanned<Tree>,
 
+        children: HashMap<LeafKey, Spanned<Child>>,
+
         /// Lazy names' hash map, they have to exist, to make the tree mutable.
         ///
         /// E.g: I can't set the `lhs` node for `binary` tree, if the tree is immutable, so the
@@ -34,8 +36,9 @@ pub enum GreenTree {
 impl GreenTree {
     pub fn new(data: Spanned<Tree>) -> Self {
         Self::Leaf {
-            data,
+            children: compute_named_children(&data),
             names: Rc::new(RefCell::new(HashMap::new())),
+            data,
         }
     }
 
@@ -127,7 +130,7 @@ impl GreenTree {
     /// Returns if the tree has the given name in the current name hash map.
     pub fn has(&self, name: LeafKey) -> bool {
         match self {
-            GreenTree::Leaf { names, .. } => matches!(names.borrow().get(name), Some(..)),
+            GreenTree::Leaf { children, .. } => matches!(children.get(name), Some(..)),
             GreenTree::Token(..) => false,
             GreenTree::Empty => false,
         }
@@ -136,10 +139,18 @@ impl GreenTree {
     /// Returns a cursor to the named child, if it's not an error node.
     pub fn named_at<A: Leaf + Node + 'static>(&self, name: LeafKey) -> Cursor<A> {
         match self {
-            GreenTree::Leaf { names, .. } => {
+            GreenTree::Leaf {
+                names, children, ..
+            } => {
                 let borrow = names.borrow();
                 let Some(child) = borrow.get(name).and_then(|x| x.downcast_ref::<Cursor<A>>()) else {
-                    return Cursor::empty();
+                    return match children.get(name) {
+                        Some(Spanned { value: Child::Token(..), .. }) => Cursor::empty(),
+                        Some(spanned @ Spanned { value: Child::Tree(ref tree), .. }) => {
+                            A::make(spanned.replace(tree.clone())).into()
+                        },
+                        None => Cursor::empty(),
+                    };
                 };
 
                 let value = child.value.borrow();
@@ -158,10 +169,18 @@ impl GreenTree {
     /// Returns a cursor to the named terminal, if it's not an error node.
     pub fn named_terminal<A: Terminal + 'static>(&self, name: LeafKey) -> Cursor<Lexeme<A>> {
         match self {
-            GreenTree::Leaf { names, .. } => {
+            GreenTree::Leaf {
+                names, children, ..
+            } => {
                 let borrow = names.borrow();
                 let Some(child) = borrow.get(name).and_then(|x| x.downcast_ref::<Cursor<Lexeme<A>>>()) else {
-                    return Cursor::empty();
+                    return match children.get(name) {
+                        Some(Spanned { value: Child::Tree(..), .. }) => Cursor::empty(),
+                        Some(spanned @ Spanned { value: Child::Token(ref token), .. }) => {
+                            Lexeme::<A>::terminal(spanned.replace(token.clone())).into()
+                        },
+                        None => Cursor::empty(),
+                    };
                 };
 
                 let value = child.value.borrow();
@@ -213,10 +232,15 @@ impl From<Spanned<Tree>> for GreenTree {
 impl Debug for GreenTree {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Leaf { data, names } => f
+            Self::Leaf {
+                data,
+                names,
+                children,
+            } => f
                 .debug_struct("Leaf")
                 .field("data", data)
                 .field("names", names)
+                .field("children", children)
                 .finish(),
             Self::Token(lexeme) => f
                 .debug_struct("Token")
@@ -226,4 +250,25 @@ impl Debug for GreenTree {
             Self::Empty => write!(f, "Empty"),
         }
     }
+}
+
+fn compute_named_children(data: &Spanned<Tree>) -> HashMap<LeafKey, Spanned<Child>> {
+    let mut named_children = HashMap::new();
+
+    for child in &data.children {
+        match child.value() {
+            Child::Tree(tree) => {
+                if let Some(name) = tree.name {
+                    named_children.insert(name, child.clone());
+                }
+            }
+            Child::Token(token) => {
+                if let Some(name) = token.name {
+                    named_children.insert(name, child.clone());
+                }
+            }
+        }
+    }
+
+    named_children
 }
