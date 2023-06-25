@@ -54,6 +54,20 @@ pub trait Located {
     fn location(&self) -> Cow<'_, Loc>;
 }
 
+pub trait IntoVirtual<T>: Sized {
+    fn into_virtual(self) -> Option<T>;
+}
+
+pub trait FromVirtual<T>: Sized {
+    fn from_virtual(value: T) -> Option<Self>;
+}
+
+impl<T, U: FromVirtual<T>> IntoVirtual<U> for T {
+    fn into_virtual(self) -> Option<U> {
+        U::from_virtual(self)
+    }
+}
+
 /// Represents a green tree used on the [Leaf] enum variants.
 pub trait Ast: Node + Deref<Target = GreenTree> + DerefMut + Clone + Debug {}
 
