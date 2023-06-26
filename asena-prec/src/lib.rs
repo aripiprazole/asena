@@ -1,5 +1,6 @@
 use asena_ast::{command::CommandWalker, walker::Reporter, *};
 use asena_derive::{ast_reporter, ast_step, Reporter};
+use asena_leaf::{ast::Cursor, node::TreeKind};
 use asena_report::InternalError;
 use commands::Entry;
 use im::HashMap;
@@ -41,23 +42,39 @@ impl<'a, R: Reporter> ExprWalker for AsenaPrecStep<'a, R> {
 }
 
 impl<'a, R: Reporter> AsenaPrecStep<'a, R> {
-    pub fn new(reporter: &'a mut R, prec_table: &'a HashMap<FunctionId, Entry>) -> Self {
-        Self {
-            reporter,
-            prec_table,
+    /// Reorder the precedence of the binary expression.
+    ///
+    /// FIXME: it does not change the reference. Sorry
+    fn impl_reorder_prec(&mut self, binary: &impl Binary) -> Option<()> {
+        let lhs = binary.lhs();
+        let fn_id = binary.fn_id();
+        let rhs = binary.rhs().as_binary()?;
+
+        println!("impl_reorder_prec: {lhs:?} {fn_id:?} {rhs:?}");
+
+        let op1 = self.prec_table.get(&fn_id)?;
+        let op2 = self.prec_table.get(&rhs.fn_id())?;
+
+        if op1.order > op2.order {
+            let lhs_rhs = rhs.lhs();
+
+            let new_lhs = Infix::from(TreeKind::ExprBinary);
+            new_lhs.set_lhs(lhs);
+            new_lhs.set_fn_id(binary.find_fn_id().as_new_node().as_leaf());
+            new_lhs.set_rhs(lhs_rhs);
+
+            binary.set_lhs(new_lhs.into());
+            binary.set_fn_id(rhs.fn_id());
+            binary.set_rhs(rhs.find_rhs().as_new_node().as_leaf());
         }
-    }
+        println!(
+            "   -> {:?} {:?} {:?}",
+            binary.lhs(),
+            binary.fn_id(),
+            binary.rhs()
+        );
 
-    fn impl_reorder_prec(&mut self, binary: &impl Binary) {
-        println!("current prec table  {:?}", self.prec_table);
-
-        let lhs = binary.find_lhs();
-        let rhs = binary.find_rhs();
-
-        let new_rhs = rhs.as_new_node();
-
-        rhs.set(lhs.clone());
-        lhs.set(new_rhs);
+        Some(())
     }
 }
 
@@ -81,9 +98,12 @@ mod tests {
             }
         };
 
-        let file = AsenaFile::new(tree.clone().unwrap())
+        let file = AsenaFile::new(tree.unwrap())
             .walks(AsenaInfixCommandStep::new(&mut tree, &mut prec_table))
-            .walks(AsenaPrecStep::new(&mut tree, &prec_table));
+            .walks(AsenaPrecStep {
+                prec_table: &prec_table,
+                reporter: &mut tree,
+            });
 
         tree.reporter.dump();
 
@@ -92,10 +112,14 @@ mod tests {
 
     #[test]
     fn expr_works() {
-        let mut tree = asena_expr!(a(1 + b));
-        let expr = Expr::new(tree.clone().unwrap());
+        let prec_table = default_prec_table();
+        let mut tree = asena_expr!(1 * 2 + 5 * 4 + 3);
+        let expr = Expr::new(tree.unwrap()).walks(AsenaPrecStep {
+            prec_table: &prec_table,
+            reporter: &mut tree,
+        });
 
-        tree.reporter.dump_tree();
+        tree.reporter.dump();
 
         println!("{expr:#?}")
     }

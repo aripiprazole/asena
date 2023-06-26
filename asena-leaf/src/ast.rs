@@ -33,6 +33,10 @@ pub type LeafKey = &'static str;
 /// impl Leaf for Expr { ... }
 /// ```
 pub trait Leaf: Debug + Sized + Clone + Default {
+    /// Creates a new node from the given tree and if the given tree is not matched,
+    /// returns `None`.
+    ///
+    /// TODO: Change parameter to GreenTree, please.
     fn make(_tree: Spanned<Tree>) -> Option<Self> {
         None
     }

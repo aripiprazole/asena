@@ -38,6 +38,16 @@ pub trait Binary: Ast {
             Cursor::new(rhs.deref().clone())
         }
     }
+
+    #[ast_leaf]
+    fn operators(&self) -> Vec<Lexeme<FunctionId>> {
+        self.filter_terminal().skip(1)
+    }
+
+    #[ast_leaf]
+    fn operands(&self) -> Vec<Expr> {
+        self.filter().skip(1)
+    }
 }
 
 /// Binary operation represented by `fn_id`: `.`, and the two operands: `receiver`, `name`

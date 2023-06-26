@@ -58,6 +58,8 @@ impl<'a, R: Reporter> AsenaInfixCommandStep<'a, R> {
 pub fn default_prec_table() -> HashMap<FunctionId, Entry> {
     let mut table = HashMap::new();
     table.insert(FunctionId::new("=="), Entry::new(Assoc::Right, 0));
+    table.insert(FunctionId::new("+"), Entry::new(Assoc::Right, 1));
+    table.insert(FunctionId::new("*"), Entry::new(Assoc::Right, 2));
     table
 }
 

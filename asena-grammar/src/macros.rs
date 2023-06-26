@@ -55,8 +55,8 @@ pub fn new_reportable(src: &str, tree: Spanned<Tree>) -> Reportable<DefaultRepor
 }
 
 impl Reportable<DefaultReporter> {
-    pub fn unwrap(self) -> Spanned<Tree> {
-        self.data
+    pub fn unwrap(&self) -> Spanned<Tree> {
+        self.data.clone()
     }
 }
 

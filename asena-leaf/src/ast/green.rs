@@ -2,7 +2,7 @@ use std::{borrow::Cow, cell::RefCell, collections::HashMap, rc::Rc};
 
 use asena_span::Spanned;
 
-use crate::node::{Child, Named, Tree};
+use crate::node::{Child, Named, Tree, TreeKind};
 
 use super::*;
 
@@ -10,12 +10,14 @@ use super::*;
 ///
 /// It is used to traverse the tree, and to modify it, and can be an [GreenTree::Empty] node,
 /// that is used to mark the tree as invalid, and not fail the compiler.
-#[derive(Default, Clone)]
+#[derive(Clone)]
 pub enum GreenTree {
     Leaf {
         data: Spanned<Tree>,
 
         children: HashMap<LeafKey, Spanned<Child>>,
+
+        synthetic: bool,
 
         /// Lazy names' hash map, they have to exist, to make the tree mutable.
         ///
@@ -26,13 +28,20 @@ pub enum GreenTree {
         /// ```
         names: Rc<RefCell<HashMap<LeafKey, Box<dyn std::any::Any>>>>,
     },
-
     Token(Lexeme<Rc<dyn std::any::Any>>),
-
     None,
-
-    #[default]
     Empty,
+}
+
+impl Default for GreenTree {
+    fn default() -> Self {
+        Self::Leaf {
+            data: Spanned::default(),
+            children: HashMap::new(),
+            synthetic: false,
+            names: Rc::new(RefCell::new(HashMap::new())),
+        }
+    }
 }
 
 impl GreenTree {
@@ -40,6 +49,19 @@ impl GreenTree {
         Self::Leaf {
             children: compute_named_children(&data),
             names: Rc::new(RefCell::new(HashMap::new())),
+            synthetic: false,
+            data,
+        }
+    }
+
+    pub fn of(kind: TreeKind) -> Self {
+        let mut data: Spanned<Tree> = Spanned::default();
+        data.value.kind = kind;
+
+        Self::Leaf {
+            children: HashMap::default(),
+            names: Rc::new(RefCell::new(HashMap::new())),
+            synthetic: true,
             data,
         }
     }
@@ -253,9 +275,11 @@ impl Debug for GreenTree {
                 data,
                 names,
                 children,
+                synthetic,
             } => f
                 .debug_struct("Leaf")
                 .field("data", data)
+                .field("synthetic", synthetic)
                 .field("names", names)
                 .field("children", children)
                 .finish(),

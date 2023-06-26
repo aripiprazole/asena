@@ -5,7 +5,7 @@ macro_rules! ast_enum {
         pub enum $name:ident {
             $(
                 $(#[$field_outer:meta])*
-                $variant:ident <- $kind:expr $(=> [$f:expr])?
+                $variant:ident <- $kind:ident $(=> [$f:expr])?
             ),*
             $(,)?
         }
@@ -53,8 +53,17 @@ macro_rules! ast_enum {
             fn new<I: Into<asena_leaf::ast::GreenTree>>(value: I) -> Self {
                 let tree: asena_leaf::ast::GreenTree = value.into();
                 match tree {
-                    asena_leaf::ast::GreenTree::Leaf { data, .. } => {
-                        asena_leaf::ast::Leaf::make(data).unwrap_or_default()
+                    ref leaf @ asena_leaf::ast::GreenTree::Leaf { ref data, ref synthetic, .. } => {
+                        if *synthetic {
+                            match data.kind {
+                                $(
+                                    $kind => return Self::$variant(<$crate::macros::ast_make_variant!($variant $(, $f)?)>::new(leaf.clone())),
+                                )*
+                                _ => {},
+                            }
+                        }
+
+                        asena_leaf::ast::Leaf::make(data.clone()).unwrap_or_default()
                     }
                     asena_leaf::ast::GreenTree::Token(lexeme) => {
                         let terminal = lexeme.token;
@@ -127,6 +136,17 @@ macro_rules! ast_should_be_terminal {
 macro_rules! ast_make_variant {
     ($variant:ident, $f:expr) => { asena_leaf::ast::Lexeme<$variant> };
     ($variant:ident) => { $variant }
+}
+
+#[macro_export]
+macro_rules! ast_make_synthetic {
+    ($tree:expr, $variant:ident, $f:expr) => {{
+        use asena_leaf::ast::Node;
+        asena_leaf::ast::Lexeme::<$variant>::new($tree.clone())
+    }};
+    ($tree:expr, $variant:ident) => {
+        $variant::new($tree.clone())
+    };
 }
 
 #[macro_export]

@@ -41,6 +41,12 @@ fn expand_struct(name: Ident, data: DataStruct) -> TokenStream {
             }
         }
 
+        impl From<asena_leaf::node::TreeKind> for #name {
+            fn from(kind: asena_leaf::node::TreeKind) -> Self {
+                asena_leaf::ast::Node::new(asena_leaf::ast::GreenTree::of(kind))
+            }
+        }
+
         impl asena_leaf::ast::Located for #name {
             fn location(&self) -> std::borrow::Cow<'_, asena_span::Loc> {
                 self.0.location()
@@ -122,7 +128,9 @@ fn expand_enum(name: Ident, data: DataEnum) -> TokenStream {
             let body = ast_build_fn
                 .map(|awa| quote! { return #awa(tree) })
                 .unwrap_or_else(|| {
-                    quote! { Self::#name(<#ast_terminal>::new(tree)) }
+                    quote! {{
+                        Self::#name(<#ast_terminal>::new(tree))
+                    }}
                 });
 
             Some(quote! { #ast_from => #body, })
@@ -135,7 +143,6 @@ fn expand_enum(name: Ident, data: DataEnum) -> TokenStream {
             None
         }
     });
-    let c = terminal_patterns.clone().count();
     let terminal_patterns = terminal_patterns.reduce(|acc, next| quote!(#acc #next));
     let patterns = patterns.reduce(|acc, next| quote!(#acc #next));
 
@@ -153,7 +160,6 @@ fn expand_enum(name: Ident, data: DataEnum) -> TokenStream {
                 use asena_leaf::ast::Node;
                 use asena_leaf::ast::Leaf;
                 #terminal_patterns;
-                println!("deu erro {}", #c);
                 None
             }
         }

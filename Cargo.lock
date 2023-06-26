@@ -201,7 +201,12 @@ name = "asena-typer"
 version = "0.1.0"
 dependencies = [
  "asena-ast",
+ "asena-derive",
+ "asena-grammar",
  "asena-leaf",
+ "asena-lexer",
+ "asena-parser",
+ "asena-report",
  "asena-span",
  "fxhash",
  "im",

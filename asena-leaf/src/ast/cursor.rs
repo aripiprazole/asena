@@ -183,6 +183,7 @@ impl<T: Node + Leaf> Node for Vec<T> {
             data: Spanned::new(Loc::default(), tree),
             names: Rc::default(),
             children: Default::default(),
+            synthetic: false,
         }
     }
 }
