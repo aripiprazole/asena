@@ -26,18 +26,6 @@ impl<'a, R: Reporter> ExprWalker for AsenaPrecStep<'a, R> {
     fn walk_expr_infix(&mut self, value: &Infix) {
         self.impl_reorder_prec(value);
     }
-
-    fn walk_expr_accessor(&mut self, value: &Accessor) {
-        self.impl_reorder_prec(value);
-    }
-
-    fn walk_expr_ann(&mut self, value: &Ann) {
-        self.impl_reorder_prec(value);
-    }
-
-    fn walk_expr_qual(&mut self, value: &Qual) {
-        self.impl_reorder_prec(value);
-    }
 }
 
 impl<'a, R: Reporter> AsenaPrecStep<'a, R> {
