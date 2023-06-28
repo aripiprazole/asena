@@ -17,7 +17,7 @@ pub fn expand_ast_of(_args: TokenStream, input: TokenStream) -> TokenStream {
     let arguments = iter_leaf(&input).into_iter().fold(quote!(), |acc, next| {
         let name = next.name;
         let set_value = Ident::new(&format!("set_{}", name), Span::call_site());
-        quote! { #acc _local_new.#set_value(#name.into()); }
+        quote! { #acc _local_new.#set_value(#name); }
     });
 
     input.items.push(parse_quote! {

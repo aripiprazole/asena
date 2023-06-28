@@ -30,24 +30,24 @@ macro_rules! ast_enum {
             )*
         }
 
-        $(
-            impl From<$crate::macros::ast_make_variant!($variant $(, $f)?)> for $name {
-                fn from(value: $crate::macros::ast_make_variant!($variant $(, $f)?)) -> Self {
-                    Self::$variant(value.into())
+        $($crate::macros::ast_make_virtual!($kind, $variant $(, $f)?);
+
+        impl From<$crate::macros::ast_make_variant!($variant $(, $f)?)> for $name {
+            fn from(value: $crate::macros::ast_make_variant!($variant $(, $f)?)) -> Self {
+                Self::$variant(value.into())
+            }
+        }
+
+        impl TryFrom<$name> for $crate::macros::ast_make_variant!($variant $(, $f)?) {
+            type Error = String;
+
+            fn try_from(value: $name) -> Result<Self, String> {
+                match value {
+                    $name::$variant(value) => Ok(value),
+                    _ => Err("invalid node".into()),
                 }
             }
-
-            impl TryFrom<$name> for $crate::macros::ast_make_variant!($variant $(, $f)?) {
-                type Error = String;
-
-                fn try_from(value: $name) -> Result<Self, String> {
-                    match value {
-                        $name::$variant(value) => Ok(value),
-                        _ => Err("invalid node".into()),
-                    }
-                }
-            }
-        )*
+        })*
 
         impl asena_leaf::ast::Node for $name {
             fn new<I: Into<asena_leaf::ast::GreenTree>>(value: I) -> Self {
@@ -125,6 +125,18 @@ macro_rules! ast_should_be_terminal {
 macro_rules! ast_make_variant {
     ($variant:ident, $f:expr) => { asena_leaf::ast::Lexeme<$variant> };
     ($variant:ident) => { $variant }
+}
+
+#[macro_export]
+macro_rules! ast_make_virtual {
+    ($kind:ident, $variant:ident, $f:expr) => {};
+    ($kind:ident, $variant:ident) => {
+        impl asena_leaf::ast::Virtual for $variant {
+            fn tree_kind() -> asena_leaf::node::TreeKind {
+                $kind
+            }
+        }
+    };
 }
 
 #[macro_export]
@@ -258,5 +270,6 @@ pub use ast_enum;
 pub use ast_make_match;
 pub use ast_make_pattern;
 pub use ast_make_variant;
+pub use ast_make_virtual;
 pub use ast_virtual;
 pub use ast_virtual_variant;

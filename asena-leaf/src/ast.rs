@@ -89,6 +89,10 @@ pub trait Node: Sized + Debug + Clone {
     fn new<I: Into<GreenTree>>(tree: I) -> Self;
 
     fn unwrap(self) -> GreenTree;
+
+    fn as_new_ast<T: Node>(&self) -> T {
+        T::new(self.clone().unwrap().as_new_node())
+    }
 }
 
 impl<T: Terminal + Debug + Default + Clone + 'static> Leaf for T {

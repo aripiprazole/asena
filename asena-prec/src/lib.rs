@@ -1,6 +1,5 @@
 use asena_ast::{command::CommandWalker, walker::Reporter, *};
 use asena_derive::{ast_reporter, ast_step, Reporter};
-use asena_leaf::node::TreeKind;
 use asena_report::InternalError;
 use commands::Entry;
 use im::HashMap;
@@ -52,12 +51,12 @@ impl<'a, R: Reporter> AsenaPrecStep<'a, R> {
         let op2 = self.prec_table.get(&rhs.fn_id())?;
 
         if op1.order > op2.order {
-            let new_lhs = Infix::from(TreeKind::ExprBinary);
+            let new_lhs = binary.as_new_ast::<VirtualBinary>();
             new_lhs.set_lhs(lhs);
             new_lhs.set_fn_id(fn_id);
             new_lhs.set_rhs(rhs.find_lhs().as_new_node().as_leaf());
 
-            binary.set_lhs(new_lhs.into());
+            binary.set_lhs(new_lhs);
             binary.set_fn_id(rhs.fn_id());
             binary.set_rhs(rhs.rhs());
         }

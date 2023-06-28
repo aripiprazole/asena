@@ -30,10 +30,10 @@ pub fn expand_ast_leaf(_args: TokenStream, input: TokenStream) -> TokenStream {
     set_fn_tokens
         .sig
         .inputs
-        .push(parse(quote!(value: #output).into()).unwrap());
+        .push(parse(quote!(value: impl Into<#output>).into()).unwrap());
     set_fn_tokens.sig.ident = Ident::new(&format!("set_{name}"), Span::call_site());
     set_fn_tokens.block = Box::new(parse_quote! {{
-        self.insert(stringify!(#name), value)
+        self.insert(stringify!(#name), value.into())
     }});
 
     let mut find_fn_tokens = input.clone();
