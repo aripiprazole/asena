@@ -43,8 +43,6 @@ impl<'a, R: Reporter> ExprWalker for AsenaPrecStep<'a, R> {
 
 impl<'a, R: Reporter> AsenaPrecStep<'a, R> {
     /// Reorder the precedence of the binary expression.
-    ///
-    /// FIXME: it does not change the reference. Sorry
     fn impl_reorder_prec(&mut self, binary: &impl Binary) -> Option<()> {
         let lhs = binary.lhs();
         let fn_id = binary.fn_id();
