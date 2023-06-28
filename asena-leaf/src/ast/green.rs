@@ -66,9 +66,17 @@ impl GreenTree {
         }
     }
 
-    pub fn set_names(&self, names: Rc<RefCell<HashMap<LeafKey, Rc<dyn std::any::Any>>>>) {
-        if let Self::Leaf { names: old, .. } = self {
-            old.replace(names.borrow().clone());
+    pub fn as_new_node(&self) -> Self {
+        match self {
+            GreenTree::Leaf {
+                data, synthetic, ..
+            } => Self::Leaf {
+                children: compute_named_children(data),
+                names: Rc::new(RefCell::new(HashMap::new())),
+                synthetic: *synthetic,
+                data: data.clone(),
+            },
+            _ => self.clone(),
         }
     }
 

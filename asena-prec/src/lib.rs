@@ -114,6 +114,13 @@ mod tests {
     }
 
     #[test]
+    fn an_works() {
+        let expr = Expr::new(asena_expr!(1 + 2 + 3).unwrap());
+
+        println!("{expr:?}");
+    }
+
+    #[test]
     fn expr_works() {
         let prec_table = default_prec_table();
         let mut tree = asena_expr!(1 * 2 + 5 * 4 + 3);
