@@ -28,6 +28,30 @@ macro_rules! asena_expr {
 }
 
 #[macro_export]
+macro_rules! asena_decl {
+    ($($s:tt)*) => {{
+        let string = stringify!($($s)*);
+
+        $crate::new_reportable(string, asena_parser::Parser::from(asena_lexer::Lexer::new(string))
+            .run($crate::decl)
+            .build_tree()
+            .unwrap())
+    }};
+}
+
+#[macro_export]
+macro_rules! asena_stmt {
+    ($($s:tt)*) => {{
+        let string = stringify!($($s)*);
+
+        $crate::new_reportable(string, asena_parser::Parser::from(asena_lexer::Lexer::new(string))
+            .run($crate::stmt)
+            .build_tree()
+            .unwrap())
+    }};
+}
+
+#[macro_export]
 macro_rules! asena_file {
     ($($s:tt)*) => {{
         let string = stringify!($($s)*);

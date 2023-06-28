@@ -28,8 +28,16 @@ pub enum GreenTree {
         /// ```
         names: Rc<RefCell<HashMap<LeafKey, Rc<dyn std::any::Any>>>>,
     },
+
+    Vec(Vec<GreenTree>),
+
+    /// A terminal node
     Token(Lexeme<Rc<dyn std::any::Any>>),
+
+    /// A node that is supposed to be None.
     None,
+
+    /// An empty node, that is used to mark the tree as invalid, and not fail the compiler.
     Empty,
 }
 
@@ -68,7 +76,7 @@ impl GreenTree {
 
     pub fn as_new_node(&self) -> Self {
         match self {
-            GreenTree::Leaf {
+            Self::Leaf {
                 data, synthetic, ..
             } => Self::Leaf {
                 children: compute_named_children(data),
@@ -91,10 +99,9 @@ impl GreenTree {
 
     pub fn location(&self) -> Cow<'_, Loc> {
         match self {
-            GreenTree::Leaf { ref data, .. } => Cow::Borrowed(&data.span),
-            GreenTree::Token(ref lexeme) => Cow::Borrowed(&lexeme.token.span),
-            GreenTree::None => Cow::Owned(Loc::Synthetic),
-            GreenTree::Empty => Cow::Owned(Loc::Synthetic),
+            Self::Leaf { ref data, .. } => Cow::Borrowed(&data.span),
+            Self::Token(ref lexeme) => Cow::Borrowed(&lexeme.token.span),
+            _ => Cow::Owned(Loc::Synthetic),
         }
     }
 
@@ -124,77 +131,64 @@ impl GreenTree {
     /// Returns if the value is the only element in the tree.
     pub fn is_single(&self) -> bool {
         match self {
-            GreenTree::Leaf { data, .. } => data.is_single(),
-            GreenTree::Token(..) => true,
-            GreenTree::None => false,
-            GreenTree::Empty => false,
+            Self::Leaf { data, .. } => data.is_single(),
+            Self::Token(..) => true,
+            _ => false,
         }
     }
 
     /// Returns the tree children, if it's not an error node.
     pub fn children(&mut self) -> Option<&mut Vec<Spanned<Child>>> {
         match self {
-            GreenTree::Leaf { data, .. } => Some(&mut data.children),
-            GreenTree::Token(..) => None,
-            GreenTree::None => None,
-            GreenTree::Empty => None,
+            Self::Leaf { data, .. } => Some(&mut data.children),
+            _ => None,
         }
     }
 
     /// Returns filtered cursor to the children, if it's not an error node.
     pub fn filter<T: Leaf + Node>(&self) -> Cursor<Vec<T>> {
         match self {
-            GreenTree::Leaf { data, .. } => data.filter(),
-            GreenTree::Token(..) => Cursor::empty(),
-            GreenTree::None => Cursor::empty(),
-            GreenTree::Empty => Cursor::empty(),
+            Self::Leaf { data, .. } => data.filter(),
+            _ => Cursor::empty(),
         }
     }
 
     /// Returns a terminal node, if it's not an error node.
     pub fn terminal<T: Terminal + 'static>(&self, nth: usize) -> Cursor<Lexeme<T>> {
         match self {
-            GreenTree::Leaf { data, .. } => data.terminal(nth),
-            GreenTree::Token(..) => Cursor::empty(),
-            GreenTree::None => Cursor::empty(),
-            GreenTree::Empty => Cursor::empty(),
+            Self::Leaf { data, .. } => data.terminal(nth),
+            _ => Cursor::empty(),
         }
     }
 
     /// Returns terminal filtered cursor to the children, if it's not an error node.
     pub fn filter_terminal<T: Terminal + 'static>(&self) -> Cursor<Vec<Lexeme<T>>> {
         match self {
-            GreenTree::Leaf { data, .. } => data.filter_terminal(),
-            GreenTree::Token(..) => Cursor::empty(),
-            GreenTree::None => Cursor::empty(),
-            GreenTree::Empty => Cursor::empty(),
+            Self::Leaf { data, .. } => data.filter_terminal(),
+            _ => Cursor::empty(),
         }
     }
 
     /// Returns a leaf node, if it's not an error node.
     pub fn at<T: Node + Leaf>(&self, nth: usize) -> Cursor<T> {
         match self {
-            GreenTree::Leaf { data, .. } => data.at(nth),
-            GreenTree::Token(..) => Cursor::empty(),
-            GreenTree::None => Cursor::empty(),
-            GreenTree::Empty => Cursor::empty(),
+            Self::Leaf { data, .. } => data.at(nth),
+            _ => Cursor::empty(),
         }
     }
 
     /// Returns if the tree has the given name in the current name hash map.
     pub fn has(&self, name: LeafKey) -> bool {
         match self {
-            GreenTree::Leaf { children, .. } => matches!(children.get(name), Some(..)),
-            GreenTree::Token(..) => false,
-            GreenTree::None => false,
-            GreenTree::Empty => false,
+            Self::Leaf { children, .. } => matches!(children.get(name), Some(..)),
+            _ => false,
         }
     }
 
     /// Returns a cursor to the named child, if it's not an error node.
     pub fn named_at<A: Leaf + Node + 'static>(&self, name: LeafKey) -> Cursor<A> {
         match self {
-            GreenTree::Leaf {
+            Self::Leaf {
                 names, children, ..
             } => {
                 let borrow = names.borrow();
@@ -210,16 +204,14 @@ impl GreenTree {
 
                 child.clone()
             }
-            GreenTree::Token(..) => Cursor::empty(),
-            GreenTree::None => Cursor::empty(),
-            GreenTree::Empty => Cursor::empty(),
+            _ => Cursor::empty(),
         }
     }
 
     /// Returns a cursor to the named terminal, if it's not an error node.
     pub fn named_terminal<A: Terminal + 'static>(&self, name: LeafKey) -> Cursor<Lexeme<A>> {
         match self {
-            GreenTree::Leaf {
+            Self::Leaf {
                 names, children, ..
             } => {
                 let borrow = names.borrow();
@@ -235,18 +227,14 @@ impl GreenTree {
 
                 child.clone()
             }
-            GreenTree::Token(..) => Cursor::empty(),
-            GreenTree::None => Cursor::empty(),
-            GreenTree::Empty => Cursor::empty(),
+            _ => Cursor::empty(),
         }
     }
 
     pub fn matches(&self, nth: usize, kind: TokenKind) -> bool {
         match self {
-            GreenTree::Leaf { data, .. } => data.matches(nth, kind),
-            GreenTree::Token(..) => false,
-            GreenTree::None => false,
-            GreenTree::Empty => false,
+            Self::Leaf { data, .. } => data.matches(nth, kind),
+            _ => false,
         }
     }
 
@@ -254,35 +242,30 @@ impl GreenTree {
     /// return the default value.
     pub fn or_empty(self) -> Spanned<Tree> {
         match self {
-            GreenTree::Leaf { data, .. } => data,
-            GreenTree::Token(..) => Spanned::default(),
-            GreenTree::None => Spanned::default(),
-            GreenTree::Empty => Spanned::default(),
+            Self::Leaf { data, .. } => data,
+            _ => Spanned::default(),
         }
     }
 
     pub fn as_child(self) -> Spanned<Child> {
         match self {
-            GreenTree::Leaf { data, .. } => data.map(Child::Tree),
-            GreenTree::Token(lexeme) => lexeme.token.map(Child::Token),
-            GreenTree::Empty => Spanned::new(Loc::default(), Child::Tree(Tree::default())),
-            GreenTree::None => Spanned::new(Loc::default(), Child::Tree(Tree::default())),
+            Self::Leaf { data, .. } => data.map(Child::Tree),
+            Self::Token(lexeme) => lexeme.token.map(Child::Token),
+            _ => Spanned::new(Loc::default(), Child::Tree(Tree::default())),
         }
     }
 
     pub fn kind(&self) -> TreeKind {
         match self {
-            GreenTree::Leaf { data, .. } => data.kind,
-            GreenTree::Token(_) => TreeKind::Error,
-            GreenTree::None => TreeKind::Error,
-            GreenTree::Empty => TreeKind::Error,
+            Self::Leaf { data, .. } => data.kind,
+            _ => TreeKind::Error,
         }
     }
 }
 
 impl From<Spanned<Tree>> for GreenTree {
     fn from(value: Spanned<Tree>) -> Self {
-        GreenTree::new(value)
+        Self::new(value)
     }
 }
 
@@ -306,6 +289,7 @@ impl Debug for GreenTree {
                 .field("kind", &lexeme.token.kind.name())
                 .field("value", lexeme)
                 .finish(),
+            Self::Vec(children) => f.debug_tuple("Vec").field(children).finish(),
             Self::Empty => write!(f, "Empty"),
             Self::None => write!(f, "None"),
         }

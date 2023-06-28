@@ -26,6 +26,18 @@ impl<'a, R: Reporter> ExprWalker for AsenaPrecStep<'a, R> {
     fn walk_expr_infix(&mut self, value: &Infix) {
         self.impl_reorder_prec(value);
     }
+
+    fn walk_expr_accessor(&mut self, value: &Accessor) {
+        self.impl_reorder_prec(value);
+    }
+
+    fn walk_expr_ann(&mut self, value: &Ann) {
+        self.impl_reorder_prec(value);
+    }
+
+    fn walk_expr_qual(&mut self, value: &Qual) {
+        self.impl_reorder_prec(value);
+    }
 }
 
 impl<'a, R: Reporter> AsenaPrecStep<'a, R> {
@@ -56,7 +68,7 @@ impl<'a, R: Reporter> AsenaPrecStep<'a, R> {
 #[cfg(test)]
 mod tests {
     use asena_ast::*;
-    use asena_grammar::{asena_expr, asena_file};
+    use asena_grammar::{asena_decl, asena_expr, asena_file, asena_stmt};
     use asena_leaf::ast::*;
 
     use crate::{commands::*, AsenaPrecStep};
@@ -65,10 +77,10 @@ mod tests {
     fn it_works() {
         let mut prec_table = default_prec_table();
         let mut tree = asena_file! {
-            #infixr "+", (10 + 3);
+            #infixr "@", 0;
 
             Main {
-                let x = 4 + 1;
+                let x = 2 @ 4 + 1;
                 Println "hello world"
             }
         };
@@ -88,7 +100,7 @@ mod tests {
     #[test]
     fn expr_works() {
         let prec_table = default_prec_table();
-        let mut tree = asena_expr!(A -> A + B);
+        let mut tree = asena_expr!(foo(1 * 2 + 4));
         let expr = Expr::new(tree.unwrap()).walks(AsenaPrecStep {
             prec_table: &prec_table,
             reporter: &mut tree,
@@ -97,5 +109,35 @@ mod tests {
         tree.reporter.dump();
 
         println!("{expr:#?}")
+    }
+
+    #[test]
+    fn stmt_works() {
+        let prec_table = default_prec_table();
+        let mut tree = asena_stmt!(bar(foo(1 * 2 + 4)));
+        let stmt = Stmt::new(tree.unwrap()).walks(AsenaPrecStep {
+            prec_table: &prec_table,
+            reporter: &mut tree,
+        });
+
+        tree.reporter.dump();
+
+        println!("{stmt:#?}")
+    }
+
+    #[test]
+    fn decl_works() {
+        let prec_table = default_prec_table();
+        let mut tree = asena_decl! {
+            #eval 1 * 2 + 4
+        };
+        let decl = Decl::new(tree.unwrap()).walks(AsenaPrecStep {
+            prec_table: &prec_table,
+            reporter: &mut tree,
+        });
+
+        tree.reporter.dump();
+
+        println!("{decl:#?}")
     }
 }

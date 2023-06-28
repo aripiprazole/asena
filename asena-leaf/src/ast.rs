@@ -106,8 +106,7 @@ impl<T: Terminal + Debug + Default + Clone + 'static> Leaf for T {
                 <Self as Leaf>::terminal(data.clone().swap(data.single().clone()))
             }
             GreenTree::Token(lexeme) => <Self as Leaf>::terminal(lexeme.token),
-            GreenTree::None => None,
-            GreenTree::Empty => None,
+            _ => None,
         }
     }
 
@@ -140,6 +139,10 @@ impl<T: Leaf> Leaf for Vec<T> {
                 }
                 Some(items)
             }
+            GreenTree::Vec(children) => children
+                .into_iter()
+                .map(|child| T::make(child))
+                .collect::<Option<Vec<_>>>(),
             GreenTree::Token(_) => None,
             GreenTree::None => None,
             GreenTree::Empty => None,

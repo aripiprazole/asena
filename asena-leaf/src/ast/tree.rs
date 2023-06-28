@@ -27,7 +27,7 @@ impl Tree {
         self.children
             .iter()
             .filter_map(|child| match child.value.clone() {
-                Child::Tree(tree) => Some(T::make(GreenTree::new(child.replace(tree)))?),
+                Child::Tree(tree) => T::make(GreenTree::new(child.replace(tree))),
                 Child::Token(..) => None,
             })
             .collect::<Vec<_>>()
@@ -39,7 +39,7 @@ impl Tree {
             .iter()
             .filter_map(|child| match child.value.clone() {
                 Child::Tree(..) => None,
-                Child::Token(token) => Some(Lexeme::<T>::terminal(child.replace(token))?),
+                Child::Token(token) => Lexeme::<T>::terminal(child.replace(token)),
             })
             .collect::<Vec<_>>()
             .into()

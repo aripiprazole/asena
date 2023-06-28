@@ -517,7 +517,7 @@ impl Leaf for Type {
 impl Debug for Type {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Infer => write!(f, "Infer"),
+            Self::Infer => write!(f, "_"),
             Self::Explicit(expr) => write!(f, "Type({:#?})", expr),
         }
     }

@@ -1,7 +1,5 @@
 use std::{marker::PhantomData, rc::Rc};
 
-use crate::node::TreeKind;
-
 use super::*;
 
 /// A cursor is a reference to a node in the tree.
@@ -60,27 +58,20 @@ impl<T: Node + Leaf> Cursor<T> {
 
                 lexeme.token.clone().swap(value.clone())
             }
-            GreenTree::Empty => Spanned::default(),
-            GreenTree::None => Spanned::default(),
+            _ => Spanned::default(),
         }
     }
 
     pub fn is_none(&self) -> bool {
-        match &*self.value.borrow() {
-            GreenTree::Leaf { .. } => false,
-            GreenTree::Token(..) => false,
-            GreenTree::Empty => false,
-            GreenTree::None => true,
-        }
+        matches!(&*self.value.borrow(), GreenTree::None)
     }
 
     /// Returns the current cursor if it's not empty, otherwise returns false.
     pub fn is_empty(&self) -> bool {
         match &*self.value.borrow() {
             GreenTree::Leaf { data, .. } => !data.children.is_empty(),
-            GreenTree::Token(..) => false,
-            GreenTree::Empty => false,
-            GreenTree::None => false,
+            GreenTree::Vec(children) => !children.is_empty(),
+            _ => false,
         }
     }
 
@@ -133,9 +124,10 @@ impl<T: Node + Leaf> Node for Vec<T> {
         let tree: GreenTree = tree.into();
 
         match tree {
-            GreenTree::Empty => vec![],
-            GreenTree::None => vec![],
-            GreenTree::Token(..) => vec![],
+            GreenTree::Vec(values) => values
+                .into_iter()
+                .filter_map(|value| T::make(value))
+                .collect::<Vec<_>>(),
             GreenTree::Leaf { data, .. } => data
                 .children
                 .iter()
@@ -146,27 +138,12 @@ impl<T: Node + Leaf> Node for Vec<T> {
                     }
                 })
                 .collect::<Vec<_>>(),
+            _ => vec![],
         }
     }
 
     fn unwrap(self) -> GreenTree {
-        let children = self
-            .into_iter()
-            .map(|x| x.unwrap().as_child())
-            .collect::<Vec<_>>();
-
-        let tree = Tree {
-            name: None,
-            kind: TreeKind::ListTree,
-            children,
-        };
-
-        GreenTree::Leaf {
-            data: Spanned::new(Loc::default(), tree),
-            names: Rc::default(),
-            children: Default::default(),
-            synthetic: false,
-        }
+        GreenTree::Vec(self.into_iter().map(|x| x.unwrap()).collect::<Vec<_>>())
     }
 }
 
