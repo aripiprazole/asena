@@ -53,31 +53,20 @@ macro_rules! ast_enum {
             fn new<I: Into<asena_leaf::ast::GreenTree>>(value: I) -> Self {
                 let tree: asena_leaf::ast::GreenTree = value.into();
                 match tree {
-                    ref leaf @ asena_leaf::ast::GreenTree::Leaf { ref data, ref synthetic, .. } => {
-                        if *synthetic {
-                            match data.kind {
-                                $(
-                                    $kind => return Self::$variant(<$crate::macros::ast_make_variant!($variant $(, $f)?)>::new(leaf.clone())),
-                                )*
-                                _ => {},
-                            }
-                        }
-
-                        asena_leaf::ast::Leaf::make(data.clone()).unwrap_or_default()
-                    }
                     asena_leaf::ast::GreenTree::Token(lexeme) => {
                         let terminal = lexeme.token;
                         let mut fallback = Self::default();
-                        $(
-                            if let Some(value) = $crate::macros::ast_make_pattern!(terminal, $variant $(, $f)?) {
-                                return Self::$variant(value);
-                            };
-                        )*;
+                        $(if let Some(value) = $crate::macros::ast_make_pattern!(terminal, $variant $(, $f)?) {
+                            return Self::$variant(value);
+                        };)*;
 
                         fallback
                     },
                     asena_leaf::ast::GreenTree::Empty => Self::default(),
                     asena_leaf::ast::GreenTree::None => Self::default(),
+                    _ => {
+                        <Self as asena_leaf::ast::Leaf>::make(tree).unwrap_or_default()
+                    }
                 }
             }
 
@@ -108,8 +97,8 @@ macro_rules! ast_enum {
             #[allow(clippy::no_effect)]
             #[doc(hidden)]
             fn __show_type_info() {
-                $(let _: asena_leaf::node::TreeKind = $kind;)*
-                $($(let _: fn(asena_span::Spanned<asena_leaf::node::Tree>) -> Option<$name> = $f;)*)*;
+                $(let _: $crate::node::TreeKind = $kind;)*
+                $($(let _: fn($crate::ast::GreenTree) -> Option<$name> = $f;)*)*;
             }
         }
 
@@ -165,8 +154,7 @@ macro_rules! ast_make_pattern {
 #[macro_export]
 macro_rules! ast_make_match {
     ($terminal:expr, $crate :: macros :: ast_make_variant! ($variant:ty, $x:expr)) => {{
-        use asena_leaf::ast::Leaf;
-        asena_leaf::ast::Lexeme::<$variant>::terminal($terminal.clone())
+        <asena_leaf::ast::Lexeme<$variant> as asena_leaf::ast::Leaf>::terminal($terminal.clone())
     }};
     ($terminal:expr, $($s:tt)*) => {
         None

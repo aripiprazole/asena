@@ -37,11 +37,13 @@ pub trait Leaf: Debug + Sized + Clone + Default {
     /// returns `None`.
     ///
     /// TODO: Change parameter to GreenTree, please.
-    fn make(_tree: Spanned<Tree>) -> Option<Self> {
+    fn make(tree: GreenTree) -> Option<Self> {
+        let _ = tree;
         None
     }
 
-    fn terminal(_token: Spanned<Token>) -> Option<Self> {
+    fn terminal(token: Spanned<Token>) -> Option<Self> {
+        let _ = token;
         None
     }
 }
@@ -82,12 +84,19 @@ pub trait Node: Sized + Debug + Clone {
 }
 
 impl<T: Terminal + Debug + Default + Clone + 'static> Leaf for T {
-    fn make(from: Spanned<Tree>) -> Option<Self> {
-        if from.children.is_empty() {
-            return None;
-        }
+    fn make(tree: GreenTree) -> Option<Self> {
+        match tree {
+            GreenTree::Leaf { data, .. } => {
+                if data.children.is_empty() {
+                    return None;
+                }
 
-        <Self as Leaf>::terminal(from.clone().swap(from.single().clone()))
+                <Self as Leaf>::terminal(data.clone().swap(data.single().clone()))
+            }
+            GreenTree::Token(lexeme) => <Self as Leaf>::terminal(lexeme.token),
+            GreenTree::None => None,
+            GreenTree::Empty => None,
+        }
     }
 
     #[inline(always)]
@@ -97,21 +106,32 @@ impl<T: Terminal + Debug + Default + Clone + 'static> Leaf for T {
 }
 
 impl<T: Leaf> Leaf for Option<T> {
-    fn make(from: Spanned<Tree>) -> Option<Self> {
+    fn make(from: GreenTree) -> Option<Self> {
         Some(T::make(from))
     }
 }
 
 impl<T: Leaf> Leaf for Vec<T> {
-    fn make(tree: Spanned<Tree>) -> Option<Self> {
-        let mut items = vec![];
-        for child in &tree.children {
-            match &child.value {
-                Child::Tree(tree) => items.push(T::make(child.replace(tree.clone()))?),
-                Child::Token(..) => {}
+    fn make(tree: GreenTree) -> Option<Self> {
+        match tree {
+            GreenTree::Leaf { data, .. } => {
+                let mut items = vec![];
+                for child in &data.children {
+                    match &child.value {
+                        Child::Tree(tree) => {
+                            let green_child = GreenTree::new(child.replace(tree.clone()));
+
+                            items.push(T::make(green_child)?)
+                        }
+                        Child::Token(..) => {}
+                    }
+                }
+                Some(items)
             }
+            GreenTree::Token(_) => None,
+            GreenTree::None => None,
+            GreenTree::Empty => None,
         }
-        Some(items)
     }
 }
 

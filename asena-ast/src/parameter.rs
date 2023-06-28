@@ -1,10 +1,8 @@
 use asena_derive::{ast_debug, ast_leaf, ast_walkable, Leaf};
 
 use asena_leaf::ast::{GreenTree, Leaf, Lexeme, Node};
-use asena_leaf::node::Tree;
 use asena_leaf::node::TreeKind::*;
 use asena_leaf::token::TokenKind;
-use asena_span::Spanned;
 
 use crate::*;
 
@@ -35,8 +33,8 @@ impl Parameter {
 }
 
 impl Leaf for Parameter {
-    fn make(tree: Spanned<Tree>) -> Option<Self> {
-        Some(match tree.kind {
+    fn make(tree: GreenTree) -> Option<Self> {
+        Some(match tree.kind() {
             Param => Parameter::new(tree),
             _ => return None,
         })

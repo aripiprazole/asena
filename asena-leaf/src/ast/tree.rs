@@ -7,7 +7,7 @@ impl Tree {
         };
 
         match &child.value {
-            Child::Tree(tree) => T::make(child.replace(tree.clone())).into(),
+            Child::Tree(tree) => T::make(GreenTree::new(child.replace(tree.clone()))).into(),
             Child::Token(..) => Cursor::empty(),
         }
     }
@@ -27,7 +27,7 @@ impl Tree {
         self.children
             .iter()
             .filter_map(|child| match child.value.clone() {
-                Child::Tree(tree) => Some(T::make(child.replace(tree))?),
+                Child::Tree(tree) => Some(T::make(GreenTree::new(child.replace(tree)))?),
                 Child::Token(..) => None,
             })
             .collect::<Vec<_>>()

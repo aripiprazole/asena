@@ -1,6 +1,8 @@
+use std::rc::Rc;
+
 use asena_ast::{command::CommandWalker, walker::Reporter, *};
 use asena_derive::{ast_reporter, ast_step, Reporter};
-use asena_leaf::{ast::Cursor, node::TreeKind};
+use asena_leaf::node::TreeKind;
 use asena_report::InternalError;
 use commands::Entry;
 use im::HashMap;
@@ -50,29 +52,20 @@ impl<'a, R: Reporter> AsenaPrecStep<'a, R> {
         let fn_id = binary.fn_id();
         let rhs = binary.rhs().as_binary()?;
 
-        println!("impl_reorder_prec: {lhs:?} {fn_id:?} {rhs:?}");
-
         let op1 = self.prec_table.get(&fn_id)?;
         let op2 = self.prec_table.get(&rhs.fn_id())?;
 
         if op1.order > op2.order {
-            let lhs_rhs = rhs.lhs();
-
             let new_lhs = Infix::from(TreeKind::ExprBinary);
             new_lhs.set_lhs(lhs);
-            new_lhs.set_fn_id(binary.find_fn_id().as_new_node().as_leaf());
-            new_lhs.set_rhs(lhs_rhs);
+            new_lhs.set_fn_id(fn_id);
+            new_lhs.set_rhs(rhs.find_lhs().as_new_node().as_leaf());
 
-            binary.set_lhs(new_lhs.into());
+            binary.set_lhs(Rc::new(new_lhs.into()));
             binary.set_fn_id(rhs.fn_id());
-            binary.set_rhs(rhs.find_rhs().as_new_node().as_leaf());
+            binary.set_rhs(rhs.rhs());
+            println!("  :-> {binary:?}");
         }
-        println!(
-            "   -> {:?} {:?} {:?}",
-            binary.lhs(),
-            binary.fn_id(),
-            binary.rhs()
-        );
 
         Some(())
     }
@@ -80,6 +73,8 @@ impl<'a, R: Reporter> AsenaPrecStep<'a, R> {
 
 #[cfg(test)]
 mod tests {
+    use std::rc::Rc;
+
     use asena_ast::*;
     use asena_grammar::{asena_expr, asena_file};
     use asena_leaf::ast::*;
@@ -108,6 +103,19 @@ mod tests {
         tree.reporter.dump();
 
         println!("{file:#?}")
+    }
+
+    #[test]
+    fn smt_works() {
+        let n = Rc::new(Expr::new(asena_expr!(100).unwrap()));
+        let expr = Expr::new(asena_expr!(1 + 2 + 3).unwrap());
+
+        let binary_expr = expr.as_binary().unwrap();
+        let expr_rhs = binary_expr.rhs().as_binary().unwrap();
+        expr_rhs.set_lhs(n.clone());
+        expr_rhs.set_lhs(n);
+
+        println!("{binary_expr:?}");
     }
 
     #[test]
