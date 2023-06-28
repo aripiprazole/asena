@@ -1,5 +1,5 @@
 use asena_ast::{command::CommandWalker, walker::Reporter, *};
-use asena_derive::{ast_reporter, ast_step, Reporter};
+use asena_derive::{ast_step, Reporter};
 use asena_report::InternalError;
 use commands::Entry;
 use im::HashMap;

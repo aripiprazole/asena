@@ -5,18 +5,15 @@ use proc_macro::TokenStream;
 
 extern crate proc_macro;
 
-mod ast_build_fn;
 mod ast_command;
 mod ast_debug;
 mod ast_derive_leaf;
 mod ast_derive_node;
 mod ast_derive_step;
 mod ast_derive_walker;
-mod ast_from;
 mod ast_leaf;
 mod ast_of;
 mod ast_step;
-mod ast_terminal;
 mod ast_walkable;
 pub(crate) mod util;
 
@@ -64,31 +61,11 @@ pub fn ast_of(args: TokenStream, input: TokenStream) -> TokenStream {
 }
 
 #[proc_macro_attribute]
-pub fn ast_terminal(args: TokenStream, input: TokenStream) -> TokenStream {
-    ast_terminal::expand_ast_terminal(args, input)
-}
-
-#[proc_macro_attribute]
-pub fn ast_from(args: TokenStream, input: TokenStream) -> TokenStream {
-    ast_from::expand_ast_from(args, input)
-}
-
-#[proc_macro_attribute]
 pub fn ast_walkable(args: TokenStream, input: TokenStream) -> TokenStream {
     ast_walkable::expand_ast_walkable(args, input)
 }
 
 #[proc_macro_attribute]
-pub fn ast_build_fn(args: TokenStream, input: TokenStream) -> TokenStream {
-    ast_build_fn::expand_ast_build_fn(args, input)
-}
-
-#[proc_macro_attribute]
 pub fn ast_command(args: TokenStream, input: TokenStream) -> TokenStream {
     ast_command::expand_ast_command(args, input)
-}
-
-#[proc_macro_attribute]
-pub fn ast_reporter(_args: TokenStream, input: TokenStream) -> TokenStream {
-    input
 }
