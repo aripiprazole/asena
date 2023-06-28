@@ -1,5 +1,5 @@
 use asena_ast::{AsenaFile, Binary, Expr, Infix};
-use asena_leaf::ast::{Leaf, Node};
+use asena_leaf::ast::Node;
 use asena_lexer::Lexer;
 use asena_parser::Parser;
 
@@ -65,7 +65,7 @@ fn qual_app_expr() {
     let parser = Parser::from(Lexer::new(code)).run(asena_grammar::expr);
     let tree = parser.build_tree().unwrap();
 
-    println!("{:#?}", Expr::make(tree));
+    println!("{:#?}", Expr::new(tree));
 }
 
 #[test]
@@ -74,7 +74,7 @@ fn app_expr() {
     let parser = Parser::from(Lexer::new(code)).run(asena_grammar::expr);
     let tree = parser.build_tree().unwrap();
 
-    println!("{:#?}", Expr::make(tree));
+    println!("{:#?}", Expr::new(tree));
 }
 
 #[test]
@@ -91,7 +91,7 @@ fn group_expr() {
     let parser = Parser::from(Lexer::new(code)).run(asena_grammar::expr);
     let tree = parser.build_tree().unwrap();
 
-    println!("{:#?}", Expr::make(tree));
+    println!("{:#?}", Expr::new(tree));
 }
 
 #[test]
@@ -100,7 +100,7 @@ fn pi_expr() {
     let parser = Parser::from(Lexer::new(code)).run(asena_grammar::expr);
     let tree = parser.build_tree().unwrap();
 
-    println!("{:#?}", Expr::make(tree));
+    println!("{:#?}", Expr::new(tree));
 }
 
 #[test]
@@ -109,7 +109,7 @@ fn anonymous_pi_expr() {
     let parser = Parser::from(Lexer::new(code)).run(asena_grammar::expr);
     let tree = parser.build_tree().unwrap();
 
-    println!("{:#?}", Expr::make(tree));
+    println!("{:#?}", Expr::new(tree));
 }
 
 #[test]

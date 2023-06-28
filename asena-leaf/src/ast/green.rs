@@ -26,7 +26,7 @@ pub enum GreenTree {
         /// ```rs
         /// binary.lhs()
         /// ```
-        names: Rc<RefCell<HashMap<LeafKey, Box<dyn std::any::Any>>>>,
+        names: Rc<RefCell<HashMap<LeafKey, Rc<dyn std::any::Any>>>>,
     },
     Token(Lexeme<Rc<dyn std::any::Any>>),
     None,
@@ -66,6 +66,32 @@ impl GreenTree {
         }
     }
 
+    pub fn set_names(&self, names: Rc<RefCell<HashMap<LeafKey, Rc<dyn std::any::Any>>>>) {
+        if let Self::Leaf { names: old, .. } = self {
+            old.replace(names.borrow().clone());
+        }
+    }
+
+    pub fn insert_rc<T: 'static>(&self, name: LeafKey, value: Rc<T>)
+    where
+        T: Node + Leaf,
+    {
+        if let Self::Leaf { names, .. } = self {
+            names
+                .borrow_mut()
+                .insert(name, Rc::new(Cursor::from(value)));
+        }
+    }
+
+    pub fn insert<T: 'static>(&self, name: LeafKey, value: T)
+    where
+        T: Node + Leaf,
+    {
+        if let Self::Leaf { names, .. } = self {
+            names.borrow_mut().insert(name, Rc::new(Cursor::of(value)));
+        }
+    }
+
     pub fn location(&self) -> Cow<'_, Loc> {
         match self {
             GreenTree::Leaf { ref data, .. } => Cow::Borrowed(&data.span),
@@ -94,7 +120,7 @@ impl GreenTree {
         }
 
         let cursor = f(tree);
-        names.borrow_mut().insert(name, Box::new(cursor.clone()));
+        names.borrow_mut().insert(name, Rc::new(cursor.clone()));
         cursor
     }
 
@@ -179,20 +205,13 @@ impl GreenTree {
                     return match children.get(name) {
                         Some(Spanned { value: Child::Token(..), .. }) => Cursor::empty(),
                         Some(spanned @ Spanned { value: Child::Tree(ref tree), .. }) => {
-                            A::make(spanned.replace(tree.clone())).into()
+                            A::make(GreenTree::new(spanned.replace(tree.clone()))).into()
                         },
                         None => Cursor::empty(),
                     };
                 };
 
-                let value = child.value.borrow();
-
-                match &*value {
-                    GreenTree::Leaf { data, .. } => A::make(data.clone()).into(),
-                    GreenTree::Token(..) => Cursor::empty(),
-                    GreenTree::None => Cursor::empty(),
-                    GreenTree::Empty => Cursor::empty(),
-                }
+                child.clone()
             }
             GreenTree::Token(..) => Cursor::empty(),
             GreenTree::None => Cursor::empty(),
@@ -217,14 +236,7 @@ impl GreenTree {
                     };
                 };
 
-                let value = child.value.borrow();
-
-                match &*value {
-                    GreenTree::Leaf { .. } => Cursor::empty(),
-                    GreenTree::Token(lexeme) => Lexeme::<A>::terminal(lexeme.token.clone()).into(),
-                    GreenTree::None => Cursor::empty(),
-                    GreenTree::Empty => Cursor::empty(),
-                }
+                child.clone()
             }
             GreenTree::Token(..) => Cursor::empty(),
             GreenTree::None => Cursor::empty(),
@@ -258,6 +270,15 @@ impl GreenTree {
             GreenTree::Token(lexeme) => lexeme.token.map(Child::Token),
             GreenTree::Empty => Spanned::new(Loc::default(), Child::Tree(Tree::default())),
             GreenTree::None => Spanned::new(Loc::default(), Child::Tree(Tree::default())),
+        }
+    }
+
+    pub fn kind(&self) -> TreeKind {
+        match self {
+            GreenTree::Leaf { data, .. } => data.kind,
+            GreenTree::Token(_) => TreeKind::Error,
+            GreenTree::None => TreeKind::Error,
+            GreenTree::Empty => TreeKind::Error,
         }
     }
 }

@@ -1,7 +1,7 @@
 use asena_derive::{ast_debug, ast_leaf, ast_walkable, Leaf, Walker};
 use asena_leaf::ast::{Leaf, Lexeme};
 use asena_leaf::ast_enum;
-use asena_leaf::node::{Tree, TreeKind::*};
+use asena_leaf::node::TreeKind::*;
 
 use asena_span::Spanned;
 
@@ -230,7 +230,7 @@ impl Constraint {
 }
 
 impl Leaf for Constraint {
-    fn make(_tree: Spanned<Tree>) -> Option<Self> {
+    fn make(_tree: GreenTree) -> Option<Self> {
         todo!()
     }
 }
@@ -312,7 +312,7 @@ impl Method {
 }
 
 impl Leaf for Method {
-    fn make(_tree: Spanned<Tree>) -> Option<Self> {
+    fn make(_tree: GreenTree) -> Option<Self> {
         todo!()
     }
 }

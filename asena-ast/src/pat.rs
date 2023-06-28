@@ -2,7 +2,7 @@ use asena_derive::{ast_debug, ast_leaf, ast_terminal, ast_walkable, Leaf, Walker
 
 use asena_leaf::ast::{Lexeme, Walkable};
 use asena_leaf::ast_enum;
-use asena_leaf::node::{Tree, TreeKind::*};
+use asena_leaf::node::TreeKind::*;
 
 use asena_span::Spanned;
 
@@ -117,10 +117,10 @@ ast_enum! {
 }
 
 impl Pat {
-    fn build_literal(tree: Spanned<Tree>) -> Option<Pat> {
-        let literal = tree.terminal::<Literal>(0).as_leaf();
+    fn build_literal(tree: GreenTree) -> Option<Pat> {
+        let literal = &*tree.terminal::<Literal>(0).as_leaf();
 
-        Some(Self::Literal(literal))
+        Some(Self::Literal(literal.clone()))
     }
 }
 

@@ -4,7 +4,7 @@ use std::fmt::{Debug, Display};
 use asena_derive::{ast_leaf, ast_of, Leaf};
 
 use asena_leaf::ast::{GreenTree, Leaf, Lexeme, Located, Node, Terminal, Walkable};
-use asena_leaf::node::{Tree, TreeKind::*};
+use asena_leaf::node::TreeKind::*;
 
 use asena_leaf::token::{Token, TokenKind};
 use asena_span::{Loc, Spanned};
@@ -173,8 +173,8 @@ impl Debug for QualifiedPath {
 }
 
 impl Leaf for QualifiedPath {
-    fn make(tree: Spanned<Tree>) -> Option<Self> {
-        Some(match tree.kind {
+    fn make(tree: GreenTree) -> Option<Self> {
+        Some(match tree.kind() {
             QualifiedPathTree => QualifiedPath::new(tree),
             _ => return None,
         })

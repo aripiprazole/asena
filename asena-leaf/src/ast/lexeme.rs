@@ -139,7 +139,7 @@ impl<T: Terminal + 'static> Leaf for Lexeme<T> {
 impl<T: Leaf + 'static> Node for Lexeme<T> {
     fn new<I: Into<GreenTree>>(tree: I) -> Self {
         match tree.into() {
-            GreenTree::Leaf { data, .. } => {
+            ref tree @ GreenTree::Leaf { ref data, .. } => {
                 #[cfg(debug_assertions)]
                 if data.children.is_empty() {
                     println!("Lexeme::new: Leaf node has no children: {}", data.kind);
@@ -151,7 +151,7 @@ impl<T: Leaf + 'static> Node for Lexeme<T> {
                     } else {
                         data.clone().swap(data.single().clone())
                     },
-                    value: T::make(data).unwrap_or_default(),
+                    value: T::make(tree.clone()).unwrap_or_default(),
                     is_none: false,
                 }
             }

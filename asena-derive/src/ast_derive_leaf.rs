@@ -129,7 +129,7 @@ fn expand_enum(name: Ident, data: DataEnum) -> TokenStream {
                 .map(|awa| quote! { return #awa(tree) })
                 .unwrap_or_else(|| {
                     quote! {{
-                        Self::#name(<#ast_terminal>::new(tree))
+                        Self::#name(<#ast_terminal as asena_leaf::ast::Node>::new(tree))
                     }}
                 });
 
@@ -148,17 +148,14 @@ fn expand_enum(name: Ident, data: DataEnum) -> TokenStream {
 
     let expanded = quote! {
         impl asena_leaf::ast::Leaf for #name {
-            fn make(tree: asena_span::Spanned<asena_leaf::node::Tree>) -> Option<Self> {
-                use asena_leaf::ast::Node;
-                Some(match tree.kind {
+            fn make(tree: asena_leaf::ast::GreenTree) -> Option<Self> {
+                Some(match tree.kind() {
                     #patterns
                     _ => return None,
                 })
             }
 
             fn terminal(token: asena_span::Spanned<asena_leaf::token::Token>) -> Option<Self> {
-                use asena_leaf::ast::Node;
-                use asena_leaf::ast::Leaf;
                 #terminal_patterns;
                 None
             }

@@ -1,9 +1,5 @@
 use asena_derive::{ast_debug, ast_leaf, Leaf};
-use asena_leaf::{
-    ast::{Leaf, Lexeme, Walkable},
-    node::Tree,
-};
-use asena_span::Spanned;
+use asena_leaf::ast::{Leaf, Lexeme, Walkable};
 
 use crate::*;
 
@@ -25,7 +21,7 @@ impl Binding {
 }
 
 impl Leaf for Binding {
-    fn make(_tree: Spanned<Tree>) -> Option<Self> {
+    fn make(_tree: GreenTree) -> Option<Self> {
         todo!()
     }
 }
