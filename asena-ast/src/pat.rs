@@ -118,9 +118,9 @@ ast_enum! {
 
 impl Pat {
     fn build_literal(tree: GreenTree) -> Option<Pat> {
-        let literal = &*tree.terminal::<Literal>(0).as_leaf();
+        let literal = tree.terminal::<Literal>(0).as_leaf();
 
-        Some(Self::Literal(literal.clone()))
+        Some(Self::Literal(literal))
     }
 }
 
