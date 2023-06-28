@@ -97,14 +97,6 @@ impl GreenTree {
         }
     }
 
-    pub fn location(&self) -> Cow<'_, Loc> {
-        match self {
-            Self::Leaf { ref data, .. } => Cow::Borrowed(&data.span),
-            Self::Token(ref lexeme) => Cow::Borrowed(&lexeme.token.span),
-            _ => Cow::Owned(Loc::Synthetic),
-        }
-    }
-
     pub fn spanned(&self) -> Spanned<()> {
         match self {
             GreenTree::Leaf { data, .. } => data.replace(()),
@@ -300,6 +292,16 @@ impl Debug for GreenTree {
             Self::Vec(children) => f.debug_tuple("Vec").field(children).finish(),
             Self::Empty => write!(f, "Empty"),
             Self::None => write!(f, "None"),
+        }
+    }
+}
+
+impl Located for GreenTree {
+    fn location(&self) -> Cow<'_, Loc> {
+        match self {
+            Self::Leaf { ref data, .. } => Cow::Borrowed(&data.span),
+            Self::Token(ref lexeme) => Cow::Borrowed(&lexeme.token.span),
+            _ => Cow::Owned(Loc::Synthetic),
         }
     }
 }

@@ -6,7 +6,7 @@ use asena_leaf::token::TokenKind;
 
 use crate::*;
 
-#[derive(Default, Node, Clone)]
+#[derive(Default, Node, Located, Clone)]
 pub struct Parameter(GreenTree);
 
 #[ast_of]

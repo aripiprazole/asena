@@ -36,12 +36,6 @@ pub fn expand_derive_node(input: TokenStream) -> TokenStream {
                     }
                 }
 
-                impl asena_leaf::ast::Located for #name {
-                    fn location(&self) -> std::borrow::Cow<'_, asena_span::Loc> {
-                        self.0.location()
-                    }
-                }
-
                 impl std::ops::DerefMut for #name {
                     fn deref_mut(&mut self) -> &mut Self::Target {
                         &mut self.0

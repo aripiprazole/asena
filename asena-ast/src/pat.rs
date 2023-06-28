@@ -14,7 +14,7 @@ use crate::*;
 /// ```haskell
 /// Some
 /// ```
-#[derive(Default, Node, Clone)]
+#[derive(Default, Node, Located, Clone)]
 pub struct Global(GreenTree);
 
 #[ast_of]
@@ -33,7 +33,7 @@ impl Global {
 /// ```haskell
 /// Some x
 /// ```
-#[derive(Default, Node, Clone)]
+#[derive(Default, Node, Located, Clone)]
 pub struct Constructor(GreenTree);
 
 #[ast_of]
@@ -57,7 +57,7 @@ impl Constructor {
 /// ```haskell
 /// [x, ..]
 /// ```
-#[derive(Default, Node, Clone)]
+#[derive(Default, Node, Located, Clone)]
 pub struct List(GreenTree);
 
 #[ast_of]
@@ -77,7 +77,7 @@ impl List {
 /// ```haskell
 /// [x, ..]
 /// ```
-#[derive(Default, Node, Clone)]
+#[derive(Default, Node, Located, Clone)]
 pub struct Spread(GreenTree);
 
 impl<W: PatWalker> Walkable<W> for Spread {
@@ -91,7 +91,7 @@ impl Debug for Spread {
 }
 
 /// Wildcard pattern, is the same as `_` pattern [Pat::Local]
-#[derive(Default, Node, Clone)]
+#[derive(Default, Node, Located, Clone)]
 pub struct Wildcard(GreenTree);
 
 impl<W: PatWalker> Walkable<W> for Wildcard {

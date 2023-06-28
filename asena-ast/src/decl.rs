@@ -22,7 +22,7 @@ pub mod command;
 /// ```haskell
 /// Print : Person -> IO ()
 /// ```
-#[derive(Default, Node, Clone)]
+#[derive(Default, Node, Located, Clone)]
 pub struct Signature(GreenTree);
 
 #[ast_of]
@@ -58,7 +58,7 @@ impl Signature {
 /// ```haskell
 /// Print person = pure ()
 /// ```
-#[derive(Default, Node, Clone)]
+#[derive(Default, Node, Located, Clone)]
 pub struct Assign(GreenTree);
 
 #[ast_of]
@@ -89,7 +89,7 @@ impl Assign {
 /// ```haskell
 /// #eval 1 + 1 -- 2
 /// ```
-#[derive(Default, Node, Clone)]
+#[derive(Default, Node, Located, Clone)]
 pub struct Command(GreenTree);
 
 #[ast_of]
@@ -119,7 +119,7 @@ impl Command {
 ///   }
 /// }
 /// ```
-#[derive(Default, Node, Clone)]
+#[derive(Default, Node, Located, Clone)]
 pub struct Class(GreenTree);
 
 #[ast_of]
@@ -148,7 +148,7 @@ impl Class {
 /// ```haskell
 /// use IO;
 /// ```
-#[derive(Default, Node, Clone)]
+#[derive(Default, Node, Located, Clone)]
 pub struct Use(GreenTree);
 
 #[ast_of]
@@ -170,7 +170,7 @@ impl Use {
 ///   pure (a) { ... }
 /// }
 /// ```
-#[derive(Default, Node, Clone)]
+#[derive(Default, Node, Located, Clone)]
 pub struct Instance(GreenTree);
 
 #[ast_of]
@@ -217,7 +217,7 @@ pub type DeclRef = Spanned<Decl>;
 /// ```
 ///
 /// The constraint node can be used on `where` clauses.
-#[derive(Default, Node, Clone)]
+#[derive(Default, Node, Located, Clone)]
 pub struct Constraint(GreenTree);
 
 #[ast_of]
@@ -244,7 +244,7 @@ impl Leaf for Constraint {
 /// ```
 ///
 /// The constraint node should be wrote in a class context.
-#[derive(Default, Node, Clone)]
+#[derive(Default, Node, Located, Clone)]
 pub struct Field(GreenTree);
 
 #[ast_of]
@@ -274,7 +274,7 @@ impl Field {
 ///
 /// The method node is a simple sugar for declaring it on the top level with the class name concatenated,
 /// like: `sayHello`, in the `Person` class, should be simply `Person.sayHello`.
-#[derive(Default, Node, Clone)]
+#[derive(Default, Node, Located, Clone)]
 pub struct Method(GreenTree);
 
 #[ast_of]

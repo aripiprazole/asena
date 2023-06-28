@@ -8,6 +8,7 @@ extern crate proc_macro;
 mod ast_command;
 mod ast_debug;
 mod ast_derive_leaf;
+mod ast_derive_located;
 mod ast_derive_node;
 mod ast_derive_step;
 mod ast_derive_walker;
@@ -38,6 +39,11 @@ pub fn derive_ast_walker(input: TokenStream) -> TokenStream {
 #[proc_macro_derive(Reporter, attributes(ast_reporter))]
 pub fn ast_derive_step(input: TokenStream) -> TokenStream {
     ast_derive_step::expand_ast_derive_step(input)
+}
+
+#[proc_macro_derive(Located)]
+pub fn ast_derive_located(input: TokenStream) -> TokenStream {
+    ast_derive_located::expand_derive_located(input)
 }
 
 #[proc_macro_attribute]

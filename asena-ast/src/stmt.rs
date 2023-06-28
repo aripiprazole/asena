@@ -8,7 +8,7 @@ use asena_span::Spanned;
 
 use crate::*;
 
-#[derive(Default, Node, Clone)]
+#[derive(Default, Node, Located, Clone)]
 pub struct Ask(GreenTree);
 
 #[ast_of]
@@ -26,7 +26,7 @@ impl Ask {
     }
 }
 
-#[derive(Default, Node, Clone)]
+#[derive(Default, Node, Located, Clone)]
 pub struct LetStmt(GreenTree);
 
 #[ast_of]
@@ -44,7 +44,7 @@ impl LetStmt {
     }
 }
 
-#[derive(Default, Node, Clone)]
+#[derive(Default, Node, Located, Clone)]
 pub struct Return(GreenTree);
 
 #[ast_of]
@@ -59,7 +59,7 @@ impl Return {
     }
 }
 
-#[derive(Default, Node, Clone)]
+#[derive(Default, Node, Located, Clone)]
 pub struct Eval(GreenTree);
 
 #[ast_of]

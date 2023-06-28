@@ -2,11 +2,11 @@ use std::fmt::Debug;
 
 use asena_derive::*;
 
-use asena_leaf::ast::{Cursor, Leaf, Lexeme, Node, Walkable};
+use asena_leaf::ast::{Cursor, Leaf, Lexeme, Located, Node, Walkable};
 use asena_leaf::ast_enum;
 use asena_leaf::node::TreeKind::*;
 
-use asena_span::Spanned;
+use asena_span::{Span, Spanned};
 
 use crate::*;
 
@@ -17,7 +17,7 @@ use crate::*;
 /// ```haskell
 /// (a)
 /// ```
-#[derive(Default, Node, Clone)]
+#[derive(Default, Node, Located, Clone)]
 pub struct Group(GreenTree);
 
 #[ast_of]
@@ -53,6 +53,12 @@ impl Group {
 #[derive(Default, Node, Clone)]
 pub struct Infix(GreenTree);
 
+impl Located for Infix {
+    fn location(&self) -> std::borrow::Cow<'_, asena_span::Loc> {
+        std::borrow::Cow::Owned(self.lhs().location().on(self.rhs().location().into_owned()))
+    }
+}
+
 impl<W: ExprWalker + PatWalker + StmtWalker> Walkable<W> for Infix {
     fn walk(&self, walker: &mut W) {
         self.lhs().walk(walker);
@@ -80,6 +86,12 @@ impl Debug for Infix {
 /// ```
 #[derive(Default, Node, Clone)]
 pub struct Accessor(GreenTree);
+
+impl Located for Accessor {
+    fn location(&self) -> std::borrow::Cow<'_, asena_span::Loc> {
+        std::borrow::Cow::Owned(self.lhs().location().on(self.rhs().location().into_owned()))
+    }
+}
 
 impl<W: ExprWalker + PatWalker + StmtWalker> Walkable<W> for Accessor {
     fn walk(&self, walker: &mut W) {
@@ -109,7 +121,7 @@ impl Debug for Accessor {
 ///
 /// The application expression is right associative, and can hold primary terms on the argument,
 /// this can be recursed until the infinite, like `something a b c ...`
-#[derive(Default, Node, Clone)]
+#[derive(Default, Node, Located, Clone)]
 pub struct App(GreenTree);
 
 #[ast_of]
@@ -140,7 +152,7 @@ impl App {
 ///
 /// The application expression is right associative, and can hold primary terms on the argument,
 /// this can be recursed until the infinite, like `something a b c ...`
-#[derive(Default, Node, Clone)]
+#[derive(Default, Node, Located, Clone)]
 pub struct Dsl(GreenTree);
 
 #[ast_of]
@@ -170,7 +182,7 @@ impl Dsl {
 /// ```haskell
 /// [a, b, c]
 /// ```
-#[derive(Default, Node, Clone)]
+#[derive(Default, Node, Located, Clone)]
 pub struct Array(GreenTree);
 
 #[ast_of]
@@ -199,7 +211,7 @@ impl Array {
 /// ```haskell
 /// λa b. c
 /// ```
-#[derive(Default, Node, Clone)]
+#[derive(Default, Node, Located, Clone)]
 pub struct Lam(GreenTree);
 
 #[ast_of]
@@ -225,7 +237,7 @@ impl Lam {
 /// let a = 10 in
 /// b + a...
 /// ```
-#[derive(Default, Node, Clone)]
+#[derive(Default, Node, Located, Clone)]
 pub struct Let(GreenTree);
 
 #[ast_of]
@@ -268,6 +280,12 @@ impl Ann {
     }
 }
 
+impl Located for Ann {
+    fn location(&self) -> std::borrow::Cow<'_, asena_span::Loc> {
+        std::borrow::Cow::Owned(self.lhs().location().on(self.rhs().location().into_owned()))
+    }
+}
+
 /// Qualifier expression, is a dependent type expression, that constrains a type with a type class.
 /// Or just a proof in this language.
 ///
@@ -282,6 +300,12 @@ impl Ann {
 /// ```
 #[derive(Default, Node, Clone)]
 pub struct Qual(GreenTree);
+
+impl Located for Qual {
+    fn location(&self) -> std::borrow::Cow<'_, asena_span::Loc> {
+        std::borrow::Cow::Owned(self.lhs().location().on(self.rhs().location().into_owned()))
+    }
+}
 
 impl<W: ExprWalker + PatWalker + StmtWalker> Walkable<W> for Qual {
     fn walk(&self, walker: &mut W) {
@@ -312,7 +336,7 @@ impl Debug for Qual {
 /// ```haskell
 /// Π (a: t) -> b
 /// ```
-#[derive(Default, Node, Clone)]
+#[derive(Default, Node, Located, Clone)]
 pub struct Pi(GreenTree);
 
 #[ast_of]
@@ -388,7 +412,7 @@ impl Pi {
 /// ```haskell
 /// Σ (a: t) -> b
 /// ```
-#[derive(Default, Node, Clone)]
+#[derive(Default, Node, Located, Clone)]
 pub struct Sigma(GreenTree);
 
 #[ast_of]
@@ -417,7 +441,7 @@ impl Sigma {
 }
 
 /// Help syntax sugar to the debugger.
-#[derive(Default, Node, Clone)]
+#[derive(Default, Node, Located, Clone)]
 pub struct Help(GreenTree);
 
 #[ast_of]
