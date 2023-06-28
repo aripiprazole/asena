@@ -40,8 +40,8 @@ impl Signature {
     }
 
     #[ast_leaf]
-    pub fn return_type(&self) -> Type {
-        self.filter::<Type>().first()
+    pub fn return_type(&self) -> Typed {
+        self.filter::<Typed>().first()
     }
 
     /// Holds, optionally the value of the [Signature], this is an sugar to [Assign].

@@ -5,7 +5,7 @@ use asena_ast::walker::Reporter;
 use asena_ast::*;
 use asena_leaf::ast::{Lexeme, Virtual};
 
-use crate::TypeError;
+use crate::{Kind, Type, TypeError};
 
 #[derive(Reporter)]
 #[ast_step(
@@ -170,6 +170,49 @@ impl<'a, R: Reporter> ExprWalker for AsenaConstraintValidator<'a, R> {
     fn walk_expr_literal(&mut self, value: &Lexeme<Literal>) {
         let at = value.token.clone();
         self.diagnostic(at, TypeError::UnexpectedTokenInType(value.token.kind))
+    }
+}
+
+impl From<Typed> for Type {
+    fn from(value: Typed) -> Self {
+        match value {
+            Typed::Infer => Self::Hole(None),
+            Typed::Explicit(expr) => expr.into(),
+        }
+    }
+}
+
+impl From<Expr> for Type {
+    fn from(value: Expr) -> Self {
+        match value {
+            Expr::Group(value) => value.value().into(),
+            Expr::Local(local) if is_type_constructor(&local) => {
+                Type::Constructor(local.to_fn_id(), Kind::Star)
+            }
+            Expr::Local(local) => Type::Variable(local.to_fn_id(), Kind::Star),
+            Expr::App(app) => {
+                let callee = Type::from(app.callee());
+                let argument = Type::from(app.argument());
+
+                Type::App(callee.into(), argument.into())
+            }
+            Expr::Pi(pi) => {
+                let parameter_type = Type::from(pi.parameter_type());
+                let return_type = Type::from(pi.return_type());
+
+                Type::Arrow(parameter_type.into(), return_type.into())
+            }
+            _ => Type::Error,
+        }
+    }
+}
+
+fn is_type_constructor(local: &Lexeme<Local>) -> bool {
+    let str = local.as_str();
+    if let Some(x) = str.chars().next() {
+        x.is_uppercase()
+    } else {
+        false
     }
 }
 

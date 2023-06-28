@@ -5,13 +5,15 @@ use asena_ast::*;
 use asena_leaf::ast::Walkable;
 use itertools::Itertools;
 
-use crate::validation::{AsenaConstraintValidator, AsenaTypeValidator};
+use crate::{validation::*, Scheme, Type};
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct ClassEnvironment {}
 
-#[derive(Default)]
-pub struct TypeEnvironment {}
+#[derive(Default, Debug)]
+pub struct TypeEnvironment {
+    pub schemes: im::HashMap<FunctionId, Scheme>,
+}
 
 #[derive(Reporter)]
 #[ast_step(
@@ -32,11 +34,13 @@ pub struct AsenaTyper<'a, R: Reporter> {
 
 impl<'a, R: Reporter> DeclWalker for AsenaTyper<'a, R> {
     fn walk_decl_signature(&mut self, value: &Signature) {
+        let name = value.name().to_fn_id();
+
         // Check the return type of the signature.
-        let return_type = value.return_type().walks(AsenaTypeValidator {
+        let return_type = Type::from(value.return_type().walks(AsenaTypeValidator {
             is_constraint: false,
             reporter: self.reporter,
-        });
+        }));
 
         let parameters = value
             .parameters()
@@ -55,8 +59,34 @@ impl<'a, R: Reporter> DeclWalker for AsenaTyper<'a, R> {
             })
             .collect_vec();
 
-        let explicit_parameters = parameters.iter().filter(|p| p.explicit()).collect_vec();
-        let implicit_parameters = parameters.iter().filter(|p| !p.explicit()).collect_vec();
+        let implicit_parameters = parameters
+            .iter()
+            .filter(|p| !p.explicit())
+            .cloned()
+            .filter_map(|x| match x.parameter_type() {
+                Typed::Infer => None,
+                Typed::Explicit(Expr::Local(name)) => Some(name.to_fn_id()),
+                Typed::Explicit(_) => None,
+            })
+            .collect_vec();
+
+        // FIXME: this transforms a -> b -> c in (a -> b) -> c
+        let mono = parameters
+            .iter()
+            .filter(|p| p.explicit())
+            .map(|param| Type::from(param.parameter_type()))
+            .rev()
+            .fold(return_type, |acc, next| {
+                Type::Arrow(next.into(), acc.into())
+            });
+
+        self.type_env.schemes.insert(
+            name,
+            Scheme {
+                variables: implicit_parameters,
+                mono,
+            },
+        );
     }
 }
 

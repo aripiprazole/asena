@@ -24,11 +24,15 @@ pub enum Kind {
 /// Represents a type, in the type-level context.
 ///
 /// TODO: use a dependent type system, so that we can represent types like `Vec<3, i32>`.
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 pub enum Type {
     /// General type, it unifies with any type, it's used, so the type inference can be resilient
     /// to errors.
+    #[default]
     Error,
+
+    /// Type variable with a given [FunctionId], to be filled later.
+    Hole(Option<FunctionId>),
 
     /// Constructor type with a given [Kind].
     Constructor(FunctionId, Kind),
@@ -37,7 +41,7 @@ pub enum Type {
     Variable(FunctionId, Kind),
 
     /// Type application.
-    Apply(Box<Type>, Box<Type>),
+    App(Box<Type>, Box<Type>),
 
     /// Type application with `->`.
     Arrow(Box<Type>, Box<Type>),
@@ -84,8 +88,9 @@ impl Type {
             Type::Error => Kind::Error,
             Type::Constructor(_, kind) => kind.clone(),
             Type::Variable(_, kind) => kind.clone(),
-            Type::Apply(lhs, _) => lhs.kind(),
+            Type::App(lhs, _) => lhs.kind(),
             Type::Arrow(a, b) => Kind::Fun(a.kind().into(), b.kind().into()),
+            Type::Hole(_) => Kind::Star,
         }
     }
 }
@@ -165,6 +170,7 @@ mod tests {
 
         tree.reporter.dump();
 
-        println!("{file:#?}")
+        println!("{file:#?}");
+        println!("{type_env:#?}");
     }
 }

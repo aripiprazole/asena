@@ -21,8 +21,8 @@ impl Parameter {
 
     /// Parameter's type
     #[ast_leaf]
-    pub fn parameter_type(&self) -> Type {
-        self.filter::<Type>().first()
+    pub fn parameter_type(&self) -> Typed {
+        self.filter::<Typed>().first()
     }
 
     /// If the parameter is explicit, or if it's a constraint or a type that can have the hole filled

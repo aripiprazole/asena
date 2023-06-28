@@ -481,13 +481,13 @@ pub type PrimaryRef = Spanned<Expr>;
 ///
 /// B is a [Type].
 #[derive(Default, Clone)]
-pub enum Type {
+pub enum Typed {
     #[default]
     Infer, // _
     Explicit(Expr),
 }
 
-impl Node for Type {
+impl Node for Typed {
     fn new<I: Into<GreenTree>>(tree: I) -> Self {
         let value = Expr::new(tree);
         match value {
@@ -498,13 +498,13 @@ impl Node for Type {
 
     fn unwrap(self) -> GreenTree {
         match self {
-            Type::Infer => GreenTree::Empty,
-            Type::Explicit(explicit) => explicit.unwrap(),
+            Typed::Infer => GreenTree::Empty,
+            Typed::Explicit(explicit) => explicit.unwrap(),
         }
     }
 }
 
-impl Leaf for Type {
+impl Leaf for Typed {
     fn make(tree: GreenTree) -> Option<Self> {
         Some(match tree.kind() {
             TypeExplicit => Self::Explicit(tree.at::<Expr>(0).as_leaf()),
@@ -514,7 +514,7 @@ impl Leaf for Type {
     }
 }
 
-impl Debug for Type {
+impl Debug for Typed {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Infer => write!(f, "_"),
@@ -523,11 +523,11 @@ impl Debug for Type {
     }
 }
 
-impl<W: ExprWalker + PatWalker + StmtWalker> Walkable<W> for Type {
+impl<W: ExprWalker + PatWalker + StmtWalker> Walkable<W> for Typed {
     fn walk(&self, walker: &mut W) {
         match self {
-            Type::Infer => {}
-            Type::Explicit(value) => value.walk(walker),
+            Typed::Infer => {}
+            Typed::Explicit(value) => value.walk(walker),
         }
     }
 }
