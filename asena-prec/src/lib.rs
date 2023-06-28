@@ -1,10 +1,12 @@
+use asena_derive::*;
+
 use asena_ast::{command::CommandWalker, walker::Reporter, *};
-use asena_derive::{ast_step, Reporter};
-use asena_report::InternalError;
-use commands::Entry;
+
 use im::HashMap;
 
 pub mod commands;
+
+pub use commands::*;
 
 #[derive(Reporter)]
 #[ast_step(
@@ -17,9 +19,9 @@ pub mod commands;
     FileWalker
 )]
 pub struct AsenaPrecStep<'a, R: Reporter> {
-    prec_table: &'a HashMap<FunctionId, Entry>,
+    pub prec_table: &'a HashMap<FunctionId, Entry>,
     #[ast_reporter]
-    reporter: &'a mut R,
+    pub reporter: &'a mut R,
 }
 
 impl<'a, R: Reporter> ExprWalker for AsenaPrecStep<'a, R> {

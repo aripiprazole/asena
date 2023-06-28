@@ -1,12 +1,13 @@
 use std::fmt::Display;
 
-use asena_leaf::node::TreeKind;
+use asena_leaf::{node::TreeKind, token::TokenKind};
 use asena_report::InternalError;
 use thiserror::Error;
 
 use asena_ast::FunctionId;
 
 pub mod infer;
+pub mod unify;
 pub mod validation;
 
 /// Represents a type of a [Type].
@@ -52,6 +53,18 @@ pub struct Scheme {
 pub enum TypeError {
     #[error("Unexpected expression kind {0} in a type-level context")]
     UnexpectedExprInType(TreeKind),
+
+    #[error("Unexpected lexeme {0} in type-level, dependent-types aren't implemented yet")]
+    UnexpectedTokenInType(TokenKind),
+
+    #[error("Unexpected field accessor in type-level, that is not a path to another type")]
+    UnexpectedAccessorInType,
+
+    #[error("Unsupported dependent-pairs in type-level yet")]
+    UnsupportedSigmaInType,
+
+    #[error("Unsupported type classes in the type-level yet")]
+    UnsupportedQualifiersInType,
 }
 
 impl Type {
@@ -93,5 +106,47 @@ impl InternalError for TypeError {
 
     fn kind(&self) -> asena_report::DiagnosticKind {
         asena_report::DiagnosticKind::Error
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use asena_ast::*;
+    use asena_grammar::*;
+    use asena_leaf::ast::*;
+
+    use asena_prec::*;
+
+    use crate::infer::{AsenaTyperStep, ClassEnvironment, TypeEnvironment};
+
+    #[test]
+    fn it_works() {
+        let mut prec_table = default_prec_table();
+        let mut type_env = TypeEnvironment::default();
+        let mut class_env = ClassEnvironment::default();
+
+        let mut tree = asena_file! {
+            A : Hello.World.Ola(10);
+
+            Main {
+                println "hello world"
+            }
+        };
+
+        let file = AsenaFile::new(tree.clone())
+            .walks(AsenaInfixCommandStep::new(&mut tree, &mut prec_table))
+            .walks(AsenaPrecStep {
+                prec_table: &prec_table,
+                reporter: &mut tree,
+            })
+            .walks(AsenaTyperStep {
+                type_env: &mut type_env,
+                class_env: &mut class_env,
+                reporter: &mut tree,
+            });
+
+        tree.reporter.dump();
+
+        println!("{file:#?}")
     }
 }

@@ -49,7 +49,7 @@ impl<T: CommandWalker + Reporter> DeclWalker for T {
 
         match self.on_command(value) {
             Ok(()) => {}
-            Err(err) => self.diagnostic(err, name.location()),
+            Err(err) => self.diagnostic(name.location(), err),
         }
     }
 }

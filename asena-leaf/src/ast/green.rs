@@ -105,6 +105,14 @@ impl GreenTree {
         }
     }
 
+    pub fn spanned(&self) -> Spanned<()> {
+        match self {
+            GreenTree::Leaf { data, .. } => data.replace(()),
+            GreenTree::Token(lexeme) => lexeme.token.replace(()),
+            _ => Spanned::default(),
+        }
+    }
+
     /// Memoizes the value of the given function, and returns a new [Cursor] instance, and
     /// if the value is already memoized, it will return the memoized value.
     ///

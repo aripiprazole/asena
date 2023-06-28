@@ -26,7 +26,7 @@ impl AsenaFile {
 }
 
 pub trait FileWalker:
-    DeclWalker + BodyWalker + PropertyWalker + ExprWalker + PatWalker + StmtWalker + CommandWalker
+    DeclWalker + BodyWalker + PropertyWalker + ExprWalker + PatWalker + StmtWalker
 {
     fn walk_file(&mut self, _value: &AsenaFile) {}
 }
@@ -41,7 +41,6 @@ where
     W: ExprWalker,
     W: PatWalker,
     W: StmtWalker,
-    W: CommandWalker,
 {
     fn walk(&self, walker: &mut W) {
         for decl in self.declarations().iter() {
@@ -53,7 +52,6 @@ where
 
 pub use binding::*;
 pub use body::*;
-use decl::command::CommandWalker;
 pub use decl::*;
 pub use expr::*;
 pub use identifier::*;

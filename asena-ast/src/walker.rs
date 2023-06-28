@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use asena_leaf::node::Tree;
+use asena_leaf::{ast::Located, node::Tree};
 use asena_report::{BoxInternalError, Diagnostic, InternalError, Report};
 use asena_span::Spanned;
 
@@ -9,7 +9,11 @@ use crate::*;
 pub trait TreeWalker: ExprWalker + PatWalker + StmtWalker {}
 
 pub trait Reporter {
-    fn diagnostic<E: InternalError, T>(&mut self, error: E, at: Spanned<T>)
+    fn report<E: InternalError + 'static, T: Located>(&mut self, at: &T, error: E) {
+        self.diagnostic(Spanned::new(at.location().into_owned(), ()), error);
+    }
+
+    fn diagnostic<E: InternalError, T>(&mut self, at: Spanned<T>, error: E)
     where
         E: 'static;
 }
@@ -22,7 +26,7 @@ pub struct DefaultReporter {
 }
 
 impl Reporter for DefaultReporter {
-    fn diagnostic<E: InternalError, T>(&mut self, error: E, at: Spanned<T>)
+    fn diagnostic<E: InternalError, T>(&mut self, at: Spanned<T>, error: E)
     where
         E: 'static,
     {

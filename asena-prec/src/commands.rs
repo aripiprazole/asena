@@ -1,9 +1,12 @@
+use asena_derive::*;
+
 use asena_ast::{command::CommandWalker, decl::command::Result, walker::Reporter, *};
-use asena_derive::{ast_command, ast_step};
+
 use asena_leaf::ast::Lexeme;
-use asena_report::InternalError;
+
 use im::HashMap;
 
+#[derive(Reporter)]
 #[ast_step(
     FileWalker,
     BodyWalker,
@@ -14,6 +17,8 @@ use im::HashMap;
 )]
 pub struct AsenaInfixCommandStep<'a, R: Reporter> {
     pub prec_table: &'a mut HashMap<FunctionId, Entry>,
+
+    #[ast_reporter]
     pub reporter: &'a mut R,
 }
 
@@ -34,15 +39,6 @@ impl<'a, R: Reporter> CommandWalker for AsenaInfixCommandStep<'a, R> {
         self.prec_table.insert(FunctionId::new(&name), entry);
 
         Ok(())
-    }
-}
-
-impl<'a, R: Reporter> Reporter for AsenaInfixCommandStep<'a, R> {
-    fn diagnostic<E: InternalError, T>(&mut self, error: E, at: asena_span::Spanned<T>)
-    where
-        E: 'static,
-    {
-        self.reporter.diagnostic(error, at)
     }
 }
 

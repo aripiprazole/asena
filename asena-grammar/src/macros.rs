@@ -97,11 +97,11 @@ impl Reportable<DefaultReporter> {
 }
 
 impl<R: Reporter> Reporter for Reportable<R> {
-    fn diagnostic<E: InternalError, A>(&mut self, error: E, at: Spanned<A>)
+    fn diagnostic<E: InternalError, A>(&mut self, at: Spanned<A>, error: E)
     where
         E: 'static,
     {
-        self.reporter.diagnostic(error, at)
+        self.reporter.diagnostic(at, error)
     }
 }
 
