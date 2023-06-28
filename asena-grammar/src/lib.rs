@@ -217,7 +217,61 @@ pub fn expr(p: &mut Parser) {
         _ => {}
     }
 
+    expr_ann(p);
+}
+
+/// ExprAnn = ExprQual (':' ExprQual)*
+pub fn expr_ann(p: &mut Parser) {
+    let m = p.open();
+
+    expr_qual(p);
+
+    // simplify by returning the lhs symbol directly
+    if p.at(Colon) {
+        while !p.eof() && p.eat(Colon) {
+            expr_qual(p);
+        }
+
+        p.close(m, ExprAnn);
+    } else {
+        p.ignore(m)
+    }
+}
+
+/// ExprQual = ExprAnonymousPi ('=>' ExprAnonymousPi)*
+pub fn expr_qual(p: &mut Parser) {
+    let m = p.open();
+
+    expr_anonymous_pi(p);
+
+    // simplify by returning the lhs symbol directly
+    if p.at(DoubleArrow) {
+        while !p.eof() && p.eat(DoubleArrow) {
+            expr_anonymous_pi(p);
+        }
+
+        p.close(m, ExprQual);
+    } else {
+        p.ignore(m)
+    }
+}
+
+/// ExprAnonymousPi = ExprAccessor ('->' ExprAccessor)*
+pub fn expr_anonymous_pi(p: &mut Parser) {
+    let m = p.open();
+
     expr_binary(p);
+
+    // simplify by returning the lhs symbol directly
+    if p.at(RightArrow) {
+        while !p.eof() && p.eat(RightArrow) {
+            expr_binary(p);
+        }
+
+        p.close(m, ExprPi);
+    } else {
+        p.ignore(m)
+    }
 }
 
 /// ExprHelp = '?' ExprDsl
@@ -265,69 +319,15 @@ pub fn expr_dsl(p: &mut Parser) {
 pub fn expr_binary(p: &mut Parser) {
     let m = p.open();
 
-    expr_ann(p);
+    expr_accessor(p);
 
     // simplify by returning the lhs symbol directly
     if p.at(Symbol) {
         while !p.eof() && p.eat(Symbol) {
-            expr_ann(p);
-        }
-
-        p.close(m, ExprBinary);
-    } else {
-        p.ignore(m)
-    }
-}
-
-/// ExprAnn = ExprQual (':' ExprQual)*
-pub fn expr_ann(p: &mut Parser) {
-    let m = p.open();
-
-    expr_qual(p);
-
-    // simplify by returning the lhs symbol directly
-    if p.at(Colon) {
-        while !p.eof() && p.eat(Colon) {
-            expr_qual(p);
-        }
-
-        p.close(m, ExprAnn);
-    } else {
-        p.ignore(m)
-    }
-}
-
-/// ExprQual = ExprAnonymousPi ('=>' ExprAnonymousPi)*
-pub fn expr_qual(p: &mut Parser) {
-    let m = p.open();
-
-    expr_anonymous_pi(p);
-
-    // simplify by returning the lhs symbol directly
-    if p.at(DoubleArrow) {
-        while !p.eof() && p.eat(DoubleArrow) {
-            expr_anonymous_pi(p);
-        }
-
-        p.close(m, ExprQual);
-    } else {
-        p.ignore(m)
-    }
-}
-
-/// ExprAnonymousPi = ExprAccessor ('->' ExprAccessor)*
-pub fn expr_anonymous_pi(p: &mut Parser) {
-    let m = p.open();
-
-    expr_accessor(p);
-
-    // simplify by returning the lhs symbol directly
-    if p.at(RightArrow) {
-        while !p.eof() && p.eat(RightArrow) {
             expr_accessor(p);
         }
 
-        p.close(m, ExprPi);
+        p.close(m, ExprBinary);
     } else {
         p.ignore(m)
     }

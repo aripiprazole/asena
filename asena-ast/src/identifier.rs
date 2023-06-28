@@ -33,6 +33,12 @@ impl FunctionId {
     }
 }
 
+impl From<&str> for FunctionId {
+    fn from(value: &str) -> Self {
+        FunctionId::new(value)
+    }
+}
+
 impl Terminal for FunctionId {
     fn terminal(token: Spanned<Token>) -> Option<Self> {
         let text = token.text.clone();

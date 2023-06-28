@@ -100,7 +100,7 @@ mod tests {
     #[test]
     fn expr_works() {
         let prec_table = default_prec_table();
-        let mut tree = asena_expr!(1 * 2 + 5 * 4 + 3);
+        let mut tree = asena_expr!(A -> A + B);
         let expr = Expr::new(tree.unwrap()).walks(AsenaPrecStep {
             prec_table: &prec_table,
             reporter: &mut tree,

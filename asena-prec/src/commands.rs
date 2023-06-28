@@ -55,11 +55,61 @@ impl<'a, R: Reporter> AsenaInfixCommandStep<'a, R> {
     }
 }
 
+/// The default precedence table for Asena Language in the Standard Library.
+///   - `->`, `=>`
+///   - `^`, `>>`, `<<`, `|`, `&`
+///   - `>`, `>=`, `<=`, `<`
+///   - `==`, `!=`
+///   - `||`, `&&`
+///   - `$`, `%`, `=>>`, `@`
+///   - `^^`
+///   - `*`, `/`
+///   - `+`, `-`
 pub fn default_prec_table() -> HashMap<FunctionId, Entry> {
     let mut table = HashMap::new();
-    table.insert(FunctionId::new("=="), Entry::new(FunctionId::new("=="), Assoc::Right, 0));
-    table.insert(FunctionId::new("+"), Entry::new(FunctionId::new("+"), Assoc::Right, 1));
-    table.insert(FunctionId::new("*"), Entry::new(FunctionId::new("*"), Assoc::Right, 2));
+
+    // `^`, `>>`, `<<`, `|`, `&`
+    table.insert("^".into(), Entry::new("==", Assoc::Right, 9));
+    table.insert("|".into(), Entry::new("|", Assoc::Right, 9));
+    table.insert("&".into(), Entry::new("&", Assoc::Right, 9));
+    table.insert(">>".into(), Entry::new(">>", Assoc::Right, 9));
+    table.insert("<<".into(), Entry::new("<<", Assoc::Right, 9));
+
+    // `>`, `>=`, `<=`, `<`
+    table.insert(">".into(), Entry::new("<", Assoc::Right, 8));
+    table.insert("<".into(), Entry::new("<", Assoc::Right, 8));
+    table.insert(">=".into(), Entry::new(">=", Assoc::Right, 8));
+    table.insert("<=".into(), Entry::new("<=", Assoc::Right, 8));
+
+    // `==`, `!=`
+    table.insert("==".into(), Entry::new("==", Assoc::Right, 7));
+    table.insert("!=".into(), Entry::new("!=", Assoc::Right, 7));
+
+    // `||`, `&&`
+    table.insert("||".into(), Entry::new("||", Assoc::Right, 6));
+    table.insert("&&".into(), Entry::new("&&", Assoc::Right, 6));
+
+    // `$`, `%`, `=>>`, `@`
+    table.insert("$".into(), Entry::new("$", Assoc::Right, 5));
+    table.insert("%".into(), Entry::new("%", Assoc::Right, 5));
+    table.insert("@".into(), Entry::new("@", Assoc::Right, 5));
+    table.insert("=>>".into(), Entry::new("=>>", Assoc::Right, 5));
+
+    // `^^`
+    table.insert("^^".into(), Entry::new("^^", Assoc::Right, 4));
+
+    // `*`, `/`
+    table.insert("*".into(), Entry::new("*", Assoc::Right, 2));
+    table.insert("/".into(), Entry::new("/", Assoc::Right, 2));
+
+    // `+`, `-`
+    table.insert("+".into(), Entry::new("+", Assoc::Right, 2));
+    table.insert("-".into(), Entry::new("-", Assoc::Right, 2));
+
+    // `->`, `=>`
+    table.insert("->".into(), Entry::new("->", Assoc::Right, 1));
+    table.insert("=>".into(), Entry::new("=>", Assoc::Right, 1));
+
     table
 }
 
@@ -77,7 +127,11 @@ pub struct Entry {
 }
 
 impl Entry {
-    pub fn new(fn_id: FunctionId, assoc: Assoc, order: u8) -> Self {
-        Self { fn_id, assoc, order }
+    pub fn new<I: Into<FunctionId>>(fn_id: I, assoc: Assoc, order: u8) -> Self {
+        Self {
+            fn_id: fn_id.into(),
+            assoc,
+            order,
+        }
     }
 }
