@@ -126,7 +126,7 @@ impl<T: Node + Leaf> Node for Vec<T> {
         match tree {
             GreenTree::Vec(values) => values
                 .into_iter()
-                .filter_map(|value| T::make(value))
+                .map(|value| T::new(value))
                 .collect::<Vec<_>>(),
             GreenTree::Leaf { data, .. } => data
                 .children

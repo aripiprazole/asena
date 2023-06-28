@@ -9,7 +9,7 @@ use super::*;
 pub struct Lexeme<T> {
     pub token: Spanned<Token>,
     pub value: T,
-    pub is_none: bool,
+    pub(crate) is_none: bool,
 }
 
 impl<T> Lexeme<T> {

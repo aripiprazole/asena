@@ -102,7 +102,6 @@ impl Local {
     /// Creates a new [Local] by a string
     pub fn new(span: Loc, id: &str) -> Self {
         Self(id.into(), span)
-        // Self(Spanned::new(span, id.into()))
     }
 
     /// Gets the local's identifier as string borrow
@@ -116,7 +115,7 @@ impl Local {
 }
 
 impl Located for Local {
-    fn location(&self) -> std::borrow::Cow<'_, Loc> {
+    fn location(&self) -> Cow<'_, Loc> {
         Cow::Borrowed(&self.1)
     }
 }

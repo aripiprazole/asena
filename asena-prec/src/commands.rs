@@ -92,7 +92,7 @@ pub fn default_prec_table() -> HashMap<FunctionId, Entry> {
     // `$`, `%`, `=>>`, `@`
     table.insert("$".into(), Entry::new("$", Assoc::Right, 5));
     table.insert("%".into(), Entry::new("%", Assoc::Right, 5));
-    table.insert("@".into(), Entry::new("@", Assoc::Right, 5));
+    // table.insert("@".into(), Entry::new("@", Assoc::Right, 5));
     table.insert("=>>".into(), Entry::new("=>>", Assoc::Right, 5));
 
     // `^^`

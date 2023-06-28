@@ -77,7 +77,7 @@ mod tests {
     fn it_works() {
         let mut prec_table = default_prec_table();
         let mut tree = asena_file! {
-            #infixr "@", 0;
+            #infixr "@", 10;
 
             Main {
                 let x = 2 @ 4 + 1;
