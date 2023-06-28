@@ -1,5 +1,4 @@
 use std::fmt::Debug;
-use std::ops::Deref;
 
 use asena_derive::{ast_debug, ast_from, ast_leaf, ast_walkable, Leaf, Walker};
 use asena_leaf::ast::{Cursor, Leaf, Lexeme, Node, Walkable};
@@ -345,10 +344,33 @@ impl Pi {
         }
     }
 
-    /// FIXME: this stackoverflow
     #[ast_leaf]
     pub fn return_type(&self) -> Expr {
-        Cursor::empty()
+        if self.has("parameter_name") {
+            return self.named_at("return_type");
+        }
+
+        let mut rhs = self.clone();
+        let Some(children) = rhs.children() else {
+            return Cursor::empty();
+        };
+
+        // Checks the integrity of the length for safety
+        match children.len() {
+            0 => return Cursor::empty(),
+            1 => return Cursor::empty(),
+            _ => {}
+        }
+
+        // Remove the first twice
+        children.remove(0);
+        children.remove(0);
+
+        if rhs.is_single() {
+            rhs.at(0)
+        } else {
+            Cursor::new(rhs.as_new_node())
+        }
     }
 }
 
