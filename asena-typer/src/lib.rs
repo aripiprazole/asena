@@ -141,13 +141,13 @@ mod tests {
         let mut class_env = ClassEnvironment::default();
 
         let mut tree = asena_file! {
-            someone_name : Option String;
+            someone_name: Option String;
 
-            unwrap [a: Set -> Set] (option: Option a): a {
+            unwrap[a: Set -> Set](option: Option a): a {
                 todo()
             };
 
-            println (message: String): Unit {
+            println(message: String): Unit {
                 todo()
             };
 

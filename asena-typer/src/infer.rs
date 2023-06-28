@@ -93,7 +93,25 @@ impl<'a, R: Reporter> DeclWalker for AsenaTyper<'a, R> {
 impl<'a, R: Reporter> ExprWalker for AsenaTyper<'a, R> {}
 
 impl<'a, R: Reporter> AsenaTyper<'a, R> {
-    pub fn infer(&mut self, expr: Expr) {
+    ///
+    /// Γ, σ ∈ Γ   τ = inst(σ)
+    /// ────────────────────── [E-VAR]
+    /// e : τ
+    ///
+    /// Γ, e : τ, S     S Γ e' ⊢ τ', S'
+    /// τ''' = newvar   S'' = mgu(S' τ, τ' -> τ''')
+    /// ─────────────────────────────────────────── [E-APP]
+    /// Γ ⊢ (e e' : S'' τ'''), S'', S', S
+    ///
+    /// τ = newvar   Γ, x: τ ⊢ e : τ', S
+    /// ──────────────────────────────── [E-ABS]
+    /// Γ ⊢ (λx. e : τ -> τ'), S
+    ///
+    /// Γ ⊢ e : τ, S   S Γ x : gen(S Γ, τ) ⊢ e' : τ', S'
+    /// ──────────────────────────────────────────────── [E-LET]
+    /// Γ ⊢ (let x = e in e' : τ'), S', S
+    ///
+    pub fn infer(&mut self, expr: Expr) -> Type {
         match expr {
             Expr::Error => todo!(),
             Expr::QualifiedPath(_) => todo!(),
