@@ -27,12 +27,12 @@ impl Ask {
 }
 
 #[derive(Default, Node, Clone)]
-pub struct Set(GreenTree);
+pub struct LetStmt(GreenTree);
 
 #[ast_of]
 #[ast_debug]
 #[ast_walkable(PatWalker, ExprWalker, StmtWalker)]
-impl Set {
+impl LetStmt {
     #[ast_leaf]
     pub fn pattern(&self) -> Pat {
         self.filter::<Pat>().first()
@@ -76,10 +76,10 @@ ast_enum! {
     #[derive(Walker)]
     #[ast_walker_traits(PatWalker, ExprWalker)]
     pub enum Stmt {
-        Ask    <- StmtAsk,    // <local_id> <- <expr>
-        Set    <- StmtLet,    // let <local_id> = <expr>
-        Return <- StmtReturn, // return <expr?>
-        Eval   <- StmtExpr,   // <expr?>
+        Ask     <- StmtAsk,    // <local_id> <- <expr>
+        LetStmt <- StmtLet,    // let <local_id> = <expr>
+        Return  <- StmtReturn, // return <expr?>
+        Eval    <- StmtExpr,   // <expr?>
     }
 }
 
