@@ -24,7 +24,7 @@ pub fn expand_ast_derive_step(input: TokenStream) -> TokenStream {
             let field_name = field.ident.clone();
             Some(quote! {
                 impl #impl_generics asena_ast::walker::Reporter for #name #ty_generics #where_clause {
-                    fn diagnostic<E: InternalError, T>(&mut self, error: E, at: asena_span::Spanned<T>)
+                    fn diagnostic<E: asena_report::InternalError, T>(&mut self, error: E, at: asena_span::Spanned<T>)
                     where
                         E: 'static,
                     {

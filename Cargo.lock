@@ -206,11 +206,13 @@ dependencies = [
  "asena-leaf",
  "asena-lexer",
  "asena-parser",
+ "asena-prec",
  "asena-report",
  "asena-span",
  "fxhash",
  "im",
  "itertools",
+ "thiserror",
 ]
 
 [[package]]
