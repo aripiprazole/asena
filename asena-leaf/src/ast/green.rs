@@ -72,17 +72,6 @@ impl GreenTree {
         }
     }
 
-    pub fn insert_rc<T: 'static>(&self, name: LeafKey, value: Rc<T>)
-    where
-        T: Node + Leaf,
-    {
-        if let Self::Leaf { names, .. } = self {
-            names
-                .borrow_mut()
-                .insert(name, Rc::new(Cursor::from(value)));
-        }
-    }
-
     pub fn insert<T: 'static>(&self, name: LeafKey, value: T)
     where
         T: Node + Leaf,

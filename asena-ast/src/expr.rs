@@ -1,6 +1,5 @@
 use std::fmt::Debug;
 use std::ops::Deref;
-use std::rc::Rc;
 
 use asena_derive::{ast_debug, ast_from, ast_leaf, ast_walkable, Leaf, Walker};
 use asena_leaf::ast::{Cursor, Leaf, Lexeme, Node, Walkable};
@@ -322,19 +321,16 @@ impl Pi {
     #[ast_leaf]
     pub fn parameter_name(&self) -> Option<Lexeme<Local>> {
         if self.has("parameter_name") {
-            let fn_id = &*self
+            let fn_id = self
                 .named_terminal::<FunctionId>("parameter_name")
-                .as_leaf();
+                .as_leaf()
+                .map_token(|x, token| Local(x.to_string(), token.span.clone()));
 
             if fn_id.as_str().is_empty() {
                 return Cursor::from(None);
             }
 
-            let local = fn_id
-                .clone()
-                .map_token(|x, token| Local(x.to_string(), token.span.clone()));
-
-            Cursor::of(Some(local))
+            Cursor::of(Some(fn_id))
         } else {
             Cursor::from(None)
         }
@@ -352,35 +348,7 @@ impl Pi {
     /// FIXME: this stackoverflow
     #[ast_leaf]
     pub fn return_type(&self) -> Expr {
-        if self.has("parameter_name") {
-            return self.named_at("return_type");
-        }
-
-        let mut rhs = self.clone();
-
-        let Some(children) = rhs.children() else {
-            return Cursor::empty();
-        };
-
-        // Checks the integrity of the length for safety
-        match children.len() {
-            0 => return Cursor::empty(),
-            1 => return rhs.at(0),
-            _ => {}
-        }
-
-        // Remove the first twice
-        //   `->`
-        //   <type_expr>
-        children.remove(0);
-        children.remove(0);
-        println!("children {children:?}");
-
-        if rhs.is_single() {
-            Cursor::empty()
-        } else {
-            Cursor::new(rhs.deref().clone())
-        }
+        Cursor::empty()
     }
 }
 
@@ -405,15 +373,12 @@ pub struct Sigma(GreenTree);
 impl Sigma {
     #[ast_leaf]
     pub fn parameter_name(&self) -> Lexeme<Local> {
-        let fn_id = &*self
+        let fn_id = self
             .named_terminal::<FunctionId>("parameter_name")
-            .as_leaf();
-
-        let value = fn_id
-            .clone()
+            .as_leaf()
             .map_token(|x, token| Local(x.to_string(), token.span.clone()));
 
-        Cursor::of(value)
+        Cursor::of(fn_id)
     }
 
     #[ast_leaf]
@@ -467,15 +432,15 @@ ast_enum! {
 
 impl Expr {
     fn build_local(tree: GreenTree) -> Option<Expr> {
-        let local = &*tree.terminal::<Local>(0).as_leaf();
+        let local = tree.terminal::<Local>(0).as_leaf();
 
-        Some(Expr::Local(local.clone()))
+        Some(Expr::Local(local))
     }
 
     fn build_literal(tree: GreenTree) -> Option<Expr> {
-        let literal = &*tree.terminal::<Literal>(0).as_leaf();
+        let literal = tree.terminal::<Literal>(0).as_leaf();
 
-        Some(Expr::Literal(literal.clone()))
+        Some(Expr::Literal(literal))
     }
 }
 
@@ -495,7 +460,7 @@ pub type PrimaryRef = Spanned<Expr>;
 pub enum Type {
     #[default]
     Infer, // _
-    Explicit(Rc<Expr>),
+    Explicit(Expr),
 }
 
 impl Node for Type {
@@ -503,14 +468,14 @@ impl Node for Type {
         let value = Expr::new(tree);
         match value {
             Expr::Error => Self::Infer,
-            _ => Self::Explicit(Rc::new(value)),
+            _ => Self::Explicit(value),
         }
     }
 
     fn unwrap(self) -> GreenTree {
         match self {
             Type::Infer => GreenTree::Empty,
-            Type::Explicit(explicit) => (*explicit).clone().unwrap(),
+            Type::Explicit(explicit) => explicit.unwrap(),
         }
     }
 }
