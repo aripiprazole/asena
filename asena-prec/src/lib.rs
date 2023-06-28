@@ -88,7 +88,7 @@ mod tests {
             }
         };
 
-        let file = AsenaFile::new(tree.unwrap())
+        let file = AsenaFile::new(tree.clone())
             .walks(AsenaInfixCommandStep::new(&mut tree, &mut prec_table))
             .walks(AsenaPrecStep {
                 prec_table: &prec_table,
@@ -98,26 +98,6 @@ mod tests {
         tree.reporter.dump();
 
         println!("{file:#?}")
-    }
-
-    #[test]
-    fn smt_works() {
-        let n = Expr::new(asena_expr!(100).unwrap());
-        let expr = Expr::new(asena_expr!(1 + 2 + 3).unwrap());
-
-        let binary_expr = expr.as_binary().unwrap();
-        let expr_rhs = binary_expr.rhs().as_binary().unwrap();
-        expr_rhs.set_lhs(n.clone());
-        expr_rhs.set_lhs(n);
-
-        println!("{binary_expr:?}");
-    }
-
-    #[test]
-    fn an_works() {
-        let expr = Expr::new(asena_expr!(1 + 2 + 3).unwrap());
-
-        println!("{expr:?}");
     }
 
     #[test]

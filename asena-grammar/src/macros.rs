@@ -12,7 +12,7 @@
 use std::ops::{Deref, DerefMut};
 
 use asena_ast::walker::{DefaultReporter, Reporter};
-use asena_leaf::node::Tree;
+use asena_leaf::{ast::GreenTree, node::Tree};
 use asena_report::InternalError;
 use asena_span::Spanned;
 
@@ -40,7 +40,7 @@ macro_rules! asena_file {
 }
 
 #[derive(Clone)]
-pub struct Reportable<R: asena_ast::walker::Reporter> {
+pub struct Reportable<R: Reporter> {
     pub reporter: R,
     pub data: Spanned<Tree>,
 }
@@ -54,13 +54,25 @@ pub fn new_reportable(src: &str, tree: Spanned<Tree>) -> Reportable<DefaultRepor
     }
 }
 
+impl<R: Reporter> std::borrow::Borrow<Spanned<Tree>> for Reportable<R> {
+    fn borrow(&self) -> &Spanned<Tree> {
+        &self.data
+    }
+}
+
+impl<R: Reporter> From<Reportable<R>> for GreenTree {
+    fn from(value: Reportable<R>) -> Self {
+        value.data.into()
+    }
+}
+
 impl Reportable<DefaultReporter> {
     pub fn unwrap(&self) -> Spanned<Tree> {
         self.data.clone()
     }
 }
 
-impl<R: asena_ast::walker::Reporter> Reporter for Reportable<R> {
+impl<R: Reporter> Reporter for Reportable<R> {
     fn diagnostic<E: InternalError, A>(&mut self, error: E, at: Spanned<A>)
     where
         E: 'static,
