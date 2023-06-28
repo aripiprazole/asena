@@ -15,7 +15,7 @@ use im::HashMap;
     PatWalker,
     StmtWalker
 )]
-pub struct AsenaInfixCommandStep<'a, R: Reporter> {
+pub struct AsenaInfixHandler<'a, R: Reporter> {
     pub prec_table: &'a mut HashMap<FunctionId, Entry>,
 
     #[ast_reporter]
@@ -23,7 +23,7 @@ pub struct AsenaInfixCommandStep<'a, R: Reporter> {
 }
 
 #[ast_command(infixl, infixr)]
-impl<'a, R: Reporter> CommandWalker for AsenaInfixCommandStep<'a, R> {
+impl<'a, R: Reporter> CommandWalker for AsenaInfixHandler<'a, R> {
     fn on_command(&mut self, command: &Command) -> Result {
         let name = command.at::<Lexeme<Literal>>(0)?.contents();
         let order = command
@@ -42,7 +42,7 @@ impl<'a, R: Reporter> CommandWalker for AsenaInfixCommandStep<'a, R> {
     }
 }
 
-impl<'a, R: Reporter> AsenaInfixCommandStep<'a, R> {
+impl<'a, R: Reporter> AsenaInfixHandler<'a, R> {
     pub fn new(reporter: &'a mut R, prec_table: &'a mut HashMap<FunctionId, Entry>) -> Self {
         Self {
             prec_table,

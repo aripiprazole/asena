@@ -45,14 +45,18 @@ pub enum Type {
 
 #[derive(Debug, Clone)]
 pub struct Scheme {
-    pub variables: Vec<Kind>,
+    pub variables: Vec<FunctionId>,
     pub mono: Type,
 }
 
 #[derive(Error, Debug, Clone, PartialEq)]
+#[repr(u8)]
 pub enum TypeError {
     #[error("Unexpected expression kind {0} in a type-level context")]
     UnexpectedExprInType(TreeKind),
+
+    #[error("Unexpected expression kind {0} in a constraint context")]
+    UnexpectedInConstraint(TreeKind),
 
     #[error("Unexpected lexeme {0} in type-level, dependent-types aren't implemented yet")]
     UnexpectedTokenInType(TokenKind),
@@ -65,6 +69,12 @@ pub enum TypeError {
 
     #[error("Unsupported type classes in the type-level yet")]
     UnsupportedQualifiersInType,
+
+    #[error("Expected constraint, like: `\"Set\"` | `Constraint -> Constraint`")]
+    ExpectedConstraint,
+
+    #[error("Expected constraint name like `m`, given `m: Set -> Set`")]
+    ExpectedConstraintName,
 }
 
 impl Type {
@@ -117,7 +127,7 @@ mod tests {
 
     use asena_prec::*;
 
-    use crate::infer::{AsenaTyperStep, ClassEnvironment, TypeEnvironment};
+    use crate::infer::{AsenaTyper, ClassEnvironment, TypeEnvironment};
 
     #[test]
     fn it_works() {
@@ -126,20 +136,28 @@ mod tests {
         let mut class_env = ClassEnvironment::default();
 
         let mut tree = asena_file! {
-            A : Hello.World.Ola(10);
+            someone_name : Option String;
 
-            Main {
-                println "hello world"
-            }
+            unwrap [a: Set -> Set] (option: Option a): a {
+                todo()
+            };
+
+            println (message: String): Unit {
+                todo()
+            };
+
+            main {
+                println (unwrap someone_name)
+            };
         };
 
         let file = AsenaFile::new(tree.clone())
-            .walks(AsenaInfixCommandStep::new(&mut tree, &mut prec_table))
-            .walks(AsenaPrecStep {
+            .walks(AsenaInfixHandler::new(&mut tree, &mut prec_table))
+            .walks(AsenaPrecReorder {
                 prec_table: &prec_table,
                 reporter: &mut tree,
             })
-            .walks(AsenaTyperStep {
+            .walks(AsenaTyper {
                 type_env: &mut type_env,
                 class_env: &mut class_env,
                 reporter: &mut tree,

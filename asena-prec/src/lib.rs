@@ -18,13 +18,13 @@ pub use commands::*;
     StmtWalker,
     FileWalker
 )]
-pub struct AsenaPrecStep<'a, R: Reporter> {
+pub struct AsenaPrecReorder<'a, R: Reporter> {
     pub prec_table: &'a HashMap<FunctionId, Entry>,
     #[ast_reporter]
     pub reporter: &'a mut R,
 }
 
-impl<'a, R: Reporter> ExprWalker for AsenaPrecStep<'a, R> {
+impl<'a, R: Reporter> ExprWalker for AsenaPrecReorder<'a, R> {
     fn walk_expr_infix(&mut self, value: &Infix) {
         self.impl_reorder_prec(value);
     }
@@ -42,7 +42,7 @@ impl<'a, R: Reporter> ExprWalker for AsenaPrecStep<'a, R> {
     }
 }
 
-impl<'a, R: Reporter> AsenaPrecStep<'a, R> {
+impl<'a, R: Reporter> AsenaPrecReorder<'a, R> {
     /// Reorder the precedence of the binary expression.
     fn impl_reorder_prec(&mut self, binary: &impl Binary) -> Option<()> {
         let lhs = binary.lhs();
@@ -73,7 +73,7 @@ mod tests {
     use asena_grammar::{asena_decl, asena_expr, asena_file, asena_stmt};
     use asena_leaf::ast::*;
 
-    use crate::{commands::*, AsenaPrecStep};
+    use crate::{commands::*, AsenaPrecReorder};
 
     #[test]
     fn it_works() {
@@ -88,8 +88,8 @@ mod tests {
         };
 
         let file = AsenaFile::new(tree.clone())
-            .walks(AsenaInfixCommandStep::new(&mut tree, &mut prec_table))
-            .walks(AsenaPrecStep {
+            .walks(AsenaInfixHandler::new(&mut tree, &mut prec_table))
+            .walks(AsenaPrecReorder {
                 prec_table: &prec_table,
                 reporter: &mut tree,
             });
@@ -103,7 +103,7 @@ mod tests {
     fn expr_works() {
         let prec_table = default_prec_table();
         let mut tree = asena_expr!(foo(1 * 2 + 4));
-        let expr = Expr::new(tree.unwrap()).walks(AsenaPrecStep {
+        let expr = Expr::new(tree.unwrap()).walks(AsenaPrecReorder {
             prec_table: &prec_table,
             reporter: &mut tree,
         });
@@ -117,7 +117,7 @@ mod tests {
     fn stmt_works() {
         let prec_table = default_prec_table();
         let mut tree = asena_stmt!(bar(foo(1 * 2 + 4)));
-        let stmt = Stmt::new(tree.unwrap()).walks(AsenaPrecStep {
+        let stmt = Stmt::new(tree.unwrap()).walks(AsenaPrecReorder {
             prec_table: &prec_table,
             reporter: &mut tree,
         });
@@ -133,7 +133,7 @@ mod tests {
         let mut tree = asena_decl! {
             #eval 1 * 2 + 4
         };
-        let decl = Decl::new(tree.unwrap()).walks(AsenaPrecStep {
+        let decl = Decl::new(tree.unwrap()).walks(AsenaPrecReorder {
             prec_table: &prec_table,
             reporter: &mut tree,
         });
