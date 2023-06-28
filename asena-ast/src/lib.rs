@@ -1,6 +1,8 @@
-use asena_derive::{ast_debug, ast_leaf, ast_of, Leaf};
-use asena_leaf::ast::{GreenTree, Walkable};
 use std::fmt::{Debug, Formatter};
+
+use asena_derive::*;
+
+use asena_leaf::ast::{GreenTree, Walkable};
 
 /// Represents a true-false value, just like an wrapper to [bool], this represents if an integer
 /// value is signed, or unsigned.
@@ -11,7 +13,7 @@ pub enum Signed {
 }
 
 /// Represents the root of the asena source code file, it contains a set of declarations.
-#[derive(Default, Leaf, Clone)]
+#[derive(Default, Node, Clone)]
 pub struct AsenaFile(GreenTree);
 
 #[ast_of]

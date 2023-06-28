@@ -9,6 +9,7 @@ mod ast_build_fn;
 mod ast_command;
 mod ast_debug;
 mod ast_derive_leaf;
+mod ast_derive_node;
 mod ast_derive_step;
 mod ast_derive_walker;
 mod ast_from;
@@ -19,9 +20,17 @@ mod ast_terminal;
 mod ast_walkable;
 pub(crate) mod util;
 
+/// Proc-macro `Leaf` derives the Leaf attributes and trait for the given enum.
 #[proc_macro_derive(Leaf, attributes(ast_terminal, ast_from, ast_build_fn))]
 pub fn derive_leaf(input: TokenStream) -> TokenStream {
     ast_derive_leaf::expand_derive_leaf(input)
+}
+
+/// Proc-macro `Node` derives the Node attributes and trait for the given struct. The struct must
+/// have a field with `GreenTree` type.
+#[proc_macro_derive(Node)]
+pub fn derive_node(input: TokenStream) -> TokenStream {
+    ast_derive_node::expand_derive_node(input)
 }
 
 #[proc_macro_derive(Walker, attributes(ast_walker_traits, ast_impl_trait))]

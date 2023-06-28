@@ -1,4 +1,4 @@
-use asena_derive::{ast_debug, ast_leaf, ast_walkable, Leaf, Walker};
+use asena_derive::*;
 
 use asena_leaf::ast_enum;
 use asena_leaf::node::TreeKind::*;
@@ -6,7 +6,7 @@ use asena_leaf::node::TreeKind::*;
 use crate::*;
 
 /// Value body node, is a value body that is an `=`.
-#[derive(Default, Leaf, Clone)]
+#[derive(Default, Node, Clone)]
 pub struct Value(GreenTree);
 
 #[ast_of]
@@ -20,7 +20,7 @@ impl Value {
 }
 
 /// Do body node, is a value body that is an do-notation.
-#[derive(Default, Leaf, Clone)]
+#[derive(Default, Node, Clone)]
 pub struct Do(GreenTree);
 
 #[ast_of]

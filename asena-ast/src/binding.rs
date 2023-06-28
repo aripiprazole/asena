@@ -1,9 +1,10 @@
-use asena_derive::{ast_debug, ast_leaf, Leaf};
+use asena_derive::*;
+
 use asena_leaf::ast::{Leaf, Lexeme, Walkable};
 
 use crate::*;
 
-#[derive(Default, Leaf, Clone)]
+#[derive(Default, Node, Clone)]
 pub struct Binding(GreenTree);
 
 #[ast_of]

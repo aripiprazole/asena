@@ -6,7 +6,7 @@ use std::rc::Rc;
 
 use asena_span::{Loc, Spanned};
 
-use crate::node::Child;
+use crate::node::{Child, TreeKind};
 use crate::token::TokenKind;
 
 use super::node::Tree;
@@ -54,6 +54,14 @@ pub trait Leaf: Debug + Sized + Clone + Default {
 /// A `Literal` enum should be a good example for this trait.
 pub trait Terminal: Leaf + Sized + Debug + Sized + Clone + Default {
     fn terminal(token: Spanned<Token>) -> Option<Self>;
+}
+
+pub trait Virtual: Node {
+    fn create() -> Self {
+        Self::new(GreenTree::of(Self::tree_kind()))
+    }
+
+    fn tree_kind() -> TreeKind;
 }
 
 pub trait Located {

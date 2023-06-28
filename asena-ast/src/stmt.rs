@@ -1,4 +1,5 @@
-use asena_derive::{ast_debug, ast_leaf, ast_walkable, Leaf, Walker};
+use asena_derive::*;
+
 use asena_leaf::ast::GreenTree;
 use asena_leaf::ast_enum;
 use asena_leaf::node::TreeKind::*;
@@ -7,7 +8,7 @@ use asena_span::Spanned;
 
 use crate::*;
 
-#[derive(Default, Leaf, Clone)]
+#[derive(Default, Node, Clone)]
 pub struct Ask(GreenTree);
 
 #[ast_of]
@@ -25,7 +26,7 @@ impl Ask {
     }
 }
 
-#[derive(Default, Leaf, Clone)]
+#[derive(Default, Node, Clone)]
 pub struct Set(GreenTree);
 
 #[ast_of]
@@ -43,7 +44,7 @@ impl Set {
     }
 }
 
-#[derive(Default, Leaf, Clone)]
+#[derive(Default, Node, Clone)]
 pub struct Return(GreenTree);
 
 #[ast_of]
@@ -58,7 +59,7 @@ impl Return {
     }
 }
 
-#[derive(Default, Leaf, Clone)]
+#[derive(Default, Node, Clone)]
 pub struct Eval(GreenTree);
 
 #[ast_of]

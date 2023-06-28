@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 use std::fmt::{Debug, Display};
 
-use asena_derive::{ast_leaf, ast_of, Leaf};
+use asena_derive::*;
 
 use asena_leaf::ast::{GreenTree, Leaf, Lexeme, Located, Node, Terminal, Walkable};
 use asena_leaf::node::TreeKind::*;
@@ -142,7 +142,7 @@ impl<W> Walkable<W> for Local {
 /// Identifier's key to a global identifier, that's not declared locally, almost everything with
 /// Pascal Case, as a language pattern. This can contain symbols like: `Person.new`, as it can
 /// contain `.`.
-#[derive(Default, Leaf, Clone)]
+#[derive(Default, Node, Clone)]
 pub struct QualifiedPath(GreenTree);
 
 #[ast_of]

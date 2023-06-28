@@ -1,4 +1,5 @@
-use asena_derive::{ast_debug, ast_leaf, ast_walkable, Leaf, Walker};
+use asena_derive::*;
+
 use asena_leaf::ast::{Leaf, Lexeme};
 use asena_leaf::ast_enum;
 use asena_leaf::node::TreeKind::*;
@@ -21,7 +22,7 @@ pub mod command;
 /// ```haskell
 /// Print : Person -> IO ()
 /// ```
-#[derive(Default, Leaf, Clone)]
+#[derive(Default, Node, Clone)]
 pub struct Signature(GreenTree);
 
 #[ast_of]
@@ -57,7 +58,7 @@ impl Signature {
 /// ```haskell
 /// Print person = pure ()
 /// ```
-#[derive(Default, Leaf, Clone)]
+#[derive(Default, Node, Clone)]
 pub struct Assign(GreenTree);
 
 #[ast_of]
@@ -88,7 +89,7 @@ impl Assign {
 /// ```haskell
 /// #eval 1 + 1 -- 2
 /// ```
-#[derive(Default, Leaf, Clone)]
+#[derive(Default, Node, Clone)]
 pub struct Command(GreenTree);
 
 #[ast_of]
@@ -118,7 +119,7 @@ impl Command {
 ///   }
 /// }
 /// ```
-#[derive(Default, Leaf, Clone)]
+#[derive(Default, Node, Clone)]
 pub struct Class(GreenTree);
 
 #[ast_of]
@@ -147,7 +148,7 @@ impl Class {
 /// ```haskell
 /// use IO;
 /// ```
-#[derive(Default, Leaf, Clone)]
+#[derive(Default, Node, Clone)]
 pub struct Use(GreenTree);
 
 #[ast_of]
@@ -169,7 +170,7 @@ impl Use {
 ///   pure (a) { ... }
 /// }
 /// ```
-#[derive(Default, Leaf, Clone)]
+#[derive(Default, Node, Clone)]
 pub struct Instance(GreenTree);
 
 #[ast_of]
@@ -216,7 +217,7 @@ pub type DeclRef = Spanned<Decl>;
 /// ```
 ///
 /// The constraint node can be used on `where` clauses.
-#[derive(Default, Leaf, Clone)]
+#[derive(Default, Node, Clone)]
 pub struct Constraint(GreenTree);
 
 #[ast_of]
@@ -243,7 +244,7 @@ impl Leaf for Constraint {
 /// ```
 ///
 /// The constraint node should be wrote in a class context.
-#[derive(Default, Leaf, Clone)]
+#[derive(Default, Node, Clone)]
 pub struct Field(GreenTree);
 
 #[ast_of]
@@ -273,7 +274,7 @@ impl Field {
 ///
 /// The method node is a simple sugar for declaring it on the top level with the class name concatenated,
 /// like: `sayHello`, in the `Person` class, should be simply `Person.sayHello`.
-#[derive(Default, Leaf, Clone)]
+#[derive(Default, Node, Clone)]
 pub struct Method(GreenTree);
 
 #[ast_of]

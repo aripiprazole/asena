@@ -1,4 +1,4 @@
-use asena_derive::{ast_debug, ast_leaf, ast_walkable, Leaf};
+use asena_derive::*;
 
 use asena_leaf::ast::{GreenTree, Leaf, Lexeme, Node};
 use asena_leaf::node::TreeKind::*;
@@ -6,7 +6,7 @@ use asena_leaf::token::TokenKind;
 
 use crate::*;
 
-#[derive(Default, Leaf, Clone)]
+#[derive(Default, Node, Clone)]
 pub struct Parameter(GreenTree);
 
 #[ast_of]
