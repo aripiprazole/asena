@@ -35,8 +35,6 @@ pub type LeafKey = &'static str;
 pub trait Leaf: Debug + Sized + Clone + Default {
     /// Creates a new node from the given tree and if the given tree is not matched,
     /// returns `None`.
-    ///
-    /// TODO: Change parameter to GreenTree, please.
     fn make(tree: GreenTree) -> Option<Self> {
         let _ = tree;
         None
@@ -159,12 +157,14 @@ impl<T: Leaf> Leaf for Vec<T> {
 
 mod cursor;
 mod green;
+mod key;
 mod lexeme;
 mod tree;
 mod walk;
 
 pub use cursor::*;
 pub use green::*;
+pub use key::*;
 pub use lexeme::*;
 pub use tree::*;
 pub use walk::*;

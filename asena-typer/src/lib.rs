@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use asena_leaf::{node::TreeKind, token::TokenKind};
+use asena_leaf::{ast_key, node::TreeKind, token::TokenKind};
 use asena_report::InternalError;
 use thiserror::Error;
 
@@ -125,6 +125,11 @@ impl InternalError for TypeError {
     fn kind(&self) -> asena_report::DiagnosticKind {
         asena_report::DiagnosticKind::Error
     }
+}
+
+ast_key! {
+    /// The key for the `name` field of `Global`.
+    pub struct TypeKey : Type;
 }
 
 #[cfg(test)]

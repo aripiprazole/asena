@@ -1,8 +1,16 @@
 name: Option String;
 
-Option.unwrap[a: Set -> Set](option: Option a): a {
-    todo()
-};
+enum Maybe[a] {
+    Just(a),
+    Nothing;
+
+    fun unwrap(self): a {
+        match self {
+            Just(value) -> value,
+            Nothing -> panic("Called `Maybe.unwrap` in a `Nothing` value")
+        }
+    }
+}
 
 IO.println(message: String): Unit {
     todo()

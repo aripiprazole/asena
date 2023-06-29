@@ -1,4 +1,4 @@
-use std::{borrow::Cow, cell::RefCell, collections::HashMap, rc::Rc};
+use std::{any::Any, borrow::Cow, cell::RefCell, collections::HashMap, rc::Rc};
 
 use asena_span::Spanned;
 
@@ -18,6 +18,8 @@ pub enum GreenTree {
         children: HashMap<LeafKey, Spanned<Child>>,
 
         synthetic: bool,
+
+        keys: Rc<RefCell<HashMap<&'static str, Rc<dyn Any>>>>,
 
         /// Lazy names' hash map, they have to exist, to make the tree mutable.
         ///
@@ -47,6 +49,7 @@ impl Default for GreenTree {
             data: Spanned::default(),
             children: HashMap::new(),
             synthetic: false,
+            keys: Rc::new(RefCell::new(HashMap::new())),
             names: Rc::new(RefCell::new(HashMap::new())),
         }
     }
@@ -57,6 +60,7 @@ impl GreenTree {
         Self::Leaf {
             children: compute_named_children(&data),
             names: Rc::new(RefCell::new(HashMap::new())),
+            keys: Rc::new(RefCell::new(HashMap::new())),
             synthetic: false,
             data,
         }
@@ -69,6 +73,7 @@ impl GreenTree {
         Self::Leaf {
             children: HashMap::default(),
             names: Rc::new(RefCell::new(HashMap::new())),
+            keys: Rc::new(RefCell::new(HashMap::new())),
             synthetic: true,
             data,
         }
@@ -81,6 +86,7 @@ impl GreenTree {
             } => Self::Leaf {
                 children: compute_named_children(data),
                 names: Rc::new(RefCell::new(HashMap::new())),
+                keys: Rc::new(RefCell::new(HashMap::new())),
                 synthetic: *synthetic,
                 data: data.clone(),
             },
@@ -94,6 +100,34 @@ impl GreenTree {
     {
         if let Self::Leaf { names, .. } = self {
             names.borrow_mut().insert(name, Rc::new(Cursor::of(value)));
+        }
+    }
+
+    pub fn insert_key<T: Key>(&self, key: T, value: T::Value) -> Rc<T::Value> {
+        if let Self::Leaf { keys, .. } = self {
+            keys.borrow_mut()
+                .insert(key.name(), Rc::new(value))
+                .unwrap()
+                .downcast::<T::Value>()
+                .unwrap()
+        } else {
+            Rc::new(value)
+        }
+    }
+
+    pub fn key<T: Key>(&self, key: T) -> Rc<T::Value> {
+        let value = T::Value::default();
+        if let Self::Leaf { keys, .. } = self {
+            if let Some(x) = keys.borrow().get(key.name()) {
+                return x.clone().downcast::<T::Value>().unwrap();
+            }
+            keys.borrow_mut()
+                .insert(key.name(), Rc::new(value))
+                .unwrap()
+                .downcast::<T::Value>()
+                .unwrap()
+        } else {
+            Rc::new(value)
         }
     }
 
@@ -277,12 +311,14 @@ impl Debug for GreenTree {
                 names,
                 children,
                 synthetic,
+                keys,
             } => f
                 .debug_struct("Leaf")
                 .field("data", data)
                 .field("synthetic", synthetic)
                 .field("names", names)
                 .field("children", children)
+                .field("keys", keys)
                 .finish(),
             Self::Token(lexeme) => f
                 .debug_struct("Token")
