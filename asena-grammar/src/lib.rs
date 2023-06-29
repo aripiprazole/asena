@@ -10,6 +10,9 @@ use asena_parser::Parser;
 
 pub mod macros;
 
+use asena_report::quickfix;
+use asena_report::Fragment::Insert;
+use asena_report::Quickfix;
 pub use macros::*;
 
 const PARAM_LIST_RECOVERY: &[TokenKind] = &[Semi, Colon, LeftBrace];
@@ -693,7 +696,9 @@ fn last_semi(p: &mut Parser) {
 
 fn semi_eof(p: &mut Parser) -> bool {
     if !p.eat(Semi) {
-        p.report(MissingSemiError);
+        p.fixable(MissingSemiError, |token| {
+            quickfix!(before, token.span, [Insert(";".into())])
+        });
     } else if p.lookahead(0) == RightBrace {
         p.warning(UeselessSemiError);
     }

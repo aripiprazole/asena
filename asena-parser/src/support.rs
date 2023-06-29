@@ -4,7 +4,7 @@ use std::cell::Cell;
 use crate::error::ParseError;
 
 use asena_leaf::node::{Token, TokenKind, TreeKind};
-use asena_report::{Diagnostic, DiagnosticKind};
+use asena_report::{Diagnostic, DiagnosticKind, Quickfix};
 use asena_span::Spanned;
 
 use super::event::{Event, MarkClosed, MarkOpened};
@@ -108,6 +108,22 @@ impl<'a> Parser<'a> {
         error.kind = DiagnosticKind::Warning;
         self.errors.push(error);
         None
+    }
+
+    pub fn fixable<const N: usize, F>(&mut self, error: ParseError, fixes: F)
+    where
+        F: FnOnce(&Spanned<Token>) -> [Quickfix; N],
+    {
+        if let Some(token) = self.nth(0) {
+            let fixes = fixes(token).to_vec();
+            if self.eof() {
+                let error = self.build_error(error.clone());
+                self.errors
+                    .push(Diagnostic::new(error).add_fixes(fixes.clone()));
+            }
+            let error = self.build_error(error);
+            self.errors.push(Diagnostic::new(error).add_fixes(fixes));
+        }
     }
 
     pub fn report(&mut self, error: ParseError) -> Option<MarkClosed> {

@@ -5,7 +5,9 @@ use std::rc::Rc;
 use std::{error::Error, fmt::Display};
 
 use asena_leaf::node::Tree;
-use asena_span::Spanned;
+use asena_span::{Loc, Spanned};
+
+pub use Fragment::*;
 
 pub trait InternalError: Error {
     fn code(&self) -> u16 {
@@ -42,6 +44,25 @@ impl InternalError for BoxInternalError {
     }
 }
 
+#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, Copy)]
+pub enum Position {
+    After,
+    Before,
+}
+
+#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Fragment {
+    Insert(String),
+    Remove(String),
+}
+
+#[derive(Debug, Clone)]
+pub struct Quickfix {
+    pub loc: Loc,
+    pub position: Position,
+    pub message: Vec<Fragment>,
+}
+
 #[derive(Debug, Clone)]
 pub struct Report<T: InternalError> {
     pub path: Option<PathBuf>,
@@ -55,6 +76,7 @@ pub struct Diagnostic<T: InternalError> {
     pub kind: DiagnosticKind,
     pub code: u16,
     pub message: Spanned<T>,
+    pub quickfixes: Vec<Quickfix>,
     pub children: Vec<Diagnostic<T>>,
 }
 
@@ -87,6 +109,7 @@ impl<E: InternalError> Report<E> {
             code: message.code(),
             message,
             children: vec![],
+            quickfixes: vec![],
         });
 
         self.diagnostics.last_mut().unwrap()
@@ -114,7 +137,13 @@ impl<E: InternalError> Diagnostic<E> {
             code: error.code(),
             message: error,
             children: vec![],
+            quickfixes: vec![],
         }
+    }
+
+    pub fn add_fixes(mut self, fixes: Vec<Quickfix>) -> Self {
+        self.quickfixes.extend(fixes);
+        self
     }
 
     pub fn add_child(mut self, message: Spanned<E>) -> Self {
@@ -123,6 +152,7 @@ impl<E: InternalError> Diagnostic<E> {
             code: message.code(),
             message,
             children: vec![],
+            quickfixes: vec![],
         });
 
         self
@@ -147,21 +177,64 @@ impl<E: InternalError> Diagnostic<E> {
     {
         use ariadne::{ColorGenerator, Report, ReportKind, Source};
 
+        let mut builder = Report::<Range<usize>>::build(ReportKind::Error, (), 0)
+            .with_code(format!("E{:03X}", self.code))
+            .with_message(self.message.value().to_string());
         let mut colors = ColorGenerator::new();
         let mut children = vec![];
         children.push(self.clone());
         children.extend(self.children.clone());
 
-        Report::<Range<usize>>::build(ReportKind::Error, (), 0)
-            .with_code(format!("E{:03X}", self.code))
-            .with_message(self.message.value().to_string())
-            .with_labels(
-                children
+        builder = builder.with_labels(
+            children
+                .iter()
+                .map(|diagnostic| diagnostic.as_label(&mut colors)),
+        );
+        if !self.quickfixes.is_empty() {
+            let mut fixes = vec![];
+            for fix in &self.quickfixes.clone() {
+                let loc = fix.loc.clone();
+                let message = fix
+                    .message
                     .iter()
-                    .map(|diagnostic| diagnostic.as_label(&mut colors)),
-            )
+                    .map(|x| x.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", ");
+
+                fixes.push(format!("{message} at {loc}"));
+            }
+            builder = builder.with_help(format!("Can be fixed by: {}", fixes.join("; ")))
+        }
+        builder
             .finish()
             .print(Source::from(source.clone()))
             .unwrap();
     }
+}
+
+impl Display for Fragment {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Insert(code) => write!(f, "Insert `{}`", code),
+            Remove(code) => write!(f, "Remove `{}`", code),
+        }
+    }
+}
+
+#[macro_export]
+macro_rules! quickfix {
+    (before, $loc:expr, [$($fragment:expr),*]) => {
+        [Quickfix {
+            loc: $loc.clone(),
+            position: $crate::Position::Before,
+            message: vec![$($fragment),*],
+        }]
+    };
+    (after, $loc:expr, [$($fragment:expr),*]) => {
+        [Quickfix {
+            loc: $loc.clone(),
+            position: $crate::Position::After,
+            message: vec![$($fragment),*],
+        }]
+    };
 }

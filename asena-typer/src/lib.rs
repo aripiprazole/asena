@@ -145,15 +145,15 @@ mod tests {
 
             unwrap[a: Set -> Set](option: Option a): a {
                 todo()
-            };
+            }
 
             println(message: String): Unit {
                 todo()
-            };
+            }
 
             main {
                 println (unwrap someone_name)
-            };
+            }
         };
 
         let file = AsenaFile::new(tree.clone())

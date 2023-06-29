@@ -1,5 +1,5 @@
 use std::{
-    fmt::Debug,
+    fmt::{Debug, Display},
     ops::{Deref, DerefMut, Range},
 };
 
@@ -8,6 +8,15 @@ pub enum Loc {
     #[default]
     Synthetic,
     Concrete(Range<usize>),
+}
+
+impl Display for Loc {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Loc::Synthetic => write!(f, "*synthetic*"),
+            Loc::Concrete(range) => write!(f, "{}", range.start),
+        }
+    }
 }
 
 pub trait Span {
