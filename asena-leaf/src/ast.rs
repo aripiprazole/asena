@@ -96,12 +96,12 @@ pub trait Node: Sized + Debug + Clone {
 impl<T: Terminal + Debug + Default + Clone + 'static> Leaf for T {
     fn make(tree: GreenTree) -> Option<Self> {
         match tree {
-            GreenTree::Leaf { data, .. } => {
-                if data.children.is_empty() {
+            GreenTree::Leaf(leaf) => {
+                if leaf.data.children.is_empty() {
                     return None;
                 }
 
-                Leaf::terminal(data.clone().swap(data.single().clone()))
+                Leaf::terminal(leaf.data.clone().swap(leaf.data.single().clone()))
             }
             GreenTree::Token(lexeme) => Leaf::terminal(lexeme.token),
             _ => None,
@@ -123,9 +123,9 @@ impl<T: Leaf> Leaf for Option<T> {
 impl<T: Leaf> Leaf for Vec<T> {
     fn make(tree: GreenTree) -> Option<Self> {
         match tree {
-            GreenTree::Leaf { data, .. } => {
+            GreenTree::Leaf(leaf) => {
                 let mut items = vec![];
-                for child in &data.children {
+                for child in &leaf.data.children {
                     match &child.value {
                         Child::Tree(tree) => {
                             let green_child = GreenTree::new(child.replace(tree.clone()));

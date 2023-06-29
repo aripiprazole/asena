@@ -34,7 +34,7 @@ impl<T: Leaf> Cursor<T> {
     pub fn as_new_node(&self) -> Self {
         Self {
             _marker: PhantomData,
-            value: Rc::new(RefCell::new(self.value.borrow().clone())),
+            value: Rc::new(RefCell::new(self.value.borrow().as_new_node())),
         }
     }
 }
@@ -50,7 +50,7 @@ impl<T: Node + Leaf> Cursor<T> {
         T: Located + 'static,
     {
         match &*self.value.borrow() {
-            GreenTree::Leaf { data, .. } => data.replace(T::new(data.clone())),
+            GreenTree::Leaf(leaf) => leaf.data.replace(T::new(leaf.data.clone())),
             GreenTree::Token(lexeme) => {
                 let Some(value) = lexeme.downcast_ref::<T>() else {
                     return Spanned::default();
@@ -69,7 +69,7 @@ impl<T: Node + Leaf> Cursor<T> {
     /// Returns the current cursor if it's not empty, otherwise returns false.
     pub fn is_empty(&self) -> bool {
         match &*self.value.borrow() {
-            GreenTree::Leaf { data, .. } => !data.children.is_empty(),
+            GreenTree::Leaf(leaf) => !leaf.data.children.is_empty(),
             GreenTree::Vec(children) => !children.is_empty(),
             _ => false,
         }
@@ -128,7 +128,8 @@ impl<T: Node + Leaf> Node for Vec<T> {
                 .into_iter()
                 .map(|value| T::new(value))
                 .collect::<Vec<_>>(),
-            GreenTree::Leaf { data, .. } => data
+            GreenTree::Leaf(leaf) => leaf
+                .data
                 .children
                 .iter()
                 .map(|child| match child.value {
