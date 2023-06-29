@@ -3,7 +3,7 @@ use quote::quote;
 use syn::{parse_macro_input, Data, DeriveInput};
 
 #[allow(clippy::redundant_clone)]
-pub fn expand_ast_derive_step(input: TokenStream) -> TokenStream {
+pub fn expand_ast_derive_reporter(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let name = input.ident.clone();
 
