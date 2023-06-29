@@ -140,21 +140,7 @@ mod tests {
         let mut type_env = TypeEnvironment::default();
         let mut class_env = ClassEnvironment::default();
 
-        let mut tree = asena_file! {
-            someone_name: Option String;
-
-            unwrap[a: Set -> Set](option: Option a): a {
-                todo()
-            }
-
-            println(message: String): Unit {
-                todo()
-            }
-
-            main {
-                println (unwrap someone_name)
-            }
-        };
+        let mut tree = parse_asena_file!("./test.ase");
 
         let file = AsenaFile::new(tree.clone())
             .walks(AsenaInfixHandler::new(&mut tree, &mut prec_table))

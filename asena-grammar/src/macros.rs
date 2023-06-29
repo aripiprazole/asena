@@ -63,6 +63,21 @@ macro_rules! asena_file {
     }};
 }
 
+#[macro_export]
+macro_rules! parse_asena_file {
+    ($file:expr) => {{
+        let string = include_str!($file);
+
+        $crate::new_reportable(
+            string,
+            asena_parser::Parser::from(asena_lexer::Lexer::new(string))
+                .run($crate::file)
+                .build_tree()
+                .unwrap(),
+        )
+    }};
+}
+
 #[derive(Clone)]
 pub struct Reportable<R: Reporter> {
     pub reporter: R,
