@@ -16,6 +16,9 @@ pub fn expand_ast_leaf(_args: TokenStream, input: TokenStream) -> TokenStream {
     input.sig.output = parse_quote!(-> asena_leaf::ast::Cursor<#output>);
 
     let mut impl_fn_tokens = input.clone();
+    impl_fn_tokens.attrs.push(parse_quote! {
+        #[doc(hidden)]
+    });
     impl_fn_tokens.sig.ident = Ident::new(&format!("_impl_{name}"), Span::call_site());
 
     let impl_name = impl_fn_tokens.sig.ident.clone();
