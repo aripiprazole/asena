@@ -8,6 +8,6 @@ If f false _     otherwise = otherwise;
 
 Main {
   let person = Person.new "Sofia";
-  person.sayHello;
+  person.sayHello
   println "Hello, world!"
 }

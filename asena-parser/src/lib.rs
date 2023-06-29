@@ -42,7 +42,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn run(mut self, grammar: fn(&mut Parser)) -> Self {
+    pub fn run<A>(mut self, grammar: fn(&mut Parser) -> A) -> Self {
         grammar(&mut self);
         self
     }

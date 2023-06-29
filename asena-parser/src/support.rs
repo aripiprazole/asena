@@ -128,6 +128,10 @@ impl<'a> Parser<'a> {
         kind == self.lookahead(0)
     }
 
+    pub fn at_any(&self, kind: &[TokenKind]) -> bool {
+        kind.contains(&self.lookahead(0))
+    }
+
     pub fn lookahead(&self, lookahead: usize) -> TokenKind {
         self.nth(lookahead)
             .map_or(TokenKind::Eof, |token| token.value.kind)

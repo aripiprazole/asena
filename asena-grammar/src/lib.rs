@@ -3,6 +3,7 @@ use asena_leaf::node::TreeKind;
 use asena_leaf::node::TreeKind::*;
 use asena_leaf::token::TokenKind;
 
+use asena_parser::error::ParseError;
 use asena_parser::error::ParseError::*;
 use asena_parser::event::MarkClosed;
 use asena_parser::Parser;
@@ -10,6 +11,38 @@ use asena_parser::Parser;
 pub mod macros;
 
 pub use macros::*;
+
+const PARAM_LIST_RECOVERY: &[TokenKind] = &[Semi, Colon, LeftBrace];
+const STMT_RECOVERY: &[TokenKind] = &[
+    LeftBrace,
+    ClassKeyword,
+    EnumKeyword,
+    RecordKeyword,
+    TypeKeyword,
+    TraitKeyword,
+    UseKeyword,
+];
+
+const EXPR_FIRST: &[TokenKind] = &[
+    Identifier,
+    LeftBracket,
+    LeftParen,
+    Str,
+    TrueKeyword,
+    FalseKeyword,
+    Int8,
+    Int16,
+    Int32,
+    Int64,
+    Int128,
+    UInt8,
+    UInt16,
+    UInt32,
+    UInt64,
+    UInt128,
+    Float32,
+    Float64,
+];
 
 /// File = Decl*
 pub fn file(p: &mut Parser) {
@@ -26,26 +59,22 @@ pub fn file(p: &mut Parser) {
     p.close(m, File);
 }
 
-/// Decl = DeclCommand | DeclSignature | DeclAssign
+/// Decl = DeclUse | DeclCommand | DeclSignature | DeclAssign
 pub fn decl(p: &mut Parser) {
     if p.at(UseKeyword) {
-        decl_use(p);
-        return;
+        return decl_use(p);
     }
 
     if p.at(Hash) {
-        decl_command(p);
-        return;
+        return decl_command(p);
     }
 
-    let mut decl = p.savepoint();
-    decl_signature(&mut decl);
+    let decl = p.savepoint().run(decl_assign);
     if !decl.has_errors() {
-        p.return_at(decl);
-        return;
-    }
+        return p.return_at(decl);
+    };
 
-    decl_assign(p);
+    decl_signature(p)
 }
 
 /// DeclCommand = '#' Global Expr* ';'
@@ -92,7 +121,10 @@ pub fn decl_signature(p: &mut Parser) {
     global(p);
     p.field("name");
     while !p.eof() && p.at(LeftParen) || p.at(LeftBracket) {
-        param(p);
+        if param(p) && p.at_any(PARAM_LIST_RECOVERY) {
+            p.report(ParseError::ExpectedParameterError);
+            break;
+        }
     }
     if p.eat(Colon) {
         type_expr(p);
@@ -102,7 +134,9 @@ pub fn decl_signature(p: &mut Parser) {
                 stmt(p);
             }
             while !p.eof() && !p.at(RightBrace) && semi(p) {
-                stmt(p);
+                if stmt(p) {
+                    break;
+                }
             }
             last_semi(p);
             p.expect(RightBrace);
@@ -113,7 +147,9 @@ pub fn decl_signature(p: &mut Parser) {
             stmt(p);
         }
         while !p.eof() && !p.at(RightBrace) && semi(p) {
-            stmt(p);
+            if stmt(p) {
+                break;
+            }
         }
         last_semi(p);
         p.expect(RightBrace);
@@ -123,7 +159,7 @@ pub fn decl_signature(p: &mut Parser) {
 }
 
 /// Param = ImplicitParam | ExplicitParam
-pub fn param(p: &mut Parser) {
+pub fn param(p: &mut Parser) -> bool {
     let m = p.open();
     let token = p.peek();
 
@@ -140,27 +176,33 @@ pub fn param(p: &mut Parser) {
             type_expr(p);
             p.expect(RightBracket);
         }
-        _ => {}
+        _ => return true,
     }
 
     p.close(m, Param);
+    false
 }
 
-pub fn stmt(p: &mut Parser) {
+pub fn stmt(p: &mut Parser) -> bool {
     match p.lookahead(0) {
         ReturnKeyword => stmt_return(p),
         LetKeyword => stmt_let(p),
         _ => {
-            let mut ask = p.savepoint();
-            stmt_ask(&mut ask);
-            if !ask.has_errors() {
-                p.return_at(ask);
-                return;
-            }
+            if p.at_any(EXPR_FIRST) {
+                let ask = p.savepoint().run(stmt_ask);
+                if !ask.has_errors() {
+                    p.return_at(ask);
+                    return false;
+                }
 
-            stmt_expr(p)
+                stmt_expr(p)
+            } else if p.at_any(STMT_RECOVERY) {
+                p.report(ParseError::ExpectedStmtError);
+                return true;
+            }
         }
     }
+    false
 }
 
 pub fn stmt_return(p: &mut Parser) {
