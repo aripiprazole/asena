@@ -336,6 +336,9 @@ impl Located for GreenTree {
     }
 }
 
+/// Computes the named children of the given tree, and returns a hash map with the named children.
+///
+/// This function is used to compute the tree that the `name` property is not [None].
 fn compute_named_children(data: &Spanned<Tree>) -> HashMap<LeafKey, Spanned<Child>> {
     let mut named_children = HashMap::new();
 
