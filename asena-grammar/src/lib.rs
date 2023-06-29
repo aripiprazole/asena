@@ -64,20 +64,18 @@ pub fn file(p: &mut Parser) {
 
 /// Decl = DeclUse | DeclCommand | DeclSignature | DeclAssign
 pub fn decl(p: &mut Parser) {
-    if p.at(UseKeyword) {
-        return decl_use(p);
+    match p.lookahead(0) {
+        UseKeyword => decl_use(p),
+        Hash => decl_command(p),
+        _ => {
+            let decl = p.savepoint().run(decl_assign);
+            if !decl.has_errors() {
+                return p.return_at(decl);
+            };
+
+            decl_signature(p)
+        }
     }
-
-    if p.at(Hash) {
-        return decl_command(p);
-    }
-
-    let decl = p.savepoint().run(decl_assign);
-    if !decl.has_errors() {
-        return p.return_at(decl);
-    };
-
-    decl_signature(p)
 }
 
 /// DeclCommand = '#' Global Expr* ';'
@@ -631,7 +629,12 @@ pub fn lit(p: &mut Parser, kind: TreeKind) -> Option<MarkClosed> {
 
 /// Global = <<Terminal>>
 pub fn global(p: &mut Parser) {
-    p.terminal(QualifiedPathTree);
+    let m = p.open();
+    p.advance();
+    while p.eat(Dot) && !p.eof() {
+        p.advance();
+    }
+    p.close(m, QualifiedPathTree);
 }
 
 /// Symbol = <<Terminal>>

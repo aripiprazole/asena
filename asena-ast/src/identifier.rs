@@ -41,9 +41,11 @@ impl From<&str> for FunctionId {
 
 impl Terminal for FunctionId {
     fn terminal(token: Spanned<Token>) -> Option<Self> {
-        let text = token.text.clone();
-
-        Some(FunctionId(text))
+        Some(match token.kind {
+            TokenKind::Identifier => Self(token.text.clone()),
+            TokenKind::Symbol => Self(token.text.clone()),
+            _ => return None,
+        })
     }
 }
 

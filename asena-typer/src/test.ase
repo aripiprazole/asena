@@ -1,14 +1,13 @@
+name: Option String;
 
-someone_name: Option String;
-
-unwrap[a: Set -> Set](option: Option a): a {
+Option.unwrap[a: Set -> Set](option: Option a): a {
     todo()
-}
+};
 
-println(message: String): Unit {
+IO.println(message: String): Unit {
     todo()
-}
+};
 
-main {
-    println (unwrap someone_name)
+Main {
+    IO.println (Option.unwrap name)
 }
