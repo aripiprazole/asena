@@ -31,6 +31,8 @@ pub enum Type {
     #[default]
     Error,
 
+    Unit,
+
     /// Type variable with a given [FunctionId], to be filled later.
     Hole(Option<FunctionId>),
 
@@ -86,6 +88,7 @@ impl Type {
     pub fn kind(&self) -> Kind {
         match self {
             Type::Error => Kind::Error,
+            Type::Unit => Kind::Star,
             Type::Constructor(_, kind) => kind.clone(),
             Type::Variable(_, kind) => kind.clone(),
             Type::App(lhs, _) => lhs.kind(),

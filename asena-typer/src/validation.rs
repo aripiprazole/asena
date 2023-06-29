@@ -185,7 +185,10 @@ impl From<Typed> for Type {
 impl From<Expr> for Type {
     fn from(value: Expr) -> Self {
         match value {
-            Expr::Group(value) => value.value().into(),
+            Expr::Group(value) => match value.value() {
+                Some(value) => value.into(),
+                None => Type::Unit,
+            },
             Expr::Local(local) if is_type_constructor(&local) => {
                 Type::Constructor(local.to_fn_id(), Kind::Star)
             }

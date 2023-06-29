@@ -1,3 +1,22 @@
+//! Expression module, contains all the expressions that can be used in the language. The following
+//! expressions are concrete:
+//!
+//! - [Group]
+//! - [Infix]
+//! - [Accessor]
+//! - [App]
+//! - [Dsl] TODO
+//! - [Array] TODO
+//! - [Lam] TODO
+//! - [Let] TODO
+//! - [Ann]
+//! - [Qual]
+//! - [Pi]
+//! - [Sigma] TODO
+//! - [Local]
+//! - [Help]
+//!
+
 use std::fmt::Debug;
 
 use asena_derive::*;
@@ -24,8 +43,13 @@ pub struct Group(GreenTree);
 #[ast_debug]
 #[ast_walkable(PatWalker, StmtWalker, ExprWalker)]
 impl Group {
+    /// Returns the expression inside the group, this is the expression that is surrounded by
+    /// parenthesis.
+    ///
+    /// If the group is empty, then it will return `None`. It means that the [Group] is actually an
+    /// unit expression/type, like `()`.
     #[ast_leaf]
-    pub fn value(&self) -> Expr {
+    pub fn value(&self) -> Option<Expr> {
         self.at(1)
     }
 }
@@ -450,7 +474,7 @@ pub struct Help(GreenTree);
 impl Help {
     #[ast_leaf]
     pub fn value(&self) -> Expr {
-        self.at(0)
+        self.filter().first()
     }
 }
 
