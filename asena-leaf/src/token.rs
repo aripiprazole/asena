@@ -8,7 +8,7 @@ pub struct Text {
     pub code: String,
 }
 
-#[derive(Debug, Clone, Hash)]
+#[derive(Debug, Clone, Hash, Default)]
 pub struct Token {
     pub name: Option<&'static str>,
     pub kind: TokenKind,
@@ -16,8 +16,9 @@ pub struct Token {
     pub full_text: Text,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum TokenKind {
+    #[default]
     Error,
 
     Nat,

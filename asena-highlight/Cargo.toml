@@ -6,6 +6,7 @@ version = "0.1.0"
 
 [dependencies]
 asena-ast = {path = "../asena-ast"}
+asena-derive = {path = "../asena-derive"}
 asena-grammar = {path = "../asena-grammar"}
 asena-leaf = {path = "../asena-leaf"}
 asena-lexer = {path = "../asena-lexer"}

@@ -141,6 +141,21 @@ impl GreenTree {
     }
 
     /// Returns a terminal node, if it's not an error node.
+    pub fn any_token(&self, kind: TokenKind) -> Vec<Spanned<Token>> {
+        match self {
+            Self::Leaf(leaf) => leaf.data.token(kind),
+            _ => vec![],
+        }
+    }
+
+    pub fn token(&self, kind: TokenKind) -> Spanned<Token> {
+        match self {
+            Self::Leaf(leaf) => leaf.data.token(kind).first().cloned().unwrap_or_default(),
+            _ => Default::default(),
+        }
+    }
+
+    /// Returns a terminal node, if it's not an error node.
     pub fn terminal<T: Terminal + 'static>(&self, nth: usize) -> Cursor<Lexeme<T>> {
         match self {
             Self::Leaf(leaf) => leaf.data.terminal(nth),

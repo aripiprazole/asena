@@ -483,7 +483,6 @@ ast_enum! {
     #[ast_walker_traits(PatWalker, StmtWalker)]
     /// The expression enum, it is the main type of the language.
     pub enum Expr {
-        QualifiedPath   <- QualifiedPathTree,
         Group           <- ExprGroup,
         Infix           <- ExprBinary,
         Accessor        <- ExprAccessor,

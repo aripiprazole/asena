@@ -111,6 +111,20 @@ impl Local {
         self.0.as_str()
     }
 
+    /// Checks if the local's identifier is equal to the given string
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use asena_ast::Local;
+    ///
+    /// let local = Local::new(0..0, "foo");
+    /// assert!(local.is_ident("foo"));
+    /// ```
+    pub fn is_ident(&self, id: &str) -> bool {
+        self.0 == id
+    }
+
     pub fn to_fn_id(&self) -> FunctionId {
         FunctionId::new(&self.0)
     }

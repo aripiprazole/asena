@@ -30,7 +30,7 @@ impl<'a, R: Reporter> ExprWalker for AsenaTypeValidator<'a, R> {
         loop {
             let rhs = accessor.rhs();
             match rhs {
-                Expr::Local(_) | Expr::QualifiedPath(_) => {}
+                Expr::Local(_) => {}
                 _ => {
                     self.report(&rhs, TypeError::UnexpectedAccessorInType);
                 }
@@ -113,7 +113,7 @@ impl<'a, R: Reporter> ExprWalker for AsenaConstraintValidator<'a, R> {
     fn walk_expr_ann(&mut self, value: &Ann) {
         let name = value.lhs();
         match name {
-            Expr::Local(_) | Expr::QualifiedPath(_) => {}
+            Expr::Local(_) => {}
             _ => {
                 self.report(&name, TypeError::ExpectedConstraintName);
             }

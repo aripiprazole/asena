@@ -114,7 +114,6 @@ impl<'a, R: Reporter> AsenaTyper<'a, R> {
     pub fn infer(&mut self, expr: Expr) -> Type {
         match expr {
             Expr::Error => todo!(),
-            Expr::QualifiedPath(_) => todo!(),
             Expr::Group(_) => todo!(),
             Expr::Infix(_) => todo!(),
             Expr::Accessor(_) => todo!(),

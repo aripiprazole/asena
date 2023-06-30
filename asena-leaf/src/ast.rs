@@ -66,6 +66,12 @@ pub trait Located {
     fn location(&self) -> Cow<'_, Loc>;
 }
 
+impl<T> Located for Spanned<T> {
+    fn location(&self) -> Cow<'_, Loc> {
+        Cow::Borrowed(&self.span)
+    }
+}
+
 pub trait IntoVirtual<T>: Sized {
     fn into_virtual(self) -> Option<T>;
 }

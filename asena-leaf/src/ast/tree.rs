@@ -44,4 +44,15 @@ impl Tree {
             .collect::<Vec<_>>()
             .into()
     }
+
+    pub fn token(&self, kind: TokenKind) -> Vec<Spanned<Token>> {
+        self.children
+            .iter()
+            .filter_map(|child| match child.value.clone() {
+                Child::Tree(..) => None,
+                Child::Token(token) if token.kind == kind => Some(child.replace(token)),
+                Child::Token(..) => None,
+            })
+            .collect::<Vec<_>>()
+    }
 }
