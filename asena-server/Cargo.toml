@@ -1,0 +1,19 @@
+
+[package]
+edition = "2021"
+name = "asena-format"
+version = "0.1.0"
+
+[dependencies]
+asena-ast = {path = "../asena-ast"}
+asena-derive = {path = "../asena-derive"}
+asena-grammar = {path = "../asena-grammar"}
+asena-leaf = {path = "../asena-leaf"}
+asena-lexer = {path = "../asena-lexer"}
+asena-parser = {path = "../asena-parser"}
+asena-report = {path = "../asena-report"}
+asena-span = {path = "../asena-span"}
+colored = "2"
+fxhash = "0.2.1"
+im = "15.1.0"
+itertools = "0.10.5"

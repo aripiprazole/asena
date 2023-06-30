@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use asena_leaf::{ast_key, node::TreeKind, token::TokenKind};
+use asena_leaf::{ast_key, node::TreeKind, token::kind::TokenKind};
 use asena_report::InternalError;
 use thiserror::Error;
 
