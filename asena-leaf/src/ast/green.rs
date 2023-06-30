@@ -1,4 +1,5 @@
-use std::{any::Any, borrow::Cow, cell::RefCell, collections::HashMap, rc::Rc};
+use std::sync::{Arc, RwLock};
+use std::{any::Any, borrow::Cow, collections::HashMap, rc::Rc};
 
 use asena_span::Spanned;
 
@@ -13,9 +14,9 @@ pub struct AstLeaf {
 
     synthetic: bool,
 
-    keys: Rc<RefCell<HashMap<&'static str, Rc<dyn Any>>>>,
-
     children: HashMap<LeafKey, Spanned<Child>>,
+
+    keys: Arc<RwLock<HashMap<&'static str, Rc<dyn Any>>>>,
 
     /// Lazy names' hash map, they have to exist, to make the tree mutable.
     ///
@@ -24,7 +25,7 @@ pub struct AstLeaf {
     /// ```rs
     /// binary.lhs()
     /// ```
-    names: Rc<RefCell<HashMap<LeafKey, Rc<dyn std::any::Any>>>>,
+    names: Arc<RwLock<HashMap<LeafKey, Arc<dyn Any>>>>,
 }
 
 /// A wrapper for the [Tree] to make it mutable and have mutable named children.
@@ -48,10 +49,10 @@ impl GreenTree {
     pub fn new(data: Spanned<Tree>) -> Self {
         Self::Leaf(AstLeaf {
             children: compute_named_children(&data),
-            names: Rc::new(RefCell::new(HashMap::new())),
-            keys: Rc::new(RefCell::new(HashMap::new())),
-            synthetic: false,
             data,
+            synthetic: false,
+            names: AstLeaf::new_ref(HashMap::new()),
+            keys: AstLeaf::new_ref(HashMap::new()),
         })
     }
 
@@ -60,11 +61,11 @@ impl GreenTree {
         data.value.kind = kind;
 
         Self::Leaf(AstLeaf {
-            children: HashMap::default(),
-            names: Rc::new(RefCell::new(HashMap::new())),
-            keys: Rc::new(RefCell::new(HashMap::new())),
-            synthetic: true,
             data,
+            children: HashMap::default(),
+            synthetic: true,
+            names: AstLeaf::new_ref(HashMap::new()),
+            keys: AstLeaf::new_ref(HashMap::new()),
         })
     }
 
@@ -180,7 +181,7 @@ impl GreenTree {
     pub fn named_at<A: Leaf + Node + 'static>(&self, name: LeafKey) -> Cursor<A> {
         match self {
             Self::Leaf(leaf) => {
-                let borrow = leaf.names.borrow();
+                let borrow = leaf.names();
                 let Some(child) = borrow.get(name).and_then(|x| x.downcast_ref::<Cursor<A>>()) else {
                     return match leaf.children.get(name) {
                         Some(Spanned { value: Child::Token(..), .. }) => Cursor::empty(),
@@ -201,8 +202,8 @@ impl GreenTree {
     pub fn named_terminal<A: Terminal + 'static>(&self, name: LeafKey) -> Cursor<Lexeme<A>> {
         match self {
             Self::Leaf(leaf) => {
-                let borrow = leaf.names.borrow();
-                let Some(child) = borrow.get(name).and_then(|x| x.downcast_ref::<Cursor<Lexeme<A>>>()) else {
+                let names = leaf.names();
+                let Some(child) = names.get(name).and_then(|x| x.downcast_ref::<Cursor<Lexeme<A>>>()) else {
                     return match leaf.children.get(name) {
                         Some(Spanned { value: Child::Tree(..), .. }) => Cursor::empty(),
                         Some(spanned @ Spanned { value: Child::Token(ref token), .. }) => {
@@ -227,11 +228,11 @@ impl GreenTree {
     pub fn as_new_node(&self) -> Self {
         match self {
             Self::Leaf(leaf) => Self::Leaf(AstLeaf {
-                children: compute_named_children(&leaf.data),
-                names: Rc::new(RefCell::new(HashMap::new())),
-                keys: Rc::new(RefCell::new(HashMap::new())),
-                synthetic: leaf.synthetic,
                 data: leaf.data.clone(),
+                synthetic: leaf.synthetic,
+                children: compute_named_children(&leaf.data),
+                names: AstLeaf::new_ref(HashMap::new()),
+                keys: AstLeaf::new_ref(HashMap::new()),
             }),
             _ => self.clone(),
         }
@@ -241,8 +242,7 @@ impl GreenTree {
     /// because, [GreenTree::insert] sets in the `names` field
     pub fn insert_key<T: Key>(&self, key: T, value: T::Value) -> Rc<T::Value> {
         if let Self::Leaf(leaf) = self {
-            leaf.keys
-                .borrow_mut()
+            leaf.keys_mut()
                 .insert(key.name(), Rc::new(value))
                 .unwrap()
                 .downcast::<T::Value>()
@@ -256,12 +256,11 @@ impl GreenTree {
     pub fn key<T: Key>(&self, key: T) -> Rc<T::Value> {
         let value = T::Value::default();
         if let Self::Leaf(leaf) = self {
-            if let Some(value) = leaf.keys.borrow().get(key.name()) {
+            if let Some(value) = leaf.keys().get(key.name()) {
                 return value.clone().downcast::<T::Value>().unwrap();
             }
 
-            leaf.keys
-                .borrow_mut()
+            leaf.keys_mut()
                 .insert(key.name(), Rc::new(value))
                 .unwrap()
                 .downcast::<T::Value>()
@@ -276,9 +275,7 @@ impl GreenTree {
         T: Node + Leaf,
     {
         if let Self::Leaf(leaf) = self {
-            leaf.names
-                .borrow_mut()
-                .insert(name, Rc::new(Cursor::of(value)));
+            leaf.names_mut().insert(name, Arc::new(Cursor::of(value)));
         }
     }
 
@@ -296,14 +293,12 @@ impl GreenTree {
             return Cursor::empty();
         };
 
-        if let Some(x) = leaf.names.borrow().get(name) {
+        if let Some(x) = leaf.names().get(name) {
             return x.downcast_ref::<Cursor<T>>().unwrap().clone();
         }
 
         let cursor = f(tree);
-        leaf.names
-            .borrow_mut()
-            .insert(name, Rc::new(cursor.clone()));
+        leaf.names_mut().insert(name, Arc::new(cursor.clone()));
         cursor
     }
 }
@@ -314,8 +309,8 @@ impl Default for GreenTree {
             data: Spanned::default(),
             children: HashMap::new(),
             synthetic: false,
-            keys: Rc::new(RefCell::new(HashMap::new())),
-            names: Rc::new(RefCell::new(HashMap::new())),
+            keys: AstLeaf::new_ref(HashMap::new()),
+            names: AstLeaf::new_ref(HashMap::new()),
         })
     }
 }
@@ -386,4 +381,26 @@ fn compute_named_children(data: &Spanned<Tree>) -> HashMap<LeafKey, Spanned<Chil
     }
 
     named_children
+}
+
+impl AstLeaf {
+    fn new_ref<T>(value: T) -> Arc<RwLock<T>> {
+        Arc::new(RwLock::new(value))
+    }
+
+    fn names(&self) -> std::sync::RwLockReadGuard<'_, HashMap<&str, Arc<dyn Any>>> {
+        self.names.read().unwrap()
+    }
+
+    fn names_mut(&self) -> std::sync::RwLockWriteGuard<'_, HashMap<&'static str, Arc<dyn Any>>> {
+        self.names.write().unwrap()
+    }
+
+    fn keys(&self) -> std::sync::RwLockReadGuard<'_, HashMap<&str, Rc<dyn Any>>> {
+        self.keys.read().unwrap()
+    }
+
+    fn keys_mut(&self) -> std::sync::RwLockWriteGuard<'_, HashMap<&'static str, Rc<dyn Any>>> {
+        self.keys.write().unwrap()
+    }
 }

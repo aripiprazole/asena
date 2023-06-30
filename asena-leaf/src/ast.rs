@@ -1,5 +1,4 @@
 use std::borrow::Cow;
-use std::cell::RefCell;
 use std::fmt::{Debug, Display};
 use std::ops::{ControlFlow, Deref, DerefMut, FromResidual, Try};
 use std::rc::Rc;

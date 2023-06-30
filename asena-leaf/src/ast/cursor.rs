@@ -1,4 +1,7 @@
-use std::{marker::PhantomData, rc::Rc};
+use std::{
+    marker::PhantomData,
+    sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard},
+};
 
 use super::*;
 
@@ -6,7 +9,7 @@ use super::*;
 ///
 /// It is used to traverse the tree, and to modify it.
 pub struct Cursor<T> {
-    pub(crate) value: Rc<RefCell<GreenTree>>,
+    pub(crate) value: Arc<RwLock<GreenTree>>,
     _marker: PhantomData<T>,
 }
 
@@ -17,39 +20,36 @@ impl<T: Leaf> Cursor<T> {
     }
 
     /// Updates the value of the current cursor with a new [Cursor].
-    pub fn set(&self, value: Cursor<T>) {
-        self.value.replace(value.value.borrow().clone());
+    pub fn set(&self, new_value: Cursor<T>) {
+        let mut value = self.write();
+        *value = new_value.read().clone();
     }
 
     /// Creates a new cursor with a reference to the `concrete syntax tree`, using
     /// the wrapper [GreenTree].
     pub fn new<I: Into<GreenTree>>(value: I) -> Self {
-        Self {
-            value: Rc::new(RefCell::new(value.into())),
-            _marker: PhantomData,
-        }
+        Self::new_raw(Self::new_inner(value.into()))
     }
 
     /// Deeply duplicates the current cursor and returns a new [Cursor] instance.
     pub fn as_new_node(&self) -> Self {
-        Self {
-            _marker: PhantomData,
-            value: Rc::new(RefCell::new(self.value.borrow().as_new_node())),
-        }
+        let new_node = self.read().as_new_node();
+        Self::new_raw(Self::new_inner(new_node))
     }
 }
 
 impl<T: Node + Leaf> Cursor<T> {
     /// Updates the value of the current cursor with a new [T].
-    pub fn replace(&self, value: T) {
-        self.value.replace(value.unwrap());
+    pub fn replace(&self, new_value: T) {
+        let mut value = self.write();
+        *value = new_value.unwrap();
     }
 
     pub fn location(&self) -> Spanned<T>
     where
         T: Located + 'static,
     {
-        match &*self.value.borrow() {
+        match &*self.read() {
             GreenTree::Leaf(leaf) => leaf.data.replace(T::new(leaf.data.clone())),
             GreenTree::Token(lexeme) => {
                 let Some(value) = lexeme.downcast_ref::<T>() else {
@@ -63,12 +63,12 @@ impl<T: Node + Leaf> Cursor<T> {
     }
 
     pub fn is_none(&self) -> bool {
-        matches!(&*self.value.borrow(), GreenTree::None)
+        matches!(&*self.read(), GreenTree::None)
     }
 
     /// Returns the current cursor if it's not empty, otherwise returns false.
     pub fn is_empty(&self) -> bool {
-        match &*self.value.borrow() {
+        match &*self.read() {
             GreenTree::Leaf(leaf) => !leaf.data.children.is_empty(),
             GreenTree::Vec(children) => !children.is_empty(),
             _ => false,
@@ -77,24 +77,18 @@ impl<T: Node + Leaf> Cursor<T> {
 
     /// Creates a new cursor with the given value.
     pub fn of(value: T) -> Self {
-        Self {
-            value: Rc::new(RefCell::new(value.unwrap())),
-            _marker: PhantomData,
-        }
+        Self::new_raw(Self::new_inner(value.unwrap()))
     }
 
     /// Returns the current cursor if it's not empty, otherwise returns a default value.
     pub fn as_leaf(&self) -> T {
-        T::new(self.value.borrow().clone())
+        T::new(self.read().clone())
     }
 }
 
 impl<T: Leaf> Default for Cursor<T> {
     fn default() -> Self {
-        Self {
-            value: Rc::new(RefCell::new(Default::default())),
-            _marker: PhantomData,
-        }
+        Self::new_raw(Default::default())
     }
 }
 
@@ -152,10 +146,7 @@ impl<T: Node + Leaf> From<Option<T>> for Cursor<T> {
     fn from(value: Option<T>) -> Self {
         match value {
             Some(value) => Self::new(value.unwrap()),
-            None => Self {
-                value: Rc::new(RefCell::new(GreenTree::None)),
-                _marker: PhantomData,
-            },
+            None => Self::new_raw(Self::new_inner(GreenTree::None)),
         }
     }
 }
@@ -180,10 +171,7 @@ impl<T: Leaf> From<GreenTree> for Cursor<T> {
 
 impl<T: Leaf> Clone for Cursor<T> {
     fn clone(&self) -> Self {
-        Self {
-            value: self.value.clone(),
-            _marker: PhantomData,
-        }
+        Self::new_raw(self.value.clone())
     }
 }
 
@@ -206,7 +194,7 @@ impl<T: Default + Leaf + Node + 'static> Try for Cursor<T> {
     }
 
     fn branch(self) -> ControlFlow<Self::Residual, Self::Output> {
-        let tree = self.value.borrow();
+        let tree = self.read();
         match &*tree {
             GreenTree::Token(lexeme) => match lexeme.downcast_ref::<T>() {
                 Some(value) => ControlFlow::Continue(value.clone()),
@@ -216,5 +204,31 @@ impl<T: Default + Leaf + Node + 'static> Try for Cursor<T> {
             GreenTree::None => ControlFlow::Break(None),
             _ => ControlFlow::Continue(T::new(tree.clone())),
         }
+    }
+}
+
+/// Internal util functions
+impl<T> Cursor<T> {
+    #[inline]
+    fn new_raw(value: Arc<RwLock<GreenTree>>) -> Self {
+        Self {
+            value,
+            _marker: PhantomData,
+        }
+    }
+
+    #[inline]
+    fn new_inner(value: GreenTree) -> Arc<RwLock<GreenTree>> {
+        Arc::new(RwLock::new(value))
+    }
+
+    #[inline]
+    fn write(&self) -> RwLockWriteGuard<GreenTree> {
+        self.value.write().expect("Poisoned cursor value")
+    }
+
+    #[inline]
+    fn read(&self) -> RwLockReadGuard<GreenTree> {
+        self.value.read().expect("Poisoned cursor value")
     }
 }
