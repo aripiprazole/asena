@@ -19,10 +19,7 @@ impl BodyWalker for SemanticHighlightTraversal<'_> {}
 
 impl DeclWalker for SemanticHighlightTraversal<'_> {
     fn walk_decl_signature(&mut self, value: &Signature) {
-        // TODO: add a trait to get all children of a node.
-        for id in value.name().segments().iter() {
-            self.buf.annotate(id, GlobalFunction);
-        }
+        self.buf.annotate(&value.name(), GlobalFunction);
     }
 }
 

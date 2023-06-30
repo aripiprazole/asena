@@ -3,7 +3,7 @@ use std::fmt::{Display, Formatter, Result};
 use asena_ast::AsenaFile;
 
 use asena_leaf::ast::{Located, Node};
-use asena_leaf::node::{Child, Tree};
+use asena_leaf::node::{Child, HasTokens, Tree};
 use asena_leaf::token::Token;
 
 use asena_span::{Loc, Spanned};
@@ -79,8 +79,10 @@ impl Annotator {
         }
     }
 
-    pub fn annotate(&mut self, at: &dyn Located, color: HighlightColor) {
-        self.buf.insert(at.location().into_owned(), color);
+    pub fn annotate(&mut self, at: &dyn HasTokens, color: HighlightColor) {
+        for token in at.tokens() {
+            self.buf.insert(token.span, color);
+        }
     }
 
     pub fn run_highlight(mut self) -> String {
@@ -91,7 +93,7 @@ impl Annotator {
 
 impl Display for Annotator {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        for child in flatten(&self.original.contents.value) {
+        for child in self.original.contents.tokens() {
             write!(f, "{}", child.full_text.before_whitespace)?;
             if let Some(color) = self.buf.get(&child.location()) {
                 write!(f, "{}", colorize(*color, child.value))?;
@@ -147,7 +149,7 @@ pub fn colorize(color: HighlightColor, token: Token) -> colored::ColoredString {
         HighlightColor::Number => token.full_text.code.italic(),
         HighlightColor::LocalReference => token.full_text.code.white(),
         HighlightColor::GlobalReference => token.full_text.code.yellow(),
-        HighlightColor::GlobalFunction => token.full_text.code.yellow(),
+        HighlightColor::GlobalFunction => token.full_text.code.bright_yellow(),
         HighlightColor::GlobalVariable => token.full_text.code.yellow(),
         HighlightColor::Attribute => token.full_text.code.green(),
         HighlightColor::Command => token.full_text.code.normal(),
@@ -159,22 +161,6 @@ pub fn colorize(color: HighlightColor, token: Token) -> colored::ColoredString {
         HighlightColor::BuiltinType => token.full_text.code.cyan(),
         HighlightColor::BuiltinFunction => token.full_text.code.magenta(),
     }
-}
-
-/// Transforms a tree into a flat list of tokens.
-fn flatten(tree: &Tree) -> Vec<Spanned<Token>> {
-    let mut buf = Vec::new();
-    for child in tree.children.iter() {
-        match child.value {
-            Child::Tree(ref tree) => {
-                buf.extend(flatten(tree));
-            }
-            Child::Token(ref token) => {
-                buf.push(child.replace(token.clone()));
-            }
-        }
-    }
-    buf
 }
 
 mod highlight;

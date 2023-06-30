@@ -1,6 +1,6 @@
 use asena_span::Spanned;
 
-use crate::token::Token;
+use crate::{node::HasTokens, token::Token};
 
 use super::*;
 
@@ -80,6 +80,12 @@ impl<T: Node> Node for Option<T> {
             Some(vale) => vale.unwrap(),
             None => GreenTree::None,
         }
+    }
+}
+
+impl<T> HasTokens for Lexeme<T> {
+    fn tokens(&self) -> Vec<Spanned<Token>> {
+        self.token.tokens()
     }
 }
 

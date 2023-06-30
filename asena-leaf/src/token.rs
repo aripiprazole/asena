@@ -1,5 +1,9 @@
 use std::fmt::Display;
 
+use asena_span::Spanned;
+
+use crate::node::HasTokens;
+
 use super::named::Named;
 
 #[derive(Debug, Clone, Hash, Default)]
@@ -14,6 +18,12 @@ pub struct Token {
     pub kind: TokenKind,
     pub text: String,
     pub full_text: Text,
+}
+
+impl HasTokens for Spanned<Token> {
+    fn tokens(&self) -> Vec<Spanned<Token>> {
+        vec![self.clone()]
+    }
 }
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]

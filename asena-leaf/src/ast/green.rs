@@ -2,7 +2,7 @@ use std::{any::Any, borrow::Cow, cell::RefCell, collections::HashMap, rc::Rc};
 
 use asena_span::Spanned;
 
-use crate::node::{Child, Named, Tree, TreeKind};
+use crate::node::{Child, HasTokens, Named, Tree, TreeKind};
 
 use super::*;
 
@@ -41,18 +41,6 @@ pub enum GreenTree {
 
     /// An empty node, that is used to mark the tree as invalid, and not fail the compiler.
     Empty,
-}
-
-impl Default for GreenTree {
-    fn default() -> Self {
-        Self::Leaf(AstLeaf {
-            data: Spanned::default(),
-            children: HashMap::new(),
-            synthetic: false,
-            keys: Rc::new(RefCell::new(HashMap::new())),
-            names: Rc::new(RefCell::new(HashMap::new())),
-        })
-    }
 }
 
 impl GreenTree {
@@ -337,6 +325,30 @@ impl Debug for GreenTree {
             Self::Leaf(leaf) => write!(f, "Leaf({:#?})", leaf.data),
             Self::Empty => write!(f, "Empty"),
             Self::None => write!(f, "None"),
+        }
+    }
+}
+
+impl Default for GreenTree {
+    fn default() -> Self {
+        Self::Leaf(AstLeaf {
+            data: Spanned::default(),
+            children: HashMap::new(),
+            synthetic: false,
+            keys: Rc::new(RefCell::new(HashMap::new())),
+            names: Rc::new(RefCell::new(HashMap::new())),
+        })
+    }
+}
+
+impl HasTokens for GreenTree {
+    fn tokens(&self) -> Vec<Spanned<Token>> {
+        match self {
+            Self::Leaf(leaf) => leaf.data.tokens(),
+            Self::Vec(vec) => vec.iter().flat_map(|tree| tree.tokens()).collect(),
+            Self::Token(lexeme) => vec![lexeme.token.clone()],
+            Self::None => vec![],
+            Self::Empty => vec![],
         }
     }
 }

@@ -36,6 +36,12 @@ pub fn expand_derive_node(input: TokenStream) -> TokenStream {
                     }
                 }
 
+                impl asena_leaf::node::HasTokens for #name {
+                    fn tokens(&self) -> Vec<asena_span::Spanned<asena_leaf::token::Token>> {
+                        self.0.tokens()
+                    }
+                }
+
                 impl std::ops::DerefMut for #name {
                     fn deref_mut(&mut self) -> &mut Self::Target {
                         &mut self.0

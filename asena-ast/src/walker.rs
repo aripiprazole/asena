@@ -13,9 +13,7 @@ pub trait Reporter {
         self.diagnostic(Spanned::new(at.location().into_owned(), ()), error);
     }
 
-    fn diagnostic<E: InternalError, T>(&mut self, at: Spanned<T>, error: E)
-    where
-        E: 'static;
+    fn diagnostic<E: InternalError + 'static, T>(&mut self, at: Spanned<T>, error: E);
 }
 
 #[derive(Default, Clone)]
