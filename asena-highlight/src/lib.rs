@@ -3,7 +3,8 @@ use std::fmt::{Display, Formatter, Result};
 use asena_ast::AsenaFile;
 
 use asena_leaf::ast::{Located, Node};
-use asena_leaf::node::{Child, HasTokens, Tree};
+use asena_leaf::node::{Child, Tree};
+use asena_leaf::token::token_set::HasTokens;
 use asena_leaf::token::Token;
 
 use asena_span::{Loc, Spanned};

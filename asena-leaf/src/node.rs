@@ -2,6 +2,8 @@ use std::fmt::Debug;
 
 use asena_span::Spanned;
 
+use self::kind::TokenKind;
+
 pub use super::kind::*;
 pub use super::macros::ast_enum;
 pub use super::named::*;
@@ -30,33 +32,6 @@ pub struct Tree {
     pub name: Option<&'static str>,
     pub kind: TreeKind,
     pub children: Vec<Spanned<Child>>,
-}
-
-pub trait HasTokens {
-    fn tokens(&self) -> Vec<Spanned<Token>>;
-}
-
-impl HasTokens for Tree {
-    fn tokens(&self) -> Vec<Spanned<Token>> {
-        let mut buf = Vec::new();
-        for child in self.children.iter() {
-            match child.value {
-                Child::Tree(ref tree) => {
-                    buf.extend(tree.tokens());
-                }
-                Child::Token(ref token) => {
-                    buf.push(child.replace(token.clone()));
-                }
-            }
-        }
-        buf
-    }
-}
-
-impl<T: HasTokens> HasTokens for Spanned<T> {
-    fn tokens(&self) -> Vec<Spanned<Token>> {
-        self.value.tokens()
-    }
 }
 
 /// Polymorphic variants of [Token] and [Tree], it can and must be used as an abstract to them.

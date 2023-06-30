@@ -2,7 +2,7 @@ use std::borrow::Cow;
 use std::fmt::Debug;
 
 use asena_leaf::ast::{Located, Terminal, Walkable};
-use asena_leaf::token::{Token, TokenKind::*};
+use asena_leaf::token::{kind::TokenKind::*, Token};
 use asena_span::{Loc, Spanned};
 
 use crate::Signed::{self, *};

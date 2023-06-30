@@ -1,7 +1,7 @@
 use asena_derive::*;
 
 use asena_ast::*;
-use asena_leaf::{ast::Walkable, token::TokenKind::*};
+use asena_leaf::{ast::Walkable, token::kind::TokenKind::*};
 
 use crate::{HighlightColor::*, SemanticHighlight};
 

@@ -1,6 +1,7 @@
 use asena_span::Spanned;
 
-use crate::{node::HasTokens, token::Token};
+use crate::token::token_set::HasTokens;
+use crate::token::Token;
 
 use super::*;
 
@@ -9,6 +10,8 @@ use super::*;
 pub struct Lexeme<T> {
     pub token: Spanned<Token>,
     pub value: T,
+
+    /// If the lexeme is `None`, it means that the lexeme is a placeholder.
     pub(crate) is_none: bool,
 }
 

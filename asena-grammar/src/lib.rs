@@ -1,7 +1,7 @@
-use asena_leaf::node::TokenKind::*;
 use asena_leaf::node::TreeKind;
 use asena_leaf::node::TreeKind::*;
-use asena_leaf::token::TokenKind;
+use asena_leaf::token::kind::TokenKind;
+use asena_leaf::token::kind::TokenKind::*;
 
 use asena_parser::error::ParseError;
 use asena_parser::error::ParseError::*;

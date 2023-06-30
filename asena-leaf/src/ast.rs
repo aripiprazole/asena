@@ -7,7 +7,7 @@ use std::rc::Rc;
 use asena_span::{Loc, Spanned};
 
 use crate::node::{Child, TreeKind};
-use crate::token::TokenKind;
+use crate::token::kind::TokenKind;
 
 use super::node::Tree;
 use super::token::Token;
@@ -54,7 +54,7 @@ pub trait Terminal: Leaf + Sized + Debug + Sized + Clone + Default {
     fn terminal(token: Spanned<Token>) -> Option<Self>;
 }
 
-pub trait Virtual: Node {
+pub trait VirtualNode: Node {
     fn create() -> Self {
         Self::new(GreenTree::of(Self::tree_kind()))
     }
@@ -99,7 +99,7 @@ pub trait Node: Sized + Debug + Clone {
     }
 }
 
-impl<T: Terminal + Debug + Default + Clone + 'static> Leaf for T {
+impl<T: Terminal + 'static> Leaf for T {
     fn make(tree: GreenTree) -> Option<Self> {
         match tree {
             GreenTree::Leaf(leaf) => {

@@ -2,7 +2,8 @@ use std::{any::Any, borrow::Cow, cell::RefCell, collections::HashMap, rc::Rc};
 
 use asena_span::Spanned;
 
-use crate::node::{Child, HasTokens, Named, Tree, TreeKind};
+use crate::node::{Child, Named, Tree, TreeKind};
+use crate::token::token_set::HasTokens;
 
 use super::*;
 
@@ -307,9 +308,15 @@ impl GreenTree {
     }
 }
 
-impl From<Spanned<Tree>> for GreenTree {
-    fn from(value: Spanned<Tree>) -> Self {
-        Self::new(value)
+impl Default for GreenTree {
+    fn default() -> Self {
+        Self::Leaf(AstLeaf {
+            data: Spanned::default(),
+            children: HashMap::new(),
+            synthetic: false,
+            keys: Rc::new(RefCell::new(HashMap::new())),
+            names: Rc::new(RefCell::new(HashMap::new())),
+        })
     }
 }
 
@@ -329,15 +336,9 @@ impl Debug for GreenTree {
     }
 }
 
-impl Default for GreenTree {
-    fn default() -> Self {
-        Self::Leaf(AstLeaf {
-            data: Spanned::default(),
-            children: HashMap::new(),
-            synthetic: false,
-            keys: Rc::new(RefCell::new(HashMap::new())),
-            names: Rc::new(RefCell::new(HashMap::new())),
-        })
+impl From<Spanned<Tree>> for GreenTree {
+    fn from(value: Spanned<Tree>) -> Self {
+        Self::new(value)
     }
 }
 

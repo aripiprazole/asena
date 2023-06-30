@@ -5,8 +5,8 @@ use asena_derive::*;
 
 use asena_leaf::ast::{GreenTree, Leaf, Lexeme, Located, Node, Terminal, Walkable};
 use asena_leaf::node::TreeKind::*;
+use asena_leaf::token::{kind::TokenKind, Token};
 
-use asena_leaf::token::{Token, TokenKind};
 use asena_span::{Loc, Spanned};
 
 //>>>Identifiers

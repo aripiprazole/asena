@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-use asena_leaf::node::TokenKind;
+use asena_leaf::node::kind::TokenKind;
 use asena_report::InternalError;
 use asena_span::Spanned;
 

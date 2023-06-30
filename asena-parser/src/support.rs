@@ -3,7 +3,7 @@ use std::cell::Cell;
 
 use crate::error::ParseError;
 
-use asena_leaf::node::{Token, TokenKind, TreeKind};
+use asena_leaf::node::{kind::TokenKind, Token, TreeKind};
 use asena_report::{Diagnostic, DiagnosticKind, Quickfix};
 use asena_span::Spanned;
 

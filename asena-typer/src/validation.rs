@@ -3,7 +3,7 @@ use asena_derive::*;
 use asena_ast::command::*;
 use asena_ast::walker::Reporter;
 use asena_ast::*;
-use asena_leaf::ast::{Lexeme, Virtual};
+use asena_leaf::ast::{Lexeme, VirtualNode};
 
 use crate::{Kind, Type, TypeError};
 

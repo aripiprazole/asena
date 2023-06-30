@@ -1,16 +1,12 @@
 use std::fmt::Display;
 
-use asena_span::Spanned;
-
-use crate::node::HasTokens;
+use self::{kind::TokenKind, text::Text};
 
 use super::named::Named;
 
-#[derive(Debug, Clone, Hash, Default)]
-pub struct Text {
-    pub before_whitespace: String,
-    pub code: String,
-}
+pub mod kind;
+pub mod text;
+pub mod token_set;
 
 #[derive(Debug, Clone, Hash, Default)]
 pub struct Token {
@@ -18,91 +14,6 @@ pub struct Token {
     pub kind: TokenKind,
     pub text: String,
     pub full_text: Text,
-}
-
-impl HasTokens for Spanned<Token> {
-    fn tokens(&self) -> Vec<Spanned<Token>> {
-        vec![self.clone()]
-    }
-}
-
-#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum TokenKind {
-    #[default]
-    Error,
-
-    Nat,
-
-    // keywords
-    LetKeyword,      // let
-    TrueKeyword,     // true
-    FalseKeyword,    // false
-    IfKeyword,       // if
-    ElseKeyword,     // else
-    ThenKeyword,     // then
-    TypeKeyword,     // type
-    RecordKeyword,   // record
-    ReturnKeyword,   // return
-    EnumKeyword,     // enum
-    TraitKeyword,    // trait
-    ClassKeyword,    // class
-    CaseKeyword,     // case
-    WhereKeyword,    // where
-    MatchKeyword,    // match
-    UseKeyword,      // use
-    InstanceKeyword, // instance
-    InKeyword,       // in
-    FunKeyword,      // fun
-    SelfKeyword,     // self
-
-    // unicode
-    LambdaUnicode, // λ
-    ForallUnicode, // ∀
-    PiUnicode,     // Π
-    SigmaUnicode,  // Σ
-
-    // control symbols
-    LeftBracket,  // [
-    RightBracket, // ]
-    LeftBrace,    // {
-    RightBrace,   // }
-    LeftParen,    // (
-    RightParen,   // )
-    Comma,        // ,
-    Semi,         // ;
-    Colon,        // :
-    Dot,          // .
-    HelpSymbol,   // ?
-    EqualSymbol,  // =
-    HashSymbol,   // #
-
-    DoubleArrow, // =>
-    RightArrow,  // ->
-    LeftArrow,   // <-
-
-    // integers
-    Int8,
-    UInt8,
-    Int16,
-    UInt16,
-    Int32,
-    UInt32,
-    Int64,
-    UInt64,
-    Int128,
-    UInt128,
-
-    // floats
-    Float32,
-    Float64,
-
-    // literals
-    Symbol,
-    Identifier,
-    Str,
-
-    // end of file
-    Eof,
 }
 
 impl Token {
@@ -158,13 +69,5 @@ impl Named for TokenKind {}
 impl Display for TokenKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{self:?}")
-    }
-}
-
-impl Display for Text {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.before_whitespace)?;
-        write!(f, "{}", self.code)?;
-        Ok(())
     }
 }

@@ -2,8 +2,8 @@ use std::fmt::Debug;
 
 use chumsky::prelude::*;
 
-use asena_leaf::token::TokenKind::*;
-use asena_leaf::{node::Token, token::Text};
+use asena_leaf::token::kind::TokenKind::*;
+use asena_leaf::{node::Token, token::text::Text};
 
 use asena_span::{Loc, Spanned};
 

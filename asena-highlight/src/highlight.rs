@@ -1,4 +1,4 @@
-use asena_leaf::token::{Token, TokenKind::*};
+use asena_leaf::token::{kind::TokenKind::*, Token};
 
 use crate::{HighlightColor, SyntaxHighlight};
 

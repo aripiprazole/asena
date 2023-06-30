@@ -2,7 +2,7 @@ use asena_derive::*;
 
 use asena_leaf::ast::{GreenTree, Leaf, Lexeme, Node};
 use asena_leaf::node::TreeKind::*;
-use asena_leaf::token::TokenKind;
+use asena_leaf::token::kind::TokenKind;
 
 use crate::*;
 
