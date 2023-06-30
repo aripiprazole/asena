@@ -2,11 +2,18 @@ use std::fmt::Display;
 
 use super::named::Named;
 
+#[derive(Debug, Clone, Hash, Default)]
+pub struct Text {
+    pub before_whitespace: String,
+    pub code: String,
+}
+
 #[derive(Debug, Clone, Hash)]
 pub struct Token {
     pub name: Option<&'static str>,
     pub kind: TokenKind,
     pub text: String,
+    pub full_text: Text,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -34,12 +41,14 @@ pub enum TokenKind {
     UseKeyword,      // use
     InstanceKeyword, // instance
     InKeyword,       // in
+    FunKeyword,      // fun
+    SelfKeyword,     // self
 
     // unicode
-    Lambda, // λ
-    Forall, // ∀
-    Pi,     // Π
-    Sigma,  // Σ
+    LambdaUnicode, // λ
+    ForallUnicode, // ∀
+    PiUnicode,     // Π
+    SigmaUnicode,  // Σ
 
     // control symbols
     LeftBracket,  // [
@@ -52,9 +61,9 @@ pub enum TokenKind {
     Semi,         // ;
     Colon,        // :
     Dot,          // .
-    Help,         // ?
-    Equal,        // =
-    Hash,         // #
+    HelpSymbol,   // ?
+    EqualSymbol,  // =
+    HashSymbol,   // #
 
     DoubleArrow, // =>
     RightArrow,  // ->
@@ -91,6 +100,7 @@ impl Token {
             name: None,
             kind,
             text: text.into(),
+            full_text: Default::default(),
         }
     }
 
@@ -99,6 +109,7 @@ impl Token {
             name: None,
             kind: TokenKind::Eof,
             text: Default::default(),
+            full_text: Default::default(),
         }
     }
 
@@ -136,5 +147,13 @@ impl Named for TokenKind {}
 impl Display for TokenKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{self:?}")
+    }
+}
+
+impl Display for Text {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.before_whitespace)?;
+        write!(f, "{}", self.code)?;
+        Ok(())
     }
 }

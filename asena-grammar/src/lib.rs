@@ -66,7 +66,7 @@ pub fn file(p: &mut Parser) {
 pub fn decl(p: &mut Parser) {
     match p.lookahead(0) {
         UseKeyword => decl_use(p),
-        Hash => decl_command(p),
+        HashSymbol => decl_command(p),
         _ => {
             let decl = p.savepoint().run(decl_assign);
             if !decl.has_errors() {
@@ -81,7 +81,7 @@ pub fn decl(p: &mut Parser) {
 /// DeclCommand = '#' Global Expr* ';'
 pub fn decl_command(p: &mut Parser) {
     let m = p.open();
-    p.expect(Hash);
+    p.expect(HashSymbol);
     global(p);
     expr(p);
     while p.at(Comma) {
@@ -107,10 +107,10 @@ pub fn decl_assign(p: &mut Parser) {
     let m = p.open();
     global(p);
     p.field("name");
-    while !p.eof() && !p.at(Equal) {
+    while !p.eof() && !p.at(EqualSymbol) {
         pat(p);
     }
-    p.expect(Equal);
+    p.expect(EqualSymbol);
     expr_dsl(p);
     p.field("value");
     p.close(m, DeclAssign);
@@ -227,7 +227,7 @@ pub fn stmt_let(p: &mut Parser) {
     let m = p.open();
     p.expect(LetKeyword);
     pat(p);
-    p.expect(Equal);
+    p.expect(EqualSymbol);
     expr_dsl(p);
     p.close(m, StmtLet);
 }
@@ -256,7 +256,7 @@ pub fn expr(p: &mut Parser) {
     let token = p.peek();
     match token.kind {
         Symbol if token.text == "\\" => return expr_lam(p),
-        Help => return expr_help(p),
+        HelpSymbol => return expr_help(p),
         _ => {}
     }
 
@@ -320,7 +320,7 @@ pub fn expr_anonymous_pi(p: &mut Parser) {
 /// ExprHelp = '?' ExprDsl
 pub fn expr_help(p: &mut Parser) {
     let m = p.open();
-    p.expect(Help);
+    p.expect(HelpSymbol);
     expr_dsl(p);
     p.close(m, ExprHelp);
 }
@@ -666,10 +666,10 @@ fn report_non_primary(p: &mut Parser, kind: TokenKind) -> Option<MarkClosed> {
         WhereKeyword => p.report(StmtReservedKeywordError(WhereKeyword)),
         InKeyword => p.report(ReservedKeywordError(InKeyword)),
 
-        Lambda => p.report(UnicodeError(Lambda, "lambda")),
-        Forall => p.report(UnicodeError(Lambda, "forall")),
-        Pi => p.report(UnicodeError(Lambda, "pi")),
-        Sigma => p.report(UnicodeError(Lambda, "sigma")),
+        LambdaUnicode => p.report(UnicodeError(LambdaUnicode, "lambda")),
+        ForallUnicode => p.report(UnicodeError(LambdaUnicode, "forall")),
+        PiUnicode => p.report(UnicodeError(LambdaUnicode, "pi")),
+        SigmaUnicode => p.report(UnicodeError(LambdaUnicode, "sigma")),
 
         LeftBracket => p.report(UnicodeError(LeftBracket, "left_bracket")),
         RightBracket => p.report(UnicodeError(RightBracket, "right_bracket")),
@@ -680,8 +680,8 @@ fn report_non_primary(p: &mut Parser, kind: TokenKind) -> Option<MarkClosed> {
         Comma => p.report(UnicodeError(Comma, "comma")),
         Semi => p.report(UnicodeError(Semi, "semi")),
         Colon => p.report(UnicodeError(Colon, "colon")),
-        Help => p.report(UnicodeError(Help, "interrogation")),
-        Equal => p.report(UnicodeError(Equal, "equal")),
+        HelpSymbol => p.report(UnicodeError(HelpSymbol, "interrogation")),
+        EqualSymbol => p.report(UnicodeError(EqualSymbol, "equal")),
 
         DoubleArrow => p.report(UnicodeError(DoubleArrow, "double_arrow")),
         RightArrow => p.report(UnicodeError(RightArrow, "right_arrow")),

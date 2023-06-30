@@ -1,0 +1,9 @@
+name: Option String;
+
+IO.println(message: String): Unit {
+    todo()
+};
+
+Main {
+    IO.println (Option.unwrap name)
+}

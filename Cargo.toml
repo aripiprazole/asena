@@ -3,6 +3,8 @@ members = [
   "asena",
   "asena-ast",
   "asena-derive",
+  "asena-highlight",
+  "asena-format",
   "asena-grammar",
   "asena-leaf",
   "asena-lexer",

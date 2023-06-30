@@ -2,8 +2,8 @@ use std::fmt::Debug;
 
 use chumsky::prelude::*;
 
-use asena_leaf::node::Token;
 use asena_leaf::token::TokenKind::*;
+use asena_leaf::{node::Token, token::Text};
 
 use asena_span::{Loc, Spanned};
 
@@ -48,9 +48,9 @@ pub fn lexer<'a>() -> impl Parser<'a, &'a str, TokenSet, LexError<'a>> {
             "->" => Token::new(RightArrow, content),
             "=>" => Token::new(DoubleArrow, content),
             "<-" => Token::new(LeftArrow, content),
-            "=" => Token::new(Equal, content),
+            "=" => Token::new(EqualSymbol, content),
             ":" => Token::new(Colon, content),
-            "#" => Token::new(Hash, content),
+            "#" => Token::new(HashSymbol, content),
             _ => Token::new(Symbol, content),
         })
         .labelled("symbol");
@@ -67,10 +67,10 @@ pub fn lexer<'a>() -> impl Parser<'a, &'a str, TokenSet, LexError<'a>> {
         .labelled("semi");
 
     let unicode = just("λ")
-        .to(Token::new(Lambda, "λ"))
-        .or(just("∀").to(Token::new(Forall, "∀")))
-        .or(just("Π").to(Token::new(Pi, "Π")))
-        .or(just("Σ").to(Token::new(Sigma, "Σ")));
+        .to(Token::new(LambdaUnicode, "λ"))
+        .or(just("∀").to(Token::new(ForallUnicode, "∀")))
+        .or(just("Π").to(Token::new(PiUnicode, "Π")))
+        .or(just("Σ").to(Token::new(SigmaUnicode, "Σ")));
 
     let token = control_lexer()
         .or(semi)
@@ -129,21 +129,37 @@ fn ident_lexer<'a>() -> impl Parser<'a, &'a str, Token, LexError<'a>> {
             "match" => Token::new(MatchKeyword, ident),
             "use" => Token::new(UseKeyword, ident),
             "in" => Token::new(InKeyword, ident),
+            "fun" => Token::new(FunKeyword, ident),
+            "self" => Token::new(SelfKeyword, ident),
             _ => Token::new(Identifier, ident),
         })
         .labelled("keyword")
+}
+
+fn map_full_text(code: &str, mut token_set: TokenSet) -> Vec<(Token, SimpleSpan)> {
+    let mut i = 0;
+    for (token, span) in token_set.iter_mut() {
+        let whitespace = &code[i..span.start];
+        let text = &code[span.start..span.end];
+        token.full_text = Text {
+            before_whitespace: whitespace.into(),
+            code: text.into(),
+        };
+        i = span.end;
+    }
+    token_set
 }
 
 impl<'a> Lexer<'a> {
     /// Creates a new [Lexer] based in a source code
     pub fn new(code: &'a str) -> Self {
         let (tokens, errs) = lexer().parse(code).into_output_errors();
+        let tokens = map_full_text(code, tokens.unwrap_or_default());
 
         Self {
             index: 0,
             source: code,
             tokens: tokens
-                .unwrap_or_default()
                 .into_iter()
                 .map(|(value, span)| Spanned::new(span.into_range().into(), value))
                 .collect(),

@@ -6,6 +6,7 @@ version = "0.1.0"
 
 [dependencies]
 asena-grammar = {path = "../asena-grammar"}
+asena-highlight = {path = "../asena-highlight"}
 asena-lexer = {path = "../asena-lexer"}
 asena-parser = {path = "../asena-parser"}
 clap = {version = "4.2.7", features = ["derive"]}
