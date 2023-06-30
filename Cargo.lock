@@ -173,6 +173,7 @@ dependencies = [
 name = "asena-leaf"
 version = "0.1.0"
 dependencies = [
+ "asena-interner",
  "asena-span",
 ]
 

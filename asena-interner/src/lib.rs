@@ -17,46 +17,24 @@ static GLOBAL_POOL: Lazy<RwLock<SymbolPool>> = Lazy::new(|| {
     })
 });
 
+/// A symbol is a string that is interned in a global pool. This means that two symbols are equal
+/// if and only if they are the same object. This is useful for comparing identifiers, for example.
+///
+/// # Example
+///
+/// ```
+/// use asena_interner::Symbol;
+///
+/// let a = Symbol::new("hello");
+/// let b = Symbol::new("hello");
+///
+/// assert_eq!(a, b);
+/// ```
+///
+/// The symbol has a reference count, so it can be cloned and dropped as usual.
 #[derive(PartialEq, Eq, Hash)]
 pub struct Symbol {
     value_id: usize,
-}
-
-impl Clone for Symbol {
-    fn clone(&self) -> Self {
-        self.inc_strong();
-
-        Self {
-            value_id: self.value_id,
-        }
-    }
-}
-
-impl Drop for Symbol {
-    fn drop(&mut self) {
-        self.dec_strong();
-
-        if Self::count_strong(self) == 0 {
-            let pool = &GLOBAL_POOL;
-            let mut global_pool = pool.write().unwrap();
-
-            global_pool.id_to_string.remove(&self.value_id);
-        }
-    }
-}
-
-struct SymbolRc {
-    value: String,
-    strong: AtomicUsize,
-}
-
-impl Clone for SymbolRc {
-    fn clone(&self) -> Self {
-        Self {
-            value: self.value.clone(),
-            strong: AtomicUsize::new(self.strong.load(Ordering::SeqCst)),
-        }
-    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -69,21 +47,12 @@ pub struct SymbolPool {
     string_to_id: HashMap<StringId, usize, fxhash::FxBuildHasher>,
 }
 
-impl SymbolRc {
-    fn new(value: String) -> Self {
-        Self {
-            value,
-            strong: AtomicUsize::new(1),
-        }
-    }
-}
-
 impl Symbol {
     pub fn new(string: &str) -> Self {
         let pool = &GLOBAL_POOL;
         let mut global_pool = pool.write().unwrap();
 
-        global_pool.intern(string.into())
+        global_pool.get_or_intern(string.into())
     }
 
     pub fn count_strong(symbol: &Symbol) -> usize {
@@ -124,6 +93,29 @@ impl Symbol {
     }
 }
 
+impl Clone for Symbol {
+    fn clone(&self) -> Self {
+        self.inc_strong();
+
+        Self {
+            value_id: self.value_id,
+        }
+    }
+}
+
+impl Drop for Symbol {
+    fn drop(&mut self) {
+        self.dec_strong();
+
+        if Self::count_strong(self) == 0 {
+            let pool = &GLOBAL_POOL;
+            let mut global_pool = pool.write().unwrap();
+
+            global_pool.id_to_string.remove(&self.value_id);
+        }
+    }
+}
+
 impl Display for Symbol {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let pool = &GLOBAL_POOL;
@@ -159,5 +151,29 @@ impl SymbolPool {
 
     fn get_symbol(&self, symbol: usize) -> Option<&SymbolRc> {
         self.id_to_string.get(&symbol)
+    }
+}
+
+/// Symbol reference counter
+struct SymbolRc {
+    value: String,
+    strong: AtomicUsize,
+}
+
+impl SymbolRc {
+    fn new(value: String) -> Self {
+        Self {
+            value,
+            strong: AtomicUsize::new(1),
+        }
+    }
+}
+
+impl Clone for SymbolRc {
+    fn clone(&self) -> Self {
+        Self {
+            value: self.value.clone(),
+            strong: AtomicUsize::new(self.strong.load(Ordering::SeqCst)),
+        }
     }
 }
