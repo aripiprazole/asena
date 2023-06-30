@@ -6,6 +6,7 @@ members = [
   "asena-highlight",
   "asena-format",
   "asena-grammar",
+  "asena-interner",
   "asena-leaf",
   "asena-lexer",
   "asena-parser",
