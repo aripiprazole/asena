@@ -23,6 +23,13 @@ pub enum Semi {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ControlParser {
+    Break,
+    Continue,
+    Nothing,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Linebreak {
     Semi,
     Cont,
@@ -138,15 +145,14 @@ pub fn decl_command(p: &mut Parser) {
     let m = p.open();
     p.expect(HashSymbol);
     global(p);
-    if semi(p, Semi::OrNewLine) {
+
+    if _semi(p, Semi::OrNewLine) {
         p.close(m, DeclCommand);
         return;
     }
-    if p.at_any(EXPR_FIRST) {
-        expr_dsl(p, Linebreak::Semi);
-    } else if p.at_any(EXPR_RECOVERY) {
-        p.report(ExpectedExprError);
-    }
+
+    // Argument list
+    rec_expr!(p, &[], ExpectedExprError, expr_dsl, Linebreak::Semi);
     while p.at(Comma) {
         p.expect(Comma);
         if p.at_any(EXPR_FIRST) {
@@ -156,7 +162,8 @@ pub fn decl_command(p: &mut Parser) {
             break;
         }
     }
-    semi(p, Semi::OrNewLine);
+
+    _semi(p, Semi::OrNewLine);
     p.close(m, DeclCommand);
 }
 
@@ -165,7 +172,7 @@ pub fn decl_use(p: &mut Parser) {
     let m = p.open();
     p.expect(UseKeyword);
     global(p);
-    semi(p, Semi::Optional);
+    _semi(p, Semi::Optional);
     p.close(m, DeclUse);
 }
 
@@ -180,95 +187,109 @@ pub fn decl_assign(p: &mut Parser) {
     p.expect(EqualSymbol);
     rec_expr!(p, &[], ExpectedAssignValueError, expr_dsl, Linebreak::Semi);
     p.field("value");
-    semi(p, Semi::OrNewLine);
+    _semi(p, Semi::OrNewLine);
     p.close(m, DeclAssign);
 }
 
 /// DeclSignature = Global Param* ':' TypeExpr
 pub fn decl_signature(p: &mut Parser) {
     let m = p.open();
+
     global(p);
     p.field("name");
     params(p);
+
     if p.eat(Colon) {
         type_expr(p, Linebreak::Semi);
         p.field("type");
-        if p.at(WhereKeyword) {
-            where_clause(p);
-        }
-        if p.at(LeftBrace) {
-            stmt_block(p);
-        }
-    } else {
-        if p.at(WhereKeyword) {
-            where_clause(p);
-        }
-        if p.at(LeftBrace) {
-            stmt_block(p);
-        }
     }
-    semi(p, Semi::OrNewLine);
+
+    if p.at(WhereKeyword) {
+        where_clause(p);
+    }
+
+    if p.at(LeftBrace) {
+        _stmt_block(p);
+    }
+
+    _semi(p, Semi::OrNewLine);
 
     p.close(m, DeclSignature);
 }
 
 pub fn decl_trait(p: &mut Parser) {
-    fn fields(p: &mut Parser) {
-        if !p.at(RightBrace) && p.at(Identifier) {
-            class_field(p);
-        }
-        let mut comma_count = 0;
-        while !p.eof() && !p.at(RightBrace) {
-            p.expect(Comma);
-            if p.at(Comma) {
-                if comma_count > 0 {
-                    p.report(UselessCommaError);
-                }
-                comma_count += 1;
-                continue;
-            } else if p.at(Identifier) {
-                class_field(p);
-            } else if p.at(RightBrace) || p.at_any(METHOD_FIRST) {
-                break;
-            } else {
-                p.report(ExpectedFieldError);
-                break;
-            }
-        }
-    }
     let m = p.open();
     p.expect(TraitKeyword);
     global(p);
+
     if p.at(LeftParen) {
         params(p);
     }
+
     if p.at(Colon) {
         type_expr(p, Linebreak::Cont);
     }
+
     if p.at(WhereKeyword) {
         where_clause(p);
     }
+
     p.expect(LeftBrace);
-    fields(p);
+    _trait_fields(p);
+    _trait_methods(p);
+    p.expect(RightBrace);
+
+    _semi(p, Semi::OrNewLine);
+
+    p.close(m, DeclTrait);
+}
+
+pub fn _trait_methods(p: &mut Parser) {
     while p.at_any(METHOD_FIRST) {
         trait_default(p);
     }
-    p.expect(RightBrace);
-    semi(p, Semi::OrNewLine);
-    p.close(m, DeclTrait);
+}
+
+pub fn _trait_fields(p: &mut Parser) {
+    let mut comma_count = 0;
+
+    if !p.at(RightBrace) && p.at(Identifier) {
+        class_field(p);
+    }
+
+    while !p.eof() && !p.at(RightBrace) {
+        p.expect(Comma);
+        if p.at(Comma) {
+            if comma_count > 0 {
+                p.report(UselessCommaError);
+            }
+            comma_count += 1;
+            continue;
+        } else if p.at(Identifier) {
+            class_field(p);
+        } else if p.at(RightBrace) || p.at_any(METHOD_FIRST) {
+            break;
+        } else {
+            p.report(ExpectedFieldError);
+            break;
+        }
+    }
 }
 
 pub fn decl_instance(p: &mut Parser) {
     let m = p.open();
     p.expect(InstanceKeyword);
     type_expr(p, Linebreak::Cont);
-    if p.at(LeftParen) {
-        params(p);
-    }
-    if p.at(WhereKeyword) {
-        where_clause(p);
-    }
+    params(p);
+    where_clause(p);
     p.expect(LeftBrace);
+    _instance_impls(p);
+    p.expect(RightBrace);
+    _semi(p, Semi::OrNewLine);
+    p.close(m, DeclInstance);
+}
+
+pub fn _instance_impls(p: &mut Parser) {
     while !p.at(RightBrace) && !p.eof() {
         if p.at(Identifier) {
             instance_impl(p);
@@ -279,102 +300,103 @@ pub fn decl_instance(p: &mut Parser) {
             break;
         }
     }
-    p.expect(RightBrace);
-    semi(p, Semi::OrNewLine);
-    p.close(m, DeclInstance);
 }
 
 pub fn decl_class(p: &mut Parser) {
-    fn fields(p: &mut Parser) {
-        if !p.at(RightBrace) && p.at(Identifier) {
-            class_field(p);
-        }
-        let mut comma_count = 0;
-        while !p.eof() && !p.at(RightBrace) {
-            p.expect(Comma);
-            if p.at(Comma) {
-                if comma_count > 0 {
-                    p.report(UselessCommaError);
-                }
-                comma_count += 1;
-                continue;
-            } else if p.at(Identifier) {
-                class_field(p);
-            } else if p.at(RightBrace) || p.at_any(METHOD_FIRST) {
-                break;
-            } else {
-                p.report(ExpectedFieldError);
-                break;
-            }
-        }
-    }
     let m = p.open();
     p.expect(ClassKeyword);
     global(p);
-    if p.at(LeftParen) {
-        params(p);
-    }
-    if p.at(Colon) {
-        type_expr(p, Linebreak::Cont);
-    }
-    if p.at(WhereKeyword) {
-        where_clause(p);
-    }
+    params(p);
+    where_clause(p);
     p.expect(LeftBrace);
-    fields(p);
-    while p.at_any(METHOD_FIRST) {
-        class_method(p);
-    }
+    _class_fields(p);
+    _class_methods(p);
     p.expect(RightBrace);
     p.close(m, DeclClass);
 }
 
-/// DeclEnum = 'enum' Global Params? GadtType? WhereClause? '{' EnumVariant* ClassMethod* '}'
-pub fn decl_enum(p: &mut Parser) {
-    fn variants(p: &mut Parser) {
-        if !p.at(RightBrace) && p.at(Identifier) {
-            enum_variant(p);
-        }
-        let mut comma_count = 0;
-        while !p.eof() && !p.at(RightBrace) {
-            p.expect(Comma);
-            if p.at(Comma) {
-                if comma_count > 0 {
-                    p.report(UselessCommaError);
-                }
-                comma_count += 1;
-                continue;
-            } else if p.at(Identifier) {
-                enum_variant(p);
-            } else if p.at(RightBrace) || p.at_any(METHOD_FIRST) {
-                break;
-            } else {
-                p.report(ExpectedVariantError);
-                break;
-            }
-        }
+pub fn _class_methods(p: &mut Parser) {
+    while p.at_any(METHOD_FIRST) {
+        class_method(p);
+    }
+}
+
+pub fn _class_fields(p: &mut Parser) {
+    if !p.at(RightBrace) && p.at(Identifier) {
+        class_field(p);
     }
 
+    let mut comma_count = 0;
+    while !p.eof() && !p.at(RightBrace) {
+        p.expect(Comma);
+        if p.at(Comma) {
+            if comma_count > 0 {
+                p.report(UselessCommaError);
+            }
+            comma_count += 1;
+            continue;
+        } else if p.at(Identifier) {
+            class_field(p);
+        } else if p.at(RightBrace) || p.at_any(METHOD_FIRST) {
+            break;
+        } else {
+            p.report(ExpectedFieldError);
+            break;
+        }
+    }
+}
+
+/// DeclEnum = 'enum' Global Params? GadtType? WhereClause? '{' EnumVariant* ClassMethod* '}'
+pub fn decl_enum(p: &mut Parser) {
     let m = p.open();
     p.expect(EnumKeyword);
     global(p);
     params(p);
-    if p.at(Colon) {
-        enum_gadt_type(p);
-    }
-    if p.at(WhereKeyword) {
-        where_clause(p);
-    }
+    enum_gadt_type(p);
+    where_clause(p);
     p.expect(LeftBrace);
-    variants(p);
-    while p.at_any(METHOD_FIRST) {
-        class_method(p);
-    }
+    _enum_variants(p);
+    _enum_methods(p);
     p.expect(RightBrace);
     p.close(m, DeclEnum);
 }
 
+pub fn _enum_variants(p: &mut Parser) {
+    let mut comma_count = 0;
+
+    if !p.at(RightBrace) && p.at(Identifier) {
+        enum_variant(p);
+    }
+
+    while !p.eof() && !p.at(RightBrace) {
+        p.expect(Comma);
+        if p.at(Comma) {
+            if comma_count > 0 {
+                p.report(UselessCommaError);
+            }
+            comma_count += 1;
+            continue;
+        } else if p.at(Identifier) {
+            enum_variant(p);
+        } else if p.at(RightBrace) || p.at_any(METHOD_FIRST) {
+            break;
+        } else {
+            p.report(ExpectedVariantError);
+            break;
+        }
+    }
+}
+
+pub fn _enum_methods(p: &mut Parser) {
+    while p.at_any(METHOD_FIRST) {
+        class_method(p);
+    }
+}
+
 pub fn enum_gadt_type(p: &mut Parser) {
+    if !p.at(Colon) {
+        return;
+    }
     let m = p.open();
     p.expect(Colon);
     type_expr(p, Linebreak::Cont);
@@ -442,24 +464,15 @@ pub fn class_field(p: &mut Parser) {
 
 pub fn trait_default(p: &mut Parser) {
     let m = p.open();
+
     p.expect(DefaultKeyword);
     global(p);
     params(p);
     if p.eat(Colon) {
         type_expr(p, Linebreak::Cont);
-        p.field("type");
-        if p.at(WhereKeyword) {
-            where_clause(p);
-        }
-        if p.at(LeftBrace) {
-            stmt_block(p);
-        }
-    } else {
-        if p.at(WhereKeyword) {
-            where_clause(p);
-        }
-        stmt_block(p);
     }
+    where_clause(p);
+    _stmt_block(p);
 
     p.close(m, TraitDefault);
 }
@@ -469,16 +482,17 @@ pub fn instance_impl(p: &mut Parser) {
         class_method(p);
         p.report(MethodNotAllowedInInstanceError);
     }
+
     let m = p.open();
+
     global(p);
-    p.field("name");
     while !p.eof() && !p.at(EqualSymbol) {
         pat(p);
     }
     p.expect(EqualSymbol);
     rec_expr!(p, &[], ExpectedImplValueError, expr_dsl, Linebreak::Semi);
-    p.field("value");
-    semi(p, Semi::OrNewLine);
+
+    _semi(p, Semi::OrNewLine);
     p.close(m, InstanceImpl);
 }
 
@@ -489,24 +503,24 @@ pub fn class_method(p: &mut Parser) {
     params(p);
     if p.eat(Colon) {
         type_expr(p, Linebreak::Cont);
-        p.field("type");
-        if p.at(WhereKeyword) {
-            where_clause(p);
-        }
+        where_clause(p);
+
         if p.at(LeftBrace) {
-            stmt_block(p);
+            _stmt_block(p);
         }
     } else {
-        if p.at(WhereKeyword) {
-            where_clause(p);
-        }
-        stmt_block(p);
+        where_clause(p);
+        _stmt_block(p);
     }
 
     p.close(m, ClassMethod);
 }
 
 pub fn where_clause(p: &mut Parser) {
+    if !p.at(WhereKeyword) {
+        return;
+    }
+
     let m = p.open();
     p.expect(WhereKeyword);
     while !p.eof() && p.at_any(EXPR_FIRST) {
@@ -593,7 +607,7 @@ pub fn stmt_return(p: &mut Parser) {
     } else if p.at_any(STMT_RECOVERY) {
         p.report(ExpectedReturnStmtError);
     }
-    semi(p, Semi::OrNewLine);
+    _semi(p, Semi::OrNewLine);
     p.close(m, StmtReturn);
 }
 
@@ -602,7 +616,7 @@ pub fn stmt_ask(p: &mut Parser) {
     pat(p);
     p.expect(LeftArrow);
     rec_expr!(p, &[], ExpectedAskValueError, expr_dsl, Linebreak::Semi);
-    semi(p, Semi::OrNewLine);
+    _semi(p, Semi::OrNewLine);
     p.close(m, StmtAsk);
 }
 
@@ -615,7 +629,7 @@ pub fn stmt_if(p: &mut Parser) {
         if_else(p, Linebreak::Semi);
     }
     rec_expr!(p, &[], ExpectedLetValueError, expr_dsl, Linebreak::Semi);
-    semi(p, Semi::OrNewLine);
+    _semi(p, Semi::OrNewLine);
     p.close(m, StmtIf);
 }
 
@@ -625,14 +639,14 @@ pub fn stmt_let(p: &mut Parser) {
     pat(p);
     p.expect(EqualSymbol);
     rec_expr!(p, &[], ExpectedLetValueError, expr_dsl, Linebreak::Semi);
-    semi(p, Semi::OrNewLine);
+    _semi(p, Semi::OrNewLine);
     p.close(m, StmtLet);
 }
 
 pub fn stmt_expr(p: &mut Parser) {
     let m = p.open();
     rec_expr!(p, &[], ExpectedExprError, expr_dsl, Linebreak::Semi);
-    semi(p, Semi::OrNewLine);
+    _semi(p, Semi::OrNewLine);
     p.close(m, StmtExpr);
 }
 
@@ -669,7 +683,7 @@ pub fn if_then(p: &mut Parser) {
             rec_expr!(p, &[], ExpectedIfThenExprError, expr_dsl, Linebreak::Cont);
         }
         LeftBrace => {
-            stmt_block(p);
+            _stmt_block(p);
         }
         _ => {
             p.report(ExpectedIfThenError);
@@ -683,7 +697,7 @@ pub fn if_else(p: &mut Parser, linebreak: Linebreak) {
     p.expect(ElseKeyword);
     match p.lookahead(0) {
         LeftBrace => {
-            stmt_block(p);
+            _stmt_block(p);
         }
         _ if p.at_any(EXPR_FIRST) => {
             rec_expr!(p, &[], ExpectedIfElseExprError, expr, linebreak);
@@ -711,7 +725,7 @@ pub fn case(p: &mut Parser) {
     p.expect(RightArrow);
     match p.lookahead(0) {
         LeftBrace => {
-            stmt_block(p);
+            _stmt_block(p);
         }
         _ if p.at_any(EXPR_FIRST) => {
             rec_expr!(p, &[], ExpectedCaseExprError, expr, Linebreak::Cont);
@@ -839,7 +853,7 @@ pub fn expr_dsl(p: &mut Parser, linebreak: Linebreak) {
     rec_expr!(p, &[], ExpectedExprError, expr, linebreak);
 
     if p.at(LeftBrace) {
-        stmt_block(p);
+        _stmt_block(p);
         p.close(m, ExprDsl);
     } else {
         p.ignore(m);
@@ -964,11 +978,13 @@ pub fn expr_group(p: &mut Parser) -> MarkClosed {
     if p.eat(RightParen) {
         return p.close(m, ExprUnit);
     }
-    if p.at_any(EXPR_FIRST) {
-        expr_dsl(p, Linebreak::Cont);
-    } else if p.at_any(EXPR_RECOVERY) {
-        p.report(ExpectedExprError);
-    }
+    rec_expr!(
+        p,
+        &[RightParen],
+        ExpectedExprError,
+        expr_dsl,
+        Linebreak::Cont
+    );
     p.expect(RightParen);
     p.close(m, ExprGroup)
 }
@@ -1224,11 +1240,11 @@ fn report_non_primary(p: &mut Parser, kind: TokenKind) -> Option<MarkClosed> {
     }
 }
 
-fn last_semi(p: &mut Parser) {
+fn _last_semi(p: &mut Parser) {
     while !p.eof() && p.eat(Semi) {}
 }
 
-fn semi(p: &mut Parser, mode: Semi) -> bool {
+fn _semi(p: &mut Parser, mode: Semi) -> bool {
     match mode {
         Semi::Optional | Semi::OrNewLine => {
             let v = p.at_newline(1) || p.at(Semi);
@@ -1253,7 +1269,7 @@ fn semi(p: &mut Parser, mode: Semi) -> bool {
     }
 }
 
-fn stmt_block(p: &mut Parser) {
+fn _stmt_block(p: &mut Parser) {
     p.expect(LeftBrace);
     while !p.eof() && !p.at(RightBrace) {
         if stmt(p) {
@@ -1261,7 +1277,7 @@ fn stmt_block(p: &mut Parser) {
             break;
         }
     }
-    last_semi(p);
+    _last_semi(p);
     p.expect(RightBrace);
 }
 
