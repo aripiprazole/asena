@@ -6,6 +6,14 @@ use asena_leaf::token::kind::TokenKind;
 
 use crate::*;
 
+/// A function parameter, or a generic parameter. It can be explicit, or implicit, like a generic,
+/// or either a `self` parameter.
+///
+/// # Examples
+///
+/// ```asena
+/// foo (a : Int) (b : Int) : Int
+/// ```
 #[derive(Default, Node, Located, Clone)]
 pub struct Parameter(GreenTree);
 
@@ -31,6 +39,7 @@ impl Parameter {
         self.matches(0, TokenKind::LeftParen)
     }
 
+    /// If the parameter is the `self` parameter.
     pub fn is_self(&self) -> bool {
         !self.token(TokenKind::SelfKeyword).is_error()
     }

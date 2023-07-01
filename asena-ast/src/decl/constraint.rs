@@ -7,7 +7,7 @@ use crate::*;
 ///
 /// The syntax is like:
 /// ```haskell
-/// class Monad m : Functor m { ... }
+/// class Monad (m) where Functor m { ... }
 /// ```
 ///
 /// The constraint node can be used on `where` clauses.

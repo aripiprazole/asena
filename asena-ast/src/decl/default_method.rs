@@ -3,18 +3,14 @@ use asena_leaf::kind::TreeKind::*;
 
 use crate::*;
 
-/// A method node is a record function associated to a record, this can be used in implementation
-/// declarations too.
+/// A default method node in a trait, declares a default behavior for a field in a trait.
 ///
 /// The syntax is like:
 /// ```haskell
-/// sayHello(self): IO () {
+/// default sayHello(self): IO () {
 //    printf "Hello, I'm {}" self.name
 //  }
 /// ```
-///
-/// The method node is a simple sugar for declaring it on the top level with the class name concatenated,
-/// like: `sayHello`, in the `Person` class, should be simply `Person.sayHello`.
 #[derive(Default, Node, Located, Clone)]
 pub struct DefaultMethod(GreenTree);
 

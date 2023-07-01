@@ -5,6 +5,14 @@ use asena_leaf::node::TreeKind::*;
 
 use crate::*;
 
+/// A variant type is a GADT-style declared constructor variant for an enum. It does hold a name and
+/// a type.
+///
+/// # Examples
+///
+/// ```asena
+/// Just : a -> Maybe a
+/// ```
 #[derive(Default, Node, Located, Clone)]
 pub struct TypeVariant(GreenTree);
 
@@ -23,6 +31,13 @@ impl TypeVariant {
     }
 }
 
+/// A variant constructor is a constructor for an enum. It does hold a name and a list of types.
+///
+/// # Examples
+///
+/// ```asena
+/// Just(a)
+/// ```
 #[derive(Default, Node, Located, Clone)]
 pub struct ConstructorVariant(GreenTree);
 

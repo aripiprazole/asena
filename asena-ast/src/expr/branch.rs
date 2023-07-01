@@ -5,7 +5,13 @@ use asena_leaf::node::TreeKind::*;
 
 use crate::*;
 
-/// Value body node, is a value body that is an `=`.
+/// A expression branch is a branch that is an expression.
+///
+/// # Examples
+///
+/// ```asena
+/// if x == 0 then ()
+/// ```
 #[derive(Default, Node, Located, Clone)]
 pub struct ExprBranch(GreenTree);
 
@@ -19,7 +25,14 @@ impl ExprBranch {
     }
 }
 
-/// Do body node, is a value body that is an do-notation.
+/// A block branch is a branch that is an collection of statements.
+///
+/// # Examples
+///
+/// ```asena
+/// if x == 0 {
+/// }
+/// ```
 #[derive(Default, Node, Located, Clone)]
 pub struct BlockBranch(GreenTree);
 

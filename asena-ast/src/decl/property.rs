@@ -43,7 +43,7 @@ impl Leaf for Field {
 ///
 /// The syntax is like:
 /// ```haskell
-/// sayHello(self): IO () {
+/// fun sayHello(self): IO () {
 //    printf "Hello, I'm {}" self.name
 //  }
 /// ```

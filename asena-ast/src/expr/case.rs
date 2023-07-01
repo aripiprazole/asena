@@ -5,7 +5,13 @@ use asena_leaf::kind::TreeKind::*;
 
 use crate::*;
 
-/// Match case
+/// A case is the representation of the pattern matching case and it's value.
+///
+/// # Examples
+///
+/// ```asena
+/// Just x -> println x
+/// ```
 #[derive(Default, Node, Located, Clone)]
 pub struct Case(GreenTree);
 

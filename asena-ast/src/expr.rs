@@ -42,6 +42,8 @@ pub use lam_parameter::*;
 
 /// Unit expression, is an that represents an Unit value.
 ///
+/// # Examples
+///
 /// The syntax is like:
 /// ```haskell
 /// ()
@@ -56,6 +58,8 @@ impl Unit {}
 
 /// Group expression, is an expression that is a call between two operands, and is surrounded by
 /// parenthesis.
+///
+/// # Examples
 ///
 /// The syntax is like:
 /// ```haskell
@@ -79,10 +83,11 @@ impl Group {
 /// Infix expression, is an expression that is a call between two operands, and is infix. The
 /// fn_id, can be a symbol like: `+`, `-`.
 ///
+/// # Examples
+///
 /// The syntax is like:
 /// ```haskell
 /// a + 1 + 2 + 3
-///
 /// ```
 ///
 /// The infix expressions can have precedence, and they have the following precedence order:
@@ -126,6 +131,8 @@ impl Debug for Infix {
 /// Accessor expression, is an expression that is an accessor to a field in a struct, it can be
 /// represented by [GlobalId], since it can hold `.` too.
 ///
+/// # Examples
+///
 /// The syntax is like:
 /// ```haskell
 /// person.data
@@ -160,6 +167,8 @@ impl Debug for Accessor {
 /// Application expression, is an expression that is simply a function application (or a call),
 /// they're both expressions
 ///
+/// # Examples
+///
 /// The syntax is like:
 /// ```haskell
 /// something 10 42
@@ -188,6 +197,8 @@ impl App {
 /// Dsl expression, is an expression that is simply a function application (or a call),
 /// they're both expression, but the last is a lambda, that receives arguments, and usually will use
 /// a do-notation.
+///
+/// # Examples
 ///
 /// The syntax is like:
 /// ```haskell
@@ -225,6 +236,8 @@ impl Dsl {
 /// Array expression, is an expression that can be checked agains't a `Vect n a`, a `List`, or an
 /// `Array`.
 ///
+/// # Examples
+///
 /// The syntax is like:
 /// ```haskell
 /// [a, b, c]
@@ -244,6 +257,8 @@ impl Array {
 
 /// Lambda expression, is an abstraction expression, that is simply a local function definition,
 /// they can hold multiple parameters just for syntax sugar.
+///
+/// # Examples
 ///
 /// The syntax is like:
 /// ```haskell
@@ -279,6 +294,8 @@ impl Lam {
 /// Let expression, is a let polymorphism binding expression, that abstracts throughough a value,
 /// like executing a local function: `(a => a) 10`, is the equivalent of `let a = 10 in a`.
 ///
+/// # Examples
+///
 /// The syntax is like:
 /// ```haskell
 /// let a = 10 in
@@ -310,6 +327,8 @@ impl Let {
 /// If expression, is a conditional expression, that is simply checks the condition, and if it's
 /// true, it executes the first branch, otherwise, it executes the second branch.
 ///
+/// # Examples
+///
 /// The syntax is like:
 /// ```haskell
 /// if a then b else c
@@ -340,6 +359,8 @@ impl If {
 /// the pattern matches agains't the scrutinee, it executes the first branch, otherwise, it
 /// executes the next branches.
 ///
+/// # Examples
+///
 /// The syntax is like:
 /// ```haskell
 /// match a {
@@ -367,6 +388,8 @@ impl Match {
 
 /// Annotation expression, is a epxression that checks a value agains't a type and make possible to
 /// type stuff, like a cast, but not unsafe.
+///
+/// # Examples
 ///
 /// The syntax is like:
 /// ```haskell
@@ -398,6 +421,8 @@ impl Located for Ann {
 
 /// Qualifier expression, is a dependent type expression, that constrains a type with a type class.
 /// Or just a proof in this language.
+///
+/// # Examples
 ///
 /// The syntax is like:
 /// ```haskell
@@ -436,6 +461,8 @@ impl Debug for Qual {
 }
 
 /// Pi expression, is a dependent type expression, that abstracts a type into another return type.
+///
+/// # Examples
 ///
 /// The syntax is like:
 /// ```haskell
@@ -512,6 +539,8 @@ impl Pi {
 
 /// Sigma expression, is a dependent pair expression, receives a type and a function that returns a
 /// type.
+///
+/// # Examples
 ///
 /// The syntax is like:
 /// ```haskell
@@ -610,6 +639,8 @@ impl Expr {
 pub type PrimaryRef = Spanned<Expr>;
 
 /// Type expression, is an expression that is found in the type level.
+///
+/// # Examples
 ///
 /// ```haskell
 /// a : B

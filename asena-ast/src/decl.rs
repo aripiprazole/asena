@@ -23,6 +23,8 @@ pub use where_clause::*;
 
 /// An use is a declaration that defines an import to a specific module.
 ///
+/// # Examples
+///
 /// The syntax should like exactly:
 /// ```haskell
 /// use IO;
@@ -42,6 +44,8 @@ impl Use {
 
 /// Signature is the type signature of a set of [Assign] declarations, or using [Body], can be used
 /// itself as a Body.
+///
+/// # Examples
 ///
 /// The syntax should like as haskell, in the following pseudo-code:
 /// ```haskell
@@ -88,7 +92,8 @@ impl Signature {
 /// Assign is the implementation of a [Signature], they can be used with sugar with [Body] directly
 /// on [Signature], but it's a value-declaration, and it's holds directly a value
 ///
-/// The syntax should like as haskell, in the following pseudo-code:
+/// # Examples
+///
 /// ```haskell
 /// Print person = pure ()
 /// ```
@@ -119,7 +124,8 @@ impl Assign {
 /// Command is a declaration that executes a command in the LSP, like a REPL, the goal of the
 /// language, is to have a language server as a REPL, available to execute commands.
 ///
-/// The syntax should like exactly:
+/// # Examples
+///
 /// ```haskell
 /// #eval 1 + 1 -- 2
 /// ```
@@ -143,12 +149,13 @@ impl Command {
 
 /// A class is a declaration that creates a record, that can be used as a Type Class.
 ///
-/// The syntax should like exactly:
+/// # Examples
+///
 /// ```haskell
 /// class Person {
-///   name: String;
+///   name: String,
 ///
-///   sayHello (self) : IO () {
+///   fun sayHello (self) : IO () {
 ///     printf "Hello, I'm {}" self.name
 ///   }
 /// }
@@ -186,7 +193,16 @@ impl Class {
     }
 }
 
-/// An enum is a declaration
+/// An enum is a declaration of an algebraic data type, or a generalized algebraic data type.
+///
+/// # Examples
+///
+/// ```haskell
+/// enum Vec (n : Nat) (a : Set) {
+///     Nil : Vec 0 a,
+///     Cons : a -> Vec n a -> Vec (n + 1) a
+/// }
+/// ```
 #[derive(Default, Node, Located, Clone)]
 pub struct Enum(GreenTree);
 
@@ -220,7 +236,16 @@ impl Enum {
     }
 }
 
-/// An enum is a declaration
+/// A trait is a declaration that creates a type class.
+///
+/// # Examples
+///
+/// ```asena
+/// trait Monad (m : Set -> Set) {
+///   pure : a -> m a,
+///   bind : m a -> (a -> m b) -> m b,
+/// }
+/// ```
 #[derive(Default, Node, Located, Clone)]
 pub struct Trait(GreenTree);
 

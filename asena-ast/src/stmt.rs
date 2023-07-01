@@ -4,10 +4,16 @@ use asena_leaf::ast::GreenTree;
 use asena_leaf::ast_enum;
 use asena_leaf::node::TreeKind::*;
 
-use asena_span::Spanned;
-
 use crate::*;
 
+/// An ask statement, it does bind a monad value to a local identifier. It's like a `let` statement,
+/// but it's only for monads.
+///
+/// # Examples
+///
+/// ```asena
+/// x <- foo
+/// ```
 #[derive(Default, Node, Located, Clone)]
 pub struct Ask(GreenTree);
 
@@ -26,6 +32,16 @@ impl Ask {
     }
 }
 
+/// An if statement, it does branch the execution of the program based on a condition, just like an
+/// [If] expression, but since it's a statement, it doesn't require an else branch.
+///
+/// # Examples
+///
+/// ```asena
+/// if x == 0 {
+///   return 10;
+/// }
+/// ```
 #[derive(Default, Node, Located, Clone)]
 pub struct IfStmt(GreenTree);
 
@@ -49,6 +65,14 @@ impl IfStmt {
     }
 }
 
+/// A let statement, it does bind a value to a local identifier, just like a [Let] expression, but
+/// since it's a statement, it doesn't require an [`in`] value.
+///
+/// # Examples
+///
+/// ```asena
+/// let x = 10
+/// ```
 #[derive(Default, Node, Located, Clone)]
 pub struct LetStmt(GreenTree);
 
@@ -67,6 +91,13 @@ impl LetStmt {
     }
 }
 
+/// A return statement, it does return a value from a function.
+///
+/// # Examples
+///
+/// ```asena
+/// return
+/// ```
 #[derive(Default, Node, Located, Clone)]
 pub struct Return(GreenTree);
 
@@ -74,12 +105,16 @@ pub struct Return(GreenTree);
 #[ast_debug]
 #[ast_walkable(BranchWalker, ExprWalker, PatWalker, StmtWalker)]
 impl Return {
+    /// The value to return, if it's not present, it will return `None`. And it means that the
+    /// return type is `()`.
     #[ast_leaf]
     pub fn value(&self) -> Option<Expr> {
         self.filter().first()
     }
 }
 
+/// An expression statement, it does evaluate an expression and discard the result, but if it's the
+/// last statement, it will return the value.
 #[derive(Default, Node, Located, Clone)]
 pub struct ExprStmt(GreenTree);
 
@@ -94,6 +129,8 @@ impl ExprStmt {
 }
 
 ast_enum! {
+    /// A statement, it's a part of a program, it's an imperative action, it only works with
+    /// monads, and are part of the called "do-notation".
     #[derive(Walker)]
     #[ast_walker_traits(BranchWalker, PatWalker, ExprWalker)]
     pub enum Stmt {
@@ -104,5 +141,3 @@ ast_enum! {
         ExprStmt <- StmtExpr,   // <expr?>
     }
 }
-
-pub type StmtRef = Spanned<Stmt>;

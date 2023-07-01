@@ -22,7 +22,7 @@ pub struct Global(GreenTree);
 impl Global {
     #[ast_leaf]
     pub fn name(&self) -> QualifiedPath {
-        self.at(0)
+        self.filter().first()
     }
 }
 
