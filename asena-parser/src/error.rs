@@ -61,6 +61,15 @@ pub enum ParseError {
     #[error("Expected expression")]
     ExpectedExprError,
 
+    #[error("Expected match scrutinee")]
+    ExpectedMatchScrutineeError,
+
+    #[error("Expected case expr")]
+    ExpectedCaseExprError,
+
+    #[error("Expected case")]
+    ExpectedCaseError,
+
     #[error("Expected if condition")]
     ExpectedIfCondError,
 
@@ -174,6 +183,12 @@ pub enum ParseError {
 
     #[error("Useless semicolon here, you can just ignore it")]
     UeselessSemiError,
+
+    #[error("Useless comma here, you can just ignore it")]
+    UselessCommaError,
+
+    #[error("Trailling comma is required")]
+    RequiredTraillingCommaError,
 }
 
 impl ParseError {

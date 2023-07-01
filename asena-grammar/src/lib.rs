@@ -40,6 +40,27 @@ const EXPR_RECOVERY: &[TokenKind] = &[
 
 const ARRAY_RECOVERY: &[TokenKind] = &[Comma];
 
+const PAT_FIRST: &[TokenKind] = &[
+    Identifier,
+    LeftBracket,
+    LeftParen,
+    Str,
+    TrueKeyword,
+    FalseKeyword,
+    Int8,
+    Int16,
+    Int32,
+    Int64,
+    Int128,
+    UInt8,
+    UInt16,
+    UInt32,
+    UInt64,
+    UInt128,
+    Float32,
+    Float64,
+];
+
 const EXPR_FIRST: &[TokenKind] = &[
     Identifier,
     LeftBracket,
@@ -47,6 +68,7 @@ const EXPR_FIRST: &[TokenKind] = &[
     Str,
     TrueKeyword,
     FalseKeyword,
+    MatchKeyword,
     IfKeyword,
     Int8,
     Int16,
@@ -270,6 +292,7 @@ pub fn expr(p: &mut Parser) {
         Symbol if token.text == "\\" => expr_lam(p),
         HelpSymbol => expr_help(p),
         IfKeyword => expr_if(p),
+        MatchKeyword => expr_match(p),
         _ => expr_ann(p),
     }
 }
@@ -316,6 +339,56 @@ pub fn expr_if(p: &mut Parser) {
     if_then(p);
     if_else(p);
     p.close(m, ExprIf);
+}
+
+pub fn case(p: &mut Parser) {
+    let m = p.open();
+    pat(p);
+    p.expect(RightArrow);
+    match p.lookahead(0) {
+        LeftBrace => {
+            stmt_block(p);
+        }
+        _ if p.at_any(EXPR_FIRST) => {
+            rec_expr!(p, &[], ExpectedCaseExprError, expr);
+        }
+        _ => {
+            p.report(ExpectedCaseError);
+        }
+    }
+    p.close(m, MatchCase);
+}
+
+/// ExprMatch = 'match' Expr '{' Case* '}'
+pub fn expr_match(p: &mut Parser) {
+    let m = p.open();
+    p.expect(MatchKeyword);
+    rec_expr!(p, &[], ExpectedMatchScrutineeError);
+    p.expect(LeftBrace);
+    if !p.at(RightBrace) && p.at_any(PAT_FIRST) {
+        case(p);
+    }
+    let mut comma_count = 0;
+    while !p.eof() && !p.at(RightBrace) {
+        p.expect(Comma);
+        if p.at(Comma) {
+            if comma_count > 0 {
+                p.report(UselessCommaError);
+            }
+            comma_count += 1;
+            continue;
+        } else if p.at_any(PAT_FIRST) {
+            case(p);
+        } else if p.at_any(EXPR_RECOVERY) {
+            p.report(ExpectedCaseError);
+            break;
+        }
+    }
+    if comma_count == 0 {
+        p.warning(RequiredTraillingCommaError);
+    }
+    p.expect(RightBrace);
+    p.close(m, ExprMatch);
 }
 
 /// ExprAnn = ExprQual (':' ExprQual)*

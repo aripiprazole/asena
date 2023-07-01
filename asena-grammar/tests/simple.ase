@@ -8,6 +8,9 @@ If f false _     otherwise = otherwise;
 
 Main {
   let person = Person.new "Sofia";
-  println (if true { 10 } else { 14 });
+  println (match true {
+    Just a  -> println "true",
+    Nothing -> println "false"
+  });
   person.sayHello
 }

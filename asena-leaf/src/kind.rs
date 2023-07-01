@@ -56,6 +56,8 @@ pub enum TreeKind {
     IfThen,
     IfElse,
 
+    MatchCase,
+
     IdSymbol,
 
     PatWildcard,
