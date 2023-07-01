@@ -15,10 +15,20 @@ use asena_report::Quickfix;
 
 pub use macros::*;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Semi {
     Optional,
     Required,
-    Optout,
+    OrNewLine,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Linebreak {
+    Semi,
+    /// Lookahead 0 for some reason works only with [`decl_assign`], and i don't know
+    /// FIXME:
+    Semi0,
+    Cont,
 }
 
 const PARAM_LIST_RECOVERY: &[TokenKind] = &[DoubleArrow, RightArrow, Semi, Colon, LeftBrace];
@@ -94,6 +104,8 @@ const EXPR_FIRST: &[TokenKind] = &[
     Float64,
 ];
 
+const EXPR_FOLLOW: &[TokenKind] = &[Colon, Dot, RightArrow, DoubleArrow, Symbol];
+
 /// File = Decl*
 pub fn file(p: &mut Parser) {
     let m = p.open();
@@ -129,17 +141,25 @@ pub fn decl_command(p: &mut Parser) {
     let m = p.open();
     p.expect(HashSymbol);
     global(p);
-    rec_expr!(p, &[]);
+    if semi(p, Semi::OrNewLine) {
+        p.close(m, DeclCommand);
+        return;
+    }
+    if p.at_any(EXPR_FIRST) {
+        expr_dsl(p, Linebreak::Semi);
+    } else if p.at_any(EXPR_RECOVERY) {
+        p.report(ExpectedExprError);
+    }
     while p.at(Comma) {
         p.expect(Comma);
-        if p.at(Semi) || p.eof() {
-            break;
-        }
-        if rec_expr!(p, &[]) {
+        if p.at_any(EXPR_FIRST) {
+            expr_dsl(p, Linebreak::Semi);
+        } else if p.at_any(EXPR_RECOVERY) {
+            p.report(ExpectedExprError);
             break;
         }
     }
-    semi(p, Semi::Required);
+    semi(p, Semi::OrNewLine);
     p.close(m, DeclCommand);
 }
 
@@ -161,9 +181,9 @@ pub fn decl_assign(p: &mut Parser) {
         pat(p);
     }
     p.expect(EqualSymbol);
-    rec_expr!(p, &[], ExpectedAssignValueError, expr_dsl);
+    rec_expr!(p, &[], ExpectedAssignValueError, expr_dsl, Linebreak::Semi0);
     p.field("value");
-    semi(p, Semi::Required);
+    semi(p, Semi::OrNewLine);
     p.close(m, DeclAssign);
 }
 
@@ -174,16 +194,13 @@ pub fn decl_signature(p: &mut Parser) {
     p.field("name");
     params(p);
     if p.eat(Colon) {
-        type_expr(p);
+        type_expr(p, Linebreak::Semi0);
         p.field("type");
         if p.at(WhereKeyword) {
             where_clause(p);
         }
         if p.at(LeftBrace) {
             stmt_block(p);
-            semi(p, Semi::Optout);
-        } else {
-            semi(p, Semi::Required);
         }
     } else {
         if p.at(WhereKeyword) {
@@ -191,11 +208,9 @@ pub fn decl_signature(p: &mut Parser) {
         }
         if p.at(LeftBrace) {
             stmt_block(p);
-            semi(p, Semi::Optout);
-        } else {
-            semi(p, Semi::Required);
         }
     }
+    semi(p, Semi::OrNewLine);
 
     p.close(m, DeclSignature);
 }
@@ -231,7 +246,7 @@ pub fn decl_trait(p: &mut Parser) {
         params(p);
     }
     if p.at(Colon) {
-        type_expr(p);
+        type_expr(p, Linebreak::Cont);
     }
     if p.at(WhereKeyword) {
         where_clause(p);
@@ -242,14 +257,14 @@ pub fn decl_trait(p: &mut Parser) {
         trait_default(p);
     }
     p.expect(RightBrace);
-    semi(p, Semi::Optout);
+    semi(p, Semi::OrNewLine);
     p.close(m, DeclTrait);
 }
 
 pub fn decl_instance(p: &mut Parser) {
     let m = p.open();
     p.expect(InstanceKeyword);
-    type_expr(p);
+    type_expr(p, Linebreak::Cont);
     if p.at(LeftParen) {
         params(p);
     }
@@ -268,7 +283,7 @@ pub fn decl_instance(p: &mut Parser) {
         }
     }
     p.expect(RightBrace);
-    semi(p, Semi::Optout);
+    semi(p, Semi::OrNewLine);
     p.close(m, DeclInstance);
 }
 
@@ -303,7 +318,7 @@ pub fn decl_class(p: &mut Parser) {
         params(p);
     }
     if p.at(Colon) {
-        type_expr(p);
+        type_expr(p, Linebreak::Cont);
     }
     if p.at(WhereKeyword) {
         where_clause(p);
@@ -365,7 +380,7 @@ pub fn decl_enum(p: &mut Parser) {
 pub fn enum_gadt_type(p: &mut Parser) {
     let m = p.open();
     p.expect(Colon);
-    type_expr(p);
+    type_expr(p, Linebreak::Cont);
     p.close(m, EnumGadtType);
 }
 
@@ -375,13 +390,19 @@ pub fn enum_variant(p: &mut Parser) {
     match p.lookahead(0) {
         Colon => {
             p.expect(Colon);
-            type_expr(p);
+            type_expr(p, Linebreak::Cont);
             p.close(m, VariantType);
         }
         LeftParen => {
             p.expect(LeftParen);
             if !p.at(RightParen) && p.at_any(EXPR_FIRST) {
-                rec_expr!(p, &[], ExpectedVariantParameterError, type_expr);
+                rec_expr!(
+                    p,
+                    &[],
+                    ExpectedVariantParameterError,
+                    type_expr,
+                    Linebreak::Cont
+                );
             }
             let mut comma_count = 0;
             while !p.eof() && !p.at(RightParen) {
@@ -393,7 +414,13 @@ pub fn enum_variant(p: &mut Parser) {
                     comma_count += 1;
                     continue;
                 } else if p.at_any(EXPR_FIRST) {
-                    rec_expr!(p, &[], ExpectedVariantParameterError, type_expr);
+                    rec_expr!(
+                        p,
+                        &[],
+                        ExpectedVariantParameterError,
+                        type_expr,
+                        Linebreak::Cont
+                    );
                 } else if p.at_any(PARAM_LIST_RECOVERY) {
                     p.report(ExpectedParameterError);
                     break;
@@ -412,7 +439,7 @@ pub fn class_field(p: &mut Parser) {
     let m = p.open();
     p.expect(Identifier);
     p.expect(Colon);
-    type_expr(p);
+    type_expr(p, Linebreak::Cont);
     p.close(m, ClassField);
 }
 
@@ -422,7 +449,7 @@ pub fn trait_default(p: &mut Parser) {
     global(p);
     params(p);
     if p.eat(Colon) {
-        type_expr(p);
+        type_expr(p, Linebreak::Cont);
         p.field("type");
         if p.at(WhereKeyword) {
             where_clause(p);
@@ -452,9 +479,9 @@ pub fn instance_impl(p: &mut Parser) {
         pat(p);
     }
     p.expect(EqualSymbol);
-    rec_expr!(p, &[], ExpectedImplValueError, expr_dsl);
+    rec_expr!(p, &[], ExpectedImplValueError, expr_dsl, Linebreak::Semi);
     p.field("value");
-    semi(p, Semi::Required);
+    semi(p, Semi::OrNewLine);
     p.close(m, InstanceImpl);
 }
 
@@ -464,7 +491,7 @@ pub fn class_method(p: &mut Parser) {
     global(p);
     params(p);
     if p.eat(Colon) {
-        type_expr(p);
+        type_expr(p, Linebreak::Cont);
         p.field("type");
         if p.at(WhereKeyword) {
             where_clause(p);
@@ -493,7 +520,7 @@ pub fn where_clause(p: &mut Parser) {
 
 pub fn constraint(p: &mut Parser) {
     let m = p.open();
-    type_expr(p);
+    type_expr(p, Linebreak::Cont);
     p.close(m, WhereConstraint);
 }
 
@@ -527,12 +554,12 @@ pub fn param(p: &mut Parser) -> bool {
             }
             p.expect(Identifier);
             p.expect(Colon);
-            type_expr(p);
+            type_expr(p, Linebreak::Cont);
             p.expect(RightParen);
         }
         LeftBracket => {
             p.expect(LeftBracket);
-            type_expr(p);
+            type_expr(p, Linebreak::Cont);
             p.expect(RightBracket);
         }
         _ => return true,
@@ -565,7 +592,7 @@ pub fn stmt_return(p: &mut Parser) {
     let m = p.open();
     p.expect(ReturnKeyword);
     if p.at_any(EXPR_FIRST) {
-        rec_expr!(p, &[], ExpectedReturnValueError, expr_dsl);
+        rec_expr!(p, &[], ExpectedReturnValueError, expr_dsl, Linebreak::Semi);
     } else if p.at_any(STMT_RECOVERY) {
         p.report(ExpectedReturnStmtError);
     }
@@ -576,7 +603,7 @@ pub fn stmt_ask(p: &mut Parser) {
     let m = p.open();
     pat(p);
     p.expect(LeftArrow);
-    rec_expr!(p, &[], ExpectedAskValueError, expr_dsl);
+    rec_expr!(p, &[], ExpectedAskValueError, expr_dsl, Linebreak::Semi);
     p.close(m, StmtAsk);
 }
 
@@ -586,7 +613,7 @@ pub fn stmt_if(p: &mut Parser) {
     rec_expr!(p, &[], ExpectedIfCondError);
     if_then(p);
     if p.at(ElseKeyword) {
-        if_else(p);
+        if_else(p, Linebreak::Semi);
     }
     p.close(m, StmtIf);
 }
@@ -596,20 +623,20 @@ pub fn stmt_let(p: &mut Parser) {
     p.expect(LetKeyword);
     pat(p);
     p.expect(EqualSymbol);
-    rec_expr!(p, &[], ExpectedLetValueError, expr_dsl);
+    rec_expr!(p, &[], ExpectedLetValueError, expr_dsl, Linebreak::Semi);
     p.close(m, StmtLet);
 }
 
 pub fn stmt_expr(p: &mut Parser) {
     let m = p.open();
-    rec_expr!(p, &[], ExpectedExprError, expr_dsl);
+    rec_expr!(p, &[], ExpectedExprError, expr_dsl, Linebreak::Semi);
     p.close(m, StmtExpr);
 }
 
 /// TypeExpr = Expr
-pub fn type_expr(p: &mut Parser) {
+pub fn type_expr(p: &mut Parser, linebreak: Linebreak) {
     let m = p.open();
-    rec_expr!(p, &[], ExpectedTypeError, expr);
+    rec_expr!(p, &[], ExpectedTypeError, expr, linebreak);
     p.close(m, TypeExplicit);
 }
 
@@ -620,14 +647,14 @@ pub fn type_expr(p: &mut Parser) {
 /// | ExprLet | ExprGlobal | ExprLocal
 /// | ExprLit | ExprAnn | ExprQual
 /// | ExprPi | ExprSigma | ExprHelp
-pub fn expr(p: &mut Parser) {
+pub fn expr(p: &mut Parser, linebreak: Linebreak) {
     let token = p.peek();
     match token.kind {
-        Symbol if token.text == "\\" => expr_lam(p),
-        HelpSymbol => expr_help(p),
-        IfKeyword => expr_if(p),
+        Symbol if token.text == "\\" => expr_lam(p, linebreak),
+        HelpSymbol => expr_help(p, linebreak),
+        IfKeyword => expr_if(p, linebreak),
         MatchKeyword => expr_match(p),
-        _ => expr_ann(p),
+        _ => expr_ann(p, linebreak),
     }
 }
 
@@ -636,7 +663,7 @@ pub fn if_then(p: &mut Parser) {
     match p.lookahead(0) {
         ThenKeyword => {
             p.expect(ThenKeyword);
-            rec_expr!(p, &[], ExpectedIfThenExprError, expr_dsl);
+            rec_expr!(p, &[], ExpectedIfThenExprError, expr_dsl, Linebreak::Cont);
         }
         LeftBrace => {
             stmt_block(p);
@@ -648,7 +675,7 @@ pub fn if_then(p: &mut Parser) {
     p.close(m, IfThen);
 }
 
-pub fn if_else(p: &mut Parser) {
+pub fn if_else(p: &mut Parser, linebreak: Linebreak) {
     let m = p.open();
     p.expect(ElseKeyword);
     match p.lookahead(0) {
@@ -656,7 +683,7 @@ pub fn if_else(p: &mut Parser) {
             stmt_block(p);
         }
         _ if p.at_any(EXPR_FIRST) => {
-            rec_expr!(p, &[], ExpectedIfElseExprError, expr);
+            rec_expr!(p, &[], ExpectedIfElseExprError, expr, linebreak);
         }
         _ => {
             p.report(ExpectedIfElseError);
@@ -666,25 +693,25 @@ pub fn if_else(p: &mut Parser) {
 }
 
 /// ExprIf = 'if' Expr 'then' Expr 'else' Expr
-pub fn expr_if(p: &mut Parser) {
+pub fn expr_if(p: &mut Parser, linebreak: Linebreak) {
     let m = p.open();
     p.expect(IfKeyword);
     rec_expr!(p, &[], ExpectedIfCondError);
     if_then(p);
-    if_else(p);
+    if_else(p, linebreak);
     p.close(m, ExprIf);
 }
 
 pub fn case(p: &mut Parser) {
     let m = p.open();
-    pat(p);
+    pat_app(p);
     p.expect(RightArrow);
     match p.lookahead(0) {
         LeftBrace => {
             stmt_block(p);
         }
         _ if p.at_any(EXPR_FIRST) => {
-            rec_expr!(p, &[], ExpectedCaseExprError);
+            rec_expr!(p, &[], ExpectedCaseExprError, expr, Linebreak::Cont);
         }
         _ => {
             p.report(ExpectedCaseError);
@@ -697,7 +724,7 @@ pub fn case(p: &mut Parser) {
 pub fn expr_match(p: &mut Parser) {
     let m = p.open();
     p.expect(MatchKeyword);
-    rec_expr!(p, &[], ExpectedMatchScrutineeError);
+    rec_expr!(p, &[], ExpectedMatchScrutineeError, expr, Linebreak::Cont);
     p.expect(LeftBrace);
     if !p.at(RightBrace) && p.at_any(PAT_FIRST) {
         case(p);
@@ -723,15 +750,15 @@ pub fn expr_match(p: &mut Parser) {
 }
 
 /// ExprAnn = ExprQual (':' ExprQual)*
-pub fn expr_ann(p: &mut Parser) {
+pub fn expr_ann(p: &mut Parser, linebreak: Linebreak) {
     let m = p.open();
 
-    rec_expr!(p, &[], ExpectedExprError, expr_qual);
+    rec_expr!(p, &[], ExpectedExprError, expr_qual, linebreak);
 
     // simplify by returning the lhs symbol directly
     if p.at(Colon) {
         while !p.eof() && p.eat(Colon) {
-            if rec_expr!(p, &[], ExpectedAnnAgainstError) {
+            if rec_expr!(p, &[], ExpectedAnnAgainstError, expr, linebreak) {
                 break;
             }
         }
@@ -743,15 +770,15 @@ pub fn expr_ann(p: &mut Parser) {
 }
 
 /// ExprQual = ExprAnonymousPi ('=>' ExprAnonymousPi)*
-pub fn expr_qual(p: &mut Parser) {
+pub fn expr_qual(p: &mut Parser, linebreak: Linebreak) {
     let m = p.open();
 
-    rec_expr!(p, &[], ExpectedExprError, expr_anonymous_pi);
+    rec_expr!(p, &[], ExpectedExprError, expr_anonymous_pi, linebreak);
 
     // simplify by returning the lhs symbol directly
     if p.at(DoubleArrow) {
         while !p.eof() && p.eat(DoubleArrow) {
-            if rec_expr!(p, &[], ExpectedQualReturnError) {
+            if rec_expr!(p, &[], ExpectedQualReturnError, expr, linebreak) {
                 break;
             }
         }
@@ -763,15 +790,15 @@ pub fn expr_qual(p: &mut Parser) {
 }
 
 /// ExprAnonymousPi = ExprAccessor ('->' ExprAccessor)*
-pub fn expr_anonymous_pi(p: &mut Parser) {
+pub fn expr_anonymous_pi(p: &mut Parser, linebreak: Linebreak) {
     let m = p.open();
 
-    rec_expr!(p, &[], ExpectedExprError, expr_binary);
+    rec_expr!(p, &[], ExpectedExprError, expr_binary, linebreak);
 
     // simplify by returning the lhs symbol directly
     if p.at(RightArrow) {
         while !p.eof() && p.eat(RightArrow) {
-            if rec_expr!(p, &[], ExpectedPiReturnError) {
+            if rec_expr!(p, &[], ExpectedPiReturnError, expr, linebreak) {
                 break;
             }
         }
@@ -783,15 +810,15 @@ pub fn expr_anonymous_pi(p: &mut Parser) {
 }
 
 /// ExprHelp = '?' ExprDsl
-pub fn expr_help(p: &mut Parser) {
+pub fn expr_help(p: &mut Parser, linebreak: Linebreak) {
     let m = p.open();
     p.expect(HelpSymbol);
-    rec_expr!(p, &[], ExpectedHelpValueError, expr_dsl);
+    rec_expr!(p, &[], ExpectedHelpValueError, expr_dsl, linebreak);
     p.close(m, ExprHelp);
 }
 
 /// ExprLam = '\' Identifier* '->' ExprDsl
-pub fn expr_lam(p: &mut Parser) {
+pub fn expr_lam(p: &mut Parser, linebreak: Linebreak) {
     let m = p.open();
     p.advance();
     while !p.eof() && !p.at(RightArrow) {
@@ -800,13 +827,13 @@ pub fn expr_lam(p: &mut Parser) {
         p.close(m, LamParam);
     }
     p.expect(RightArrow);
-    rec_expr!(p, &[], ExpectedLamBodyError, expr_dsl);
+    rec_expr!(p, &[], ExpectedLamBodyError, expr_dsl, linebreak);
     p.close(m, ExprLam);
 }
 
-pub fn expr_dsl(p: &mut Parser) {
+pub fn expr_dsl(p: &mut Parser, linebreak: Linebreak) {
     let m = p.open();
-    rec_expr!(p, &[]);
+    rec_expr!(p, &[], ExpectedExprError, expr, linebreak);
 
     if p.at(LeftBrace) {
         stmt_block(p);
@@ -817,15 +844,15 @@ pub fn expr_dsl(p: &mut Parser) {
 }
 
 /// ExprBinary = ExprAccessor (Symbol ExprAccessor)*
-pub fn expr_binary(p: &mut Parser) {
+pub fn expr_binary(p: &mut Parser, linebreak: Linebreak) {
     let m = p.open();
 
-    expr_accessor(p);
+    rec_expr!(p, &[], ExpectedExprError, expr_accessor, linebreak);
 
     // simplify by returning the lhs symbol directly
     if p.at(Symbol) {
         while !p.eof() && p.eat(Symbol) {
-            if rec_expr!(p, &[], ExpectedInfixRhsError) {
+            if rec_expr!(p, &[], ExpectedInfixRhsError, expr, linebreak) {
                 break;
             }
         }
@@ -837,15 +864,15 @@ pub fn expr_binary(p: &mut Parser) {
 }
 
 /// ExprAccessor = ExprApp ('.' ExprApp)*
-pub fn expr_accessor(p: &mut Parser) {
+pub fn expr_accessor(p: &mut Parser, linebreak: Linebreak) {
     let m = p.open();
 
-    rec_expr!(p, &[], ExpectedExprError, expr_app);
+    rec_expr!(p, &[], ExpectedExprError, expr_app, linebreak);
 
     // simplify by returning the lhs symbol directly
     if p.at(Dot) {
         while !p.eof() && p.eat(Dot) {
-            if rec_expr!(p, &[], ExpectedFieldError) {
+            if rec_expr!(p, &[], ExpectedFieldError, expr, linebreak) {
                 break;
             }
         }
@@ -857,7 +884,7 @@ pub fn expr_accessor(p: &mut Parser) {
 }
 
 /// ExprApp = Primary Primary*
-pub fn expr_app(p: &mut Parser) {
+pub fn expr_app(p: &mut Parser, linebreak: Linebreak) {
     let mut lhs = match primary(p) {
         Some(lhs) => lhs,
         None if p.eof() => {
@@ -868,18 +895,28 @@ pub fn expr_app(p: &mut Parser) {
     };
 
     while !p.eof() {
-        let mut arg = p.savepoint();
-        if matches!(primary(&mut arg), None) {
-            // if can't parse anything, it's not a app expression
-            break;
-        };
+        match linebreak {
+            Linebreak::Semi if p.at_newline(1) && !EXPR_FOLLOW.contains(&p.lookahead(1)) => {
+                break;
+            }
+            Linebreak::Semi0 if p.at_newline(0) && !EXPR_FOLLOW.contains(&p.lookahead(1)) => {
+                break;
+            }
+            Linebreak::Cont | Linebreak::Semi | Linebreak::Semi0 => {
+                let mut arg = p.savepoint();
+                if matches!(primary(&mut arg), None) {
+                    // if can't parse anything, it's not a app expression
+                    break;
+                };
 
-        if arg.has_errors() && p.eof() {
-            break;
-        } else {
-            p.return_at(arg);
-            let m = p.open_before(lhs);
-            lhs = p.close(m, ExprApp);
+                if arg.has_errors() && p.eof() {
+                    break;
+                } else {
+                    p.return_at(arg);
+                    let m = p.open_before(lhs);
+                    lhs = p.close(m, ExprApp);
+                }
+            }
         }
     }
 }
@@ -928,7 +965,7 @@ pub fn expr_group(p: &mut Parser) -> MarkClosed {
         return p.close(m, ExprUnit);
     }
     if p.at_any(EXPR_FIRST) {
-        expr_dsl(p);
+        expr_dsl(p, Linebreak::Cont);
     } else if p.at_any(EXPR_RECOVERY) {
         p.report(ExpectedExprError);
     }
@@ -940,12 +977,12 @@ pub fn expr_array(p: &mut Parser) -> MarkClosed {
     let m = p.open();
     p.expect(LeftBracket);
     if !p.at(RightBracket) {
-        expr_dsl(p);
+        expr_dsl(p, Linebreak::Cont);
     }
     while !p.eof() && !p.at(RightBracket) {
         p.expect(Comma);
         if p.at_any(EXPR_FIRST) {
-            expr_dsl(p);
+            expr_dsl(p, Linebreak::Cont);
         } else if p.at_any(EXPR_RECOVERY) {
             p.report(ExpectedExprError);
             break;
@@ -1008,6 +1045,25 @@ pub fn primary(p: &mut Parser) -> Option<MarkClosed> {
     };
 
     Some(result)
+}
+
+pub fn pat_app(p: &mut Parser) {
+    let mut lhs = match pat(p) {
+        Some(lhs) => lhs,
+        None if p.eof() => {
+            p.report(ExpectedPatError);
+            return;
+        }
+        None => MarkClosed::new(0, p.peek().span().clone()),
+    };
+
+    if p.at_any(PAT_FIRST) {
+        while !p.eof() && p.at_any(PAT_FIRST) {
+            pat(p);
+        }
+        let m = p.open_before(lhs);
+        lhs = p.close(m, PatConstructor);
+    }
 }
 
 /// Pat = '(' Global Pat* ')' | '_' | Lit | '..'
@@ -1163,16 +1219,15 @@ fn report_non_primary(p: &mut Parser, kind: TokenKind) -> Option<MarkClosed> {
 }
 
 fn last_semi(p: &mut Parser) {
-    while !p.eof() && p.eat(Semi) {
-        p.warning(UeselessSemiError);
-    }
+    while !p.eof() && p.eat(Semi) {}
 }
 
 fn semi(p: &mut Parser, mode: Semi) -> bool {
     match mode {
-        Semi::Optional | Semi::Optout => {
+        Semi::Optional | Semi::OrNewLine => {
+            let v = p.at_newline(1) || p.at(Semi);
             while p.eat(Semi) {}
-            false
+            v
         }
         Semi::Required => {
             if !p.eat(Semi) {
@@ -1197,7 +1252,7 @@ fn stmt_block(p: &mut Parser) {
     if !p.at(RightBrace) && stmt(p) {
         p.report(ExpectedStmtError);
     }
-    while !p.eof() && !p.at(RightBrace) && semi(p, Semi::Required) {
+    while !p.eof() && !p.at(RightBrace) && semi(p, Semi::OrNewLine) {
         if stmt(p) {
             p.report(ExpectedStmtError);
             break;
@@ -1212,11 +1267,47 @@ macro_rules! rec_expr {
         $crate::rec_expr!($p, $recovery, ExpectedExprError)
     };
     ($p:expr, $recovery:expr, $error:expr) => {
-        $crate::rec_expr!($p, $recovery, $error, $crate::expr)
+        $crate::rec_expr!(
+            $p,
+            $recovery,
+            ExpectedExprError,
+            $crate::expr,
+            $crate::Linebreak::Semi
+        )
+    };
+    ($p:expr, $recovery:expr, $error:expr) => {
+        if $p.at_any(EXPR_FIRST) {
+            $crate::expr($p, $crate::Linebreak::Continuation);
+            false
+        } else {
+            let mut new_recovery = EXPR_RECOVERY.clone().to_vec();
+            new_recovery.append(&mut $recovery.to_vec());
+            if $p.at_any(new_recovery.as_slice()) {
+                $p.report($error);
+                true
+            } else {
+                false
+            }
+        }
     };
     ($p:expr, $recovery:expr, $error:expr, $f:expr) => {
         if $p.at_any(EXPR_FIRST) {
             $f($p);
+            false
+        } else {
+            let mut new_recovery = EXPR_RECOVERY.clone().to_vec();
+            new_recovery.append(&mut $recovery.to_vec());
+            if $p.at_any(new_recovery.as_slice()) {
+                $p.report($error);
+                true
+            } else {
+                false
+            }
+        }
+    };
+    ($p:expr, $recovery:expr, $error:expr, $f:expr, $linebreak:expr) => {
+        if $p.at_any(EXPR_FIRST) {
+            $f($p, $linebreak);
             false
         } else {
             let mut new_recovery = EXPR_RECOVERY.clone().to_vec();

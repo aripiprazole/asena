@@ -21,7 +21,7 @@ macro_rules! asena_expr {
     ($($s:tt)*) => {{
         let string = stringify!($($s)*);
         $crate::new_reportable(string, asena_parser::Parser::from(asena_lexer::Lexer::new(string))
-            .run($crate::expr)
+            .run(|p| $crate::expr(p, $crate::Linebreak::Cont))
             .build_tree()
             .unwrap())
     }};

@@ -35,7 +35,7 @@ impl<'a> Parser<'a> {
         Self {
             source,
             index: 0,
-            fuel: Cell::new(256),
+            fuel: Cell::new(256 * 3),
             tokens,
             errors: Default::default(),
             events: Default::default(),

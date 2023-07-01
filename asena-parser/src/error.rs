@@ -94,6 +94,9 @@ pub enum ParseError {
     #[error("Expected rhs of infix")]
     ExpectedInfixRhsError,
 
+    #[error("Expected pattern")]
+    ExpectedPatError,
+
     #[error("Could not parse primary")]
     PrimaryExpectedError,
 
@@ -138,9 +141,6 @@ pub enum ParseError {
 
     #[error("Expected type")]
     ExpectedTypeError,
-
-    #[error("Expected pattern")]
-    ExpectedPatError,
 
     #[error("Expected patterns")]
     ExpectedPatternsError,

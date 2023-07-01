@@ -1,15 +1,10 @@
-use IO;
+use IO
 
 trait Monad (f: Set -> Set) {
   pure  : a -> f a,
   apply : m a -> (a -> m b) -> m b,
 
   default toString(self) {}
-}
-
-instance Monad Maybe {
-  pure = Just;
-  apply = maybe_fmap;
 }
 
 enum Vec (a: Set) (n: Nat) where Monad Nat {
@@ -19,17 +14,17 @@ enum Vec (a: Set) (n: Nat) where Monad Nat {
   fun show(self) where Self: Sized {}
 }
 
-Cond : [f: Bool -> Set] => (cond: Bool) -> f true -> f false -> f cond;
+Cond : [f: Bool -> Set] => (cond: Bool) -> f true -> f false -> f cond
 
-If [f: Bool -> Set] (cond: Bool) (thenf: f true) (otherwise: f false) : f cond;
-If f true  thenf _         = thenf;
-If f false _     otherwise = otherwise;
+If [f: Bool -> Set] (cond: Bool) (thenf: f true) (otherwise: f false) : f cond
+If f true  thenf _         = thenf
+If f false _     otherwise = otherwise
 
 Main {
-  let person = Person.new "Sofia";
-  IO.println $ (match true {
+  let person = Person.new "Sofia"
+  IO.println $ match true {
     Just a  -> println "true",
     Nothing -> println "false"
-  });
+  };
   person.sayHello
 }

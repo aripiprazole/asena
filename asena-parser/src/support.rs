@@ -84,6 +84,27 @@ impl<'a> Parser<'a> {
         self.events = point.events;
     }
 
+    pub fn at_newline(&mut self, nth: usize) -> bool {
+        match self.nth(nth) {
+            Some(token) => {
+                token.full_text.before_whitespace.contains('\n')
+                    || token.full_text.before_whitespace.contains('\r')
+                    || token.full_text.before_whitespace.contains('\u{2028}')
+                    || token.full_text.before_whitespace.contains('\u{2029}')
+            }
+            None => false,
+        }
+    }
+
+    pub fn newline(&mut self) -> bool {
+        if self.at_newline(1) {
+            self.advance();
+            true
+        } else {
+            false
+        }
+    }
+
     pub fn eat(&mut self, kind: TokenKind) -> bool {
         if self.at(kind) {
             self.advance();
