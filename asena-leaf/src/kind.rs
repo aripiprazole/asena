@@ -94,6 +94,7 @@ pub enum TreeKind {
 
     WhereConstraint,
 
+    ClassField,
     ClassMethod,
 
     VariantConstructor,

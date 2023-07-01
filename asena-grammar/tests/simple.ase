@@ -1,6 +1,12 @@
 use IO;
 
-enum Vec [a: Set] [n: Nat] where Monad Nat {
+class Person {
+  name: String,
+
+  fun toString(self) {}
+};
+
+enum Vec (a: Set) (n: Nat) where Monad Nat {
   Nil  : Vec a 0,
   Cons : (head: a) -> (tail: Vec a n) -> Vec a (n + 1),
 
