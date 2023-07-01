@@ -206,11 +206,12 @@ impl<'a> Parser<'a> {
     }
 
     pub fn as_closed<A>(self, f: impl FnOnce(&mut Self) -> A) -> Option<(A, Parser<'a>)> {
-        if self.has_errors() {
+        let mut parser = self;
+        let closed = f(&mut parser);
+        if parser.has_errors() {
             None
         } else {
-            let mut parser = self;
-            Some((f(&mut parser), parser))
+            Some((closed, parser))
         }
     }
 

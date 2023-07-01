@@ -596,6 +596,7 @@ pub fn stmt_return(p: &mut Parser) {
     } else if p.at_any(STMT_RECOVERY) {
         p.report(ExpectedReturnStmtError);
     }
+    semi(p, Semi::OrNewLine);
     p.close(m, StmtReturn);
 }
 
@@ -604,6 +605,7 @@ pub fn stmt_ask(p: &mut Parser) {
     pat(p);
     p.expect(LeftArrow);
     rec_expr!(p, &[], ExpectedAskValueError, expr_dsl, Linebreak::Semi);
+    semi(p, Semi::OrNewLine);
     p.close(m, StmtAsk);
 }
 
@@ -613,8 +615,10 @@ pub fn stmt_if(p: &mut Parser) {
     rec_expr!(p, &[], ExpectedIfCondError);
     if_then(p);
     if p.at(ElseKeyword) {
-        if_else(p, Linebreak::Semi);
+        if_else(p, Linebreak::Semi0);
     }
+    rec_expr!(p, &[], ExpectedLetValueError, expr_dsl, Linebreak::Semi0);
+    semi(p, Semi::OrNewLine);
     p.close(m, StmtIf);
 }
 
@@ -623,13 +627,15 @@ pub fn stmt_let(p: &mut Parser) {
     p.expect(LetKeyword);
     pat(p);
     p.expect(EqualSymbol);
-    rec_expr!(p, &[], ExpectedLetValueError, expr_dsl, Linebreak::Semi);
+    rec_expr!(p, &[], ExpectedLetValueError, expr_dsl, Linebreak::Semi0);
+    semi(p, Semi::OrNewLine);
     p.close(m, StmtLet);
 }
 
 pub fn stmt_expr(p: &mut Parser) {
     let m = p.open();
-    rec_expr!(p, &[], ExpectedExprError, expr_dsl, Linebreak::Semi);
+    rec_expr!(p, &[], ExpectedExprError, expr_dsl, Linebreak::Semi0);
+    semi(p, Semi::OrNewLine);
     p.close(m, StmtExpr);
 }
 
@@ -899,7 +905,7 @@ pub fn expr_app(p: &mut Parser, linebreak: Linebreak) {
             Linebreak::Semi if p.at_newline(1) && !EXPR_FOLLOW.contains(&p.lookahead(1)) => {
                 break;
             }
-            Linebreak::Semi0 if p.at_newline(0) && !EXPR_FOLLOW.contains(&p.lookahead(1)) => {
+            Linebreak::Semi0 if p.at_newline(0) && !EXPR_FOLLOW.contains(&p.lookahead(0)) => {
                 break;
             }
             Linebreak::Cont | Linebreak::Semi | Linebreak::Semi0 => {
@@ -1030,6 +1036,12 @@ pub fn primary(p: &mut Parser) -> Option<MarkClosed> {
         // - Pi
         // - Group
         LeftParen => {
+            // '(' Identifier ':' TypeExpr ')' '->' 'TypeExpr' # Pi
+            //
+            //  ^  ^
+            //  |  |
+            //
+            //  0  1
             if let Some((closed, pi)) = p.savepoint().as_closed(expr_pi) {
                 p.return_at(pi);
                 return Some(closed);
@@ -1048,7 +1060,7 @@ pub fn primary(p: &mut Parser) -> Option<MarkClosed> {
 }
 
 pub fn pat_app(p: &mut Parser) {
-    let mut lhs = match pat(p) {
+    let lhs = match pat(p) {
         Some(lhs) => lhs,
         None if p.eof() => {
             p.report(ExpectedPatError);
@@ -1062,7 +1074,7 @@ pub fn pat_app(p: &mut Parser) {
             pat(p);
         }
         let m = p.open_before(lhs);
-        lhs = p.close(m, PatConstructor);
+        p.close(m, PatConstructor);
     }
 }
 
@@ -1249,10 +1261,7 @@ fn semi(p: &mut Parser, mode: Semi) -> bool {
 
 fn stmt_block(p: &mut Parser) {
     p.expect(LeftBrace);
-    if !p.at(RightBrace) && stmt(p) {
-        p.report(ExpectedStmtError);
-    }
-    while !p.eof() && !p.at(RightBrace) && semi(p, Semi::OrNewLine) {
+    while !p.eof() && !p.at(RightBrace) {
         if stmt(p) {
             p.report(ExpectedStmtError);
             break;

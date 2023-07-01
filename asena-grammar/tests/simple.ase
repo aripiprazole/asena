@@ -24,7 +24,7 @@ Main {
   let person = Person.new "Sofia"
   IO.println $ match true {
     Just a  -> println "true",
-    Nothing -> println "false"
+    Nothing -> println "false",
   };
   person.sayHello
 }
