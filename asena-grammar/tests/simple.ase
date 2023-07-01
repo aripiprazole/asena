@@ -25,6 +25,6 @@ Main {
   IO.println $ match true {
     Just a  -> println "true",
     Nothing -> println "false",
-  };
+  }
   person.sayHello
 }

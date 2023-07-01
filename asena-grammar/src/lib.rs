@@ -25,9 +25,6 @@ pub enum Semi {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Linebreak {
     Semi,
-    /// Lookahead 0 for some reason works only with [`decl_assign`], and i don't know
-    /// FIXME:
-    Semi0,
     Cont,
 }
 
@@ -181,7 +178,7 @@ pub fn decl_assign(p: &mut Parser) {
         pat(p);
     }
     p.expect(EqualSymbol);
-    rec_expr!(p, &[], ExpectedAssignValueError, expr_dsl, Linebreak::Semi0);
+    rec_expr!(p, &[], ExpectedAssignValueError, expr_dsl, Linebreak::Semi);
     p.field("value");
     semi(p, Semi::OrNewLine);
     p.close(m, DeclAssign);
@@ -194,7 +191,7 @@ pub fn decl_signature(p: &mut Parser) {
     p.field("name");
     params(p);
     if p.eat(Colon) {
-        type_expr(p, Linebreak::Semi0);
+        type_expr(p, Linebreak::Semi);
         p.field("type");
         if p.at(WhereKeyword) {
             where_clause(p);
@@ -615,9 +612,9 @@ pub fn stmt_if(p: &mut Parser) {
     rec_expr!(p, &[], ExpectedIfCondError);
     if_then(p);
     if p.at(ElseKeyword) {
-        if_else(p, Linebreak::Semi0);
+        if_else(p, Linebreak::Semi);
     }
-    rec_expr!(p, &[], ExpectedLetValueError, expr_dsl, Linebreak::Semi0);
+    rec_expr!(p, &[], ExpectedLetValueError, expr_dsl, Linebreak::Semi);
     semi(p, Semi::OrNewLine);
     p.close(m, StmtIf);
 }
@@ -627,14 +624,14 @@ pub fn stmt_let(p: &mut Parser) {
     p.expect(LetKeyword);
     pat(p);
     p.expect(EqualSymbol);
-    rec_expr!(p, &[], ExpectedLetValueError, expr_dsl, Linebreak::Semi0);
+    rec_expr!(p, &[], ExpectedLetValueError, expr_dsl, Linebreak::Semi);
     semi(p, Semi::OrNewLine);
     p.close(m, StmtLet);
 }
 
 pub fn stmt_expr(p: &mut Parser) {
     let m = p.open();
-    rec_expr!(p, &[], ExpectedExprError, expr_dsl, Linebreak::Semi0);
+    rec_expr!(p, &[], ExpectedExprError, expr_dsl, Linebreak::Semi);
     semi(p, Semi::OrNewLine);
     p.close(m, StmtExpr);
 }
@@ -902,13 +899,10 @@ pub fn expr_app(p: &mut Parser, linebreak: Linebreak) {
 
     while !p.eof() {
         match linebreak {
-            Linebreak::Semi if p.at_newline(1) && !EXPR_FOLLOW.contains(&p.lookahead(1)) => {
+            Linebreak::Semi if p.at_newline(0) && !EXPR_FOLLOW.contains(&p.lookahead(0)) => {
                 break;
             }
-            Linebreak::Semi0 if p.at_newline(0) && !EXPR_FOLLOW.contains(&p.lookahead(0)) => {
-                break;
-            }
-            Linebreak::Cont | Linebreak::Semi | Linebreak::Semi0 => {
+            Linebreak::Cont | Linebreak::Semi => {
                 let mut arg = p.savepoint();
                 if matches!(primary(&mut arg), None) {
                     // if can't parse anything, it's not a app expression
@@ -1283,36 +1277,6 @@ macro_rules! rec_expr {
             $crate::expr,
             $crate::Linebreak::Semi
         )
-    };
-    ($p:expr, $recovery:expr, $error:expr) => {
-        if $p.at_any(EXPR_FIRST) {
-            $crate::expr($p, $crate::Linebreak::Continuation);
-            false
-        } else {
-            let mut new_recovery = EXPR_RECOVERY.clone().to_vec();
-            new_recovery.append(&mut $recovery.to_vec());
-            if $p.at_any(new_recovery.as_slice()) {
-                $p.report($error);
-                true
-            } else {
-                false
-            }
-        }
-    };
-    ($p:expr, $recovery:expr, $error:expr, $f:expr) => {
-        if $p.at_any(EXPR_FIRST) {
-            $f($p);
-            false
-        } else {
-            let mut new_recovery = EXPR_RECOVERY.clone().to_vec();
-            new_recovery.append(&mut $recovery.to_vec());
-            if $p.at_any(new_recovery.as_slice()) {
-                $p.report($error);
-                true
-            } else {
-                false
-            }
-        }
     };
     ($p:expr, $recovery:expr, $error:expr, $f:expr, $linebreak:expr) => {
         if $p.at_any(EXPR_FIRST) {
