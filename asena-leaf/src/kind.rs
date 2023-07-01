@@ -83,6 +83,7 @@ pub enum TreeKind {
     DeclAssign,
     DeclCommand,
     DeclClass,
+    DeclTrait,
     DeclEnum,
     DeclInstance,
 
@@ -96,6 +97,8 @@ pub enum TreeKind {
 
     ClassField,
     ClassMethod,
+
+    TraitDefault,
 
     VariantConstructor,
     VariantType,

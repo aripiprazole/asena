@@ -1,9 +1,10 @@
 use IO;
 
-class Person {
-  name: String,
+trait Monad (f: Set -> Set) {
+  pure  : a -> f a,
+  apply : m a -> (a -> m b) -> m b,
 
-  fun toString(self) {}
+  default toString(self) {}
 };
 
 enum Vec (a: Set) (n: Nat) where Monad Nat {

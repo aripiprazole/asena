@@ -40,7 +40,7 @@ const EXPR_RECOVERY: &[TokenKind] = &[
 
 const ARRAY_RECOVERY: &[TokenKind] = &[Comma];
 
-const METHOD_FIRST: &[TokenKind] = &[FunKeyword];
+const METHOD_FIRST: &[TokenKind] = &[DefaultKeyword, FunKeyword];
 
 const PAT_FIRST: &[TokenKind] = &[
     Identifier,
@@ -108,6 +108,7 @@ pub fn decl(p: &mut Parser) {
         HashSymbol => decl_command(p),
         EnumKeyword => decl_enum(p),
         ClassKeyword => decl_class(p),
+        TraitKeyword => decl_trait(p),
         _ => {
             if let Some(decl) = p.savepoint().run(decl_assign).as_succeded() {
                 return p.return_at(decl);
@@ -181,6 +182,51 @@ pub fn decl_signature(p: &mut Parser) {
     }
 
     p.close(m, DeclSignature);
+}
+
+pub fn decl_trait(p: &mut Parser) {
+    fn fields(p: &mut Parser) {
+        if !p.at(RightBrace) && p.at(Identifier) {
+            class_field(p);
+        }
+        let mut comma_count = 0;
+        while !p.eof() && !p.at(RightBrace) {
+            p.expect(Comma);
+            if p.at(Comma) {
+                if comma_count > 0 {
+                    p.report(UselessCommaError);
+                }
+                comma_count += 1;
+                continue;
+            } else if p.at(Identifier) {
+                class_field(p);
+            } else if p.at(RightBrace) || p.at_any(METHOD_FIRST) {
+                break;
+            } else {
+                p.report(ExpectedFieldError);
+                break;
+            }
+        }
+    }
+    let m = p.open();
+    p.expect(TraitKeyword);
+    global(p);
+    if p.at(LeftParen) {
+        params(p);
+    }
+    if p.at(Colon) {
+        type_expr(p);
+    }
+    if p.at(WhereKeyword) {
+        where_clause(p);
+    }
+    p.expect(LeftBrace);
+    fields(p);
+    while p.at_any(METHOD_FIRST) {
+        trait_default(p);
+    }
+    p.expect(RightBrace);
+    p.close(m, DeclTrait);
 }
 
 pub fn decl_class(p: &mut Parser) {
@@ -325,6 +371,30 @@ pub fn class_field(p: &mut Parser) {
     p.expect(Colon);
     type_expr(p);
     p.close(m, ClassField);
+}
+
+pub fn trait_default(p: &mut Parser) {
+    let m = p.open();
+    p.expect(DefaultKeyword);
+    global(p);
+    params(p);
+    if p.eat(Colon) {
+        type_expr(p);
+        p.field("type");
+        if p.at(WhereKeyword) {
+            where_clause(p);
+        }
+        if p.at(LeftBrace) {
+            stmt_block(p);
+        }
+    } else {
+        if p.at(WhereKeyword) {
+            where_clause(p);
+        }
+        stmt_block(p);
+    }
+
+    p.close(m, TraitDefault);
 }
 
 pub fn class_method(p: &mut Parser) {

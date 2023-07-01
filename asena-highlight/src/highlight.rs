@@ -37,6 +37,7 @@ impl SyntaxHighlight for Token {
             HelpSymbol | DoubleArrow | RightArrow | LeftArrow => HighlightColor::Operator,
             FunKeyword => HighlightColor::HardKeyword,
             SelfKeyword => HighlightColor::SoftKeyword,
+            DefaultKeyword => HighlightColor::HardKeyword,
         }
     }
 }

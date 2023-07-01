@@ -25,6 +25,7 @@ pub enum TokenKind {
     InstanceKeyword, // instance
     InKeyword,       // in
     FunKeyword,      // fun
+    DefaultKeyword,  // default
     SelfKeyword,     // self
 
     // unicode
