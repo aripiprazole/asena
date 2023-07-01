@@ -1,3 +1,5 @@
+#![feature(default_free_fn)]
+
 use std::fmt::{Debug, Formatter};
 
 use asena_derive::*;
@@ -60,6 +62,8 @@ pub use parameter::*;
 pub use pat::*;
 pub use stmt::*;
 pub use traits::binary::*;
+pub use traits::function::*;
+pub use traits::top_level::*;
 
 pub mod body;
 pub mod decl;
@@ -69,8 +73,11 @@ pub mod literal;
 pub mod parameter;
 pub mod pat;
 pub mod stmt;
+pub mod visitor;
 pub mod walker;
 
 pub mod traits {
     pub mod binary;
+    pub mod function;
+    pub mod top_level;
 }
