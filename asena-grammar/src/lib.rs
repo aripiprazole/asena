@@ -15,6 +15,12 @@ use asena_report::Quickfix;
 
 pub use macros::*;
 
+pub enum Semi {
+    Optional,
+    Required,
+    Optout,
+}
+
 const PARAM_LIST_RECOVERY: &[TokenKind] = &[DoubleArrow, RightArrow, Semi, Colon, LeftBrace];
 
 const STMT_RECOVERY: &[TokenKind] = &[
@@ -92,11 +98,7 @@ const EXPR_FIRST: &[TokenKind] = &[
 pub fn file(p: &mut Parser) {
     let m = p.open();
 
-    if !p.eof() {
-        decl(p);
-    }
-
-    while !p.eof() && semi_eof(p) {
+    while !p.eof() {
         decl(p);
     }
 
@@ -137,6 +139,7 @@ pub fn decl_command(p: &mut Parser) {
             break;
         }
     }
+    semi(p, Semi::Required);
     p.close(m, DeclCommand);
 }
 
@@ -145,6 +148,7 @@ pub fn decl_use(p: &mut Parser) {
     let m = p.open();
     p.expect(UseKeyword);
     global(p);
+    semi(p, Semi::Optional);
     p.close(m, DeclUse);
 }
 
@@ -159,6 +163,7 @@ pub fn decl_assign(p: &mut Parser) {
     p.expect(EqualSymbol);
     rec_expr!(p, &[], ExpectedAssignValueError, expr_dsl);
     p.field("value");
+    semi(p, Semi::Required);
     p.close(m, DeclAssign);
 }
 
@@ -176,12 +181,20 @@ pub fn decl_signature(p: &mut Parser) {
         }
         if p.at(LeftBrace) {
             stmt_block(p);
+            semi(p, Semi::Optout);
+        } else {
+            semi(p, Semi::Required);
         }
     } else {
         if p.at(WhereKeyword) {
             where_clause(p);
         }
-        stmt_block(p);
+        if p.at(LeftBrace) {
+            stmt_block(p);
+            semi(p, Semi::Optout);
+        } else {
+            semi(p, Semi::Required);
+        }
     }
 
     p.close(m, DeclSignature);
@@ -229,36 +242,11 @@ pub fn decl_trait(p: &mut Parser) {
         trait_default(p);
     }
     p.expect(RightBrace);
+    semi(p, Semi::Optout);
     p.close(m, DeclTrait);
 }
 
 pub fn decl_instance(p: &mut Parser) {
-    fn impls(p: &mut Parser) {
-        if !p.at(RightBrace) && p.at(Identifier) {
-            instance_impl(p);
-        }
-        let mut comma_count = 0;
-        while !p.eof() && !p.at(RightBrace) {
-            p.expect(Semi);
-            if p.at(Semi) {
-                if comma_count > 0 {
-                    p.report(UselessCommaError);
-                }
-                comma_count += 1;
-                continue;
-            } else if p.at(Identifier) {
-                instance_impl(p);
-            } else if p.at_any(METHOD_FIRST) {
-                class_method(p);
-            } else if p.at(RightBrace) {
-                break;
-            } else {
-                p.report(ExpectedImplError);
-                break;
-            }
-        }
-    }
-
     let m = p.open();
     p.expect(InstanceKeyword);
     type_expr(p);
@@ -269,8 +257,18 @@ pub fn decl_instance(p: &mut Parser) {
         where_clause(p);
     }
     p.expect(LeftBrace);
-    impls(p);
+    while !p.at(RightBrace) && !p.eof() {
+        if p.at(Identifier) {
+            instance_impl(p);
+        } else if p.at_any(METHOD_FIRST) {
+            class_method(p);
+        } else {
+            p.report(ExpectedImplError);
+            break;
+        }
+    }
     p.expect(RightBrace);
+    semi(p, Semi::Optout);
     p.close(m, DeclInstance);
 }
 
@@ -456,6 +454,7 @@ pub fn instance_impl(p: &mut Parser) {
     p.expect(EqualSymbol);
     rec_expr!(p, &[], ExpectedImplValueError, expr_dsl);
     p.field("value");
+    semi(p, Semi::Required);
     p.close(m, InstanceImpl);
 }
 
@@ -685,7 +684,7 @@ pub fn case(p: &mut Parser) {
             stmt_block(p);
         }
         _ if p.at_any(EXPR_FIRST) => {
-            rec_expr!(p, &[], ExpectedCaseExprError, expr);
+            rec_expr!(p, &[], ExpectedCaseExprError);
         }
         _ => {
             p.report(ExpectedCaseError);
@@ -732,7 +731,7 @@ pub fn expr_ann(p: &mut Parser) {
     // simplify by returning the lhs symbol directly
     if p.at(Colon) {
         while !p.eof() && p.eat(Colon) {
-            if rec_expr!(p, &[], ExpectedAnnAgainstError, expr_qual) {
+            if rec_expr!(p, &[], ExpectedAnnAgainstError) {
                 break;
             }
         }
@@ -752,7 +751,7 @@ pub fn expr_qual(p: &mut Parser) {
     // simplify by returning the lhs symbol directly
     if p.at(DoubleArrow) {
         while !p.eof() && p.eat(DoubleArrow) {
-            if rec_expr!(p, &[], ExpectedQualReturnError, expr_anonymous_pi) {
+            if rec_expr!(p, &[], ExpectedQualReturnError) {
                 break;
             }
         }
@@ -772,7 +771,7 @@ pub fn expr_anonymous_pi(p: &mut Parser) {
     // simplify by returning the lhs symbol directly
     if p.at(RightArrow) {
         while !p.eof() && p.eat(RightArrow) {
-            if rec_expr!(p, &[], ExpectedPiReturnError, expr_binary) {
+            if rec_expr!(p, &[], ExpectedPiReturnError) {
                 break;
             }
         }
@@ -809,18 +808,8 @@ pub fn expr_dsl(p: &mut Parser) {
     let m = p.open();
     rec_expr!(p, &[]);
 
-    if p.eat(LeftBrace) {
-        if !p.at(RightBrace) && stmt(p) {
-            p.report(ExpectedStmtError);
-        }
-        while !p.eof() && !p.at(RightBrace) && semi(p) {
-            if stmt(p) {
-                p.report(ExpectedStmtError);
-                break;
-            }
-        }
-        last_semi(p);
-        p.expect(RightBrace);
+    if p.at(LeftBrace) {
+        stmt_block(p);
         p.close(m, ExprDsl);
     } else {
         p.ignore(m);
@@ -836,7 +825,7 @@ pub fn expr_binary(p: &mut Parser) {
     // simplify by returning the lhs symbol directly
     if p.at(Symbol) {
         while !p.eof() && p.eat(Symbol) {
-            if rec_expr!(p, &[], ExpectedInfixRhsError, expr_accessor) {
+            if rec_expr!(p, &[], ExpectedInfixRhsError) {
                 break;
             }
         }
@@ -856,7 +845,7 @@ pub fn expr_accessor(p: &mut Parser) {
     // simplify by returning the lhs symbol directly
     if p.at(Dot) {
         while !p.eof() && p.eat(Dot) {
-            if rec_expr!(p, &[], ExpectedFieldError, expr_app) {
+            if rec_expr!(p, &[], ExpectedFieldError) {
                 break;
             }
         }
@@ -1179,37 +1168,28 @@ fn last_semi(p: &mut Parser) {
     }
 }
 
-fn semi_eof(p: &mut Parser) -> bool {
-    if !p.eat(Semi) {
-        p.fixable(MissingSemiError, |token| {
-            quickfix!(before, token.span, [Insert(";".into())])
-        });
-    } else if p.lookahead(0) == RightBrace {
-        p.warning(UeselessSemiError);
+fn semi(p: &mut Parser, mode: Semi) -> bool {
+    match mode {
+        Semi::Optional | Semi::Optout => {
+            while p.eat(Semi) {}
+            false
+        }
+        Semi::Required => {
+            if !p.eat(Semi) {
+                p.fixable(MissingSemiError, |token| {
+                    quickfix!(before, token.span, [Insert(";".into())])
+                });
+            }
+
+            while !p.eof() && p.eat(Semi) {
+                p.warning(UeselessSemiError);
+            }
+
+            // returns if can continues
+            // generally the end of the statement block is RightBrace
+            !p.at(RightBrace) && !p.eof()
+        }
     }
-
-    while !p.eof() && p.eat(Semi) {
-        p.warning(UeselessSemiError);
-    }
-
-    // returns if can continues
-    !p.eof()
-}
-
-fn semi(p: &mut Parser) -> bool {
-    if !p.eat(Semi) {
-        p.report(MissingSemiError);
-    } else if p.lookahead(0) == RightBrace {
-        p.warning(UeselessSemiError);
-    }
-
-    while !p.eof() && p.eat(Semi) {
-        p.warning(UeselessSemiError);
-    }
-
-    // returns if can continues
-    // generally the end of the statement block is RightBrace
-    !p.at(RightBrace)
 }
 
 fn stmt_block(p: &mut Parser) {
@@ -1217,7 +1197,7 @@ fn stmt_block(p: &mut Parser) {
     if !p.at(RightBrace) && stmt(p) {
         p.report(ExpectedStmtError);
     }
-    while !p.eof() && !p.at(RightBrace) && semi(p) {
+    while !p.eof() && !p.at(RightBrace) && semi(p, Semi::Required) {
         if stmt(p) {
             p.report(ExpectedStmtError);
             break;

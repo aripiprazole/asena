@@ -5,19 +5,19 @@ trait Monad (f: Set -> Set) {
   apply : m a -> (a -> m b) -> m b,
 
   default toString(self) {}
-};
+}
 
 instance Monad Maybe {
   pure = Just;
   apply = maybe_fmap;
-};
+}
 
 enum Vec (a: Set) (n: Nat) where Monad Nat {
   Nil  : Vec a 0,
   Cons : (head: a) -> (tail: Vec a n) -> Vec a (n + 1),
 
   fun show(self) where Self: Sized {}
-};
+}
 
 Cond : [f: Bool -> Set] => (cond: Bool) -> f true -> f false -> f cond;
 
@@ -27,7 +27,7 @@ If f false _     otherwise = otherwise;
 
 Main {
   let person = Person.new "Sofia";
-  println (match true {
+  IO.println $ (match true {
     Just a  -> println "true",
     Nothing -> println "false"
   });
