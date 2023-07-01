@@ -40,6 +40,8 @@ const EXPR_RECOVERY: &[TokenKind] = &[
 
 const ARRAY_RECOVERY: &[TokenKind] = &[Comma];
 
+const METHOD_FIRST: &[TokenKind] = &[FunKeyword];
+
 const PAT_FIRST: &[TokenKind] = &[
     Identifier,
     LeftBracket,
@@ -104,6 +106,7 @@ pub fn decl(p: &mut Parser) {
     match p.lookahead(0) {
         UseKeyword => decl_use(p),
         HashSymbol => decl_command(p),
+        EnumKeyword => decl_enum(p),
         _ => {
             if let Some(decl) = p.savepoint().run(decl_assign).as_succeded() {
                 return p.return_at(decl);
@@ -159,6 +162,27 @@ pub fn decl_signature(p: &mut Parser) {
     let m = p.open();
     global(p);
     p.field("name");
+    params(p);
+    if p.eat(Colon) {
+        type_expr(p);
+        p.field("type");
+        if p.at(WhereKeyword) {
+            where_clause(p);
+        }
+        if p.at(LeftBrace) {
+            stmt_block(p);
+        }
+    } else {
+        if p.at(WhereKeyword) {
+            where_clause(p);
+        }
+        stmt_block(p);
+    }
+
+    p.close(m, DeclSignature);
+}
+
+pub fn params(p: &mut Parser) {
     while !p.eof() && p.at(LeftParen) || p.at(LeftBracket) {
         if p.at_any(PARAM_LIST_RECOVERY) {
             p.report(ExpectedParameterError);
@@ -170,17 +194,136 @@ pub fn decl_signature(p: &mut Parser) {
             param(p);
         }
     }
+}
+
+/// DeclEnum = 'enum' Global Params? GadtType? WhereClause? '{' EnumVariant* ClassMethod* '}'
+pub fn decl_enum(p: &mut Parser) {
+    fn variants(p: &mut Parser) {
+        if !p.at(RightBrace) && p.at(Identifier) {
+            enum_variant(p);
+        }
+        let mut comma_count = 0;
+        while !p.eof() && !p.at(RightBrace) {
+            p.expect(Comma);
+            if p.at(Comma) {
+                if comma_count > 0 {
+                    p.report(UselessCommaError);
+                }
+                comma_count += 1;
+                continue;
+            } else if p.at(Identifier) {
+                enum_variant(p);
+            } else if p.at(RightBrace) || p.at_any(METHOD_FIRST) {
+                break;
+            } else {
+                p.report(ExpectedVariantError);
+                break;
+            }
+        }
+    }
+
+    let m = p.open();
+    p.expect(EnumKeyword);
+    global(p);
+    params(p);
+    if p.at(Colon) {
+        enum_gadt_type(p);
+    }
+    if p.at(WhereKeyword) {
+        where_clause(p);
+    }
+    p.expect(LeftBrace);
+    variants(p);
+    while p.at_any(METHOD_FIRST) {
+        class_method(p);
+    }
+    p.expect(RightBrace);
+    p.close(m, DeclEnum);
+}
+
+pub fn enum_gadt_type(p: &mut Parser) {
+    let m = p.open();
+    p.expect(Colon);
+    type_expr(p);
+    p.close(m, EnumGadtType);
+}
+
+pub fn enum_variant(p: &mut Parser) {
+    let m = p.open();
+    p.expect(Identifier);
+    match p.lookahead(0) {
+        Colon => {
+            p.expect(Colon);
+            type_expr(p);
+            p.close(m, VariantType);
+        }
+        LeftParen => {
+            p.expect(LeftParen);
+            if !p.at(RightParen) && p.at_any(EXPR_FIRST) {
+                rec_expr!(p, &[], ExpectedVariantParameterError, type_expr);
+            }
+            let mut comma_count = 0;
+            while !p.eof() && !p.at(RightParen) {
+                p.expect(Comma);
+                if p.at(Comma) {
+                    if comma_count > 0 {
+                        p.report(UselessCommaError);
+                    }
+                    comma_count += 1;
+                    continue;
+                } else if p.at_any(EXPR_FIRST) {
+                    rec_expr!(p, &[], ExpectedVariantParameterError, type_expr);
+                } else if p.at_any(PARAM_LIST_RECOVERY) {
+                    p.report(ExpectedParameterError);
+                    break;
+                }
+            }
+            p.expect(RightParen);
+            p.close(m, VariantConstructor);
+        }
+        _ => {
+            p.close(m, VariantConstructor);
+        }
+    }
+}
+
+pub fn class_method(p: &mut Parser) {
+    let m = p.open();
+    p.expect(FunKeyword);
+    global(p);
+    params(p);
     if p.eat(Colon) {
         type_expr(p);
         p.field("type");
+        if p.at(WhereKeyword) {
+            where_clause(p);
+        }
         if p.at(LeftBrace) {
             stmt_block(p);
         }
     } else {
+        if p.at(WhereKeyword) {
+            where_clause(p);
+        }
         stmt_block(p);
     }
 
-    p.close(m, DeclSignature);
+    p.close(m, ClassMethod);
+}
+
+pub fn where_clause(p: &mut Parser) {
+    let m = p.open();
+    p.expect(WhereKeyword);
+    while !p.eof() && p.at_any(EXPR_FIRST) {
+        constraint(p);
+    }
+    p.close(m, WhereClause);
+}
+
+pub fn constraint(p: &mut Parser) {
+    let m = p.open();
+    type_expr(p);
+    p.close(m, WhereConstraint);
 }
 
 /// Param = ImplicitParam | ExplicitParam
@@ -191,6 +334,12 @@ pub fn param(p: &mut Parser) -> bool {
     match token.kind {
         LeftParen => {
             p.expect(LeftParen);
+            if p.at(SelfKeyword) {
+                p.expect(SelfKeyword);
+                p.expect(RightParen);
+                p.close(m, SelfParam);
+                return false;
+            }
             p.expect(Identifier);
             p.expect(Colon);
             type_expr(p);
@@ -383,9 +532,6 @@ pub fn expr_match(p: &mut Parser) {
             p.report(ExpectedCaseError);
             break;
         }
-    }
-    if comma_count == 0 {
-        p.warning(RequiredTraillingCommaError);
     }
     p.expect(RightBrace);
     p.close(m, ExprMatch);

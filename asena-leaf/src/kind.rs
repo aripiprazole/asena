@@ -83,9 +83,24 @@ pub enum TreeKind {
     DeclAssign,
     DeclCommand,
     DeclClass,
+    DeclEnum,
     DeclInstance,
 
+    EnumGadtType,
+
+    WhereClause,
+    WhereIsIn,
+    WhereIsType,
+
+    WhereConstraint,
+
+    ClassMethod,
+
+    VariantConstructor,
+    VariantType,
+
     Param,
+    SelfParam,
     LamParam,
 
     TypeConstraint,

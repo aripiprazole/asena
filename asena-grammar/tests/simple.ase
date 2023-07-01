@@ -1,5 +1,12 @@
 use IO;
 
+enum Vec [a: Set] [n: Nat] where Monad Nat {
+  Nil  : Vec a 0,
+  Cons : (head: a) -> (tail: Vec a n) -> Vec a (n + 1),
+
+  fun show(self) where Self: Sized {}
+};
+
 Cond : [f: Bool -> Set] => (cond: Bool) -> f true -> f false -> f cond;
 
 If [f: Bool -> Set] (cond: Bool) (thenf: f true) (otherwise: f false) : f cond;

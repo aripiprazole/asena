@@ -154,11 +154,20 @@ pub enum ParseError {
     #[error("Could not parse anything, found end of file")]
     EofError,
 
+    #[error("Only one where clause is permitted")]
+    OnlyOneWhereClauseIsPermittedError,
+
     #[error("Expected parameter")]
     ExpectedParameterError,
 
     #[error("Expected parameter to be a tuple")]
     ParameterIsCurryiedAndNotTupleError,
+
+    #[error("Expected variant")]
+    ExpectedVariantError,
+
+    #[error("Expected variant parameter")]
+    ExpectedVariantParameterError,
 
     #[error("Expected statement")]
     ExpectedStmtError,
