@@ -1070,22 +1070,20 @@ pub fn primary(p: &mut Parser) -> Option<MarkClosed> {
 }
 
 pub fn pat_app(p: &mut Parser) {
-    let lhs = match pat(p) {
-        Some(lhs) => lhs,
-        None if p.eof() => {
-            p.report(ExpectedPatError);
-            return;
-        }
-        None => MarkClosed::new(0, p.peek().span().clone()),
-    };
-
-    if p.at_any(PAT_FIRST) {
-        while !p.eof() && p.at_any(PAT_FIRST) {
-            pat(p);
-        }
-        let m = p.open_before(lhs);
-        p.close(m, PatConstructor);
+    if let Some(pat_constructor) = p.savepoint().run(pat_constructor).as_succeded() {
+        p.return_at(pat_constructor);
+    } else {
+        pat(p);
     }
+}
+
+pub fn pat_constructor(p: &mut Parser) -> MarkClosed {
+    let m = p.open();
+    global(p);
+    while !p.eof() && p.at_any(PAT_FIRST) {
+        pat(p);
+    }
+    p.close(m, PatConstructor)
 }
 
 /// Pat = '(' Global Pat* ')' | '_' | Lit | '..'
@@ -1134,12 +1132,9 @@ pub fn pat(p: &mut Parser) -> Option<MarkClosed> {
         LeftParen => {
             let m = p.open();
             p.expect(LeftParen);
-            global(p);
-            while !p.eof() && !p.at(RightParen) {
-                pat(p);
-            }
+            pat_constructor(p);
             p.expect(RightParen);
-            p.close(m, PatConstructor)
+            p.close(m, PatGroup)
         }
 
         otherwise => {

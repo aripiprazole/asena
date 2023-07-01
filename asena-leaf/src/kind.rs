@@ -65,7 +65,9 @@ pub enum TreeKind {
     PatLit,
     PatGlobal,
     PatConstructor,
+    PatConstructorList,
     PatList,
+    PatGroup,
 
     StmtAsk,
     StmtLet,
