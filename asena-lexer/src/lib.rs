@@ -131,6 +131,7 @@ fn ident_lexer<'a>() -> impl Parser<'a, &'a str, Token, LexError<'a>> {
             "in" => Token::new(InKeyword, ident),
             "fun" => Token::new(FunKeyword, ident),
             "self" => Token::new(SelfKeyword, ident),
+            "instance" => Token::new(InstanceKeyword, ident),
             "default" => Token::new(DefaultKeyword, ident),
             _ => Token::new(Identifier, ident),
         })

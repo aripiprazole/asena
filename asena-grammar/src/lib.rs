@@ -24,6 +24,7 @@ const STMT_RECOVERY: &[TokenKind] = &[
     RecordKeyword,
     TypeKeyword,
     TraitKeyword,
+    InstanceKeyword,
     UseKeyword,
 ];
 
@@ -34,6 +35,7 @@ const EXPR_RECOVERY: &[TokenKind] = &[
     RecordKeyword,
     TypeKeyword,
     TraitKeyword,
+    InstanceKeyword,
     UseKeyword,
     Semi,
 ];
@@ -109,6 +111,7 @@ pub fn decl(p: &mut Parser) {
         EnumKeyword => decl_enum(p),
         ClassKeyword => decl_class(p),
         TraitKeyword => decl_trait(p),
+        InstanceKeyword => decl_instance(p),
         _ => {
             if let Some(decl) = p.savepoint().run(decl_assign).as_succeded() {
                 return p.return_at(decl);
@@ -227,6 +230,48 @@ pub fn decl_trait(p: &mut Parser) {
     }
     p.expect(RightBrace);
     p.close(m, DeclTrait);
+}
+
+pub fn decl_instance(p: &mut Parser) {
+    fn impls(p: &mut Parser) {
+        if !p.at(RightBrace) && p.at(Identifier) {
+            instance_impl(p);
+        }
+        let mut comma_count = 0;
+        while !p.eof() && !p.at(RightBrace) {
+            p.expect(Semi);
+            if p.at(Semi) {
+                if comma_count > 0 {
+                    p.report(UselessCommaError);
+                }
+                comma_count += 1;
+                continue;
+            } else if p.at(Identifier) {
+                instance_impl(p);
+            } else if p.at_any(METHOD_FIRST) {
+                class_method(p);
+            } else if p.at(RightBrace) {
+                break;
+            } else {
+                p.report(ExpectedImplError);
+                break;
+            }
+        }
+    }
+
+    let m = p.open();
+    p.expect(InstanceKeyword);
+    type_expr(p);
+    if p.at(LeftParen) {
+        params(p);
+    }
+    if p.at(WhereKeyword) {
+        where_clause(p);
+    }
+    p.expect(LeftBrace);
+    impls(p);
+    p.expect(RightBrace);
+    p.close(m, DeclInstance);
 }
 
 pub fn decl_class(p: &mut Parser) {
@@ -395,6 +440,23 @@ pub fn trait_default(p: &mut Parser) {
     }
 
     p.close(m, TraitDefault);
+}
+
+pub fn instance_impl(p: &mut Parser) {
+    if p.at_any(METHOD_FIRST) {
+        class_method(p);
+        p.report(MethodNotAllowedInInstanceError);
+    }
+    let m = p.open();
+    global(p);
+    p.field("name");
+    while !p.eof() && !p.at(EqualSymbol) {
+        pat(p);
+    }
+    p.expect(EqualSymbol);
+    rec_expr!(p, &[], ExpectedImplValueError, expr_dsl);
+    p.field("value");
+    p.close(m, InstanceImpl);
 }
 
 pub fn class_method(p: &mut Parser) {

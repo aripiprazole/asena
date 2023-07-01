@@ -98,6 +98,8 @@ pub enum TreeKind {
     ClassField,
     ClassMethod,
 
+    InstanceImpl,
+
     TraitDefault,
 
     VariantConstructor,

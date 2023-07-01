@@ -88,6 +88,9 @@ pub enum ParseError {
     #[error("Expected field")]
     ExpectedFieldError,
 
+    #[error("Expected impl function")]
+    ExpectedImplError,
+
     #[error("Expected rhs of infix")]
     ExpectedInfixRhsError,
 
@@ -117,6 +120,9 @@ pub enum ParseError {
 
     #[error("Expected lam body")]
     ExpectedLamBodyError,
+
+    #[error("Expected impl value")]
+    ExpectedImplValueError,
 
     #[error("Expected assign value")]
     ExpectedAssignValueError,
@@ -159,6 +165,9 @@ pub enum ParseError {
 
     #[error("Expected parameter")]
     ExpectedParameterError,
+
+    #[error("Expected implementations, not methods")]
+    MethodNotAllowedInInstanceError,
 
     #[error("Expected parameter to be a tuple")]
     ParameterIsCurryiedAndNotTupleError,

@@ -7,6 +7,11 @@ trait Monad (f: Set -> Set) {
   default toString(self) {}
 };
 
+instance Monad Maybe {
+  pure = Just;
+  apply = maybe_fmap;
+};
+
 enum Vec (a: Set) (n: Nat) where Monad Nat {
   Nil  : Vec a 0,
   Cons : (head: a) -> (tail: Vec a n) -> Vec a (n + 1),
