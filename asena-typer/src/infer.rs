@@ -17,6 +17,7 @@ pub struct TypeEnvironment {
 
 #[derive(Reporter)]
 #[ast_step(
+    BranchWalker,
     FileWalker,
     BodyWalker,
     PropertyWalker,
@@ -129,6 +130,9 @@ impl<'a, R: Reporter> AsenaTyper<'a, R> {
             Expr::Help(_) => todo!(),
             Expr::Local(_) => todo!(),
             Expr::Literal(_) => todo!(),
+            Expr::Unit(_) => todo!(),
+            Expr::If(_) => todo!(),
+            Expr::Match(_) => todo!(),
         }
     }
 }

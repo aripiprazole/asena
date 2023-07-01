@@ -13,16 +13,39 @@ pub struct Ask(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(PatWalker, ExprWalker, StmtWalker)]
+#[ast_walkable(BranchWalker, PatWalker, ExprWalker, StmtWalker)]
 impl Ask {
     #[ast_leaf]
     pub fn pattern(&self) -> Pat {
-        todo!()
+        self.filter().first()
     }
 
     #[ast_leaf]
     pub fn value(&self) -> Expr {
-        todo!()
+        self.filter().first()
+    }
+}
+
+#[derive(Default, Node, Located, Clone)]
+pub struct IfStmt(GreenTree);
+
+#[ast_of]
+#[ast_debug]
+#[ast_walkable(BranchWalker, PatWalker, ExprWalker, StmtWalker)]
+impl IfStmt {
+    #[ast_leaf]
+    pub fn cond(&self) -> Expr {
+        self.filter().first()
+    }
+
+    #[ast_leaf]
+    pub fn then_branch(&self) -> Branch {
+        self.filter().nth(0)
+    }
+
+    #[ast_leaf]
+    pub fn else_branch(&self) -> Option<Branch> {
+        self.filter().try_as_nth(1)
     }
 }
 
@@ -31,16 +54,16 @@ pub struct LetStmt(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(PatWalker, ExprWalker, StmtWalker)]
+#[ast_walkable(BranchWalker, PatWalker, ExprWalker, StmtWalker)]
 impl LetStmt {
     #[ast_leaf]
     pub fn pattern(&self) -> Pat {
-        self.filter::<Pat>().first()
+        self.filter().first()
     }
 
     #[ast_leaf]
     pub fn value(&self) -> Expr {
-        self.filter::<Expr>().first()
+        self.filter().first()
     }
 }
 
@@ -49,23 +72,21 @@ pub struct Return(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(ExprWalker, PatWalker, StmtWalker)]
+#[ast_walkable(BranchWalker, ExprWalker, PatWalker, StmtWalker)]
 impl Return {
-    /// This is using directly [ExprRef] in the AST, because when expanded, this will generate
-    /// and [Option] wrapped value.
     #[ast_leaf]
-    pub fn value(&self) -> Expr {
-        todo!()
+    pub fn value(&self) -> Option<Expr> {
+        self.filter().first()
     }
 }
 
 #[derive(Default, Node, Located, Clone)]
-pub struct Eval(GreenTree);
+pub struct ExprStmt(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(ExprWalker, PatWalker, StmtWalker)]
-impl Eval {
+#[ast_walkable(BranchWalker, ExprWalker, PatWalker, StmtWalker)]
+impl ExprStmt {
     #[ast_leaf]
     pub fn value(&self) -> Expr {
         self.filter::<Expr>().first()
@@ -74,12 +95,13 @@ impl Eval {
 
 ast_enum! {
     #[derive(Walker)]
-    #[ast_walker_traits(PatWalker, ExprWalker)]
+    #[ast_walker_traits(BranchWalker, PatWalker, ExprWalker)]
     pub enum Stmt {
-        Ask     <- StmtAsk,    // <local_id> <- <expr>
-        LetStmt <- StmtLet,    // let <local_id> = <expr>
-        Return  <- StmtReturn, // return <expr?>
-        Eval    <- StmtExpr,   // <expr?>
+        Ask      <- StmtAsk,    // <local_id> <- <expr>
+        Return   <- StmtReturn, // return <expr?>
+        IfStmt   <- StmtIf,     // if <expr> <branch> (else <branch>)?
+        LetStmt  <- StmtLet,    // let <local_id> = <expr>
+        ExprStmt <- StmtExpr,   // <expr?>
     }
 }
 

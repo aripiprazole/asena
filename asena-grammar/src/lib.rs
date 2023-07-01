@@ -194,26 +194,16 @@ pub fn decl_assign(p: &mut Parser) {
 /// DeclSignature = Global Param* ':' TypeExpr
 pub fn decl_signature(p: &mut Parser) {
     let m = p.open();
-
     global(p);
-    p.field("name");
     params(p);
-
     if p.eat(Colon) {
         type_expr(p, Linebreak::Semi);
-        p.field("type");
     }
-
-    if p.at(WhereKeyword) {
-        where_clause(p);
-    }
-
+    where_clause(p);
     if p.at(LeftBrace) {
         _stmt_block(p);
     }
-
     _semi(p, Semi::OrNewLine);
-
     p.close(m, DeclSignature);
 }
 
@@ -221,15 +211,7 @@ pub fn decl_trait(p: &mut Parser) {
     let m = p.open();
     p.expect(TraitKeyword);
     global(p);
-
-    if p.at(LeftParen) {
-        params(p);
-    }
-
-    if p.at(Colon) {
-        type_expr(p, Linebreak::Cont);
-    }
-
+    params(p);
     if p.at(WhereKeyword) {
         where_clause(p);
     }
@@ -238,9 +220,7 @@ pub fn decl_trait(p: &mut Parser) {
     _trait_fields(p);
     _trait_methods(p);
     p.expect(RightBrace);
-
     _semi(p, Semi::OrNewLine);
-
     p.close(m, DeclTrait);
 }
 
@@ -352,7 +332,7 @@ pub fn decl_enum(p: &mut Parser) {
     p.expect(EnumKeyword);
     global(p);
     params(p);
-    enum_gadt_type(p);
+    _enum_gadt_type(p);
     where_clause(p);
     p.expect(LeftBrace);
     _enum_variants(p);
@@ -393,19 +373,17 @@ pub fn _enum_methods(p: &mut Parser) {
     }
 }
 
-pub fn enum_gadt_type(p: &mut Parser) {
+pub fn _enum_gadt_type(p: &mut Parser) {
     if !p.at(Colon) {
         return;
     }
-    let m = p.open();
     p.expect(Colon);
     type_expr(p, Linebreak::Cont);
-    p.close(m, EnumGadtType);
 }
 
 pub fn enum_variant(p: &mut Parser) {
     let m = p.open();
-    p.expect(Identifier);
+    global(p);
     match p.lookahead(0) {
         Colon => {
             p.expect(Colon);
@@ -532,7 +510,7 @@ pub fn where_clause(p: &mut Parser) {
 pub fn constraint(p: &mut Parser) {
     let m = p.open();
     type_expr(p, Linebreak::Cont);
-    p.close(m, WhereConstraint);
+    p.close(m, TypeConstraint);
 }
 
 pub fn params(p: &mut Parser) {
@@ -677,19 +655,22 @@ pub fn expr(p: &mut Parser, linebreak: Linebreak) {
 
 pub fn if_then(p: &mut Parser) {
     let m = p.open();
+
     match p.lookahead(0) {
         ThenKeyword => {
             p.expect(ThenKeyword);
             rec_expr!(p, &[], ExpectedIfThenExprError, expr_dsl, Linebreak::Cont);
+            p.close(m, BranchExpr);
         }
         LeftBrace => {
             _stmt_block(p);
+            p.close(m, BranchBlock);
         }
         _ => {
             p.report(ExpectedIfThenError);
+            p.close(m, BranchExpr);
         }
     }
-    p.close(m, IfThen);
 }
 
 pub fn if_else(p: &mut Parser, linebreak: Linebreak) {
@@ -698,15 +679,17 @@ pub fn if_else(p: &mut Parser, linebreak: Linebreak) {
     match p.lookahead(0) {
         LeftBrace => {
             _stmt_block(p);
+            p.close(m, BranchBlock);
         }
         _ if p.at_any(EXPR_FIRST) => {
             rec_expr!(p, &[], ExpectedIfElseExprError, expr, linebreak);
+            p.close(m, BranchExpr);
         }
         _ => {
             p.report(ExpectedIfElseError);
+            p.close(m, BranchExpr);
         }
     }
-    p.close(m, IfElse);
 }
 
 /// ExprIf = 'if' Expr 'then' Expr 'else' Expr
@@ -723,18 +706,26 @@ pub fn case(p: &mut Parser) {
     let m = p.open();
     pat_app(p);
     p.expect(RightArrow);
+    case_branch(p);
+    p.close(m, MatchCase);
+}
+
+pub fn case_branch(p: &mut Parser) {
+    let m = p.open();
     match p.lookahead(0) {
         LeftBrace => {
             _stmt_block(p);
+            p.close(m, BranchBlock);
         }
         _ if p.at_any(EXPR_FIRST) => {
             rec_expr!(p, &[], ExpectedCaseExprError, expr, Linebreak::Cont);
+            p.close(m, BranchExpr);
         }
         _ => {
             p.report(ExpectedCaseError);
+            p.close(m, BranchExpr);
         }
     }
-    p.close(m, MatchCase);
 }
 
 /// ExprMatch = 'match' Expr '{' Case* '}'

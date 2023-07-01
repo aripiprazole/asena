@@ -1,4 +1,4 @@
-use asena_ast::{Binary, Expr, Infix};
+use asena_ast::{AsenaFile, Binary, Expr, Infix};
 use asena_grammar::Linebreak;
 use asena_leaf::ast::Node;
 use asena_lexer::Lexer;
@@ -23,7 +23,7 @@ fn it_works() {
 fn simple() {
     let code = include_str!("simple.ase");
     let parser = Parser::from(Lexer::new(code)).run(asena_grammar::file);
-    let file = parser.build_tree().unwrap();
+    let file = AsenaFile::new(parser.build_tree().unwrap());
 
     println!("{file:#?}");
 }

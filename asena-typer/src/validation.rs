@@ -9,6 +9,7 @@ use crate::{Kind, Type, TypeError};
 
 #[derive(Reporter)]
 #[ast_step(
+    BranchWalker,
     CommandWalker,
     FileWalker,
     BodyWalker,
@@ -96,6 +97,7 @@ impl<'a, R: Reporter> ExprWalker for AsenaTypeValidator<'a, R> {
 
 #[derive(Reporter)]
 #[ast_step(
+    BranchWalker,
     CommandWalker,
     FileWalker,
     BodyWalker,
@@ -185,10 +187,7 @@ impl From<Typed> for Type {
 impl From<Expr> for Type {
     fn from(value: Expr) -> Self {
         match value {
-            Expr::Group(value) => match value.value() {
-                Some(value) => value.into(),
-                None => Type::Unit,
-            },
+            Expr::Group(group) => group.value().into(),
             Expr::Local(local) if is_type_constructor(&local) => {
                 Type::Constructor(local.to_fn_id(), Kind::Star)
             }

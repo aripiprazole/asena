@@ -1,10 +1,13 @@
 //! Expression module, contains all the expressions that can be used in the language. The following
 //! expressions are concrete:
 //!
+//! - [Unit]
 //! - [Group]
 //! - [Infix]
 //! - [Accessor]
 //! - [App]
+//! - [If]
+//! - [Match]
 //! - [Dsl] TODO
 //! - [Array] TODO
 //! - [Lam] TODO
@@ -29,6 +32,28 @@ use asena_span::{Span, Spanned};
 
 use crate::*;
 
+pub mod branch;
+pub mod case;
+pub mod lam_parameter;
+
+pub use branch::*;
+pub use case::*;
+pub use lam_parameter::*;
+
+/// Unit expression, is an that represents an Unit value.
+///
+/// The syntax is like:
+/// ```haskell
+/// ()
+/// ```
+#[derive(Default, Node, Located, Clone)]
+pub struct Unit(GreenTree);
+
+#[ast_of]
+#[ast_debug]
+#[ast_walkable(BranchWalker, PatWalker, StmtWalker, ExprWalker)]
+impl Unit {}
+
 /// Group expression, is an expression that is a call between two operands, and is surrounded by
 /// parenthesis.
 ///
@@ -41,16 +66,13 @@ pub struct Group(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(PatWalker, StmtWalker, ExprWalker)]
+#[ast_walkable(BranchWalker, PatWalker, StmtWalker, ExprWalker)]
 impl Group {
     /// Returns the expression inside the group, this is the expression that is surrounded by
     /// parenthesis.
-    ///
-    /// If the group is empty, then it will return `None`. It means that the [Group] is actually an
-    /// unit expression/type, like `()`.
     #[ast_leaf]
-    pub fn value(&self) -> Option<Expr> {
-        self.at(1)
+    pub fn value(&self) -> Expr {
+        self.filter().first()
     }
 }
 
@@ -83,7 +105,7 @@ impl Located for Infix {
     }
 }
 
-impl<W: ExprWalker + PatWalker + StmtWalker> Walkable<W> for Infix {
+impl<W: BranchWalker + ExprWalker + PatWalker + StmtWalker> Walkable<W> for Infix {
     fn walk(&self, walker: &mut W) {
         self.lhs().walk(walker);
         self.fn_id().walk(walker);
@@ -117,7 +139,7 @@ impl Located for Accessor {
     }
 }
 
-impl<W: ExprWalker + PatWalker + StmtWalker> Walkable<W> for Accessor {
+impl<W: BranchWalker + ExprWalker + PatWalker + StmtWalker> Walkable<W> for Accessor {
     fn walk(&self, walker: &mut W) {
         self.lhs().walk(walker);
         self.fn_id().walk(walker);
@@ -150,7 +172,7 @@ pub struct App(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(PatWalker, StmtWalker, ExprWalker)]
+#[ast_walkable(BranchWalker, PatWalker, StmtWalker, ExprWalker)]
 impl App {
     #[ast_leaf]
     pub fn callee(&self) -> Expr {
@@ -181,21 +203,22 @@ pub struct Dsl(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(PatWalker, StmtWalker, ExprWalker)]
+#[ast_walkable(BranchWalker, PatWalker, StmtWalker, ExprWalker)]
 impl Dsl {
     #[ast_leaf]
     pub fn callee(&self) -> Expr {
-        todo!()
+        self.filter().first()
     }
 
     #[ast_leaf]
     pub fn parameters(&self) -> Vec<Parameter> {
-        todo!()
+        // TODO: Implement this
+        vec![].into()
     }
 
     #[ast_leaf]
     pub fn block(&self) -> Vec<Stmt> {
-        todo!()
+        self.filter()
     }
 }
 
@@ -211,11 +234,11 @@ pub struct Array(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(PatWalker, StmtWalker, ExprWalker)]
+#[ast_walkable(BranchWalker, PatWalker, StmtWalker, ExprWalker)]
 impl Array {
     #[ast_leaf]
     pub fn items(&self) -> Vec<Expr> {
-        self.filter::<Expr>()
+        self.filter()
     }
 }
 
@@ -240,16 +263,16 @@ pub struct Lam(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(PatWalker, StmtWalker, ExprWalker)]
+#[ast_walkable(BranchWalker, PatWalker, StmtWalker, ExprWalker)]
 impl Lam {
     #[ast_leaf]
-    pub fn parameters(&self) -> Vec<Lexeme<Local>> {
-        todo!()
+    pub fn parameters(&self) -> Vec<LamParameter> {
+        self.filter()
     }
 
     #[ast_leaf]
     pub fn value(&self) -> Expr {
-        todo!()
+        self.filter().first()
     }
 }
 
@@ -266,16 +289,79 @@ pub struct Let(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(PatWalker, StmtWalker, ExprWalker)]
+#[ast_walkable(BranchWalker, PatWalker, StmtWalker, ExprWalker)]
 impl Let {
     #[ast_leaf]
-    pub fn bindings(&self) -> Vec<Binding> {
-        todo!()
+    pub fn pat(&self) -> Pat {
+        self.filter().first()
+    }
+
+    #[ast_leaf]
+    pub fn value(&self) -> Expr {
+        self.filter().nth(1)
     }
 
     #[ast_leaf]
     pub fn in_value(&self) -> Expr {
-        todo!()
+        self.filter().nth(2)
+    }
+}
+
+/// If expression, is a conditional expression, that is simply checks the condition, and if it's
+/// true, it executes the first branch, otherwise, it executes the second branch.
+///
+/// The syntax is like:
+/// ```haskell
+/// if a then b else c
+/// ```
+#[derive(Default, Node, Located, Clone)]
+pub struct If(GreenTree);
+
+#[ast_of]
+#[ast_debug]
+#[ast_walkable(BranchWalker, BranchWalker, PatWalker, StmtWalker, ExprWalker)]
+impl If {
+    #[ast_leaf]
+    pub fn cond(&self) -> Expr {
+        self.filter().first()
+    }
+
+    #[ast_leaf]
+    pub fn then_branch(&self) -> Branch {
+        self.filter().nth(0)
+    }
+
+    #[ast_leaf]
+    pub fn else_branch(&self) -> Branch {
+        self.filter().nth(1)
+    }
+}
+/// Match expression, is a pattern matching expression, that is simply checks the condition, and if
+/// the pattern matches agains't the scrutinee, it executes the first branch, otherwise, it
+/// executes the next branches.
+///
+/// The syntax is like:
+/// ```haskell
+/// match a {
+///    Just x -> x,
+///    Nothing -> panic()
+/// }
+/// ```
+#[derive(Default, Node, Located, Clone)]
+pub struct Match(GreenTree);
+
+#[ast_of]
+#[ast_debug]
+#[ast_walkable(BranchWalker, BranchWalker, PatWalker, StmtWalker, ExprWalker)]
+impl Match {
+    #[ast_leaf]
+    pub fn scrutinee(&self) -> Expr {
+        self.filter().first()
+    }
+
+    #[ast_leaf]
+    pub fn cases(&self) -> Vec<Case> {
+        self.filter()
     }
 }
 
@@ -291,7 +377,7 @@ pub struct Ann(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(PatWalker, StmtWalker, ExprWalker)]
+#[ast_walkable(BranchWalker, PatWalker, StmtWalker, ExprWalker)]
 impl Ann {
     #[ast_leaf]
     pub fn value(&self) -> Expr {
@@ -331,7 +417,7 @@ impl Located for Qual {
     }
 }
 
-impl<W: ExprWalker + PatWalker + StmtWalker> Walkable<W> for Qual {
+impl<W: BranchWalker + ExprWalker + PatWalker + StmtWalker> Walkable<W> for Qual {
     fn walk(&self, walker: &mut W) {
         self.lhs().walk(walker);
         self.fn_id().walk(walker);
@@ -365,7 +451,7 @@ pub struct Pi(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(PatWalker, StmtWalker, ExprWalker)]
+#[ast_walkable(BranchWalker, PatWalker, StmtWalker, ExprWalker)]
 impl Pi {
     #[ast_leaf]
     pub fn parameter_name(&self) -> Option<Lexeme<Local>> {
@@ -441,7 +527,7 @@ pub struct Sigma(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(PatWalker, StmtWalker, ExprWalker)]
+#[ast_walkable(BranchWalker, PatWalker, StmtWalker, ExprWalker)]
 impl Sigma {
     #[ast_leaf]
     pub fn parameter_name(&self) -> Lexeme<Local> {
@@ -470,7 +556,7 @@ pub struct Help(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(PatWalker, StmtWalker, ExprWalker)]
+#[ast_walkable(BranchWalker, PatWalker, StmtWalker, ExprWalker)]
 impl Help {
     #[ast_leaf]
     pub fn value(&self) -> Expr {
@@ -480,9 +566,10 @@ impl Help {
 
 ast_enum! {
     #[derive(Walker)]
-    #[ast_walker_traits(PatWalker, StmtWalker)]
+    #[ast_walker_traits(BranchWalker, PatWalker, StmtWalker)]
     /// The expression enum, it is the main type of the language.
     pub enum Expr {
+        Unit            <- ExprUnit,
         Group           <- ExprGroup,
         Infix           <- ExprBinary,
         Accessor        <- ExprAccessor,
@@ -491,6 +578,8 @@ ast_enum! {
         Dsl             <- ExprDsl,
         Lam             <- ExprLam,
         Let             <- ExprLet,
+        If              <- ExprIf,
+        Match           <- ExprMatch,
         Ann             <- ExprAnn,
         Qual            <- ExprQual,
         Pi              <- ExprPi,
@@ -570,7 +659,7 @@ impl Debug for Typed {
     }
 }
 
-impl<W: ExprWalker + PatWalker + StmtWalker> Walkable<W> for Typed {
+impl<W: BranchWalker + ExprWalker + PatWalker + StmtWalker> Walkable<W> for Typed {
     fn walk(&self, walker: &mut W) {
         match self {
             Typed::Infer => {}

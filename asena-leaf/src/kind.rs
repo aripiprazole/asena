@@ -53,6 +53,9 @@ pub enum TreeKind {
     ExprIf,
     ExprMatch,
 
+    BranchExpr,
+    BranchBlock,
+
     IfThen,
     IfElse,
 
@@ -68,6 +71,7 @@ pub enum TreeKind {
     PatConstructorList,
     PatList,
     PatGroup,
+    PatUnit,
 
     StmtAsk,
     StmtLet,
@@ -92,10 +96,6 @@ pub enum TreeKind {
     EnumGadtType,
 
     WhereClause,
-    WhereIsIn,
-    WhereIsType,
-
-    WhereConstraint,
 
     ClassField,
     ClassMethod,

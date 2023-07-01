@@ -5,7 +5,7 @@ use asena_leaf::{ast::Walkable, token::kind::TokenKind::*};
 
 use crate::{HighlightColor::*, SemanticHighlight};
 
-#[ast_step(PatWalker, StmtWalker)]
+#[ast_step(BranchWalker, PatWalker, StmtWalker)]
 struct SemanticHighlightTraversal<'a> {
     type_level: bool,
     buf: &'a mut crate::Annotator,

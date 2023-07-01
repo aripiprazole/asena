@@ -44,6 +44,10 @@ impl Terminal for FunctionId {
         Some(match token.kind {
             TokenKind::Identifier => Self(token.text.clone()),
             TokenKind::Symbol => Self(token.text.clone()),
+            TokenKind::Dot => Self(token.text.clone()),
+            TokenKind::DoubleArrow => Self(token.text.clone()),
+            TokenKind::LeftArrow => Self(token.text.clone()),
+            TokenKind::RightArrow => Self(token.text.clone()),
             _ => return None,
         })
     }
@@ -62,36 +66,6 @@ impl Debug for FunctionId {
 }
 
 impl<W> Walkable<W> for FunctionId {
-    fn walk(&self, _walker: &mut W) {}
-}
-
-/// Identifier's key to a type constructor.
-#[derive(Default, Clone)]
-pub struct ConstructorId(pub Vec<Spanned<FunctionId>>);
-
-impl ConstructorId {
-    /// Creates a new [ConstructorId] by a string
-    pub fn new(span: Loc, id: &str) -> Self {
-        Self(vec![Spanned::new(span, FunctionId::new(id))])
-    }
-}
-
-impl Terminal for ConstructorId {
-    fn terminal(token: Spanned<Token>) -> Option<Self> {
-        let text = token.text.clone();
-        let span = token.span;
-
-        Some(ConstructorId::new(span, &text))
-    }
-}
-
-impl Debug for ConstructorId {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "ConstructorId {:#?}", self.0)
-    }
-}
-
-impl<W> Walkable<W> for ConstructorId {
     fn walk(&self, _walker: &mut W) {}
 }
 
@@ -139,6 +113,12 @@ impl Located for Local {
 impl Terminal for Local {
     fn terminal(token: Spanned<Token>) -> Option<Self> {
         Some(match token.kind {
+            TokenKind::SelfKeyword => {
+                let text = token.text.clone();
+                let span = token.span;
+
+                Local::new(span, &text)
+            }
             TokenKind::Identifier => {
                 let text = token.text.clone();
                 let span = token.span;

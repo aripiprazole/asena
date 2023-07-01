@@ -11,7 +11,7 @@ pub struct Parameter(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(PatWalker, StmtWalker, ExprWalker)]
+#[ast_walkable(BranchWalker, PatWalker, StmtWalker, ExprWalker)]
 impl Parameter {
     /// Optional parameter's name
     #[ast_leaf]
@@ -30,12 +30,17 @@ impl Parameter {
     pub fn explicit(&self) -> bool {
         self.matches(0, TokenKind::LeftParen)
     }
+
+    pub fn is_self(&self) -> bool {
+        !self.token(TokenKind::SelfKeyword).is_error()
+    }
 }
 
 impl Leaf for Parameter {
     fn make(tree: GreenTree) -> Option<Self> {
         Some(match tree.kind() {
             Param => Parameter::new(tree),
+            SelfParam => Parameter::new(tree),
             _ => return None,
         })
     }

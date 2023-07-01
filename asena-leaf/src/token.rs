@@ -35,6 +35,10 @@ impl Token {
         }
     }
 
+    pub fn is_error(&self) -> bool {
+        self.kind == TokenKind::Error
+    }
+
     /// Uses the [std::fmt::Formatter] to write a pretty-printed tree in the terminal for debug
     /// porpuses.
     ///

@@ -22,9 +22,10 @@ If f false _     otherwise = otherwise
 
 Main {
   let person = Person.new "Sofia"
-  IO.println $ match true {
-    Just a  -> println "true",
-    Nothing -> println "false",
-  }
-  person.sayHello
+  if person.is_adult {
+    IO.println $ match true {
+      Just a  -> println "true",
+      Nothing -> println "false",
+    }
+  } else person.sayHello
 }

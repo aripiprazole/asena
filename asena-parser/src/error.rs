@@ -151,6 +151,9 @@ pub enum ParseError {
     #[error("Expected let value")]
     ExpectedLetValueError,
 
+    #[error("Expected let in value")]
+    ExpectedLetInValueError,
+
     #[error("Expected return value")]
     ExpectedReturnValueError,
 

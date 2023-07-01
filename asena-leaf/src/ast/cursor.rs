@@ -84,6 +84,10 @@ impl<T: Node + Leaf> Cursor<T> {
     pub fn as_leaf(&self) -> T {
         T::new(self.read().clone())
     }
+
+    pub fn make_as_leaf(&self) -> Option<T> {
+        T::make(self.read().clone())
+    }
 }
 
 impl<T: Leaf> Default for Cursor<T> {
@@ -95,6 +99,14 @@ impl<T: Leaf> Default for Cursor<T> {
 impl<T: Node + Leaf> Cursor<Vec<T>> {
     pub fn first(self) -> Cursor<T> {
         self.as_leaf().first().cloned().into()
+    }
+
+    pub fn nth(self, nth: usize) -> Cursor<T> {
+        self.as_leaf().get(nth).cloned().into()
+    }
+
+    pub fn try_as_nth(self, nth: usize) -> Cursor<Option<T>> {
+        Cursor::of(self.as_leaf().get(nth).cloned())
     }
 
     pub fn skip(self, n: usize) -> Cursor<Vec<T>> {

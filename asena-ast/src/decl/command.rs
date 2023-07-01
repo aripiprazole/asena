@@ -1,10 +1,7 @@
 use asena_report::{DiagnosticKind, InternalError};
 use thiserror::Error;
 
-use crate::{
-    walker::Reporter, BodyWalker, Command, DeclWalker, Expr, ExprWalker, FunctionId, PatWalker,
-    PropertyWalker, StmtWalker,
-};
+use crate::*;
 
 pub type Result<T = ()> = std::result::Result<T, CommandError>;
 
@@ -37,13 +34,13 @@ impl InternalError for CommandError {
     }
 }
 
-pub trait CommandWalker: BodyWalker + PropertyWalker + ExprWalker + PatWalker + StmtWalker {
+pub trait CommandWalker: BodyWalker + ExprWalker + PatWalker + StmtWalker {
     fn on_command(&mut self, _value: &Command) -> Result {
         Ok(())
     }
 }
 
-impl<T: CommandWalker + Reporter> DeclWalker for T {
+impl<T: CommandWalker + crate::walker::Reporter> DeclWalker for T {
     fn walk_decl_command(&mut self, value: &Command) {
         let name = value.find_name();
 

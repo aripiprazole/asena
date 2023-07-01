@@ -1,14 +1,44 @@
 use asena_derive::*;
 
-use asena_leaf::ast::{Leaf, Lexeme};
+use asena_leaf::ast::Cursor;
 use asena_leaf::ast_enum;
 use asena_leaf::node::TreeKind::*;
 
-use asena_span::Spanned;
+use asena_leaf::token::kind::TokenKind;
 
 use crate::*;
 
 pub mod command;
+pub mod constraint;
+pub mod default_method;
+pub mod property;
+pub mod variant;
+pub mod where_clause;
+
+pub use constraint::*;
+pub use default_method::*;
+pub use property::*;
+pub use variant::*;
+pub use where_clause::*;
+
+/// An use is a declaration that defines an import to a specific module.
+///
+/// The syntax should like exactly:
+/// ```haskell
+/// use IO;
+/// ```
+#[derive(Default, Node, Located, Clone)]
+pub struct Use(GreenTree);
+
+#[ast_of]
+#[ast_debug]
+#[ast_walkable(FileWalker)]
+impl Use {
+    #[ast_leaf]
+    pub fn path(&self) -> QualifiedPath {
+        self.filter().first()
+    }
+}
 
 /// Signature is the type signature of a set of [Assign] declarations, or using [Body], can be used
 /// itself as a Body.
@@ -27,27 +57,31 @@ pub struct Signature(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(PropertyWalker, ExprWalker, PatWalker, StmtWalker)]
+#[ast_walkable(BranchWalker, ExprWalker, PatWalker, StmtWalker)]
 impl Signature {
     #[ast_leaf]
     pub fn name(&self) -> QualifiedPath {
-        self.filter::<QualifiedPath>().first()
+        self.filter().first()
     }
 
     #[ast_leaf]
     pub fn parameters(&self) -> Vec<Parameter> {
-        self.filter::<Parameter>()
+        self.filter()
     }
 
     #[ast_leaf]
     pub fn return_type(&self) -> Typed {
-        self.filter::<Typed>().first()
+        self.filter().first()
     }
 
     /// Holds, optionally the value of the [Signature], this is an sugar to [Assign].
     #[ast_leaf]
-    pub fn body(&self) -> Vec<Stmt> {
-        self.filter::<Stmt>()
+    pub fn body(&self) -> Option<Vec<Stmt>> {
+        if self.token(TokenKind::LeftBrace).is_error() {
+            Cursor::from(None)
+        } else {
+            Cursor::of(Some(self.filter().as_leaf()))
+        }
     }
 }
 
@@ -63,22 +97,22 @@ pub struct Assign(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(PropertyWalker, ExprWalker, PatWalker, StmtWalker)]
+#[ast_walkable(BranchWalker, ExprWalker, PatWalker, StmtWalker)]
 impl Assign {
     #[ast_leaf]
     pub fn name(&self) -> QualifiedPath {
-        self.filter::<QualifiedPath>().first()
+        self.filter().first()
     }
 
     #[ast_leaf]
     pub fn patterns(&self) -> Vec<Pat> {
-        self.filter::<Pat>()
+        self.filter()
     }
 
     /// Holds the value of the [Assign].
     #[ast_leaf]
     pub fn body(&self) -> Expr {
-        self.filter::<Expr>().first()
+        self.filter().first()
     }
 }
 
@@ -94,16 +128,16 @@ pub struct Command(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(PropertyWalker, ExprWalker, PatWalker, StmtWalker)]
+#[ast_walkable(BranchWalker, ExprWalker, PatWalker, StmtWalker)]
 impl Command {
     #[ast_leaf]
     pub fn name(&self) -> QualifiedPath {
-        self.filter::<QualifiedPath>().first()
+        self.filter().first()
     }
 
     #[ast_leaf]
     pub fn arguments(&self) -> Vec<Expr> {
-        self.filter::<Expr>().skip(1)
+        self.filter().skip(1)
     }
 }
 
@@ -124,40 +158,89 @@ pub struct Class(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(BodyWalker, PropertyWalker, ExprWalker, PatWalker, StmtWalker)]
+#[ast_walkable(FileWalker)]
 impl Class {
     #[ast_leaf]
     pub fn name(&self) -> QualifiedPath {
-        todo!()
+        self.filter().first()
     }
 
     #[ast_leaf]
-    pub fn constraints(&self) -> Vec<Constraint> {
-        todo!()
+    pub fn parameters(&self) -> Vec<Parameter> {
+        self.filter().first()
     }
 
     #[ast_leaf]
-    pub fn properties(&self) -> Vec<Property> {
-        todo!()
+    pub fn where_clause(&self) -> Option<Where> {
+        self.filter().try_as_nth(0)
+    }
+
+    #[ast_leaf]
+    pub fn fields(&self) -> Vec<Field> {
+        self.filter()
+    }
+
+    #[ast_leaf]
+    pub fn methods(&self) -> Vec<Method> {
+        self.filter()
     }
 }
 
-/// An use is a declaration that defines an import to a specific module.
-///
-/// The syntax should like exactly:
-/// ```haskell
-/// use IO;
-/// ```
+/// An enum is a declaration
 #[derive(Default, Node, Located, Clone)]
-pub struct Use(GreenTree);
+pub struct Enum(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(BodyWalker, PropertyWalker, ExprWalker, PatWalker, StmtWalker)]
-impl Use {
+#[ast_walkable(FileWalker)]
+impl Enum {
     #[ast_leaf]
-    pub fn path(&self) -> QualifiedPath {
-        self.filter::<QualifiedPath>().first()
+    pub fn name(&self) -> QualifiedPath {
+        self.filter().first()
+    }
+
+    #[ast_leaf]
+    pub fn parameters(&self) -> Vec<Parameter> {
+        self.filter()
+    }
+
+    #[ast_leaf]
+    pub fn gadt_type(&self) -> Typed {
+        self.filter().first()
+    }
+
+    #[ast_leaf]
+    pub fn variants(&self) -> Vec<Variant> {
+        self.filter()
+    }
+
+    #[ast_leaf]
+    pub fn methods(&self) -> Vec<Method> {
+        self.filter()
+    }
+}
+
+/// An enum is a declaration
+#[derive(Default, Node, Located, Clone)]
+pub struct Trait(GreenTree);
+
+#[ast_of]
+#[ast_debug]
+#[ast_walkable(FileWalker)]
+impl Trait {
+    #[ast_leaf]
+    pub fn name(&self) -> QualifiedPath {
+        self.filter().first()
+    }
+
+    #[ast_leaf]
+    pub fn fields(&self) -> Vec<Field> {
+        self.filter()
+    }
+
+    #[ast_leaf]
+    pub fn default_methods(&self) -> Vec<DefaultMethod> {
+        self.filter()
     }
 }
 
@@ -175,28 +258,28 @@ pub struct Instance(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(BodyWalker, PropertyWalker, ExprWalker, PatWalker, StmtWalker)]
+#[ast_walkable(FileWalker)]
 impl Instance {
     #[ast_leaf]
     pub fn name(&self) -> QualifiedPath {
-        todo!()
+        self.filter().first()
     }
 
     #[ast_leaf]
-    pub fn constraints(&self) -> Vec<Constraint> {
-        todo!()
+    pub fn where_clause(&self) -> Option<Where> {
+        self.filter().try_as_nth(0)
     }
 
     #[ast_leaf]
-    pub fn properties(&self) -> Vec<Method> {
-        todo!()
+    pub fn methods(&self) -> Vec<Method> {
+        self.filter()
     }
 }
 
 ast_enum! {
     #[derive(Walker)]
     #[ast_impl_trait]
-    #[ast_walker_traits(BodyWalker, PropertyWalker, ExprWalker, PatWalker, StmtWalker)]
+    #[ast_walker_traits(FileWalker)]
     pub enum Decl {
         Use       <- DeclUse,
         Signature <- DeclSignature,
@@ -204,125 +287,7 @@ ast_enum! {
         Command   <- DeclCommand,
         Class     <- DeclClass,
         Instance  <- DeclInstance,
-    }
-}
-
-pub type DeclRef = Spanned<Decl>;
-
-/// A constraint is a part of the abstract syntax tree, that represents an unnamed implicit [Parameter].
-///
-/// The syntax is like:
-/// ```haskell
-/// class Monad m : Functor m { ... }
-/// ```
-///
-/// The constraint node can be used on `where` clauses.
-#[derive(Default, Node, Located, Clone)]
-pub struct Constraint(GreenTree);
-
-#[ast_of]
-#[ast_debug]
-#[ast_walkable(BodyWalker, ExprWalker, PatWalker, StmtWalker)]
-impl Constraint {
-    #[ast_leaf]
-    pub fn value(&self) -> Expr {
-        todo!()
-    }
-}
-
-impl Leaf for Constraint {
-    fn make(_tree: GreenTree) -> Option<Self> {
-        todo!()
-    }
-}
-
-/// A field node is a record node's field.
-///
-/// The syntax is like:
-/// ```haskell
-/// name : String;
-/// ```
-///
-/// The constraint node should be wrote in a class context.
-#[derive(Default, Node, Located, Clone)]
-pub struct Field(GreenTree);
-
-#[ast_of]
-#[ast_debug]
-#[ast_walkable(BodyWalker, ExprWalker, PatWalker, StmtWalker)]
-impl Field {
-    #[ast_leaf]
-    pub fn name(&self) -> Lexeme<Local> {
-        todo!()
-    }
-
-    #[ast_leaf]
-    pub fn field_type(&self) -> Expr {
-        todo!()
-    }
-}
-
-/// A method node is a record function associated to a record, this can be used in implementation
-/// declarations too.
-///
-/// The syntax is like:
-/// ```haskell
-/// sayHello(self): IO () {
-//    printf "Hello, I'm {}" self.name
-//  }
-/// ```
-///
-/// The method node is a simple sugar for declaring it on the top level with the class name concatenated,
-/// like: `sayHello`, in the `Person` class, should be simply `Person.sayHello`.
-#[derive(Default, Node, Located, Clone)]
-pub struct Method(GreenTree);
-
-#[ast_of]
-#[ast_debug]
-#[ast_walkable(BodyWalker, ExprWalker, PatWalker, StmtWalker)]
-impl Method {
-    #[ast_leaf]
-    pub fn name(&self) -> Lexeme<Local> {
-        todo!()
-    }
-
-    #[ast_leaf]
-    pub fn implicit_parameters(&self) -> Vec<Parameter> {
-        todo!()
-    }
-
-    #[ast_leaf]
-    pub fn explicit_parameters(&self) -> Vec<Parameter> {
-        todo!()
-    }
-
-    #[ast_leaf]
-    pub fn where_clauses(&self) -> Vec<Constraint> {
-        todo!()
-    }
-
-    #[ast_leaf]
-    pub fn return_type(&self) -> Option<Expr> {
-        todo!()
-    }
-
-    #[ast_leaf]
-    pub fn method_body(&self) -> Body {
-        todo!()
-    }
-}
-
-impl Leaf for Method {
-    fn make(_tree: GreenTree) -> Option<Self> {
-        todo!()
-    }
-}
-
-ast_enum! {
-    #[derive(Walker)]
-    #[ast_walker_traits(BodyWalker, ExprWalker, PatWalker, StmtWalker)]
-    pub enum Property {
-        Field  <- PropertyField,
-        Method <- PropertyMethod,
+        Trait     <- DeclTrait,
+        Enum      <- DeclEnum,
     }
 }

@@ -1,6 +1,5 @@
 use asena_derive::*;
 
-use asena_leaf::ast::{Lexeme, Walkable};
 use asena_leaf::ast_enum;
 use asena_leaf::node::TreeKind::*;
 
@@ -19,7 +18,7 @@ pub struct Global(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(PatWalker)]
+#[ast_walkable(ExprWalker, StmtWalker, PatWalker)]
 impl Global {
     #[ast_leaf]
     pub fn name(&self) -> QualifiedPath {
@@ -38,16 +37,16 @@ pub struct Constructor(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(PatWalker)]
+#[ast_walkable(ExprWalker, StmtWalker, PatWalker)]
 impl Constructor {
     #[ast_leaf]
-    pub fn name(&self) -> Lexeme<ConstructorId> {
-        todo!()
+    pub fn name(&self) -> QualifiedPath {
+        self.filter().first()
     }
 
     #[ast_leaf]
-    pub fn arguments(&self) -> Pat {
-        todo!()
+    pub fn arguments(&self) -> Vec<Pat> {
+        self.filter()
     }
 }
 
@@ -62,11 +61,11 @@ pub struct List(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(PatWalker)]
+#[ast_walkable(ExprWalker, StmtWalker, PatWalker)]
 impl List {
     #[ast_leaf]
     pub fn items(&self) -> Vec<Pat> {
-        todo!()
+        self.filter()
     }
 }
 
@@ -80,35 +79,41 @@ impl List {
 #[derive(Default, Node, Located, Clone)]
 pub struct Spread(GreenTree);
 
-impl<W: PatWalker> Walkable<W> for Spread {
-    fn walk(&self, _walker: &mut W) {}
-}
-
-impl Debug for Spread {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Spread").finish()
-    }
-}
+#[ast_of]
+#[ast_debug]
+#[ast_walkable(ExprWalker, StmtWalker, PatWalker)]
+impl Spread {}
 
 /// Wildcard pattern, is the same as `_` pattern [Pat::Local]
 #[derive(Default, Node, Located, Clone)]
 pub struct Wildcard(GreenTree);
 
-impl<W: PatWalker> Walkable<W> for Wildcard {
-    fn walk(&self, _walker: &mut W) {}
-}
+#[ast_of]
+#[ast_debug]
+#[ast_walkable(ExprWalker, StmtWalker, PatWalker)]
+impl Wildcard {}
 
-impl Debug for Wildcard {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Wildcard").finish()
-    }
-}
+/// Units pattern, matches agains't ()
+///
+/// The syntax is like:
+/// ```haskell
+/// ()
+/// ```
+#[derive(Default, Node, Located, Clone)]
+pub struct UnitPat(GreenTree);
+
+#[ast_of]
+#[ast_debug]
+#[ast_walkable(ExprWalker, StmtWalker, PatWalker)]
+impl UnitPat {}
 
 ast_enum! {
     #[derive(Walker)]
+    #[ast_walker_traits(ExprWalker, StmtWalker, PatWalker)]
     pub enum Pat {
         Wildcard      <- PatWildcard,                         // _
         Spread        <- PatSpread,                           // ..
+        UnitPat       <- PatUnit,                             // ()
         Constructor   <- PatConstructor,                      // (<global_id> <pattern...>)
         List          <- PatList,                             // [<pattern...>]
         Global        <- PatGlobal,                           // <global>
