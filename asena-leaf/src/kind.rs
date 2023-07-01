@@ -50,6 +50,11 @@ pub enum TreeKind {
     ExprPi,
     ExprSigma,
     ExprHelp,
+    ExprIf,
+    ExprMatch,
+
+    IfThen,
+    IfElse,
 
     IdSymbol,
 
@@ -64,6 +69,7 @@ pub enum TreeKind {
     StmtLet,
     StmtReturn,
     StmtExpr,
+    StmtIf,
 
     LetBinding,
 

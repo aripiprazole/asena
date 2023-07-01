@@ -61,6 +61,21 @@ pub enum ParseError {
     #[error("Expected expression")]
     ExpectedExprError,
 
+    #[error("Expected if condition")]
+    ExpectedIfCondError,
+
+    #[error("Expected if else expression")]
+    ExpectedIfElseExprError,
+
+    #[error("Expected if else")]
+    ExpectedIfElseError,
+
+    #[error("Expected if then expression")]
+    ExpectedIfThenExprError,
+
+    #[error("Expected if then or open braces")]
+    ExpectedIfThenError,
+
     #[error("Expected field")]
     ExpectedFieldError,
 

@@ -12,6 +12,7 @@ pub mod macros;
 use asena_report::quickfix;
 use asena_report::Fragment::Insert;
 use asena_report::Quickfix;
+
 pub use macros::*;
 
 const PARAM_LIST_RECOVERY: &[TokenKind] = &[DoubleArrow, RightArrow, Semi, Colon, LeftBrace];
@@ -46,6 +47,7 @@ const EXPR_FIRST: &[TokenKind] = &[
     Str,
     TrueKeyword,
     FalseKeyword,
+    IfKeyword,
     Int8,
     Int16,
     Int32,
@@ -149,32 +151,11 @@ pub fn decl_signature(p: &mut Parser) {
     if p.eat(Colon) {
         type_expr(p);
         p.field("type");
-        if p.eat(LeftBrace) {
-            if !p.at(RightBrace) && stmt(p) {
-                p.report(ExpectedStmtError);
-            }
-            while !p.eof() && !p.at(RightBrace) && semi(p) {
-                if stmt(p) {
-                    p.report(ExpectedStmtError);
-                    break;
-                }
-            }
-            last_semi(p);
-            p.expect(RightBrace);
+        if p.at(LeftBrace) {
+            stmt_block(p);
         }
     } else {
-        p.expect(LeftBrace);
-        if !p.at(RightBrace) && stmt(p) {
-            p.report(ExpectedStmtError);
-        }
-        while !p.eof() && !p.at(RightBrace) && semi(p) {
-            if stmt(p) {
-                p.report(ExpectedStmtError);
-                break;
-            }
-        }
-        last_semi(p);
-        p.expect(RightBrace);
+        stmt_block(p);
     }
 
     p.close(m, DeclSignature);
@@ -209,6 +190,7 @@ pub fn stmt(p: &mut Parser) -> bool {
     match p.lookahead(0) {
         ReturnKeyword => stmt_return(p),
         LetKeyword => stmt_let(p),
+        IfKeyword => stmt_if(p),
         _ => {
             if let Some(ask) = p.savepoint().run(stmt_ask).as_succeded() {
                 p.return_at(ask);
@@ -240,6 +222,17 @@ pub fn stmt_ask(p: &mut Parser) {
     p.expect(LeftArrow);
     rec_expr!(p, &[], ExpectedAskValueError, expr_dsl);
     p.close(m, StmtAsk);
+}
+
+pub fn stmt_if(p: &mut Parser) {
+    let m = p.open();
+    p.expect(IfKeyword);
+    rec_expr!(p, &[], ExpectedIfCondError);
+    if_then(p);
+    if p.at(ElseKeyword) {
+        if_else(p);
+    }
+    p.close(m, StmtIf);
 }
 
 pub fn stmt_let(p: &mut Parser) {
@@ -274,12 +267,55 @@ pub fn type_expr(p: &mut Parser) {
 pub fn expr(p: &mut Parser) {
     let token = p.peek();
     match token.kind {
-        Symbol if token.text == "\\" => return expr_lam(p),
-        HelpSymbol => return expr_help(p),
-        _ => {}
+        Symbol if token.text == "\\" => expr_lam(p),
+        HelpSymbol => expr_help(p),
+        IfKeyword => expr_if(p),
+        _ => expr_ann(p),
     }
+}
 
-    expr_ann(p);
+pub fn if_then(p: &mut Parser) {
+    let m = p.open();
+    match p.lookahead(0) {
+        ThenKeyword => {
+            p.expect(ThenKeyword);
+            rec_expr!(p, &[], ExpectedIfThenExprError, expr_dsl);
+        }
+        LeftBrace => {
+            stmt_block(p);
+        }
+        _ => {
+            p.report(ExpectedIfThenError);
+        }
+    }
+    p.close(m, IfThen);
+}
+
+pub fn if_else(p: &mut Parser) {
+    let m = p.open();
+    p.expect(ElseKeyword);
+    match p.lookahead(0) {
+        LeftBrace => {
+            stmt_block(p);
+        }
+        _ if p.at_any(EXPR_FIRST) => {
+            rec_expr!(p, &[], ExpectedIfElseExprError, expr);
+        }
+        _ => {
+            p.report(ExpectedIfElseError);
+        }
+    }
+    p.close(m, IfElse);
+}
+
+/// ExprIf = 'if' Expr 'then' Expr 'else' Expr
+pub fn expr_if(p: &mut Parser) {
+    let m = p.open();
+    p.expect(IfKeyword);
+    rec_expr!(p, &[], ExpectedIfCondError);
+    if_then(p);
+    if_else(p);
+    p.close(m, ExprIf);
 }
 
 /// ExprAnn = ExprQual (':' ExprQual)*
@@ -693,11 +729,6 @@ fn report_non_primary(p: &mut Parser, kind: TokenKind) -> Option<MarkClosed> {
         Eof => p.report(EofError),
         Symbol => p.report(ExpectedTokenError(Identifier)),
 
-        LetKeyword | IfKeyword | MatchKeyword => {
-            // TODO: try to properly parse the expression
-            p.report(PrimarySurroundedError(kind))
-        }
-
         ElseKeyword => p.report(DanglingElseError),
         CaseKeyword => p.report(ReservedKeywordError(CaseKeyword)),
 
@@ -774,6 +805,21 @@ fn semi(p: &mut Parser) -> bool {
     // returns if can continues
     // generally the end of the statement block is RightBrace
     !p.at(RightBrace)
+}
+
+fn stmt_block(p: &mut Parser) {
+    p.expect(LeftBrace);
+    if !p.at(RightBrace) && stmt(p) {
+        p.report(ExpectedStmtError);
+    }
+    while !p.eof() && !p.at(RightBrace) && semi(p) {
+        if stmt(p) {
+            p.report(ExpectedStmtError);
+            break;
+        }
+    }
+    last_semi(p);
+    p.expect(RightBrace);
 }
 
 macro_rules! rec_expr {
