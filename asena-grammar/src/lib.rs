@@ -81,8 +81,7 @@ pub fn decl(p: &mut Parser) {
         UseKeyword => decl_use(p),
         HashSymbol => decl_command(p),
         _ => {
-            let decl = p.savepoint().run(decl_assign);
-            if !decl.has_errors() {
+            if let Some(decl) = p.savepoint().run(decl_assign).as_succeded() {
                 return p.return_at(decl);
             };
 
@@ -553,9 +552,7 @@ pub fn primary(p: &mut Parser) -> Option<MarkClosed> {
         // - Sigma
         // - Array
         LeftBracket => {
-            let mut sigma = p.savepoint();
-            let closed = expr_sigma(&mut sigma);
-            if !sigma.has_errors() {
+            if let Some((closed, sigma)) = p.savepoint().as_closed(expr_sigma) {
                 p.return_at(sigma);
                 return Some(closed);
             }
@@ -566,9 +563,7 @@ pub fn primary(p: &mut Parser) -> Option<MarkClosed> {
         // - Pi
         // - Group
         LeftParen => {
-            let mut pi = p.savepoint();
-            let closed = expr_pi(&mut pi);
-            if !pi.has_errors() {
+            if let Some((closed, pi)) = p.savepoint().as_closed(expr_pi) {
                 p.return_at(pi);
                 return Some(closed);
             }

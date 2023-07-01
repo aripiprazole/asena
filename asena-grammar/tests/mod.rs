@@ -53,7 +53,7 @@ fn sigma_expr() {
 
 #[test]
 fn unicode_expr() {
-    let code = "a + ..";
+    let code = "a (@ 10)";
     let parser = Parser::from(Lexer::new(code)).run(asena_grammar::expr);
 
     println!("{:#?}", parser.build_tree().unwrap());

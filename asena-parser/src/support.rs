@@ -184,6 +184,15 @@ impl<'a> Parser<'a> {
         }
     }
 
+    pub fn as_closed<A>(self, f: impl FnOnce(&mut Self) -> A) -> Option<(A, Parser<'a>)> {
+        if self.has_errors() {
+            None
+        } else {
+            let mut parser = self;
+            Some((f(&mut parser), parser))
+        }
+    }
+
     fn build_error(&self, error: ParseError) -> Spanned<ParseError> {
         self.peek().into_owned().swap(error)
     }
