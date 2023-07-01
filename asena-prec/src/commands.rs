@@ -9,9 +9,9 @@ use im::HashMap;
 #[derive(Reporter)]
 #[ast_step(
     BranchWalker,
+    VariantWalker,
     FileWalker,
     BodyWalker,
-    PropertyWalker,
     ExprWalker,
     PatWalker,
     StmtWalker

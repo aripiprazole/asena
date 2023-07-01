@@ -18,9 +18,9 @@ pub struct TypeEnvironment {
 #[derive(Reporter)]
 #[ast_step(
     BranchWalker,
+    VariantWalker,
     FileWalker,
     BodyWalker,
-    PropertyWalker,
     PatWalker,
     StmtWalker,
     FileWalker

@@ -13,7 +13,7 @@ struct SemanticHighlightTraversal<'a> {
 
 impl FileWalker for SemanticHighlightTraversal<'_> {}
 
-impl PropertyWalker for SemanticHighlightTraversal<'_> {}
+impl VariantWalker for SemanticHighlightTraversal<'_> {}
 
 impl BodyWalker for SemanticHighlightTraversal<'_> {}
 
