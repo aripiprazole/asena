@@ -34,6 +34,7 @@ pub enum TreeKind {
     SymbolIdentifier,
     QualifiedPathTree,
 
+    ExprUnit,
     ExprGroup,
     ExprBinary,
     ExprAccessor,

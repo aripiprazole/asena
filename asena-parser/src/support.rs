@@ -176,6 +176,14 @@ impl<'a> Parser<'a> {
         !self.errors.is_empty()
     }
 
+    pub fn as_succeded(self) -> Option<Parser<'a>> {
+        if self.has_errors() {
+            None
+        } else {
+            Some(self)
+        }
+    }
+
     fn build_error(&self, error: ParseError) -> Spanned<ParseError> {
         self.peek().into_owned().swap(error)
     }

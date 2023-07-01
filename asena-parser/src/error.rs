@@ -55,20 +55,86 @@ pub enum ParseError {
     #[error("Expected token: `{}`. But got this instead", .0.to_string())]
     ExpectedTokenError(TokenKind),
 
+    #[error("Expected expression and close list")]
+    ExpectedExprAndCloseListError,
+
+    #[error("Expected expression")]
+    ExpectedExprError,
+
+    #[error("Expected field")]
+    ExpectedFieldError,
+
+    #[error("Expected rhs of infix")]
+    ExpectedInfixRhsError,
+
     #[error("Could not parse primary")]
     PrimaryExpectedError,
 
-    #[error("Could not parse pattern")]
-    PatExpectedError,
+    #[error("Expected sigma parameter type")]
+    ExpectedSigmaParamError,
 
-    #[error("Could not parse statement")]
-    StmtExpectedError,
+    #[error("Expected sigma return type")]
+    ExpectedSigmaReturnError,
+
+    #[error("Expected pi parameter type")]
+    ExpectedPiParamError,
+
+    #[error("Expected pi return type")]
+    ExpectedPiReturnError,
+
+    #[error("Expected qual return type")]
+    ExpectedQualReturnError,
+
+    #[error("Expected ann against")]
+    ExpectedAnnAgainstError,
+
+    #[error("Expected help value")]
+    ExpectedHelpValueError,
+
+    #[error("Expected lam body")]
+    ExpectedLamBodyError,
+
+    #[error("Expected assign value")]
+    ExpectedAssignValueError,
+
+    #[error("Expected ask name")]
+    ExpectedAskNameError,
+
+    #[error("Expected parameter type")]
+    ExpectedParameterTypeError,
+
+    #[error("Expected ask value")]
+    ExpectedAskValueError,
+
+    #[error("Expected type")]
+    ExpectedTypeError,
+
+    #[error("Expected pattern")]
+    ExpectedPatError,
+
+    #[error("Expected patterns")]
+    ExpectedPatternsError,
+
+    #[error("Expected let name")]
+    ExpectedLetNameError,
+
+    #[error("Expected let value")]
+    ExpectedLetValueError,
+
+    #[error("Expected return value")]
+    ExpectedReturnValueError,
+
+    #[error("Expected return stmt")]
+    ExpectedReturnStmtError,
 
     #[error("Could not parse anything, found end of file")]
     EofError,
 
     #[error("Expected parameter")]
     ExpectedParameterError,
+
+    #[error("Expected parameter to be a tuple")]
+    ParameterIsCurryiedAndNotTupleError,
 
     #[error("Expected statement")]
     ExpectedStmtError,

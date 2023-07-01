@@ -3,7 +3,6 @@ use asena_leaf::node::TreeKind::*;
 use asena_leaf::token::kind::TokenKind;
 use asena_leaf::token::kind::TokenKind::*;
 
-use asena_parser::error::ParseError;
 use asena_parser::error::ParseError::*;
 use asena_parser::event::MarkClosed;
 use asena_parser::Parser;
@@ -15,7 +14,8 @@ use asena_report::Fragment::Insert;
 use asena_report::Quickfix;
 pub use macros::*;
 
-const PARAM_LIST_RECOVERY: &[TokenKind] = &[Semi, Colon, LeftBrace];
+const PARAM_LIST_RECOVERY: &[TokenKind] = &[DoubleArrow, RightArrow, Semi, Colon, LeftBrace];
+
 const STMT_RECOVERY: &[TokenKind] = &[
     LeftBrace,
     ClassKeyword,
@@ -25,6 +25,19 @@ const STMT_RECOVERY: &[TokenKind] = &[
     TraitKeyword,
     UseKeyword,
 ];
+
+const EXPR_RECOVERY: &[TokenKind] = &[
+    LeftBrace,
+    ClassKeyword,
+    EnumKeyword,
+    RecordKeyword,
+    TypeKeyword,
+    TraitKeyword,
+    UseKeyword,
+    Semi,
+];
+
+const ARRAY_RECOVERY: &[TokenKind] = &[Comma];
 
 const EXPR_FIRST: &[TokenKind] = &[
     Identifier,
@@ -83,13 +96,15 @@ pub fn decl_command(p: &mut Parser) {
     let m = p.open();
     p.expect(HashSymbol);
     global(p);
-    expr(p);
+    rec_expr!(p, &[]);
     while p.at(Comma) {
         p.expect(Comma);
         if p.at(Semi) || p.eof() {
             break;
         }
-        expr(p);
+        if rec_expr!(p, &[]) {
+            break;
+        }
     }
     p.close(m, DeclCommand);
 }
@@ -111,7 +126,7 @@ pub fn decl_assign(p: &mut Parser) {
         pat(p);
     }
     p.expect(EqualSymbol);
-    expr_dsl(p);
+    rec_expr!(p, &[], ExpectedAssignValueError, expr_dsl);
     p.field("value");
     p.close(m, DeclAssign);
 }
@@ -122,20 +137,26 @@ pub fn decl_signature(p: &mut Parser) {
     global(p);
     p.field("name");
     while !p.eof() && p.at(LeftParen) || p.at(LeftBracket) {
-        if param(p) && p.at_any(PARAM_LIST_RECOVERY) {
-            p.report(ParseError::ExpectedParameterError);
+        if p.at_any(PARAM_LIST_RECOVERY) {
+            p.report(ExpectedParameterError);
             break;
+        } else if p.at(Comma) {
+            p.report(ParameterIsCurryiedAndNotTupleError);
+            continue;
+        } else {
+            param(p);
         }
     }
     if p.eat(Colon) {
         type_expr(p);
         p.field("type");
         if p.eat(LeftBrace) {
-            if !p.at(RightBrace) {
-                stmt(p);
+            if !p.at(RightBrace) && stmt(p) {
+                p.report(ExpectedStmtError);
             }
             while !p.eof() && !p.at(RightBrace) && semi(p) {
                 if stmt(p) {
+                    p.report(ExpectedStmtError);
                     break;
                 }
             }
@@ -144,11 +165,12 @@ pub fn decl_signature(p: &mut Parser) {
         }
     } else {
         p.expect(LeftBrace);
-        if !p.at(RightBrace) {
-            stmt(p);
+        if !p.at(RightBrace) && stmt(p) {
+            p.report(ExpectedStmtError);
         }
         while !p.eof() && !p.at(RightBrace) && semi(p) {
             if stmt(p) {
+                p.report(ExpectedStmtError);
                 break;
             }
         }
@@ -189,16 +211,12 @@ pub fn stmt(p: &mut Parser) -> bool {
         ReturnKeyword => stmt_return(p),
         LetKeyword => stmt_let(p),
         _ => {
-            if p.at_any(EXPR_FIRST) {
-                let ask = p.savepoint().run(stmt_ask);
-                if !ask.has_errors() {
-                    p.return_at(ask);
-                    return false;
-                }
-
+            if let Some(ask) = p.savepoint().run(stmt_ask).as_succeded() {
+                p.return_at(ask);
+                return false;
+            } else if p.at_any(EXPR_FIRST) {
                 stmt_expr(p)
             } else if p.at_any(STMT_RECOVERY) {
-                p.report(ParseError::ExpectedStmtError);
                 return true;
             }
         }
@@ -209,8 +227,10 @@ pub fn stmt(p: &mut Parser) -> bool {
 pub fn stmt_return(p: &mut Parser) {
     let m = p.open();
     p.expect(ReturnKeyword);
-    if !p.at(Semi) {
-        expr_dsl(p);
+    if p.at_any(EXPR_FIRST) {
+        rec_expr!(p, &[], ExpectedReturnValueError, expr_dsl);
+    } else if p.at_any(STMT_RECOVERY) {
+        p.report(ExpectedReturnStmtError);
     }
     p.close(m, StmtReturn);
 }
@@ -219,7 +239,7 @@ pub fn stmt_ask(p: &mut Parser) {
     let m = p.open();
     pat(p);
     p.expect(LeftArrow);
-    expr_dsl(p);
+    rec_expr!(p, &[], ExpectedAskValueError, expr_dsl);
     p.close(m, StmtAsk);
 }
 
@@ -228,20 +248,20 @@ pub fn stmt_let(p: &mut Parser) {
     p.expect(LetKeyword);
     pat(p);
     p.expect(EqualSymbol);
-    expr_dsl(p);
+    rec_expr!(p, &[], ExpectedLetValueError, expr_dsl);
     p.close(m, StmtLet);
 }
 
 pub fn stmt_expr(p: &mut Parser) {
     let m = p.open();
-    expr_dsl(p);
+    rec_expr!(p, &[], ExpectedExprError, expr_dsl);
     p.close(m, StmtExpr);
 }
 
 /// TypeExpr = Expr
 pub fn type_expr(p: &mut Parser) {
     let m = p.open();
-    expr(p);
+    rec_expr!(p, &[], ExpectedTypeError, expr);
     p.close(m, TypeExplicit);
 }
 
@@ -267,12 +287,14 @@ pub fn expr(p: &mut Parser) {
 pub fn expr_ann(p: &mut Parser) {
     let m = p.open();
 
-    expr_qual(p);
+    rec_expr!(p, &[], ExpectedExprError, expr_qual);
 
     // simplify by returning the lhs symbol directly
     if p.at(Colon) {
         while !p.eof() && p.eat(Colon) {
-            expr_qual(p);
+            if rec_expr!(p, &[], ExpectedAnnAgainstError, expr_qual) {
+                break;
+            }
         }
 
         p.close(m, ExprAnn);
@@ -285,12 +307,14 @@ pub fn expr_ann(p: &mut Parser) {
 pub fn expr_qual(p: &mut Parser) {
     let m = p.open();
 
-    expr_anonymous_pi(p);
+    rec_expr!(p, &[], ExpectedExprError, expr_anonymous_pi);
 
     // simplify by returning the lhs symbol directly
     if p.at(DoubleArrow) {
         while !p.eof() && p.eat(DoubleArrow) {
-            expr_anonymous_pi(p);
+            if rec_expr!(p, &[], ExpectedQualReturnError, expr_anonymous_pi) {
+                break;
+            }
         }
 
         p.close(m, ExprQual);
@@ -303,12 +327,14 @@ pub fn expr_qual(p: &mut Parser) {
 pub fn expr_anonymous_pi(p: &mut Parser) {
     let m = p.open();
 
-    expr_binary(p);
+    rec_expr!(p, &[], ExpectedExprError, expr_binary);
 
     // simplify by returning the lhs symbol directly
     if p.at(RightArrow) {
         while !p.eof() && p.eat(RightArrow) {
-            expr_binary(p);
+            if rec_expr!(p, &[], ExpectedPiReturnError, expr_binary) {
+                break;
+            }
         }
 
         p.close(m, ExprPi);
@@ -321,7 +347,7 @@ pub fn expr_anonymous_pi(p: &mut Parser) {
 pub fn expr_help(p: &mut Parser) {
     let m = p.open();
     p.expect(HelpSymbol);
-    expr_dsl(p);
+    rec_expr!(p, &[], ExpectedHelpValueError, expr_dsl);
     p.close(m, ExprHelp);
 }
 
@@ -335,20 +361,23 @@ pub fn expr_lam(p: &mut Parser) {
         p.close(m, LamParam);
     }
     p.expect(RightArrow);
-    expr_dsl(p);
+    rec_expr!(p, &[], ExpectedLamBodyError, expr_dsl);
     p.close(m, ExprLam);
 }
 
 pub fn expr_dsl(p: &mut Parser) {
     let m = p.open();
-    expr(p);
+    rec_expr!(p, &[]);
 
     if p.eat(LeftBrace) {
-        if !p.at(RightBrace) {
-            stmt(p);
+        if !p.at(RightBrace) && stmt(p) {
+            p.report(ExpectedStmtError);
         }
         while !p.eof() && !p.at(RightBrace) && semi(p) {
-            stmt(p);
+            if stmt(p) {
+                p.report(ExpectedStmtError);
+                break;
+            }
         }
         last_semi(p);
         p.expect(RightBrace);
@@ -367,7 +396,9 @@ pub fn expr_binary(p: &mut Parser) {
     // simplify by returning the lhs symbol directly
     if p.at(Symbol) {
         while !p.eof() && p.eat(Symbol) {
-            expr_accessor(p);
+            if rec_expr!(p, &[], ExpectedInfixRhsError, expr_accessor) {
+                break;
+            }
         }
 
         p.close(m, ExprBinary);
@@ -380,12 +411,14 @@ pub fn expr_binary(p: &mut Parser) {
 pub fn expr_accessor(p: &mut Parser) {
     let m = p.open();
 
-    expr_app(p);
+    rec_expr!(p, &[], ExpectedExprError, expr_app);
 
     // simplify by returning the lhs symbol directly
     if p.at(Dot) {
         while !p.eof() && p.eat(Dot) {
-            expr_app(p);
+            if rec_expr!(p, &[], ExpectedFieldError, expr_app) {
+                break;
+            }
         }
 
         p.close(m, ExprAccessor);
@@ -427,13 +460,18 @@ pub fn expr_pi(p: &mut Parser) -> MarkClosed {
     p.expect(LeftParen);
     if p.eat(Identifier) {
         p.field("parameter_name");
-        p.expect(Colon);
+        if !p.eat(Colon) {
+            p.report(ExpectedParameterTypeError);
+        }
     }
-    expr(p);
+    rec_expr!(p, &[RightParen, RightArrow], ExpectedPiParamError);
     p.field("parameter_type");
+    while p.at(Comma) && !p.eof() {
+        p.report(ParameterIsCurryiedAndNotTupleError);
+    }
     p.expect(RightParen);
     p.expect(RightArrow);
-    expr(p);
+    rec_expr!(p, &[], ExpectedPiParamError);
     p.field("return_type");
     p.close(m, ExprPi)
 }
@@ -445,11 +483,11 @@ pub fn expr_sigma(p: &mut Parser) -> MarkClosed {
         p.field("parameter_name");
         p.expect(Colon);
     }
-    expr(p);
+    rec_expr!(p, &[RightBracket, RightArrow], ExpectedSigmaParamError);
     p.field("parameter_type");
     p.expect(RightBracket);
     p.expect(RightArrow);
-    expr(p);
+    rec_expr!(p, &[], ExpectedSigmaReturnError);
     p.field("return_type");
     p.close(m, ExprSigma)
 }
@@ -457,7 +495,14 @@ pub fn expr_sigma(p: &mut Parser) -> MarkClosed {
 pub fn expr_group(p: &mut Parser) -> MarkClosed {
     let m = p.open();
     p.expect(LeftParen);
-    expr_dsl(p);
+    if p.eat(RightParen) {
+        return p.close(m, ExprUnit);
+    }
+    if p.at_any(EXPR_FIRST) {
+        expr_dsl(p);
+    } else if p.at_any(EXPR_RECOVERY) {
+        p.report(ExpectedExprError);
+    }
     p.expect(RightParen);
     p.close(m, ExprGroup)
 }
@@ -470,7 +515,15 @@ pub fn expr_array(p: &mut Parser) -> MarkClosed {
     }
     while !p.eof() && !p.at(RightBracket) {
         p.expect(Comma);
-        expr_dsl(p);
+        if p.at_any(EXPR_FIRST) {
+            expr_dsl(p);
+        } else if p.at_any(EXPR_RECOVERY) {
+            p.report(ExpectedExprError);
+            break;
+        } else if p.at_any(ARRAY_RECOVERY) {
+            p.report(ExpectedExprAndCloseListError);
+            continue;
+        }
     }
     p.expect(RightBracket);
     p.close(m, ExprArray)
@@ -489,7 +542,6 @@ pub fn primary(p: &mut Parser) -> Option<MarkClosed> {
     }
 
     let token = p.peek();
-
     let result = match token.value.kind {
         Identifier => {
             let m = p.open();
@@ -540,7 +592,6 @@ pub fn pat(p: &mut Parser) -> Option<MarkClosed> {
     }
 
     let token = p.peek();
-
     let result = match token.value.kind {
         Identifier if token.text == "_" => {
             let m = p.open();
@@ -729,3 +780,29 @@ fn semi(p: &mut Parser) -> bool {
     // generally the end of the statement block is RightBrace
     !p.at(RightBrace)
 }
+
+macro_rules! rec_expr {
+    ($p:expr, $recovery:expr) => {
+        $crate::rec_expr!($p, $recovery, ExpectedExprError)
+    };
+    ($p:expr, $recovery:expr, $error:expr) => {
+        $crate::rec_expr!($p, $recovery, $error, $crate::expr)
+    };
+    ($p:expr, $recovery:expr, $error:expr, $f:expr) => {
+        if $p.at_any(EXPR_FIRST) {
+            $f($p);
+            false
+        } else {
+            let mut new_recovery = EXPR_RECOVERY.clone().to_vec();
+            new_recovery.append(&mut $recovery.to_vec());
+            if $p.at_any(new_recovery.as_slice()) {
+                $p.report($error);
+                true
+            } else {
+                false
+            }
+        }
+    };
+}
+
+use rec_expr;
