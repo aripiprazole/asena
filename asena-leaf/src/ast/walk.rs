@@ -13,23 +13,10 @@
 ///
 /// It should generate the walk for the `value` node, using the `ExprWalker` walker
 /// as the walker.
-pub trait Walkable {
+pub trait Walkable: Sized {
     type Walker<'a>;
 
     fn walk(&self, walker: &mut Self::Walker<'_>);
-
-    // fn run(&self, mut walker: Self::Walker<'_>) {
-    //     self.walk(walker)
-    // }
-
-    // /// Walks the current node and returns itself.
-    // fn walks(self, walker: Self::Walker<'_>) -> Self
-    // where
-    //     Self: Sized,
-    // {
-    //     self.walk(walker);
-    //     self
-    // }
 }
 
 impl<T: Walkable> Walkable for Vec<T> {

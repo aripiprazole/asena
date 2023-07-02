@@ -1,209 +1,224 @@
-use asena_derive::*;
-
-use asena_ast::command::*;
 use asena_ast::reporter::Reporter;
 use asena_ast::*;
 use asena_leaf::ast::{Lexeme, VirtualNode};
 
-use crate::{Kind, Type, TypeError};
+use crate::{Kind, Type, TypeError::*};
 
-#[derive(Reporter)]
-pub struct AsenaTypeValidator<'a, R: Reporter> {
+pub struct AsenaTypeValidator<'a> {
     pub is_constraint: bool,
-    #[ast_reporter]
-    pub reporter: &'a mut R,
+    pub reporter: &'a mut Reporter,
 }
 
-// impl<'a, R: Reporter> ExprWalker for AsenaTypeValidator<'a, R> {
-//     fn walk_expr_accessor(&mut self, value: &Accessor) {
-//         let mut accessor = value.clone();
+impl AsenaVisitor<()> for AsenaTypeValidator<'_> {
+    fn visit_accessor(&mut self, value: Accessor) {
+        let mut accessor = value;
 
-//         loop {
-//             let rhs = accessor.rhs();
-//             match rhs {
-//                 Expr::Local(_) => {}
-//                 _ => {
-//                     self.report(&rhs, TypeError::UnexpectedAccessorInType);
-//                 }
-//             }
+        loop {
+            let rhs = accessor.rhs();
+            match rhs {
+                Expr::LocalExpr(_) => {}
+                _ => {
+                    self.reporter.report(&rhs, UnexpectedAccessorInTypeError);
+                }
+            }
 
-//             if let Expr::Accessor(rhs) = accessor.rhs() {
-//                 accessor = rhs;
-//             } else {
-//                 break;
-//             }
-//         }
-//     }
+            if let Expr::Accessor(rhs) = accessor.rhs() {
+                accessor = rhs;
+            } else {
+                break;
+            }
+        }
+    }
 
-//     fn walk_expr_infix(&mut self, value: &Infix) {
-//         self.report(value, TypeError::UnexpectedExprInType(Infix::tree_kind()))
-//     }
+    fn visit_infix(&mut self, value: Infix) {
+        self.reporter
+            .report(&value, UnexpectedExprInTypeError(Infix::KIND))
+    }
 
-//     fn walk_expr_array(&mut self, value: &Array) {
-//         self.report(value, TypeError::UnexpectedExprInType(Array::tree_kind()))
-//     }
+    fn visit_array(&mut self, value: Array) {
+        self.reporter
+            .report(&value, UnexpectedExprInTypeError(Array::KIND))
+    }
 
-//     fn walk_expr_dsl(&mut self, value: &Dsl) {
-//         self.report(value, TypeError::UnexpectedExprInType(Dsl::tree_kind()))
-//     }
+    fn visit_dsl(&mut self, value: Dsl) {
+        self.reporter
+            .report(&value, UnexpectedExprInTypeError(Dsl::KIND))
+    }
 
-//     fn walk_expr_lam(&mut self, value: &Lam) {
-//         self.report(value, TypeError::UnexpectedExprInType(Lam::tree_kind()))
-//     }
+    fn visit_lam(&mut self, value: Lam) {
+        self.reporter
+            .report(&value, UnexpectedExprInTypeError(Lam::KIND))
+    }
 
-//     fn walk_expr_let(&mut self, value: &Let) {
-//         self.report(value, TypeError::UnexpectedExprInType(Let::tree_kind()))
-//     }
+    fn visit_let(&mut self, value: Let) {
+        self.reporter
+            .report(&value, UnexpectedExprInTypeError(Let::KIND))
+    }
 
-//     fn walk_expr_ann(&mut self, value: &Ann) {
-//         self.report(value, TypeError::UnexpectedExprInType(Ann::tree_kind()))
-//     }
+    fn visit_ann(&mut self, value: Ann) {
+        self.reporter
+            .report(&value, UnexpectedExprInTypeError(Ann::KIND))
+    }
 
-//     fn walk_expr_qual(&mut self, value: &Qual) {
-//         self.report(value, TypeError::UnsupportedQualifiersInType)
-//     }
+    fn visit_qual(&mut self, value: Qual) {
+        self.reporter
+            .report(&value, UnsupportedQualifiersInTypeError)
+    }
 
-//     fn walk_expr_pi(&mut self, value: &Pi) {
-//         if self.is_constraint {
-//             return;
-//         }
+    fn visit_pi(&mut self, value: Pi) {
+        if self.is_constraint {
+            return;
+        }
 
-//         self.report(value, TypeError::UnexpectedExprInType(Pi::tree_kind()))
-//     }
+        self.reporter
+            .report(&value, UnexpectedExprInTypeError(Pi::KIND))
+    }
 
-//     fn walk_expr_sigma(&mut self, value: &Sigma) {
-//         self.report(value, TypeError::UnsupportedSigmaInType)
-//     }
+    fn visit_sigma(&mut self, value: Sigma) {
+        self.reporter.report(&value, UnsupportedSigmaInTypeError)
+    }
 
-//     fn walk_expr_help(&mut self, value: &Help) {
-//         self.report(value, TypeError::UnexpectedExprInType(Help::tree_kind()))
-//     }
+    fn visit_help(&mut self, value: Help) {
+        self.reporter
+            .report(&value, UnexpectedExprInTypeError(Help::KIND))
+    }
 
-//     fn walk_expr_literal(&mut self, value: &Lexeme<Literal>) {
-//         let at = value.token.clone();
-//         self.diagnostic(at, TypeError::UnexpectedTokenInType(value.token.kind))
-//     }
-// }
-
-#[derive(Reporter)]
-pub struct AsenaConstraintValidator<'a, R: Reporter> {
-    #[ast_reporter]
-    pub reporter: &'a mut R,
+    fn visit_literal(&mut self, value: Lexeme<Literal>) {
+        let at = value.token.clone();
+        self.reporter
+            .diagnostic(at, UnexpectedTokenInTypeError(value.token.kind))
+    }
 }
 
-// impl<'a, R: Reporter> ExprWalker for AsenaConstraintValidator<'a, R> {
-//     fn walk_expr_ann(&mut self, value: &Ann) {
-//         let name = value.lhs();
-//         match name {
-//             Expr::Local(_) => {}
-//             _ => {
-//                 self.report(&name, TypeError::ExpectedConstraintName);
-//             }
-//         }
-//     }
+pub struct AsenaConstraintValidator<'a> {
+    pub reporter: &'a mut Reporter,
+}
 
-//     fn walk_expr_pi(&mut self, value: &Pi) {
-//         if !is_constraint_type(value.parameter_type()) {
-//             self.report(&value.parameter_type(), TypeError::ExpectedConstraint)
-//         }
+impl AsenaVisitor<()> for AsenaConstraintValidator<'_> {
+    fn visit_ann(&mut self, value: Ann) {
+        let name = value.lhs();
+        match name {
+            Expr::LocalExpr(_) => {}
+            _ => {
+                self.reporter.report(&name, ExpectedConstraintNameError);
+            }
+        }
+    }
 
-//         if !is_constraint_type(value.return_type()) {
-//             self.report(&value.return_type(), TypeError::ExpectedConstraint)
-//         }
-//     }
+    fn visit_pi(&mut self, value: Pi) {
+        if !is_constraint_type(value.parameter_type()) {
+            self.reporter
+                .report(&value.parameter_type(), ExpectedConstraintError)
+        }
 
-//     fn walk_expr_accessor(&mut self, value: &Accessor) {
-//         let kind = Accessor::tree_kind();
-//         self.report(value, TypeError::UnexpectedInConstraint(kind))
-//     }
+        if !is_constraint_type(value.return_type()) {
+            self.reporter
+                .report(&value.return_type(), ExpectedConstraintError)
+        }
+    }
 
-//     fn walk_expr_infix(&mut self, value: &Infix) {
-//         self.report(value, TypeError::UnexpectedInConstraint(Infix::tree_kind()))
-//     }
+    fn visit_accessor(&mut self, value: Accessor) {
+        self.reporter
+            .report(&value, UnexpectedInConstraintError(Accessor::KIND))
+    }
 
-//     fn walk_expr_array(&mut self, value: &Array) {
-//         self.report(value, TypeError::UnexpectedInConstraint(Array::tree_kind()))
-//     }
+    fn visit_infix(&mut self, value: Infix) {
+        self.reporter
+            .report(&value, UnexpectedInConstraintError(Infix::KIND))
+    }
 
-//     fn walk_expr_dsl(&mut self, value: &Dsl) {
-//         self.report(value, TypeError::UnexpectedInConstraint(Dsl::tree_kind()))
-//     }
+    fn visit_array(&mut self, value: Array) {
+        self.reporter
+            .report(&value, UnexpectedInConstraintError(Array::KIND))
+    }
 
-//     fn walk_expr_lam(&mut self, value: &Lam) {
-//         self.report(value, TypeError::UnexpectedInConstraint(Lam::tree_kind()))
-//     }
+    fn visit_dsl(&mut self, value: Dsl) {
+        self.reporter
+            .report(&value, UnexpectedInConstraintError(Dsl::KIND))
+    }
 
-//     fn walk_expr_let(&mut self, value: &Let) {
-//         self.report(value, TypeError::UnexpectedInConstraint(Let::tree_kind()))
-//     }
+    fn visit_lam(&mut self, value: Lam) {
+        self.reporter
+            .report(&value, UnexpectedInConstraintError(Lam::KIND))
+    }
 
-//     fn walk_expr_qual(&mut self, value: &Qual) {
-//         self.report(value, TypeError::UnexpectedInConstraint(Qual::tree_kind()))
-//     }
+    fn visit_let(&mut self, value: Let) {
+        self.reporter
+            .report(&value, UnexpectedInConstraintError(Let::KIND))
+    }
 
-//     fn walk_expr_sigma(&mut self, value: &Sigma) {
-//         self.report(value, TypeError::UnexpectedInConstraint(Sigma::tree_kind()))
-//     }
+    fn visit_qual(&mut self, value: Qual) {
+        self.reporter
+            .report(&value, UnexpectedInConstraintError(Qual::KIND))
+    }
 
-//     fn walk_expr_help(&mut self, value: &Help) {
-//         self.report(value, TypeError::UnexpectedInConstraint(Help::tree_kind()))
-//     }
+    fn visit_sigma(&mut self, value: Sigma) {
+        self.reporter
+            .report(&value, UnexpectedInConstraintError(Sigma::KIND))
+    }
 
-//     fn walk_expr_literal(&mut self, value: &Lexeme<Literal>) {
-//         let at = value.token.clone();
-//         self.diagnostic(at, TypeError::UnexpectedTokenInType(value.token.kind))
-//     }
-// }
+    fn visit_help(&mut self, value: Help) {
+        self.reporter
+            .report(&value, UnexpectedInConstraintError(Help::KIND))
+    }
 
-// impl From<Typed> for Type {
-//     fn from(value: Typed) -> Self {
-//         match value {
-//             Typed::Infer => Self::Hole(None),
-//             Typed::Explicit(expr) => expr.into(),
-//         }
-//     }
-// }
+    fn visit_literal(&mut self, value: Lexeme<Literal>) {
+        let at = value.token.clone();
+        self.reporter
+            .diagnostic(at, UnexpectedTokenInTypeError(value.token.kind))
+    }
+}
 
-// impl From<Expr> for Type {
-//     fn from(value: Expr) -> Self {
-//         match value {
-//             Expr::Group(group) => group.value().into(),
-//             Expr::Local(local) if is_type_constructor(&local) => {
-//                 Type::Constructor(local.to_fn_id(), Kind::Star)
-//             }
-//             Expr::Local(local) => Type::Variable(local.to_fn_id(), Kind::Star),
-//             Expr::App(app) => {
-//                 let callee = Type::from(app.callee());
-//                 let argument = Type::from(app.argument());
+impl From<Typed> for Type {
+    fn from(value: Typed) -> Self {
+        match value {
+            Typed::Infer => Self::Hole(None),
+            Typed::Explicit(expr) => expr.into(),
+        }
+    }
+}
 
-//                 Type::App(callee.into(), argument.into())
-//             }
-//             Expr::Pi(pi) => {
-//                 let parameter_type = Type::from(pi.parameter_type());
-//                 let return_type = Type::from(pi.return_type());
+impl From<Expr> for Type {
+    fn from(value: Expr) -> Self {
+        match value {
+            Expr::Group(group) => group.value().into(),
+            Expr::LocalExpr(local) if is_type_constructor(&local) => {
+                Type::Constructor(local.name().to_fn_id(), Kind::Star)
+            }
+            Expr::LocalExpr(local) => Type::Variable(local.name().to_fn_id(), Kind::Star),
+            Expr::App(app) => {
+                let callee = Type::from(app.callee());
+                let argument = Type::from(app.argument());
 
-//                 Type::Arrow(parameter_type.into(), return_type.into())
-//             }
-//             _ => Type::Error,
-//         }
-//     }
-// }
+                Type::App(callee.into(), argument.into())
+            }
+            Expr::Pi(pi) => {
+                let parameter_type = Type::from(pi.parameter_type());
+                let return_type = Type::from(pi.return_type());
 
-// fn is_type_constructor(local: &Lexeme<Local>) -> bool {
-//     let str = local.as_str();
-//     if let Some(x) = str.chars().next() {
-//         x.is_uppercase()
-//     } else {
-//         false
-//     }
-// }
+                Type::Arrow(parameter_type.into(), return_type.into())
+            }
+            _ => Type::Error,
+        }
+    }
+}
 
-// fn is_constraint_type(expr: Expr) -> bool {
-//     match expr {
-//         Expr::Pi(pi) => {
-//             is_constraint_type(pi.parameter_type()) && is_constraint_type(pi.return_type())
-//         }
-//         Expr::Local(local) if local.as_str() == "Set" => true,
-//         _ => false,
-//     }
-// }
+fn is_type_constructor(local: &LocalExpr) -> bool {
+    let name = local.name();
+    let str = name.as_str();
+    if let Some(x) = str.chars().next() {
+        x.is_uppercase()
+    } else {
+        false
+    }
+}
+
+fn is_constraint_type(expr: Expr) -> bool {
+    match expr {
+        Expr::Pi(pi) => {
+            is_constraint_type(pi.parameter_type()) && is_constraint_type(pi.return_type())
+        }
+        Expr::LocalExpr(local) if local.name().as_str() == "Set" => true,
+        _ => false,
+    }
+}

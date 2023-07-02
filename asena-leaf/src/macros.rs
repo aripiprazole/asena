@@ -79,9 +79,7 @@ macro_rules! ast_enum {
 
         $(
         impl $crate::ast::VirtualNode for $variant {
-            fn tree_kind() -> $crate::node::TreeKind {
-                $kind
-            }
+            const KIND: $crate::node::TreeKind = $kind;
         }
 
         impl From<$variant> for $name {

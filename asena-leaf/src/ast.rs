@@ -54,11 +54,11 @@ pub trait Terminal: Leaf + Sized + Debug + Sized + Clone + Default {
 }
 
 pub trait VirtualNode: Node {
-    fn create() -> Self {
-        Self::new(GreenTree::of(Self::tree_kind()))
-    }
+    const KIND: TreeKind;
 
-    fn tree_kind() -> TreeKind;
+    fn create() -> Self {
+        Self::new(GreenTree::of(Self::KIND))
+    }
 }
 
 pub trait Located {

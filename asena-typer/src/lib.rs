@@ -59,28 +59,28 @@ pub struct Scheme {
 #[repr(u8)]
 pub enum TypeError {
     #[error("Unexpected expression kind {0} in a type-level context")]
-    UnexpectedExprInType(TreeKind),
+    UnexpectedExprInTypeError(TreeKind),
 
     #[error("Unexpected expression kind {0} in a constraint context")]
-    UnexpectedInConstraint(TreeKind),
+    UnexpectedInConstraintError(TreeKind),
 
     #[error("Unexpected lexeme {0} in type-level, dependent-types aren't implemented yet")]
-    UnexpectedTokenInType(TokenKind),
+    UnexpectedTokenInTypeError(TokenKind),
 
     #[error("Unexpected field accessor in type-level, that is not a path to another type")]
-    UnexpectedAccessorInType,
+    UnexpectedAccessorInTypeError,
 
     #[error("Unsupported dependent-pairs in type-level yet")]
-    UnsupportedSigmaInType,
+    UnsupportedSigmaInTypeError,
 
     #[error("Unsupported type classes in the type-level yet")]
-    UnsupportedQualifiersInType,
+    UnsupportedQualifiersInTypeError,
 
     #[error("Expected constraint, like: `\"Set\"` | `Constraint -> Constraint`")]
-    ExpectedConstraint,
+    ExpectedConstraintError,
 
     #[error("Expected constraint name like `m`, given `m: Set -> Set`")]
-    ExpectedConstraintName,
+    ExpectedConstraintNameError,
 }
 
 impl Type {
@@ -150,21 +150,24 @@ mod tests {
 
         let mut tree = parse_asena_file!("./test.ase");
 
-        // let file = AsenaFile::new(tree.clone())
-        //     .walks(AsenaInfixHandler::new(&mut tree, &mut prec_table))
-        //     .walks(AsenaPrecReorder {
-        //         prec_table: &prec_table,
-        //         reporter: &mut tree,
-        //     })
-        //     .walks(AsenaTyper {
-        //         type_env: &mut type_env,
-        //         class_env: &mut class_env,
-        //         reporter: &mut tree,
-        //     });
+        let file = AsenaFile::new(tree.clone())
+            .walks(AsenaInfixHandler {
+                prec_table: &mut prec_table,
+                reporter: &mut tree.reporter,
+            })
+            .walks(AsenaPrecReorder {
+                prec_table: &prec_table,
+                reporter: &mut tree.reporter,
+            })
+            .walks(AsenaTyper {
+                type_env: &mut type_env,
+                class_env: &mut class_env,
+                reporter: &mut tree.reporter,
+            });
 
-        // tree.reporter.dump();
+        tree.reporter.dump();
 
-        // println!("{file:#?}");
-        // println!("{type_env:#?}");
+        println!("{file:#?}");
+        println!("{type_env:#?}");
     }
 }

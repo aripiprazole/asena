@@ -11,6 +11,10 @@ pub struct Reporter {
     pub(crate) errors: Vec<Diagnostic<BoxInternalError>>,
 }
 
+pub trait Reports {
+    fn reports(&mut self) -> &mut Reporter;
+}
+
 impl Reporter {
     pub fn new(src: &str, tree: Spanned<Tree>) -> Self {
         Self {

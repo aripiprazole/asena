@@ -640,6 +640,15 @@ impl Help {
     }
 }
 
+impl Expr {
+    /// Walks the tree using the given visitor, it will call the visitor's methods for each node
+    /// in the tree.
+    pub fn walks<T: AsenaVisitor<()>>(self, mut visitor: T) -> Self {
+        self.walk(&mut visitor::new_walker(&mut visitor));
+        self
+    }
+}
+
 ast_enum! {
     /// The expression enum, it is the main type of the language.
     #[ast_walker(AsenaVisitor)]
@@ -684,6 +693,15 @@ pub enum Typed {
     #[default]
     Infer, // _
     Explicit(Expr),
+}
+
+impl Typed {
+    /// Walks the tree using the given visitor, it will call the visitor's methods for each node
+    /// in the tree.
+    pub fn walks<T: AsenaVisitor<()>>(self, mut visitor: T) -> Self {
+        self.walk(&mut visitor::new_walker(&mut visitor));
+        self
+    }
 }
 
 impl Node for Typed {

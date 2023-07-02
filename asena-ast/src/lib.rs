@@ -5,6 +5,7 @@ use std::fmt::{Debug, Formatter};
 use asena_derive::*;
 
 use asena_leaf::ast::GreenTree;
+use asena_leaf::ast::Walkable;
 
 /// Represents a true-false value, just like an wrapper to [bool], this represents if an integer
 /// value is signed, or unsigned.
@@ -26,10 +27,13 @@ impl AsenaFile {
     pub fn declarations(&self) -> Vec<Decl> {
         self.filter()
     }
-}
 
-pub trait FileWalker {
-    fn walk_file(&mut self, _value: &AsenaFile) {}
+    /// Walks the tree using the given visitor, it will call the visitor's methods for each node
+    /// in the tree.
+    pub fn walks<T: AsenaVisitor<()>>(self, mut visitor: T) -> Self {
+        self.walk(&mut visitor::new_walker(&mut visitor));
+        self
+    }
 }
 
 pub use body::*;
