@@ -1,4 +1,5 @@
 #![feature(try_trait_v2)]
+#![feature(associated_type_bounds)]
 
 pub mod ast;
 pub mod kind;

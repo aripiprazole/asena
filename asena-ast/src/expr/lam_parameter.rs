@@ -11,6 +11,7 @@ pub struct LamParameter(GreenTree);
 
 #[ast_of]
 #[ast_debug]
+#[ast_walkable(AsenaVisitor)]
 impl LamParameter {
     #[ast_leaf]
     pub fn name(&self) -> Lexeme<Local> {
@@ -24,11 +25,5 @@ impl Leaf for LamParameter {
             LamParam => LamParameter::new(tree),
             _ => return None,
         })
-    }
-}
-
-impl<W> Walkable<W> for LamParameter {
-    fn walk(&self, walker: &mut W) {
-        self.name().walk(walker)
     }
 }

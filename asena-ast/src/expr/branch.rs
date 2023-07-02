@@ -17,7 +17,7 @@ pub struct ExprBranch(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(BranchWalker, ExprWalker, PatWalker, StmtWalker)]
+#[ast_walkable(AsenaVisitor)]
 impl ExprBranch {
     #[ast_leaf]
     pub fn value(&self) -> Expr {
@@ -38,7 +38,7 @@ pub struct BlockBranch(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(BranchWalker, ExprWalker, PatWalker, StmtWalker)]
+#[ast_walkable(AsenaVisitor)]
 impl BlockBranch {
     #[ast_leaf]
     pub fn stmts(&self) -> Vec<Stmt> {
@@ -47,8 +47,7 @@ impl BlockBranch {
 }
 
 ast_enum! {
-    #[derive(Walker)]
-    #[ast_walker_traits(ExprWalker, PatWalker, StmtWalker)]
+    #[ast_walker(AsenaVisitor)]
     pub enum Branch {
         ExprBranch  <- BranchExpr,
         BlockBranch <- BranchBlock,

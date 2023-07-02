@@ -19,7 +19,7 @@ pub struct Ask(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(BranchWalker, PatWalker, ExprWalker, StmtWalker)]
+#[ast_walkable(AsenaVisitor)]
 impl Ask {
     #[ast_leaf]
     pub fn pattern(&self) -> Pat {
@@ -47,7 +47,7 @@ pub struct IfStmt(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(BranchWalker, PatWalker, ExprWalker, StmtWalker)]
+#[ast_walkable(AsenaVisitor)]
 impl IfStmt {
     #[ast_leaf]
     pub fn cond(&self) -> Expr {
@@ -78,7 +78,7 @@ pub struct LetStmt(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(BranchWalker, PatWalker, ExprWalker, StmtWalker)]
+#[ast_walkable(AsenaVisitor)]
 impl LetStmt {
     #[ast_leaf]
     pub fn pattern(&self) -> Pat {
@@ -103,7 +103,7 @@ pub struct Return(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(BranchWalker, ExprWalker, PatWalker, StmtWalker)]
+#[ast_walkable(AsenaVisitor)]
 impl Return {
     /// The value to return, if it's not present, it will return `None`. And it means that the
     /// return type is `()`.
@@ -120,7 +120,7 @@ pub struct ExprStmt(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(BranchWalker, ExprWalker, PatWalker, StmtWalker)]
+#[ast_walkable(AsenaVisitor)]
 impl ExprStmt {
     #[ast_leaf]
     pub fn value(&self) -> Expr {
@@ -131,8 +131,7 @@ impl ExprStmt {
 ast_enum! {
     /// A statement, it's a part of a program, it's an imperative action, it only works with
     /// monads, and are part of the called "do-notation".
-    #[derive(Walker)]
-    #[ast_walker_traits(BranchWalker, PatWalker, ExprWalker)]
+    #[ast_walker(AsenaVisitor)]
     pub enum Stmt {
         Ask      <- StmtAsk,    // <local_id> <- <expr>
         Return   <- StmtReturn, // return <expr?>

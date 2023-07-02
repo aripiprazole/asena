@@ -4,7 +4,7 @@ use std::fmt::{Debug, Formatter};
 
 use asena_derive::*;
 
-use asena_leaf::ast::{GreenTree, Walkable};
+use asena_leaf::ast::GreenTree;
 
 /// Represents a true-false value, just like an wrapper to [bool], this represents if an integer
 /// value is signed, or unsigned.
@@ -20,6 +20,7 @@ pub struct AsenaFile(GreenTree);
 
 #[ast_of]
 #[ast_debug]
+#[ast_walkable(AsenaVisitor)]
 impl AsenaFile {
     #[ast_leaf]
     pub fn declarations(&self) -> Vec<Decl> {
@@ -27,38 +28,8 @@ impl AsenaFile {
     }
 }
 
-pub trait FileWalker:
-    WhereWalker
-    + VariantWalker
-    + BranchWalker
-    + DeclWalker
-    + BodyWalker
-    + ExprWalker
-    + PatWalker
-    + StmtWalker
-{
+pub trait FileWalker {
     fn walk_file(&mut self, _value: &AsenaFile) {}
-}
-
-/// NOTE: implemented on hand, because of the [AsenaFile] is a root node, and it's not a [Decl],
-/// and it would be painful to list every walker trait on the macro call.
-impl<W: FileWalker> Walkable<W> for AsenaFile
-where
-    W: WhereWalker,
-    W: VariantWalker,
-    W: BranchWalker,
-    W: DeclWalker,
-    W: BodyWalker,
-    W: ExprWalker,
-    W: PatWalker,
-    W: StmtWalker,
-{
-    fn walk(&self, walker: &mut W) {
-        for decl in self.declarations().iter() {
-            decl.walk(walker);
-        }
-        walker.walk_file(self);
-    }
 }
 
 pub use body::*;
@@ -71,7 +42,7 @@ pub use pat::*;
 pub use stmt::*;
 pub use traits::binary::*;
 pub use traits::function::*;
-pub use traits::top_level::*;
+pub use visitor::*;
 
 pub mod body;
 pub mod decl;
@@ -80,12 +51,11 @@ pub mod identifier;
 pub mod literal;
 pub mod parameter;
 pub mod pat;
+pub mod reporter;
 pub mod stmt;
 pub mod visitor;
-pub mod walker;
 
 pub mod traits {
     pub mod binary;
     pub mod function;
-    pub mod top_level;
 }

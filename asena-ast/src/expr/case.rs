@@ -17,6 +17,7 @@ pub struct Case(GreenTree);
 
 #[ast_of]
 #[ast_debug]
+#[ast_walkable(AsenaVisitor)]
 impl Case {
     #[ast_leaf]
     pub fn pat(&self) -> Pat {
@@ -35,12 +36,5 @@ impl Leaf for Case {
             MatchCase => Case::new(tree),
             _ => return None,
         })
-    }
-}
-
-impl<W: BranchWalker + PatWalker + StmtWalker + ExprWalker> Walkable<W> for Case {
-    fn walk(&self, walker: &mut W) {
-        self.pat().walk(walker);
-        self.value().walk(walker);
     }
 }

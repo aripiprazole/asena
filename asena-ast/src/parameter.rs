@@ -19,7 +19,7 @@ pub struct Parameter(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(BranchWalker, PatWalker, StmtWalker, ExprWalker)]
+#[ast_walkable(AsenaVisitor)]
 impl Parameter {
     /// Optional parameter's name
     #[ast_leaf]

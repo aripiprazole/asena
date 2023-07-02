@@ -11,11 +11,10 @@ mod ast_derive_leaf;
 mod ast_derive_located;
 mod ast_derive_node;
 mod ast_derive_reporter;
-mod ast_derive_walker;
 mod ast_leaf;
 mod ast_of;
-mod ast_step;
 mod ast_walkable;
+mod ast_walker;
 
 pub(crate) mod util;
 
@@ -101,9 +100,9 @@ pub fn derive_node(input: TokenStream) -> TokenStream {
 ///    // ...
 /// }
 /// ```
-#[proc_macro_derive(Walker, attributes(ast_walker_traits, ast_impl_trait))]
-pub fn derive_ast_walker(input: TokenStream) -> TokenStream {
-    ast_derive_walker::expand_ast_derive_walker(input)
+#[proc_macro_attribute]
+pub fn ast_walker(args: TokenStream, input: TokenStream) -> TokenStream {
+    ast_walker::expand_ast_walker(args, input)
 }
 
 /// `Reporter` trait procedural macro, it does derives the `Reporter` trait for the given struct,
@@ -138,21 +137,6 @@ pub fn ast_derive_reporter(input: TokenStream) -> TokenStream {
 #[proc_macro_derive(Located)]
 pub fn ast_derive_located(input: TokenStream) -> TokenStream {
     ast_derive_located::expand_derive_located(input)
-}
-
-/// `ast_step` attribute macro, it does generates the walker implementation for all the given
-/// walker types.
-///
-/// # Example
-/// It will derive `PatWalker` and `StmtWalker` for SomeStep with no methods, just to traverse
-/// the entire tree properly.
-/// ```rust,norun
-/// #[ast_step(PatWalker, StmtWalker)]
-/// pub struct SomeStep;
-/// ```
-#[proc_macro_attribute]
-pub fn ast_step(args: TokenStream, input: TokenStream) -> TokenStream {
-    ast_step::expand_ast_step(args, input)
 }
 
 /// `ast_reporter` attribute macro, it does generates the [`Debug`] trait implementation with the

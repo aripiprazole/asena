@@ -6,6 +6,7 @@ use asena_leaf::node::TreeKind::*;
 
 use asena_leaf::token::kind::TokenKind;
 
+use crate::visitor::AsenaVisitor;
 use crate::*;
 
 pub mod command;
@@ -34,7 +35,7 @@ pub struct Use(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(FileWalker)]
+#[ast_walkable(AsenaVisitor)]
 impl Use {
     #[ast_leaf]
     pub fn path(&self) -> QualifiedPath {
@@ -61,7 +62,7 @@ pub struct Signature(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(BranchWalker, ExprWalker, PatWalker, StmtWalker)]
+#[ast_walkable(AsenaVisitor)]
 impl Signature {
     #[ast_leaf]
     pub fn name(&self) -> QualifiedPath {
@@ -102,7 +103,7 @@ pub struct Assign(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(BranchWalker, ExprWalker, PatWalker, StmtWalker)]
+#[ast_walkable(AsenaVisitor)]
 impl Assign {
     #[ast_leaf]
     pub fn name(&self) -> QualifiedPath {
@@ -134,7 +135,7 @@ pub struct Command(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(BranchWalker, ExprWalker, PatWalker, StmtWalker)]
+#[ast_walkable(AsenaVisitor)]
 impl Command {
     #[ast_leaf]
     pub fn name(&self) -> QualifiedPath {
@@ -165,7 +166,7 @@ pub struct Class(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(FileWalker)]
+#[ast_walkable(AsenaVisitor)]
 impl Class {
     #[ast_leaf]
     pub fn name(&self) -> QualifiedPath {
@@ -208,7 +209,7 @@ pub struct Enum(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(FileWalker)]
+#[ast_walkable(AsenaVisitor)]
 impl Enum {
     #[ast_leaf]
     pub fn name(&self) -> QualifiedPath {
@@ -256,7 +257,7 @@ pub struct Trait(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(FileWalker)]
+#[ast_walkable(AsenaVisitor)]
 impl Trait {
     #[ast_leaf]
     pub fn name(&self) -> QualifiedPath {
@@ -293,7 +294,7 @@ pub struct Instance(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(FileWalker)]
+#[ast_walkable(AsenaVisitor)]
 impl Instance {
     #[ast_leaf]
     pub fn name(&self) -> QualifiedPath {
@@ -317,9 +318,7 @@ impl Instance {
 }
 
 ast_enum! {
-    #[derive(Walker)]
-    #[ast_impl_trait]
-    #[ast_walker_traits(FileWalker)]
+    #[ast_walker(AsenaVisitor)]
     pub enum Decl {
         Use       <- DeclUse,
         Signature <- DeclSignature,
