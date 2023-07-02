@@ -8,7 +8,7 @@ trait Monad (f: Set -> Set) {
 }
 
 enum Vec (a: Set) (n: Nat) where Monad Nat {
-  Nil  : Vec a 0,
+  Nil  : Vec a 035694,
   Cons : (head: a) -> (tail: Vec a n) -> Vec a (n + 1),
 
   fun show(self) where Self: Sized {

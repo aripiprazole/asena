@@ -10,7 +10,6 @@ mod ast_debug;
 mod ast_derive_leaf;
 mod ast_derive_located;
 mod ast_derive_node;
-mod ast_derive_reporter;
 mod ast_leaf;
 mod ast_of;
 mod ast_walkable;
@@ -103,24 +102,6 @@ pub fn derive_node(input: TokenStream) -> TokenStream {
 #[proc_macro_attribute]
 pub fn ast_walker(args: TokenStream, input: TokenStream) -> TokenStream {
     ast_walker::expand_ast_walker(args, input)
-}
-
-/// `Reporter` trait procedural macro, it does derives the `Reporter` trait for the given struct,
-/// and generates a [`Reporter`] delegate implementation, and the delegate is set by using
-/// [`ast_reporter`].
-///
-/// # Example
-/// ```rust,norun
-/// #[derive(Reporter)]
-/// #[ast_step(... )]
-/// pub struct SomeStep<'a, R: Reporter> {
-///     #[ast_reporter]
-///     pub reporter: &'a mut R,
-/// }
-/// ```
-#[proc_macro_derive(Reporter, attributes(ast_reporter))]
-pub fn ast_derive_reporter(input: TokenStream) -> TokenStream {
-    ast_derive_reporter::expand_ast_derive_reporter(input)
 }
 
 /// `Located` enum procedural macro, it does derives the `Located` trait for the given struct, using

@@ -45,6 +45,15 @@ impl Parameter {
     }
 }
 
+impl Parameter {
+    /// Walks the tree using the given visitor, it will call the visitor's methods for each node
+    /// in the tree.
+    pub fn walks<T: AsenaVisitor<()>>(self, mut visitor: T) -> Self {
+        self.walk(&mut visitor::new_walker(&mut visitor));
+        self
+    }
+}
+
 impl Leaf for Parameter {
     fn make(tree: GreenTree) -> Option<Self> {
         Some(match tree.kind() {

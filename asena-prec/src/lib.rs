@@ -1,6 +1,5 @@
-use asena_derive::*;
-
-use asena_ast::{command::CommandWalker, reporter::Reporter, *};
+use asena_ast::reporter::{Reporter, Reports};
+use asena_ast::*;
 
 use im::HashMap;
 
@@ -8,33 +7,36 @@ pub mod commands;
 
 pub use commands::*;
 
-#[derive(Reporter)]
-pub struct AsenaPrecReorder<'a, R: Reporter> {
+pub struct AsenaPrecReorder<'a> {
     pub prec_table: &'a HashMap<FunctionId, Entry>,
-    #[ast_reporter]
-    pub reporter: &'a mut R,
+    pub reporter: &'a mut Reporter,
 }
 
-// TODO
-// impl<'a, R: Reporter> ExprWalker for AsenaPrecReorder<'a, R> {
-//     fn walk_expr_infix(&mut self, value: &Infix) {
-//         self.impl_reorder_prec(value);
-//     }
+impl Reports for AsenaPrecReorder<'_> {
+    fn reports(&mut self) -> &mut Reporter {
+        self.reporter
+    }
+}
 
-//     fn walk_expr_accessor(&mut self, value: &Accessor) {
-//         self.impl_reorder_prec(value);
-//     }
+impl AsenaVisitor<()> for AsenaPrecReorder<'_> {
+    fn visit_infix(&mut self, value: Infix) {
+        self.impl_reorder_prec(&value);
+    }
 
-//     fn walk_expr_ann(&mut self, value: &Ann) {
-//         self.impl_reorder_prec(value);
-//     }
+    fn visit_accessor(&mut self, value: Accessor) {
+        self.impl_reorder_prec(&value);
+    }
 
-//     fn walk_expr_qual(&mut self, value: &Qual) {
-//         self.impl_reorder_prec(value);
-//     }
-// }
+    fn visit_ann(&mut self, value: Ann) {
+        self.impl_reorder_prec(&value);
+    }
 
-impl<'a, R: Reporter> AsenaPrecReorder<'a, R> {
+    fn visit_qual(&mut self, value: Qual) {
+        self.impl_reorder_prec(&value);
+    }
+}
+
+impl AsenaPrecReorder<'_> {
     /// Reorder the precedence of the binary expression.
     fn impl_reorder_prec(&mut self, binary: &impl Binary) -> Option<()> {
         let lhs = binary.lhs();
@@ -71,52 +73,55 @@ mod tests {
     fn it_works() {
         let mut prec_table = default_prec_table();
         let mut tree = asena_file! {
-            #infixr "@", 10;
+            #infixr "@", 1;
 
             Main {
-                let x = 2 @ 4 + 1;
+                let x = 2 @ 2 * 4 + 1;
                 Println "hello world"
             }
         };
 
-        // let file = AsenaFile::new(tree.clone())
-        //     .walks(AsenaInfixHandler::new(&mut tree, &mut prec_table))
-        //     .walks(AsenaPrecReorder {
-        //         prec_table: &prec_table,
-        //         reporter: &mut tree,
-        //     });
+        let file = AsenaFile::new(tree.clone())
+            .walks(AsenaInfixHandler {
+                prec_table: &mut prec_table,
+                reporter: &mut tree.reporter,
+            })
+            .walks(AsenaPrecReorder {
+                prec_table: &prec_table,
+                reporter: &mut tree.reporter,
+            });
 
         tree.reporter.dump();
 
-        // println!("{file:#?}")
+        println!("{file:#?}")
     }
 
     #[test]
     fn expr_works() {
         let prec_table = default_prec_table();
         let mut tree = asena_expr!(foo(1 * 2 + 4));
-        // let expr = Expr::new(tree.unwrap()).walks(AsenaPrecReorder {
-        //     prec_table: &prec_table,
-        //     reporter: &mut tree,
-        // });
+        let expr = Expr::new(tree.unwrap()).walks(AsenaPrecReorder {
+            prec_table: &prec_table,
+            reporter: &mut tree.reporter,
+        });
 
         tree.reporter.dump();
 
-        // println!("{expr:#?}")
+        println!("{expr:#?}")
     }
 
     #[test]
     fn stmt_works() {
         let prec_table = default_prec_table();
         let mut tree = asena_stmt!(bar(foo(1 * 2 + 4)));
-        // let stmt = Stmt::new(tree.unwrap()).walks(AsenaPrecReorder {
-        //     prec_table: &prec_table,
-        //     reporter: &mut tree,
-        // });
+        let stmt = Stmt::new(tree.unwrap()).walks(AsenaPrecReorder {
+            prec_table: &prec_table,
+            reporter: &mut tree.reporter,
+        });
 
         tree.reporter.dump();
 
-        // println!("{stmt:#?}")
+        println!("{stmt:#?}")
     }
 
     #[test]
@@ -125,13 +130,13 @@ mod tests {
         let mut tree = asena_decl! {
             #eval 1 * 2 + 4
         };
-        // let decl = Decl::new(tree.unwrap()).walks(AsenaPrecReorder {
-        //     prec_table: &prec_table,
-        //     reporter: &mut tree,
-        // });
+        let decl = Decl::new(tree.unwrap()).walks(AsenaPrecReorder {
+            prec_table: &prec_table,
+            reporter: &mut tree.reporter,
+        });
 
         tree.reporter.dump();
 
-        // println!("{decl:#?}")
+        println!("{decl:#?}")
     }
 }

@@ -43,7 +43,7 @@ pub fn expand_ast_command(args: TokenStream, input: TokenStream) -> TokenStream 
 
     input.items = vec![];
     input.items.push(parse_quote! {
-        fn on_command(&mut self, command: &Command) -> asena_ast::decl::command::Result {
+        fn on_command(&mut self, command: Command) -> asena_ast::decl::command::Result {
             match true {
                 #patterns
                 _ => {}

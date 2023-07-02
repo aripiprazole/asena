@@ -6,10 +6,16 @@ use asena_leaf::ast::Lexeme;
 
 use crate::*;
 
-pub trait AsenaWalker: AsenaVisitor<()> {}
+pub fn new_walker<T: AsenaVisitor<()>>(concrete: &mut T) -> &mut dyn AsenaVisitor<()> {
+    concrete
+}
 
 pub trait AsenaVisitor<T: Default> {
     fn visit_asena_file(&mut self, value: AsenaFile) -> T {
+        default()
+    }
+
+    fn visit_qualified_path(&mut self, value: QualifiedPath) -> T {
         default()
     }
 

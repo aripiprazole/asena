@@ -1,8 +1,5 @@
-use asena_derive::*;
-
 use asena_ast::reporter::Reporter;
 use asena_ast::*;
-use asena_leaf::ast::Walkable;
 use itertools::Itertools;
 
 use crate::{validation::*, Scheme, Type};
@@ -15,76 +12,71 @@ pub struct TypeEnvironment {
     pub schemes: im::HashMap<FunctionId, Scheme>,
 }
 
-#[derive(Reporter)]
-pub struct AsenaTyper<'a, R: Reporter> {
+pub struct AsenaTyper<'a> {
     pub type_env: &'a mut TypeEnvironment,
     pub class_env: &'a mut ClassEnvironment,
-
-    #[ast_reporter]
-    pub reporter: &'a mut R,
+    pub reporter: &'a mut Reporter,
 }
 
-// impl<'a, R: Reporter> DeclWalker for AsenaTyper<'a, R> {
-//     fn walk_decl_signature(&mut self, value: &Signature) {
-//         let name = value.name().to_fn_id();
+impl AsenaVisitor<()> for AsenaTyper<'_> {
+    fn visit_signature(&mut self, value: Signature) {
+        let name = value.name().to_fn_id();
 
-//         // Check the return type of the signature.
-//         let return_type = Type::from(value.return_type().walks(AsenaTypeValidator {
-//             is_constraint: false,
-//             reporter: self.reporter,
-//         }));
+        // Check the return type of the signature.
+        let return_type = Type::from(value.return_type().walks(AsenaTypeValidator {
+            is_constraint: false,
+            reporter: self.reporter,
+        }));
 
-//         let parameters = value
-//             .parameters()
-//             .into_iter()
-//             .map(|param| {
-//                 if param.explicit() {
-//                     param.walks(AsenaTypeValidator {
-//                         is_constraint: false,
-//                         reporter: self.reporter,
-//                     })
-//                 } else {
-//                     param.walks(AsenaConstraintValidator {
-//                         reporter: self.reporter,
-//                     })
-//                 }
-//             })
-//             .collect_vec();
+        let parameters = value
+            .parameters()
+            .into_iter()
+            .map(|param| {
+                if param.explicit() {
+                    param.walks(AsenaTypeValidator {
+                        is_constraint: false,
+                        reporter: self.reporter,
+                    })
+                } else {
+                    param.walks(AsenaConstraintValidator {
+                        reporter: self.reporter,
+                    })
+                }
+            })
+            .collect_vec();
 
-//         let implicit_parameters = parameters
-//             .iter()
-//             .filter(|p| !p.explicit())
-//             .cloned()
-//             .filter_map(|x| match x.parameter_type() {
-//                 Typed::Infer => None,
-//                 Typed::Explicit(Expr::Local(name)) => Some(name.to_fn_id()),
-//                 Typed::Explicit(_) => None,
-//             })
-//             .collect_vec();
+        let implicit_parameters = parameters
+            .iter()
+            .filter(|p| !p.explicit())
+            .cloned()
+            .filter_map(|x| match x.parameter_type() {
+                Typed::Infer => None,
+                Typed::Explicit(Expr::LocalExpr(name)) => Some(name.name().to_fn_id()),
+                Typed::Explicit(_) => None,
+            })
+            .collect_vec();
 
-//         // FIXME: this transforms a -> b -> c in (a -> b) -> c
-//         let mono = parameters
-//             .iter()
-//             .filter(|p| p.explicit())
-//             .map(|param| Type::from(param.parameter_type()))
-//             .rev()
-//             .fold(return_type, |acc, next| {
-//                 Type::Arrow(next.into(), acc.into())
-//             });
+        // FIXME: this transforms a -> b -> c in (a -> b) -> c
+        let mono = parameters
+            .iter()
+            .filter(|p| p.explicit())
+            .map(|param| Type::from(param.parameter_type()))
+            .rev()
+            .fold(return_type, |acc, next| {
+                Type::Arrow(next.into(), acc.into())
+            });
 
-//         self.type_env.schemes.insert(
-//             name,
-//             Scheme {
-//                 variables: implicit_parameters,
-//                 mono,
-//             },
-//         );
-//     }
-// }
+        self.type_env.schemes.insert(
+            name,
+            Scheme {
+                variables: implicit_parameters,
+                mono,
+            },
+        );
+    }
+}
 
-// impl<'a, R: Reporter> ExprWalker for AsenaTyper<'a, R> {}
-
-impl<'a, R: Reporter> AsenaTyper<'a, R> {
+impl<'a> AsenaTyper<'a> {
     ///
     /// Γ, σ ∈ Γ   τ = inst(σ)
     /// ────────────────────── [E-VAR]

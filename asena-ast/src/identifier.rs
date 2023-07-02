@@ -199,5 +199,6 @@ impl Walkable for QualifiedPath {
         for segment in self.segments().iter() {
             segment.walk(walker)
         }
+        walker.visit_qualified_path(self.clone())
     }
 }
