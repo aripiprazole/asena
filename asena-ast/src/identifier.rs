@@ -3,11 +3,13 @@ use std::fmt::{Debug, Display};
 
 use asena_derive::*;
 
-use asena_leaf::ast::{GreenTree, Leaf, Lexeme, Located, Node, Terminal, Walkable};
+use asena_leaf::ast::{GreenTree, Leaf, Lexeme, LexemeWalkable, Located, Node, Terminal, Walkable};
 use asena_leaf::node::TreeKind::*;
 use asena_leaf::token::{kind::TokenKind, Token};
 
 use asena_span::{Loc, Spanned};
+
+use crate::AsenaVisitor;
 
 //>>>Identifiers
 /// Identifier's key to a function (everything on the language), this can be abstracted in another
@@ -65,8 +67,12 @@ impl Debug for FunctionId {
     }
 }
 
-impl<W> Walkable<W> for FunctionId {
-    fn walk(&self, _walker: &mut W) {}
+impl LexemeWalkable for FunctionId {
+    type Walker<'a> = &'a mut dyn AsenaVisitor<()>;
+
+    fn lexeme_walk(value: Lexeme<Self>, walker: &mut Self::Walker<'_>) {
+        walker.visit_function_id(value)
+    }
 }
 
 /// Identifier's key to local identifier, that's not declared globally, almost everything with
@@ -136,8 +142,12 @@ impl Debug for Local {
     }
 }
 
-impl<W> Walkable<W> for Local {
-    fn walk(&self, _walker: &mut W) {}
+impl LexemeWalkable for Local {
+    type Walker<'a> = &'a mut dyn AsenaVisitor<()>;
+
+    fn lexeme_walk(value: Lexeme<Self>, walker: &mut Self::Walker<'_>) {
+        walker.visit_local(value)
+    }
 }
 
 /// Identifier's key to a global identifier, that's not declared locally, almost everything with
@@ -182,10 +192,12 @@ impl Leaf for QualifiedPath {
     }
 }
 
-impl<W> Walkable<W> for QualifiedPath {
-    fn walk(&self, walker: &mut W) {
-        for ele in self.segments().iter() {
-            ele.walk(walker)
+impl Walkable for QualifiedPath {
+    type Walker<'a> = &'a mut dyn AsenaVisitor<()>;
+
+    fn walk(&self, walker: &mut Self::Walker<'_>) {
+        for segment in self.segments().iter() {
+            segment.walk(walker)
         }
     }
 }

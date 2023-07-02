@@ -17,6 +17,7 @@ pub struct Where(GreenTree);
 
 #[ast_of]
 #[ast_debug]
+#[ast_walkable(AsenaVisitor)]
 impl Where {
     #[ast_leaf]
     pub fn constraints(&self) -> Vec<Constraint> {
@@ -30,18 +31,5 @@ impl Leaf for Where {
             WhereClause => Where::new(tree),
             _ => return None,
         })
-    }
-}
-
-pub trait WhereWalker {
-    fn walk_where(&mut self, value: &Where) {
-        let _ = value;
-    }
-}
-
-impl<W: FileWalker> Walkable<W> for Where {
-    fn walk(&self, walker: &mut W) {
-        self.constraints().walk(walker);
-        walker.walk_where(self)
     }
 }

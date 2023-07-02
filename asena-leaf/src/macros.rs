@@ -1,12 +1,13 @@
+mod ast_virtual;
+
+pub use ast_virtual::*;
+
 #[macro_export]
 macro_rules! ast_enum {
     (
         $(#[$outer:meta])*
         pub enum $name:ident {
-            $(
-                $(#[$field_outer:meta])*
-                $variant:ident <- $kind:ident $(=> [$f:expr])?
-            ),*
+            $($(#[$field_outer:meta])* $variant:ident <- $kind:ident),*
             $(,)?
         }
     ) => {
@@ -23,10 +24,8 @@ macro_rules! ast_enum {
             Error,
             $(
                 $(#[$field_outer])*
-                $(#[ast_build_fn($f)])?
                 #[ast_from($kind)]
-                #[ast_terminal($crate::variant!($variant $(, $f)?))]
-                $variant($crate::variant!($variant $(, $f)?)),
+                $variant($variant),
             )*
         }
 
@@ -38,7 +37,6 @@ macro_rules! ast_enum {
             #[doc(hidden)]
             fn __show_type_info() {
                 $(let _: $crate::node::TreeKind = $kind;)*
-                $($(let _: fn($crate::ast::GreenTree) -> Option<$name> = $f;)*)*;
             }
         }
 
@@ -64,15 +62,7 @@ macro_rules! ast_enum {
             fn new<I: Into<$crate::ast::GreenTree>>(value: I) -> Self {
                 let tree: $crate::ast::GreenTree = value.into();
                 match tree {
-                    $crate::ast::GreenTree::Token(lexeme) => {
-                        let terminal = lexeme.token;
-                        let mut fallback = Self::default();
-                        $(if let Some(value) = $crate::ast_make_pattern!(terminal, $variant $(, $f)?) {
-                            return Self::$variant(value);
-                        };)*;
-
-                        fallback
-                    },
+                    $crate::ast::GreenTree::Token(_) => Self::default(),
                     $crate::ast::GreenTree::Empty => Self::default(),
                     $crate::ast::GreenTree::None => Self::default(),
                     _ => <Self as $crate::ast::Leaf>::make(tree).unwrap_or_default(),
@@ -87,15 +77,20 @@ macro_rules! ast_enum {
             }
         }
 
-        $($crate::ast_make_virtual!($kind, $variant $(, $f)?);
+        $(
+        impl $crate::ast::VirtualNode for $variant {
+            fn tree_kind() -> $crate::node::TreeKind {
+                $kind
+            }
+        }
 
-        impl From<$crate::macros::variant!($variant $(, $f)?)> for $name {
-            fn from(value: $crate::variant!($variant $(, $f)?)) -> Self {
+        impl From<$variant> for $name {
+            fn from(value: $variant) -> Self {
                 Self::$variant(value.into())
             }
         }
 
-        impl TryFrom<$name> for $crate::macros::variant!($variant $(, $f)?) {
+        impl TryFrom<$name> for $variant {
             type Error = String;
 
             fn try_from(value: $name) -> Result<Self, String> {
@@ -108,68 +103,4 @@ macro_rules! ast_enum {
     }
 }
 
-#[macro_export]
-macro_rules! variant {
-    ($variant:ident, $f:expr) => { asena_leaf::ast::Lexeme<$variant> };
-    ($variant:ident) => { $variant }
-}
-
-#[macro_export]
-macro_rules! ast_should_be_terminal {
-    ($f:expr) => { #[ast_terminal] };
-    () => {}
-}
-
-#[macro_export]
-macro_rules! ast_make_virtual {
-    ($kind:ident, $variant:ident, $f:expr) => {};
-    ($kind:ident, $variant:ident) => {
-        impl $crate::ast::VirtualNode for $variant {
-            fn tree_kind() -> $crate::node::TreeKind {
-                $kind
-            }
-        }
-    };
-}
-
-#[macro_export]
-macro_rules! ast_make_synthetic {
-    ($tree:expr, $variant:ident, $f:expr) => {{
-        <$crate::ast::Lexeme<$variant> as $crate::ast::Node>::new($tree.clone())
-    }};
-    ($tree:expr, $variant:ident) => {
-        $variant::new($tree.clone())
-    };
-}
-
-#[macro_export]
-macro_rules! ast_make_pattern {
-    ($terminal:expr, $variant:ident, $f:expr) => {{
-        <$crate::ast::Lexeme<$variant> as $crate::ast::Leaf>::terminal($terminal.clone())
-    }};
-    ($terminal:expr, $variant:ident) => {
-        None
-    };
-}
-
-/// FIXME: This macro is a workaround for the current (i dont know what i did today), but it
-/// works, so i will keep it for now.
-#[macro_export]
-macro_rules! ast_make_match {
-    ($terminal:expr, $crate :: macros :: ast_make_variant! ($variant:ty, $x:expr)) => {{
-        <asena_leaf::ast::Lexeme<$variant> as $crate::ast::Leaf>::terminal($terminal.clone())
-    }};
-    ($terminal:expr, $($s:tt)*) => {
-        None
-    };
-}
-
 pub use ast_enum;
-pub use ast_make_match;
-pub use ast_make_pattern;
-pub use ast_make_virtual;
-pub use variant;
-
-mod ast_virtual;
-
-pub use ast_virtual::*;

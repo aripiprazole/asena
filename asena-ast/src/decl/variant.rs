@@ -18,7 +18,7 @@ pub struct TypeVariant(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(BranchWalker, ExprWalker, PatWalker, StmtWalker)]
+#[ast_walkable(AsenaVisitor)]
 impl TypeVariant {
     #[ast_leaf]
     pub fn name(&self) -> QualifiedPath {
@@ -43,7 +43,7 @@ pub struct ConstructorVariant(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(BranchWalker, ExprWalker, PatWalker, StmtWalker)]
+#[ast_walkable(AsenaVisitor)]
 impl ConstructorVariant {
     #[ast_leaf]
     pub fn name(&self) -> QualifiedPath {
@@ -57,8 +57,7 @@ impl ConstructorVariant {
 }
 
 ast_enum! {
-    #[derive(Walker)]
-    #[ast_walker_traits(BranchWalker, ExprWalker, PatWalker, StmtWalker)]
+    #[ast_walker(AsenaVisitor)]
     pub enum Variant {
         TypeVariant        <- VariantType,
         ConstructorVariant <- VariantConstructor,

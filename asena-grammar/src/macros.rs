@@ -11,16 +11,15 @@
 
 use std::ops::{Deref, DerefMut};
 
-use asena_ast::walker::{DefaultReporter, Reporter};
+use asena_ast::reporter::Reporter;
 use asena_leaf::{ast::GreenTree, node::Tree};
-use asena_report::InternalError;
 use asena_span::Spanned;
 
 #[macro_export]
 macro_rules! asena_expr {
     ($($s:tt)*) => {{
         let string = stringify!($($s)*);
-        $crate::new_reportable(string, asena_parser::Parser::from(asena_lexer::Lexer::new(string))
+        $crate::Reportable::new(string, asena_parser::Parser::from(asena_lexer::Lexer::new(string))
             .run(|p| $crate::expr(p, $crate::Linebreak::Cont))
             .build_tree()
             .unwrap())
@@ -32,7 +31,7 @@ macro_rules! asena_decl {
     ($($s:tt)*) => {{
         let string = stringify!($($s)*);
 
-        $crate::new_reportable(string, asena_parser::Parser::from(asena_lexer::Lexer::new(string))
+        $crate::Reportable::new(string, asena_parser::Parser::from(asena_lexer::Lexer::new(string))
             .run($crate::decl)
             .build_tree()
             .unwrap())
@@ -44,7 +43,7 @@ macro_rules! asena_stmt {
     ($($s:tt)*) => {{
         let string = stringify!($($s)*);
 
-        $crate::new_reportable(string, asena_parser::Parser::from(asena_lexer::Lexer::new(string))
+        $crate::Reportable::new(string, asena_parser::Parser::from(asena_lexer::Lexer::new(string))
             .run($crate::stmt)
             .build_tree()
             .unwrap())
@@ -56,7 +55,7 @@ macro_rules! asena_file {
     ($($s:tt)*) => {{
         let string = stringify!($($s)*);
 
-        $crate::new_reportable(string, asena_parser::Parser::from(asena_lexer::Lexer::new(string))
+        $crate::Reportable::new(string, asena_parser::Parser::from(asena_lexer::Lexer::new(string))
             .run($crate::file)
             .build_tree()
             .unwrap())
@@ -68,7 +67,7 @@ macro_rules! parse_asena_file {
     ($file:expr) => {{
         let string = include_str!($file);
 
-        $crate::new_reportable(
+        $crate::Reportable::new(
             string,
             asena_parser::Parser::from(asena_lexer::Lexer::new(string))
                 .run($crate::file)
@@ -79,54 +78,44 @@ macro_rules! parse_asena_file {
 }
 
 #[derive(Clone)]
-pub struct Reportable<R: Reporter> {
-    pub reporter: R,
+pub struct Reportable {
+    pub reporter: Reporter,
     pub data: Spanned<Tree>,
 }
 
-pub fn new_reportable(src: &str, tree: Spanned<Tree>) -> Reportable<DefaultReporter> {
-    let reporter = DefaultReporter::new(src, tree.clone());
-
-    Reportable {
-        data: tree,
-        reporter,
-    }
-}
-
-impl<R: Reporter> std::borrow::Borrow<Spanned<Tree>> for Reportable<R> {
+impl std::borrow::Borrow<Spanned<Tree>> for Reportable {
     fn borrow(&self) -> &Spanned<Tree> {
         &self.data
     }
 }
 
-impl<R: Reporter> From<Reportable<R>> for GreenTree {
-    fn from(value: Reportable<R>) -> Self {
+impl From<Reportable> for GreenTree {
+    fn from(value: Reportable) -> Self {
         value.data.into()
     }
 }
 
-impl Reportable<DefaultReporter> {
+impl Reportable {
+    pub fn new(src: &str, tree: Spanned<Tree>) -> Reportable {
+        let reporter = Reporter::new(src, tree.clone());
+
+        Reportable {
+            data: tree,
+            reporter,
+        }
+    }
     pub fn unwrap(&self) -> Spanned<Tree> {
         self.data.clone()
     }
 }
 
-impl<R: Reporter> Reporter for Reportable<R> {
-    fn diagnostic<E: InternalError, A>(&mut self, at: Spanned<A>, error: E)
-    where
-        E: 'static,
-    {
-        self.reporter.diagnostic(at, error)
-    }
-}
-
-impl<R: asena_ast::walker::Reporter> DerefMut for Reportable<R> {
+impl DerefMut for Reportable {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.data
     }
 }
 
-impl<R: asena_ast::walker::Reporter> Deref for Reportable<R> {
+impl Deref for Reportable {
     type Target = Spanned<Tree>;
 
     fn deref(&self) -> &Self::Target {

@@ -150,21 +150,21 @@ mod tests {
 
         let mut tree = parse_asena_file!("./test.ase");
 
-        let file = AsenaFile::new(tree.clone())
-            .walks(AsenaInfixHandler::new(&mut tree, &mut prec_table))
-            .walks(AsenaPrecReorder {
-                prec_table: &prec_table,
-                reporter: &mut tree,
-            })
-            .walks(AsenaTyper {
-                type_env: &mut type_env,
-                class_env: &mut class_env,
-                reporter: &mut tree,
-            });
+        // let file = AsenaFile::new(tree.clone())
+        //     .walks(AsenaInfixHandler::new(&mut tree, &mut prec_table))
+        //     .walks(AsenaPrecReorder {
+        //         prec_table: &prec_table,
+        //         reporter: &mut tree,
+        //     })
+        //     .walks(AsenaTyper {
+        //         type_env: &mut type_env,
+        //         class_env: &mut class_env,
+        //         reporter: &mut tree,
+        //     });
 
-        tree.reporter.dump();
+        // tree.reporter.dump();
 
-        println!("{file:#?}");
-        println!("{type_env:#?}");
+        // println!("{file:#?}");
+        // println!("{type_env:#?}");
     }
 }

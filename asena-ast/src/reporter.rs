@@ -4,43 +4,30 @@ use asena_leaf::{ast::Located, node::Tree};
 use asena_report::{BoxInternalError, Diagnostic, InternalError, Report};
 use asena_span::Spanned;
 
-use crate::*;
-
-pub trait TreeWalker: ExprWalker + PatWalker + StmtWalker {}
-
-pub trait Reporter {
-    fn report<E: InternalError + 'static, T: Located>(&mut self, at: &T, error: E) {
-        self.diagnostic(Spanned::new(at.location().into_owned(), ()), error);
-    }
-
-    fn diagnostic<E: InternalError + 'static, T>(&mut self, at: Spanned<T>, error: E);
-}
-
 #[derive(Default, Clone)]
-pub struct DefaultReporter {
+pub struct Reporter {
     pub src: String,
     pub tree: Spanned<Tree>,
     pub(crate) errors: Vec<Diagnostic<BoxInternalError>>,
 }
 
-impl Reporter for DefaultReporter {
-    fn diagnostic<E: InternalError, T>(&mut self, at: Spanned<T>, error: E)
-    where
-        E: 'static,
-    {
-        let error = at.swap(BoxInternalError(Rc::new(error)));
-
-        self.errors.push(Diagnostic::new(error))
-    }
-}
-
-impl DefaultReporter {
+impl Reporter {
     pub fn new(src: &str, tree: Spanned<Tree>) -> Self {
         Self {
             src: src.to_owned(),
             tree,
             ..Default::default()
         }
+    }
+
+    pub fn report<E: InternalError + 'static, T: Located>(&mut self, at: &T, error: E) {
+        self.diagnostic(Spanned::new(at.location().into_owned(), ()), error);
+    }
+
+    pub fn diagnostic<E: InternalError + 'static, T>(&mut self, at: Spanned<T>, error: E) {
+        self.errors.push(Diagnostic::new(
+            at.replace(BoxInternalError(Rc::new(error))),
+        ));
     }
 
     pub fn dump(&mut self) {

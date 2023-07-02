@@ -16,7 +16,7 @@ pub struct Field(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(BranchWalker, BodyWalker, ExprWalker, PatWalker, StmtWalker)]
+#[ast_walkable(AsenaVisitor)]
 impl Field {
     #[ast_leaf]
     pub fn name(&self) -> QualifiedPath {
@@ -55,7 +55,7 @@ pub struct Method(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(FileWalker)]
+#[ast_walkable(AsenaVisitor)]
 impl Method {
     #[ast_leaf]
     pub fn name(&self) -> QualifiedPath {

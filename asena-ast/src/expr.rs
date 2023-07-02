@@ -42,6 +42,32 @@ pub use branch::*;
 pub use case::*;
 pub use lam_parameter::*;
 
+#[derive(Default, Node, Located, Clone)]
+pub struct LocalExpr(GreenTree);
+
+#[ast_of]
+#[ast_debug]
+#[ast_walkable(AsenaVisitor)]
+impl LocalExpr {
+    #[ast_leaf]
+    pub fn name(&self) -> Lexeme<Local> {
+        self.filter_terminal().first()
+    }
+}
+
+#[derive(Default, Node, Located, Clone)]
+pub struct LiteralExpr(GreenTree);
+
+#[ast_of]
+#[ast_debug]
+#[ast_walkable(AsenaVisitor)]
+impl LiteralExpr {
+    #[ast_leaf]
+    pub fn literal(&self) -> Lexeme<Literal> {
+        self.filter_terminal().first()
+    }
+}
+
 /// Unit expression, is an that represents an Unit value.
 ///
 /// # Examples
@@ -55,7 +81,7 @@ pub struct Unit(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(BranchWalker, PatWalker, StmtWalker, ExprWalker)]
+#[ast_walkable(AsenaVisitor)]
 impl Unit {}
 
 /// Group expression, is an expression that is a call between two operands, and is surrounded by
@@ -72,7 +98,7 @@ pub struct Group(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(BranchWalker, PatWalker, StmtWalker, ExprWalker)]
+#[ast_walkable(AsenaVisitor)]
 impl Group {
     /// Returns the expression inside the group, this is the expression that is surrounded by
     /// parenthesis.
@@ -106,20 +132,6 @@ impl Group {
 #[derive(Default, Node, Clone)]
 pub struct Infix(GreenTree);
 
-impl Located for Infix {
-    fn location(&self) -> std::borrow::Cow<'_, asena_span::Loc> {
-        std::borrow::Cow::Owned(self.lhs().location().on(self.rhs().location().into_owned()))
-    }
-}
-
-impl<W: BranchWalker + ExprWalker + PatWalker + StmtWalker> Walkable<W> for Infix {
-    fn walk(&self, walker: &mut W) {
-        self.lhs().walk(walker);
-        self.fn_id().walk(walker);
-        self.rhs().walk(walker);
-    }
-}
-
 impl Debug for Infix {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Infix")
@@ -127,6 +139,22 @@ impl Debug for Infix {
             .field("fn_id", &self.fn_id())
             .field("rhs", &self.rhs())
             .finish()
+    }
+}
+
+impl Walkable for Infix {
+    type Walker<'a> = &'a mut dyn AsenaVisitor<()>;
+
+    fn walk(&self, walker: &mut Self::Walker<'_>) {
+        self.lhs().walk(walker);
+        self.fn_id().walk(walker);
+        self.rhs().walk(walker);
+    }
+}
+
+impl Located for Infix {
+    fn location(&self) -> std::borrow::Cow<'_, asena_span::Loc> {
+        std::borrow::Cow::Owned(self.lhs().location().on(self.rhs().location().into_owned()))
     }
 }
 
@@ -139,12 +167,11 @@ impl Debug for Infix {
 /// ```haskell
 /// person.data
 /// ```
-#[derive(Default, Node, Located, Clone)]
+#[derive(Default, Node, Clone)]
 pub struct Accessor(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(BranchWalker, PatWalker, StmtWalker, ExprWalker)]
 impl Accessor {
     #[ast_leaf]
     pub fn receiver(&self) -> Expr {
@@ -154,6 +181,22 @@ impl Accessor {
     #[ast_leaf]
     pub fn segments(&self) -> Vec<AccessorSegment> {
         self.filter()
+    }
+}
+
+impl Walkable for Accessor {
+    type Walker<'a> = &'a mut dyn AsenaVisitor<()>;
+
+    fn walk(&self, walker: &mut Self::Walker<'_>) {
+        self.lhs().walk(walker);
+        self.fn_id().walk(walker);
+        self.rhs().walk(walker);
+    }
+}
+
+impl Located for Accessor {
+    fn location(&self) -> std::borrow::Cow<'_, asena_span::Loc> {
+        std::borrow::Cow::Owned(self.lhs().location().on(self.rhs().location().into_owned()))
     }
 }
 
@@ -174,7 +217,7 @@ pub struct App(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(BranchWalker, PatWalker, StmtWalker, ExprWalker)]
+#[ast_walkable(AsenaVisitor)]
 impl App {
     #[ast_leaf]
     pub fn callee(&self) -> Expr {
@@ -207,7 +250,7 @@ pub struct Dsl(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(BranchWalker, PatWalker, StmtWalker, ExprWalker)]
+#[ast_walkable(AsenaVisitor)]
 impl Dsl {
     #[ast_leaf]
     pub fn callee(&self) -> Expr {
@@ -240,7 +283,7 @@ pub struct Array(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(BranchWalker, PatWalker, StmtWalker, ExprWalker)]
+#[ast_walkable(AsenaVisitor)]
 impl Array {
     #[ast_leaf]
     pub fn items(&self) -> Vec<Expr> {
@@ -271,7 +314,7 @@ pub struct Lam(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(BranchWalker, PatWalker, StmtWalker, ExprWalker)]
+#[ast_walkable(AsenaVisitor)]
 impl Lam {
     #[ast_leaf]
     pub fn parameters(&self) -> Vec<LamParameter> {
@@ -299,7 +342,7 @@ pub struct Let(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(BranchWalker, PatWalker, StmtWalker, ExprWalker)]
+#[ast_walkable(AsenaVisitor)]
 impl Let {
     #[ast_leaf]
     pub fn pat(&self) -> Pat {
@@ -331,7 +374,7 @@ pub struct If(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(BranchWalker, BranchWalker, PatWalker, StmtWalker, ExprWalker)]
+#[ast_walkable(AsenaVisitor)]
 impl If {
     #[ast_leaf]
     pub fn cond(&self) -> Expr {
@@ -366,7 +409,7 @@ pub struct Match(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(BranchWalker, BranchWalker, PatWalker, StmtWalker, ExprWalker)]
+#[ast_walkable(AsenaVisitor)]
 impl Match {
     #[ast_leaf]
     pub fn scrutinee(&self) -> Expr {
@@ -393,7 +436,6 @@ pub struct Ann(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(BranchWalker, PatWalker, StmtWalker, ExprWalker)]
 impl Ann {
     #[ast_leaf]
     pub fn value(&self) -> Expr {
@@ -403,6 +445,16 @@ impl Ann {
     #[ast_leaf]
     pub fn against(&self) -> Expr {
         self.find_rhs()
+    }
+}
+
+impl Walkable for Ann {
+    type Walker<'a> = &'a mut dyn AsenaVisitor<()>;
+
+    fn walk(&self, walker: &mut Self::Walker<'_>) {
+        self.lhs().walk(walker);
+        self.fn_id().walk(walker);
+        self.rhs().walk(walker);
     }
 }
 
@@ -429,20 +481,6 @@ impl Located for Ann {
 #[derive(Default, Node, Clone)]
 pub struct Qual(GreenTree);
 
-impl Located for Qual {
-    fn location(&self) -> std::borrow::Cow<'_, asena_span::Loc> {
-        std::borrow::Cow::Owned(self.lhs().location().on(self.rhs().location().into_owned()))
-    }
-}
-
-impl<W: BranchWalker + ExprWalker + PatWalker + StmtWalker> Walkable<W> for Qual {
-    fn walk(&self, walker: &mut W) {
-        self.lhs().walk(walker);
-        self.fn_id().walk(walker);
-        self.rhs().walk(walker);
-    }
-}
-
 impl Debug for Qual {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Qual")
@@ -450,6 +488,22 @@ impl Debug for Qual {
             .field("fn_id", &self.fn_id())
             .field("rhs_id", &self.rhs())
             .finish()
+    }
+}
+
+impl Walkable for Qual {
+    type Walker<'a> = &'a mut dyn AsenaVisitor<()>;
+
+    fn walk(&self, walker: &mut Self::Walker<'_>) {
+        self.lhs().walk(walker);
+        self.fn_id().walk(walker);
+        self.rhs().walk(walker);
+    }
+}
+
+impl Located for Qual {
+    fn location(&self) -> std::borrow::Cow<'_, asena_span::Loc> {
+        std::borrow::Cow::Owned(self.lhs().location().on(self.rhs().location().into_owned()))
     }
 }
 
@@ -471,7 +525,7 @@ pub struct Pi(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(BranchWalker, PatWalker, StmtWalker, ExprWalker)]
+#[ast_walkable(AsenaVisitor)]
 impl Pi {
     #[ast_leaf]
     pub fn parameter_name(&self) -> Option<Lexeme<Local>> {
@@ -549,7 +603,7 @@ pub struct Sigma(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(BranchWalker, PatWalker, StmtWalker, ExprWalker)]
+#[ast_walkable(AsenaVisitor)]
 impl Sigma {
     #[ast_leaf]
     pub fn parameter_name(&self) -> Lexeme<Local> {
@@ -578,7 +632,7 @@ pub struct Help(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(BranchWalker, PatWalker, StmtWalker, ExprWalker)]
+#[ast_walkable(AsenaVisitor)]
 impl Help {
     #[ast_leaf]
     pub fn value(&self) -> Expr {
@@ -587,9 +641,8 @@ impl Help {
 }
 
 ast_enum! {
-    #[derive(Walker)]
-    #[ast_walker_traits(BranchWalker, PatWalker, StmtWalker)]
     /// The expression enum, it is the main type of the language.
+    #[ast_walker(AsenaVisitor)]
     pub enum Expr {
         Unit            <- ExprUnit,
         Group           <- ExprGroup,
@@ -607,22 +660,8 @@ ast_enum! {
         Pi              <- ExprPi,
         Sigma           <- ExprSigma,
         Help            <- ExprHelp,
-        Local           <- ExprLocal => [Expr::build_local],
-        Literal         <- ExprLit   => [Expr::build_literal],
-    }
-}
-
-impl Expr {
-    fn build_local(tree: GreenTree) -> Option<Expr> {
-        let local = tree.terminal::<Local>(0).as_leaf();
-
-        Some(Expr::Local(local))
-    }
-
-    fn build_literal(tree: GreenTree) -> Option<Expr> {
-        let literal = tree.terminal::<Literal>(0).as_leaf();
-
-        Some(Expr::Literal(literal))
+        LocalExpr       <- ExprLocal,
+        LiteralExpr     <- ExprLit,
     }
 }
 
@@ -683,11 +722,13 @@ impl Debug for Typed {
     }
 }
 
-impl<W: BranchWalker + ExprWalker + PatWalker + StmtWalker> Walkable<W> for Typed {
-    fn walk(&self, walker: &mut W) {
-        match self {
+impl Walkable for Typed {
+    type Walker<'a> = &'a mut dyn AsenaVisitor<()>;
+
+    fn walk(&self, walker: &mut Self::Walker<'_>) {
+        match self.clone() {
             Typed::Infer => {}
-            Typed::Explicit(value) => value.walk(walker),
+            Typed::Explicit(explicit) => explicit.walk(walker),
         }
     }
 }

@@ -10,6 +10,7 @@ pub struct AccessorSegment(GreenTree);
 
 #[ast_of]
 #[ast_debug]
+#[ast_walkable(AsenaVisitor)]
 impl AccessorSegment {
     #[ast_leaf]
     pub fn name(&self) -> Lexeme<Local> {
@@ -28,12 +29,5 @@ impl Leaf for AccessorSegment {
             AccessorArg => AccessorSegment::new(tree),
             _ => return None,
         })
-    }
-}
-
-impl<W: BranchWalker + PatWalker + StmtWalker + ExprWalker> Walkable<W> for AccessorSegment {
-    fn walk(&self, walker: &mut W) {
-        self.name().walk(walker);
-        self.arguments().walk(walker)
     }
 }

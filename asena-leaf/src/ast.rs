@@ -165,6 +165,7 @@ mod green;
 mod key;
 mod lexeme;
 mod tree;
+mod visitor;
 mod walk;
 
 pub use cursor::*;
@@ -172,4 +173,5 @@ pub use green::*;
 pub use key::*;
 pub use lexeme::*;
 pub use tree::*;
+pub use visitor::*;
 pub use walk::*;

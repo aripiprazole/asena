@@ -1,11 +1,25 @@
 use asena_derive::*;
 
+use asena_leaf::ast::Lexeme;
 use asena_leaf::ast_enum;
 use asena_leaf::node::TreeKind::*;
 
 use asena_span::Spanned;
 
 use crate::*;
+
+#[derive(Default, Node, Located, Clone)]
+pub struct LiteralPat(GreenTree);
+
+#[ast_of]
+#[ast_debug]
+#[ast_walkable(AsenaVisitor)]
+impl LiteralPat {
+    #[ast_leaf]
+    pub fn literal(&self) -> Lexeme<Literal> {
+        self.filter_terminal().first()
+    }
+}
 
 /// Global pattern, is a global name.
 ///
@@ -14,12 +28,12 @@ use crate::*;
 /// Some
 /// ```
 #[derive(Default, Node, Located, Clone)]
-pub struct Global(GreenTree);
+pub struct GlobalPat(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(ExprWalker, StmtWalker, PatWalker)]
-impl Global {
+#[ast_walkable(AsenaVisitor)]
+impl GlobalPat {
     #[ast_leaf]
     pub fn name(&self) -> QualifiedPath {
         self.filter().first()
@@ -33,12 +47,12 @@ impl Global {
 /// Some x
 /// ```
 #[derive(Default, Node, Located, Clone)]
-pub struct Constructor(GreenTree);
+pub struct ConstructorPat(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(ExprWalker, StmtWalker, PatWalker)]
-impl Constructor {
+#[ast_walkable(AsenaVisitor)]
+impl ConstructorPat {
     #[ast_leaf]
     pub fn name(&self) -> QualifiedPath {
         self.filter().first()
@@ -57,12 +71,12 @@ impl Constructor {
 /// [x, ..]
 /// ```
 #[derive(Default, Node, Located, Clone)]
-pub struct List(GreenTree);
+pub struct ListPat(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(ExprWalker, StmtWalker, PatWalker)]
-impl List {
+#[ast_walkable(AsenaVisitor)]
+impl ListPat {
     #[ast_leaf]
     pub fn items(&self) -> Vec<Pat> {
         self.filter()
@@ -77,21 +91,21 @@ impl List {
 /// [x, ..]
 /// ```
 #[derive(Default, Node, Located, Clone)]
-pub struct Spread(GreenTree);
+pub struct SpreadPat(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(ExprWalker, StmtWalker, PatWalker)]
-impl Spread {}
+#[ast_walkable(AsenaVisitor)]
+impl SpreadPat {}
 
 /// Wildcard pattern, is the same as `_` pattern [Pat::Local]
 #[derive(Default, Node, Located, Clone)]
-pub struct Wildcard(GreenTree);
+pub struct WildcardPat(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(ExprWalker, StmtWalker, PatWalker)]
-impl Wildcard {}
+#[ast_walkable(AsenaVisitor)]
+impl WildcardPat {}
 
 /// Units pattern, matches agains't ()
 ///
@@ -104,28 +118,19 @@ pub struct UnitPat(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(ExprWalker, StmtWalker, PatWalker)]
+#[ast_walkable(AsenaVisitor)]
 impl UnitPat {}
 
 ast_enum! {
-    #[derive(Walker)]
-    #[ast_walker_traits(ExprWalker, StmtWalker, PatWalker)]
+    #[ast_walker(AsenaVisitor)]
     pub enum Pat {
-        Wildcard      <- PatWildcard,                         // _
-        Spread        <- PatSpread,                           // ..
-        UnitPat       <- PatUnit,                             // ()
-        Constructor   <- PatConstructor,                      // (<global_id> <pattern...>)
-        List          <- PatList,                             // [<pattern...>]
-        Global        <- PatGlobal,                           // <global>
-        Literal       <- PatLit    => [Pat::build_literal],   // <literal>
-    }
-}
-
-impl Pat {
-    fn build_literal(tree: GreenTree) -> Option<Pat> {
-        let literal = tree.terminal::<Literal>(0).as_leaf();
-
-        Some(Self::Literal(literal))
+        WildcardPat    <- PatWildcard,    // _
+        SpreadPat      <- PatSpread,      // ..
+        UnitPat        <- PatUnit,        // ()
+        ConstructorPat <- PatConstructor, // (<global_id> <pattern...>)
+        ListPat        <- PatList,        // [<pattern...>]
+        GlobalPat      <- PatGlobal,      // <global>
+        LiteralPat     <- PatLit,         // <literal>
     }
 }
 

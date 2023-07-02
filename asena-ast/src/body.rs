@@ -11,7 +11,7 @@ pub struct Value(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(BranchWalker, ExprWalker, PatWalker, StmtWalker)]
+#[ast_walkable(AsenaVisitor)]
 impl Value {
     #[ast_leaf]
     pub fn value(&self) -> Expr {
@@ -25,7 +25,7 @@ pub struct Do(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(BranchWalker, ExprWalker, PatWalker, StmtWalker)]
+#[ast_walkable(AsenaVisitor)]
 impl Do {
     #[ast_leaf]
     pub fn stmts(&self) -> Vec<Stmt> {
@@ -34,8 +34,6 @@ impl Do {
 }
 
 ast_enum! {
-    #[derive(Walker)]
-    #[ast_walker_traits(BranchWalker, ExprWalker, PatWalker, StmtWalker)]
     pub enum Body {
         Value <- BodyValue,
         Do    <- BodyDo,
