@@ -32,10 +32,12 @@ use asena_span::{Span, Spanned};
 
 use crate::*;
 
+pub mod accessor;
 pub mod branch;
 pub mod case;
 pub mod lam_parameter;
 
+pub use accessor::*;
 pub use branch::*;
 pub use case::*;
 pub use lam_parameter::*;
@@ -137,30 +139,21 @@ impl Debug for Infix {
 /// ```haskell
 /// person.data
 /// ```
-#[derive(Default, Node, Clone)]
+#[derive(Default, Node, Located, Clone)]
 pub struct Accessor(GreenTree);
 
-impl Located for Accessor {
-    fn location(&self) -> std::borrow::Cow<'_, asena_span::Loc> {
-        std::borrow::Cow::Owned(self.lhs().location().on(self.rhs().location().into_owned()))
+#[ast_of]
+#[ast_debug]
+#[ast_walkable(BranchWalker, PatWalker, StmtWalker, ExprWalker)]
+impl Accessor {
+    #[ast_leaf]
+    pub fn receiver(&self) -> Expr {
+        self.filter().first()
     }
-}
 
-impl<W: BranchWalker + ExprWalker + PatWalker + StmtWalker> Walkable<W> for Accessor {
-    fn walk(&self, walker: &mut W) {
-        self.lhs().walk(walker);
-        self.fn_id().walk(walker);
-        self.rhs().walk(walker);
-    }
-}
-
-impl Debug for Accessor {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Accessor")
-            .field("lhs", &self.lhs())
-            .field("fn_id", &self.fn_id())
-            .field("rhs", &self.rhs())
-            .finish()
+    #[ast_leaf]
+    pub fn segments(&self) -> Vec<AccessorSegment> {
+        self.filter()
     }
 }
 

@@ -2,18 +2,17 @@ name: Option String;
 
 enum Maybe[a] {
     Just(a),
-    Nothing;
+    Nothing,
 
-    fun unwrap(self): a {
-        match self {
-            Just(value) -> value,
-            Nothing -> panic("Called `Maybe.unwrap` in a `Nothing` value")
-        }
+    fun unwrap(self) {
+        println "hello"
     }
 }
 
 IO.println(message: String): Unit {
-    todo()
+    let x = 10
+    let y = x + y in
+    x + y
 };
 
 Main {

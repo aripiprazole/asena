@@ -58,6 +58,9 @@ pub enum ParseError {
     #[error("Expected expression and close list")]
     ExpectedExprAndCloseListError,
 
+    #[error("Expected expression and close parameters")]
+    ExpectedExprAndCloseParamsError,
+
     #[error("Expected expression")]
     ExpectedExprError,
 

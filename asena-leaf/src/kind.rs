@@ -53,6 +53,8 @@ pub enum TreeKind {
     ExprIf,
     ExprMatch,
 
+    AccessorArg,
+
     BranchExpr,
     BranchBlock,
 

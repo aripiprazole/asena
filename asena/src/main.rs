@@ -85,7 +85,7 @@ pub fn run_cli() {
             let file = std::fs::read_to_string(path).unwrap();
             let lexer = asena_lexer::Lexer::new(&file);
             let mut parser = asena_parser::Parser::from(lexer);
-            asena_grammar::expr(&mut parser);
+            asena_grammar::expr(&mut parser, asena_grammar::Linebreak::Cont);
             let tree = parser.build_tree();
             println!("{:#?}", tree.data());
         }

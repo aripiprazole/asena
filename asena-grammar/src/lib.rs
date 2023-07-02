@@ -39,6 +39,7 @@ const PARAM_LIST_RECOVERY: &[TokenKind] = &[DoubleArrow, RightArrow, Semi, Colon
 
 const STMT_RECOVERY: &[TokenKind] = &[
     LeftBrace,
+    RightBrace,
     ClassKeyword,
     EnumKeyword,
     RecordKeyword,
@@ -49,6 +50,7 @@ const STMT_RECOVERY: &[TokenKind] = &[
 ];
 
 const EXPR_RECOVERY: &[TokenKind] = &[
+    LetKeyword,
     LeftBrace,
     ClassKeyword,
     EnumKeyword,
@@ -86,6 +88,7 @@ const PAT_FIRST: &[TokenKind] = &[
 ];
 
 const EXPR_FIRST: &[TokenKind] = &[
+    LetKeyword,
     Identifier,
     LeftBracket,
     LeftParen,
@@ -259,8 +262,8 @@ pub fn _trait_fields(p: &mut Parser) {
 pub fn decl_instance(p: &mut Parser) {
     let m = p.open();
     p.expect(InstanceKeyword);
-    type_expr(p, Linebreak::Cont);
     params(p);
+    type_expr(p, Linebreak::Cont);
     where_clause(p);
     p.expect(LeftBrace);
     _instance_impls(p);
@@ -462,7 +465,6 @@ pub fn instance_impl(p: &mut Parser) {
     }
 
     let m = p.open();
-
     global(p);
     while !p.eof() && !p.at(EqualSymbol) {
         pat(p);
@@ -561,20 +563,30 @@ pub fn param(p: &mut Parser) -> bool {
 pub fn stmt(p: &mut Parser) -> bool {
     match p.lookahead(0) {
         ReturnKeyword => stmt_return(p),
-        LetKeyword => stmt_let(p),
+        LetKeyword => {
+            if let Some(let_stmt) = p.savepoint().run(stmt_let).as_succeded() {
+                p.return_at(let_stmt);
+                return false;
+            }
+
+            stmt_expr(p);
+        }
         IfKeyword => stmt_if(p),
         _ => {
-            if let Some(ask) = p.savepoint().run(stmt_ask).as_succeded() {
-                p.return_at(ask);
-                return false;
-            } else if p.at_any(EXPR_FIRST) {
-                stmt_expr(p)
-            } else if p.at_any(STMT_RECOVERY) {
-                return true;
+            if p.at_any(PAT_FIRST) {
+                if let Some(ask) = p.savepoint().run(stmt_ask).as_succeded() {
+                    p.return_at(ask);
+                    return false;
+                }
             }
+            if p.at_any(EXPR_FIRST) {
+                stmt_expr(p);
+                return false;
+            }
+            return true;
         }
     }
-    false
+    p.at_any(STMT_RECOVERY)
 }
 
 pub fn stmt_return(p: &mut Parser) {
@@ -606,7 +618,6 @@ pub fn stmt_if(p: &mut Parser) {
     if p.at(ElseKeyword) {
         if_else(p, Linebreak::Semi);
     }
-    rec_expr!(p, &[], ExpectedLetValueError, expr_dsl, Linebreak::Semi);
     _semi(p, Semi::OrNewLine);
     p.close(m, StmtIf);
 }
@@ -648,9 +659,21 @@ pub fn expr(p: &mut Parser, linebreak: Linebreak) {
         Symbol if token.text == "\\" => expr_lam(p, linebreak),
         HelpSymbol => expr_help(p, linebreak),
         IfKeyword => expr_if(p, linebreak),
+        LetKeyword => expr_let(p, linebreak),
         MatchKeyword => expr_match(p),
         _ => expr_ann(p, linebreak),
     }
+}
+
+pub fn expr_let(p: &mut Parser, linebreak: Linebreak) {
+    let m = p.open();
+    p.expect(LetKeyword);
+    pat(p);
+    p.expect(EqualSymbol);
+    rec_expr!(p, &[], ExpectedLetValueError, expr_dsl, Linebreak::Cont);
+    p.expect(InKeyword);
+    rec_expr!(p, &[], ExpectedLetInValueError, expr_dsl, linebreak);
+    p.close(m, ExprLet);
 }
 
 pub fn if_then(p: &mut Parser) {
@@ -723,7 +746,6 @@ pub fn case_branch(p: &mut Parser) {
         }
         _ => {
             p.report(ExpectedCaseError);
-            p.close(m, BranchExpr);
         }
     }
 }
@@ -773,7 +795,7 @@ pub fn expr_ann(p: &mut Parser, linebreak: Linebreak) {
 
         p.close(m, ExprAnn);
     } else {
-        p.ignore(m)
+        p.abandon(m)
     }
 }
 
@@ -793,7 +815,7 @@ pub fn expr_qual(p: &mut Parser, linebreak: Linebreak) {
 
         p.close(m, ExprQual);
     } else {
-        p.ignore(m)
+        p.abandon(m)
     }
 }
 
@@ -813,7 +835,7 @@ pub fn expr_anonymous_pi(p: &mut Parser, linebreak: Linebreak) {
 
         p.close(m, ExprPi);
     } else {
-        p.ignore(m)
+        p.abandon(m)
     }
 }
 
@@ -847,7 +869,7 @@ pub fn expr_dsl(p: &mut Parser, linebreak: Linebreak) {
         _stmt_block(p);
         p.close(m, ExprDsl);
     } else {
-        p.ignore(m);
+        p.abandon(m);
     }
 }
 
@@ -867,11 +889,11 @@ pub fn expr_binary(p: &mut Parser, linebreak: Linebreak) {
 
         p.close(m, ExprBinary);
     } else {
-        p.ignore(m)
+        p.abandon(m)
     }
 }
 
-/// ExprAccessor = ExprApp ('.' ExprApp)*
+/// ExprAccessor = ExprApp ('.' Accessor)*
 pub fn expr_accessor(p: &mut Parser, linebreak: Linebreak) {
     let m = p.open();
 
@@ -880,15 +902,37 @@ pub fn expr_accessor(p: &mut Parser, linebreak: Linebreak) {
     // simplify by returning the lhs symbol directly
     if p.at(Dot) {
         while !p.eof() && p.eat(Dot) {
-            if rec_expr!(p, &[], ExpectedFieldError, expr, linebreak) {
-                break;
-            }
+            accessor(p);
         }
 
         p.close(m, ExprAccessor);
     } else {
-        p.ignore(m)
+        p.abandon(m)
     }
+}
+
+pub fn accessor(p: &mut Parser) {
+    let m = p.open();
+    p.expect(Identifier);
+    if p.eat(LeftParen) {
+        if !p.at(RightParen) {
+            expr_dsl(p, Linebreak::Cont);
+        }
+        while !p.eof() && !p.at(RightParen) {
+            p.expect(Comma);
+            if p.at_any(EXPR_FIRST) {
+                expr_dsl(p, Linebreak::Cont);
+            } else if p.at_any(EXPR_RECOVERY) {
+                p.report(ExpectedExprError);
+                break;
+            } else if p.at_any(ARRAY_RECOVERY) {
+                p.report(ExpectedExprAndCloseParamsError);
+                continue;
+            }
+        }
+        p.expect(RightParen);
+    }
+    p.close(m, AccessorArg);
 }
 
 /// ExprApp = Primary Primary*
@@ -1021,7 +1065,6 @@ pub fn primary(p: &mut Parser) -> Option<MarkClosed> {
             p.advance();
             p.close(m, ExprLocal)
         }
-
         // Parse array or named sigma expressions
         // - Sigma
         // - Array
@@ -1050,11 +1093,7 @@ pub fn primary(p: &mut Parser) -> Option<MarkClosed> {
 
             expr_group(p)
         }
-        otherwise => {
-            report_non_primary(p, otherwise);
-
-            return None;
-        }
+        _ => return _non_primary(p, token.value.kind).and(None),
     };
 
     Some(result)
@@ -1127,12 +1166,7 @@ pub fn pat(p: &mut Parser) -> Option<MarkClosed> {
             p.expect(RightParen);
             p.close(m, PatGroup)
         }
-
-        otherwise => {
-            report_non_primary(p, otherwise);
-
-            return None;
-        }
+        _ => return _non_primary(p, token.value.kind).and(None),
     };
 
     Some(result)
@@ -1182,7 +1216,7 @@ pub fn symbol(p: &mut Parser) {
     p.terminal(SymbolIdentifier);
 }
 
-fn report_non_primary(p: &mut Parser, kind: TokenKind) -> Option<MarkClosed> {
+fn _non_primary(p: &mut Parser, kind: TokenKind) -> Option<MarkClosed> {
     match kind {
         Eof => p.report(EofError),
         Symbol => p.report(ExpectedTokenError(Identifier)),
@@ -1226,10 +1260,6 @@ fn report_non_primary(p: &mut Parser, kind: TokenKind) -> Option<MarkClosed> {
     }
 }
 
-fn _last_semi(p: &mut Parser) {
-    while !p.eof() && p.eat(Semi) {}
-}
-
 fn _semi(p: &mut Parser, mode: Semi) -> bool {
     match mode {
         Semi::Optional | Semi::OrNewLine => {
@@ -1260,10 +1290,9 @@ fn _stmt_block(p: &mut Parser) {
     while !p.eof() && !p.at(RightBrace) {
         if stmt(p) {
             p.report(ExpectedStmtError);
-            break;
+            continue;
         }
     }
-    _last_semi(p);
     p.expect(RightBrace);
 }
 

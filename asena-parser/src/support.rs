@@ -26,7 +26,7 @@ impl<'a> Parser<'a> {
         mark
     }
 
-    pub fn ignore(&mut self, mark: MarkOpened) {
+    pub fn abandon(&mut self, mark: MarkOpened) {
         self.events.remove(mark.index());
     }
 
@@ -72,7 +72,7 @@ impl<'a> Parser<'a> {
             errors: vec![],
             source: self.source,
             index: self.index,
-            fuel: Cell::new(self.fuel.get()),
+            fuel: Cell::new(256),
             events: self.events.clone(),
             tokens: self.tokens.clone(),
         }
@@ -80,7 +80,6 @@ impl<'a> Parser<'a> {
 
     pub fn return_at(&mut self, point: Self) {
         self.index = point.index;
-        self.fuel = point.fuel;
         self.events = point.events;
     }
 

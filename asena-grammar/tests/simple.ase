@@ -11,7 +11,9 @@ enum Vec (a: Set) (n: Nat) where Monad Nat {
   Nil  : Vec a 0,
   Cons : (head: a) -> (tail: Vec a n) -> Vec a (n + 1),
 
-  fun show(self) where Self: Sized {}
+  fun show(self) where Self: Sized {
+    user <- findUser "sofia"
+  }
 }
 
 Cond : [f: Bool -> Set] => (cond: Bool) -> f true -> f false -> f cond
@@ -27,5 +29,6 @@ Main {
       Just a  -> println "true",
       Nothing -> println "false",
     }
-  } else person.sayHello
+  } 
+  person.sayHello
 }
