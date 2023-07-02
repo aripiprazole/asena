@@ -221,6 +221,11 @@ impl Enum {
     }
 
     #[ast_leaf]
+    pub fn where_clause(&self) -> Option<Where> {
+        self.filter().try_as_nth(0)
+    }
+
+    #[ast_leaf]
     pub fn gadt_type(&self) -> Typed {
         self.filter().first()
     }
@@ -259,6 +264,11 @@ impl Trait {
     }
 
     #[ast_leaf]
+    pub fn parameters(&self) -> Vec<Parameter> {
+        self.filter()
+    }
+
+    #[ast_leaf]
     pub fn fields(&self) -> Vec<Field> {
         self.filter()
     }
@@ -288,6 +298,11 @@ impl Instance {
     #[ast_leaf]
     pub fn name(&self) -> QualifiedPath {
         self.filter().first()
+    }
+
+    #[ast_leaf]
+    pub fn parameters(&self) -> Vec<Parameter> {
+        self.filter()
     }
 
     #[ast_leaf]

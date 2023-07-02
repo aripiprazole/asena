@@ -10,6 +10,7 @@ pub use commands::*;
 
 #[derive(Reporter)]
 #[ast_step(
+    WhereWalker,
     BranchWalker,
     VariantWalker,
     CommandWalker,

@@ -55,7 +55,7 @@ pub struct Method(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(BranchWalker, BodyWalker, ExprWalker, PatWalker, StmtWalker)]
+#[ast_walkable(FileWalker)]
 impl Method {
     #[ast_leaf]
     pub fn name(&self) -> QualifiedPath {

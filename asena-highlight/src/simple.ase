@@ -1,0 +1,35 @@
+use IO
+
+trait Monad (f: Set -> Set) {
+  pure  : a -> f a,
+  apply : m a -> (a -> m b) -> m b,
+
+  default toString(self) {}
+}
+
+enum Vec (a: Set) (n: Nat) where Monad Nat {
+  Nil  : Vec a 0,
+  Cons : (head: a) -> (tail: Vec a n) -> Vec a (n + 1),
+
+  fun show(self) where Self: Sized {
+    user <- findUser "sofia"
+  }
+}
+
+Cond : [f: Bool -> Set] => (cond: Bool) -> f true -> f false -> f cond
+
+If [f: Bool -> Set] (cond: Bool) (thenf: f true) (otherwise: f false) : f cond
+If f true  thenf _         = thenf
+If f false _     otherwise = otherwise
+
+Main {
+  let person = Person.new "Sofia"
+  if person.is_child then nothing
+  if person.is_adult {
+    IO.println $ match true {
+      Just a  -> println "true",
+      Nothing -> println "false",
+    }
+  } 
+  person.sayHello
+}

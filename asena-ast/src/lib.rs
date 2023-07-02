@@ -28,7 +28,14 @@ impl AsenaFile {
 }
 
 pub trait FileWalker:
-    VariantWalker + BranchWalker + DeclWalker + BodyWalker + ExprWalker + PatWalker + StmtWalker
+    WhereWalker
+    + VariantWalker
+    + BranchWalker
+    + DeclWalker
+    + BodyWalker
+    + ExprWalker
+    + PatWalker
+    + StmtWalker
 {
     fn walk_file(&mut self, _value: &AsenaFile) {}
 }
@@ -37,6 +44,7 @@ pub trait FileWalker:
 /// and it would be painful to list every walker trait on the macro call.
 impl<W: FileWalker> Walkable<W> for AsenaFile
 where
+    W: WhereWalker,
     W: VariantWalker,
     W: BranchWalker,
     W: DeclWalker,

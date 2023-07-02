@@ -33,8 +33,15 @@ impl Leaf for Where {
     }
 }
 
-impl<W: BodyWalker + BranchWalker + ExprWalker + PatWalker + StmtWalker> Walkable<W> for Where {
+pub trait WhereWalker {
+    fn walk_where(&mut self, value: &Where) {
+        let _ = value;
+    }
+}
+
+impl<W: FileWalker> Walkable<W> for Where {
     fn walk(&self, walker: &mut W) {
         self.constraints().walk(walker);
+        walker.walk_where(self)
     }
 }

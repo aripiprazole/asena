@@ -76,9 +76,10 @@ pub fn run_cli() {
             let lexer = asena_lexer::Lexer::new(&file);
             let parser = asena_parser::Parser::from(lexer).run(asena_grammar::file);
             let tree = parser.build_tree();
-            let file = VirtualFile::from(tree.data);
-            println!("{file}");
-            println!("TODO: not implemented semantic highlighting");
+            let annotator = asena_highlight::Annotator::new(asena_highlight::VirtualFile {
+                contents: tree.data,
+            });
+            println!("{}", annotator.run_highlight());
         }
         Command::Eval(args) => {
             let path = args.file;

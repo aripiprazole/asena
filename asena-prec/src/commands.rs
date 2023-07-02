@@ -8,6 +8,7 @@ use im::HashMap;
 
 #[derive(Reporter)]
 #[ast_step(
+    WhereWalker,
     BranchWalker,
     VariantWalker,
     FileWalker,

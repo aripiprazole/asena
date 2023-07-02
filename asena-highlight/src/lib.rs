@@ -47,6 +47,7 @@ pub enum HighlightColor {
     String,
     Number,
     LocalReference,
+    CallReference,
     GlobalReference,
     GlobalFunction,
     GlobalVariable,
@@ -147,8 +148,8 @@ pub fn colorize(color: HighlightColor, token: Token) -> colored::ColoredString {
         HighlightColor::Error => token.full_text.code.underline().red(),
         HighlightColor::Eof => token.full_text.code.normal(),
         HighlightColor::String => token.full_text.code.bright_blue(),
-        HighlightColor::Number => token.full_text.code.italic(),
-        HighlightColor::LocalReference => token.full_text.code.white(),
+        HighlightColor::Number => token.full_text.code.green(),
+        HighlightColor::LocalReference => token.full_text.code.italic(),
         HighlightColor::GlobalReference => token.full_text.code.yellow(),
         HighlightColor::GlobalFunction => token.full_text.code.bright_yellow(),
         HighlightColor::GlobalVariable => token.full_text.code.yellow(),
@@ -160,7 +161,8 @@ pub fn colorize(color: HighlightColor, token: Token) -> colored::ColoredString {
         HighlightColor::Assign => token.full_text.code.normal(),
         HighlightColor::Delimitator => token.full_text.code.normal(),
         HighlightColor::BuiltinType => token.full_text.code.cyan(),
-        HighlightColor::BuiltinFunction => token.full_text.code.magenta(),
+        HighlightColor::BuiltinFunction => token.full_text.code.bright_magenta(),
+        HighlightColor::CallReference => token.full_text.code.magenta(),
     }
 }
 
@@ -176,7 +178,7 @@ mod tests {
 
     #[test]
     fn it_works() {
-        let tree = parse_asena_file!("./test.ase");
+        let tree = parse_asena_file!("./simple.ase");
         let annotator = crate::Annotator::new(crate::VirtualFile {
             contents: tree.data,
         });

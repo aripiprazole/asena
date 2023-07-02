@@ -9,6 +9,7 @@ use crate::{Kind, Type, TypeError};
 
 #[derive(Reporter)]
 #[ast_step(
+    WhereWalker,
     BranchWalker,
     VariantWalker,
     CommandWalker,
@@ -97,6 +98,7 @@ impl<'a, R: Reporter> ExprWalker for AsenaTypeValidator<'a, R> {
 
 #[derive(Reporter)]
 #[ast_step(
+    WhereWalker,
     BranchWalker,
     VariantWalker,
     CommandWalker,

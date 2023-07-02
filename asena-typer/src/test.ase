@@ -11,7 +11,7 @@ enum Maybe[a] {
 
 IO.println(message: String): Unit {
     let x = 10
-    let y = x + y in
+    let y = x + y
     x + y
 };
 

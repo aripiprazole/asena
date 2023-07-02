@@ -16,7 +16,7 @@ pub struct DefaultMethod(GreenTree);
 
 #[ast_of]
 #[ast_debug]
-#[ast_walkable(BranchWalker, BodyWalker, ExprWalker, PatWalker, StmtWalker)]
+#[ast_walkable(FileWalker)]
 impl DefaultMethod {
     #[ast_leaf]
     pub fn name(&self) -> QualifiedPath {
