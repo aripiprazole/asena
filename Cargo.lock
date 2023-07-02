@@ -95,6 +95,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "asena-ast-format"
+version = "0.1.0"
+dependencies = [
+ "asena-ast",
+ "asena-leaf",
+ "asena-span",
+ "fxhash",
+ "im",
+ "itertools",
+]
+
+[[package]]
 name = "asena-coverage"
 version = "0.1.0"
 dependencies = [
@@ -113,18 +125,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
-]
-
-[[package]]
-name = "asena-format"
-version = "0.1.0"
-dependencies = [
- "asena-ast",
- "asena-leaf",
- "asena-span",
- "fxhash",
- "im",
- "itertools",
 ]
 
 [[package]]

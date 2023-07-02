@@ -1,7 +1,7 @@
 
 [package]
 edition = "2021"
-name = "asena-format"
+name = "asena-ast-format"
 version = "0.1.0"
 
 [dependencies]
