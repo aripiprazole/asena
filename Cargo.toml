@@ -5,6 +5,8 @@ members = [
   "asena-derive",
   "asena-highlight",
   "asena-ast-format",
+  "asena-ast-lowering",
+  "asena-ast-resolver",
   "asena-grammar",
   "asena-interner",
   "asena-leaf",

@@ -12,13 +12,13 @@ pub struct TypeEnvironment {
     pub schemes: im::HashMap<FunctionId, Scheme>,
 }
 
-pub struct AsenaTyper<'a> {
+pub struct Typer<'a> {
     pub type_env: &'a mut TypeEnvironment,
     pub class_env: &'a mut ClassEnvironment,
     pub reporter: &'a mut Reporter,
 }
 
-impl AsenaVisitor<()> for AsenaTyper<'_> {
+impl AsenaVisitor<()> for Typer<'_> {
     fn visit_signature(&mut self, value: Signature) {
         let name = value.name().to_fn_id();
 
@@ -76,7 +76,7 @@ impl AsenaVisitor<()> for AsenaTyper<'_> {
     }
 }
 
-impl<'a> AsenaTyper<'a> {
+impl<'a> Typer<'a> {
     ///
     /// Γ, σ ∈ Γ   τ = inst(σ)
     /// ────────────────────── [E-VAR]

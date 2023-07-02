@@ -6,19 +6,19 @@ use asena_ast::*;
 
 use im::HashMap;
 
-pub struct AsenaInfixHandler<'a> {
+pub struct InfixHandler<'a> {
     pub prec_table: &'a mut HashMap<FunctionId, Entry>,
     pub reporter: &'a mut Reporter,
 }
 
-impl Reports for AsenaInfixHandler<'_> {
+impl Reports for InfixHandler<'_> {
     fn reports(&mut self) -> &mut Reporter {
         self.reporter
     }
 }
 
 #[ast_command(infixl, infixr)]
-impl CommandHandler for AsenaInfixHandler<'_> {
+impl CommandHandler for InfixHandler<'_> {
     fn on_command(&mut self, command: Command) -> Result {
         let name = command.at::<LiteralExpr>(0)?.literal().contents();
         let order = command

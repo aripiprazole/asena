@@ -653,7 +653,7 @@ pub fn type_expr(p: &mut Parser, linebreak: Linebreak) {
 /// | ExprLet | ExprGlobal | ExprLocal
 /// | ExprLit | ExprAnn | ExprQual
 /// | ExprPi | ExprSigma | ExprHelp
-pub fn expr(p: &mut Parser, linebreak: Linebreak) {
+pub fn expr(p: &mut Parser, linebreak: Linebreak) -> Option<MarkClosed> {
     let token = p.peek();
     match token.kind {
         Symbol if token.text == "\\" => expr_lam(p, linebreak),
@@ -665,7 +665,7 @@ pub fn expr(p: &mut Parser, linebreak: Linebreak) {
     }
 }
 
-pub fn expr_let(p: &mut Parser, linebreak: Linebreak) {
+pub fn expr_let(p: &mut Parser, linebreak: Linebreak) -> Option<MarkClosed> {
     let m = p.open();
     p.expect(LetKeyword);
     pat(p);
@@ -673,7 +673,7 @@ pub fn expr_let(p: &mut Parser, linebreak: Linebreak) {
     rec_expr!(p, &[], ExpectedLetValueError, expr_dsl, Linebreak::Cont);
     p.expect(InKeyword);
     rec_expr!(p, &[], ExpectedLetInValueError, expr_dsl, linebreak);
-    p.close(m, ExprLet);
+    p.close(m, ExprLet).into()
 }
 
 pub fn if_then(p: &mut Parser) {
@@ -716,13 +716,13 @@ pub fn if_else(p: &mut Parser, linebreak: Linebreak) {
 }
 
 /// ExprIf = 'if' Expr 'then' Expr 'else' Expr
-pub fn expr_if(p: &mut Parser, linebreak: Linebreak) {
+pub fn expr_if(p: &mut Parser, linebreak: Linebreak) -> Option<MarkClosed> {
     let m = p.open();
     p.expect(IfKeyword);
     rec_expr!(p, &[], ExpectedIfCondError);
     if_then(p);
     if_else(p, linebreak);
-    p.close(m, ExprIf);
+    p.close(m, ExprIf).into()
 }
 
 pub fn case(p: &mut Parser) {
@@ -751,7 +751,7 @@ pub fn case_branch(p: &mut Parser) {
 }
 
 /// ExprMatch = 'match' Expr '{' Case* '}'
-pub fn expr_match(p: &mut Parser) {
+pub fn expr_match(p: &mut Parser) -> Option<MarkClosed> {
     let m = p.open();
     p.expect(MatchKeyword);
     rec_expr!(p, &[], ExpectedMatchScrutineeError, expr, Linebreak::Cont);
@@ -776,11 +776,11 @@ pub fn expr_match(p: &mut Parser) {
         }
     }
     p.expect(RightBrace);
-    p.close(m, ExprMatch);
+    p.close(m, ExprMatch).into()
 }
 
 /// ExprAnn = ExprQual (':' ExprQual)*
-pub fn expr_ann(p: &mut Parser, linebreak: Linebreak) {
+pub fn expr_ann(p: &mut Parser, linebreak: Linebreak) -> Option<MarkClosed> {
     let m = p.open();
 
     rec_expr!(p, &[], ExpectedExprError, expr_qual, linebreak);
@@ -793,14 +793,15 @@ pub fn expr_ann(p: &mut Parser, linebreak: Linebreak) {
             }
         }
 
-        p.close(m, ExprAnn);
+        p.close(m, ExprAnn).into()
     } else {
-        p.abandon(m)
+        p.abandon(m);
+        None
     }
 }
 
 /// ExprQual = ExprAnonymousPi ('=>' ExprAnonymousPi)*
-pub fn expr_qual(p: &mut Parser, linebreak: Linebreak) {
+pub fn expr_qual(p: &mut Parser, linebreak: Linebreak) -> Option<MarkClosed> {
     let m = p.open();
 
     rec_expr!(p, &[], ExpectedExprError, expr_anonymous_pi, linebreak);
@@ -813,14 +814,15 @@ pub fn expr_qual(p: &mut Parser, linebreak: Linebreak) {
             }
         }
 
-        p.close(m, ExprQual);
+        p.close(m, ExprQual).into()
     } else {
-        p.abandon(m)
+        p.abandon(m);
+        None
     }
 }
 
 /// ExprAnonymousPi = ExprAccessor ('->' ExprAccessor)*
-pub fn expr_anonymous_pi(p: &mut Parser, linebreak: Linebreak) {
+pub fn expr_anonymous_pi(p: &mut Parser, linebreak: Linebreak) -> Option<MarkClosed> {
     let m = p.open();
 
     rec_expr!(p, &[], ExpectedExprError, expr_binary, linebreak);
@@ -833,22 +835,23 @@ pub fn expr_anonymous_pi(p: &mut Parser, linebreak: Linebreak) {
             }
         }
 
-        p.close(m, ExprPi);
+        p.close(m, ExprPi).into()
     } else {
-        p.abandon(m)
+        p.abandon(m);
+        None
     }
 }
 
 /// ExprHelp = '?' ExprDsl
-pub fn expr_help(p: &mut Parser, linebreak: Linebreak) {
+pub fn expr_help(p: &mut Parser, linebreak: Linebreak) -> Option<MarkClosed> {
     let m = p.open();
     p.expect(HelpSymbol);
     rec_expr!(p, &[], ExpectedHelpValueError, expr_dsl, linebreak);
-    p.close(m, ExprHelp);
+    p.close(m, ExprHelp).into()
 }
 
 /// ExprLam = '\' Identifier* '->' ExprDsl
-pub fn expr_lam(p: &mut Parser, linebreak: Linebreak) {
+pub fn expr_lam(p: &mut Parser, linebreak: Linebreak) -> Option<MarkClosed> {
     let m = p.open();
     p.advance();
     while !p.eof() && !p.at(RightArrow) {
@@ -858,18 +861,19 @@ pub fn expr_lam(p: &mut Parser, linebreak: Linebreak) {
     }
     p.expect(RightArrow);
     rec_expr!(p, &[], ExpectedLamBodyError, expr_dsl, linebreak);
-    p.close(m, ExprLam);
+    p.close(m, ExprLam).into()
 }
 
-pub fn expr_dsl(p: &mut Parser, linebreak: Linebreak) {
+pub fn expr_dsl(p: &mut Parser, linebreak: Linebreak) -> Option<MarkClosed> {
     let m = p.open();
     rec_expr!(p, &[], ExpectedExprError, expr, linebreak);
 
     if p.at(LeftBrace) {
         _stmt_block(p);
-        p.close(m, ExprDsl);
+        p.close(m, ExprDsl).into()
     } else {
         p.abandon(m);
+        None
     }
 }
 
@@ -894,7 +898,7 @@ pub fn expr_binary(p: &mut Parser, linebreak: Linebreak) {
 }
 
 /// ExprAccessor = ExprApp ('.' Accessor)*
-pub fn expr_accessor(p: &mut Parser, linebreak: Linebreak) {
+pub fn expr_accessor(p: &mut Parser, linebreak: Linebreak) -> Option<MarkClosed> {
     let m = p.open();
 
     rec_expr!(p, &[], ExpectedExprError, expr_app, linebreak);
@@ -905,9 +909,10 @@ pub fn expr_accessor(p: &mut Parser, linebreak: Linebreak) {
             accessor(p);
         }
 
-        p.close(m, ExprAccessor);
+        p.close(m, ExprAccessor).into()
     } else {
-        p.abandon(m)
+        p.abandon(m);
+        None
     }
 }
 
@@ -916,7 +921,13 @@ pub fn accessor(p: &mut Parser) {
     p.expect(Identifier);
     if p.eat(LeftParen) {
         if !p.at(RightParen) {
-            expr_dsl(p, Linebreak::Cont);
+            if let Some(mut lhs) = expr_accessor(p, Linebreak::Cont) {
+                while p.at_any(EXPR_FIRST) {
+                    expr(p, Linebreak::Cont);
+                    let m = p.open_before(lhs);
+                    lhs = p.close(m, ExprApp);
+                }
+            }
         }
         while !p.eof() && !p.at(RightParen) {
             p.expect(Comma);
@@ -936,12 +947,12 @@ pub fn accessor(p: &mut Parser) {
 }
 
 /// ExprApp = Primary Primary*
-pub fn expr_app(p: &mut Parser, linebreak: Linebreak) {
+pub fn expr_app(p: &mut Parser, linebreak: Linebreak) -> Option<MarkClosed> {
     let mut lhs = match primary(p) {
         Some(lhs) => lhs,
         None if p.eof() => {
             p.report(PrimaryExpectedError);
-            return;
+            return None;
         }
         None => MarkClosed::new(0, p.peek().span().clone()),
     };
@@ -968,6 +979,8 @@ pub fn expr_app(p: &mut Parser, linebreak: Linebreak) {
             }
         }
     }
+
+    lhs.into()
 }
 
 pub fn expr_pi(p: &mut Parser) -> MarkClosed {

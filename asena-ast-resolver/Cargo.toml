@@ -1,0 +1,17 @@
+
+[package]
+edition = "2021"
+name = "asena-ast-resolver"
+version = "0.1.0"
+
+[dependencies]
+asena-ast = {path = "../asena-ast"}
+asena-grammar = {path = "../asena-grammar"}
+asena-leaf = {path = "../asena-leaf"}
+asena-lexer = {path = "../asena-lexer"}
+asena-parser = {path = "../asena-parser"}
+asena-prec = {path = "../asena-prec"}
+asena-span = {path = "../asena-span"}
+fxhash = "0.2.1"
+im = "15.1.0"
+itertools = "0.10.5"

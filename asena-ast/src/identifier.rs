@@ -196,9 +196,9 @@ impl Walkable for QualifiedPath {
     type Walker<'a> = &'a mut dyn AsenaVisitor<()>;
 
     fn walk(&self, walker: &mut Self::Walker<'_>) {
+        walker.visit_qualified_path(self.clone());
         for segment in self.segments().iter() {
             segment.walk(walker)
         }
-        walker.visit_qualified_path(self.clone())
     }
 }

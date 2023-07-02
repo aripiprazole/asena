@@ -1,0 +1,12 @@
+use Std.IO
+use Std.Nat
+
+enum Vec (a: Set) (n: Nat) where Monad Nat {
+  nil  : Vec a 0,
+  cons : (head: a) -> (tail: Vec a n) -> Vec a (n + 1),
+}
+
+Main {
+  let simple_vec = Vec.cons (Vec.cons Vec.nil)
+  Std.IO.println "hello, world"
+}

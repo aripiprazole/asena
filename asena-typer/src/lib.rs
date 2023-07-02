@@ -140,7 +140,7 @@ mod tests {
 
     use asena_prec::*;
 
-    use crate::infer::{AsenaTyper, ClassEnvironment, TypeEnvironment};
+    use crate::infer::{ClassEnvironment, TypeEnvironment, Typer};
 
     #[test]
     fn it_works() {
@@ -151,15 +151,15 @@ mod tests {
         let mut tree = parse_asena_file!("./test.ase");
 
         let file = AsenaFile::new(tree.clone())
-            .walks(AsenaInfixHandler {
+            .walks(InfixHandler {
                 prec_table: &mut prec_table,
                 reporter: &mut tree.reporter,
             })
-            .walks(AsenaPrecReorder {
+            .walks(PrecReorder {
                 prec_table: &prec_table,
                 reporter: &mut tree.reporter,
             })
-            .walks(AsenaTyper {
+            .walks(Typer {
                 type_env: &mut type_env,
                 class_env: &mut class_env,
                 reporter: &mut tree.reporter,
