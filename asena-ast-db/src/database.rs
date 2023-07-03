@@ -1,7 +1,10 @@
+use crate::package::{Package, PackageData};
+use crate::vfs::VfsFile;
 use crate::*;
 
 pub trait AstDatabase {
     fn module_ref(&self, path: &str) -> ModuleRef;
+    fn package_data(&self, file: Package) -> Interned<PackageData>;
     fn vfs_file(&self, module: ModuleRef) -> Arc<VfsFile>;
     fn package_of(&self, module: ModuleRef) -> Arc<PackageData>;
     fn items(&self, module: Arc<VfsFile>) -> Arc<HashMap<FunctionId, Arc<Decl>>>;
@@ -9,7 +12,7 @@ pub trait AstDatabase {
     fn add_path_dep(&self, vfs_file: Arc<VfsFile>, module: ModuleRef);
     fn decl_of(&self, name: FunctionId, vfs_file: Arc<VfsFile>) -> Option<Arc<Decl>>;
 
-    fn intern_package(&self, package: PackageData) -> PackageId;
+    fn intern_package(&self, package: PackageData) -> Package;
     fn intern_vfs_file(&self, vfs_file: VfsFile) -> Arc<VfsFile>;
     fn intern_resolved_name(&self, module: FunctionId, decl: Decl) -> Arc<Decl>;
 }

@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use asena_ast::{reporter::Reporter, AsenaVisitor, FunctionId};
-use asena_ast_db::{driver::Driver, CanonicalPath};
+use asena_ast_db::{driver::Driver, vfs::*};
 use asena_leaf::ast::Located;
 use asena_report::InternalError;
 use im::HashMap;
@@ -11,9 +11,9 @@ use crate::ResolutionError::*;
 
 pub struct AstResolver<'a> {
     pub db: Driver,
-    pub current_file: Arc<asena_ast_db::VfsFile>,
-    pub imports: Vec<CanonicalPath>,
-    pub canonical_paths: HashMap<FunctionId, CanonicalPath>,
+    pub current_file: Arc<VfsFile>,
+    pub imports: Vec<VfsPath>,
+    pub canonical_paths: HashMap<FunctionId, VfsPath>,
     pub reporter: &'a mut Reporter,
 }
 
@@ -72,9 +72,7 @@ impl AsenaVisitor<()> for AstResolver<'_> {
 mod tests {
     use std::sync::Arc;
 
-    use asena_ast_db::{
-        driver::Driver, implementation::NonResolvingAstDatabase, FileSystem, PackageData, VfsFile,
-    };
+    use asena_ast_db::{driver::Driver, implementation::*, package::*, vfs::*};
     use asena_grammar::parse_asena_file;
     use asena_prec::{default_prec_table, InfixHandler, PrecReorder};
 
@@ -82,13 +80,12 @@ mod tests {
     fn it_works() {
         let mut prec_table = default_prec_table();
 
-        let vfs = Arc::new(FileSystem::default());
         let db = Driver(Arc::new(NonResolvingAstDatabase::default()));
-        let local_pkg = PackageData::new(&db, "Local", "0.0.0", Arc::new(Default::default()));
-        let current_file = VfsFile::new(&db, &vfs, local_pkg, "Test", "./Test.ase".into());
+        let local_pkg = Package::new(&db, "Local", "0.0.0", Arc::new(Default::default()));
+        let current_file = VfsFile::new(&db, "Test", "./Test.ase".into(), local_pkg);
         // stub files
-        VfsFile::new(&db, &vfs, local_pkg, "Nat", "./Nat.ase".into());
-        VfsFile::new(&db, &vfs, local_pkg, "IO", "./IO.ase".into());
+        VfsFile::new(&db, "Nat", "./Nat.ase".into(), local_pkg);
+        VfsFile::new(&db, "IO", "./IO.ase".into(), local_pkg);
 
         let mut asena_file = parse_asena_file!("../Test.ase");
 

@@ -3,19 +3,29 @@ use std::cell::RefCell;
 use asena_ast::AsenaFile;
 use asena_leaf::ast::Node;
 
+use crate::package::{Package, PackageData};
+use crate::vfs::VfsFile;
 use crate::*;
 
 #[derive(Default)]
 pub struct NonResolvingAstDatabase {
     internal_module_refs: RefCell<HashMap<String, ModuleRef>>,
     internal_decls: RefCell<HashMap<FunctionId, Arc<Decl>>>,
-    internal_packages: RefCell<HashMap<PackageId, Arc<PackageData>>>,
-    internal_vfs_files: RefCell<HashMap<CanonicalPath, Arc<VfsFile>>>,
+    internal_packages: RefCell<HashMap<Package, Arc<PackageData>>>,
+    internal_vfs_files: RefCell<HashMap<VfsPath, Arc<VfsFile>>>,
 }
 
 impl crate::database::AstDatabase for NonResolvingAstDatabase {
     fn package_of(&self, _module: ModuleRef) -> Arc<PackageData> {
         todo!()
+    }
+
+    fn package_data(&self, package_file: Package) -> Interned<PackageData> {
+        self.internal_packages
+            .borrow()
+            .get(&package_file)
+            .cloned()
+            .into()
     }
 
     fn decl_of(&self, name: FunctionId, vfs_file: Arc<VfsFile>) -> Option<Arc<Decl>> {
@@ -98,10 +108,10 @@ impl crate::database::AstDatabase for NonResolvingAstDatabase {
         vfs_file
     }
 
-    fn intern_package(&self, package: PackageData) -> PackageId {
+    fn intern_package(&self, package: PackageData) -> Package {
         let package = Arc::new(package);
         let mut internal_packages = self.internal_packages.borrow_mut();
-        let id = PackageId(internal_packages.len());
+        let id = Package(internal_packages.len());
         internal_packages.insert(id, package);
         id
     }
