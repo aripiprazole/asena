@@ -7,7 +7,7 @@ use asena_leaf::ast::{GreenTree, Leaf, Lexeme, LexemeWalkable, Located, Node, Te
 use asena_leaf::node::TreeKind::*;
 use asena_leaf::token::{kind::TokenKind, Token};
 
-use asena_span::{Loc, Spanned};
+use asena_span::{Loc, Span, Spanned};
 
 use crate::AsenaVisitor;
 
@@ -32,6 +32,11 @@ impl FunctionId {
     /// Gets the local's identifier as string borrow
     pub fn as_str(&self) -> &str {
         self.0.as_str()
+    }
+
+    /// Creates a new [FunctionId] by appending a path to the current identifier
+    pub fn create_path<I: Into<FunctionId>>(a: I, b: I) -> Self {
+        Self(format!("{}.{}", a.into().as_str(), b.into().as_str()))
     }
 }
 
@@ -153,7 +158,7 @@ impl LexemeWalkable for Local {
 /// Identifier's key to a global identifier, that's not declared locally, almost everything with
 /// Pascal Case, as a language pattern. This can contain symbols like: `Person.new`, as it can
 /// contain `.`.
-#[derive(Default, Node, Located, Clone)]
+#[derive(Default, Node, Clone)]
 pub struct QualifiedPath(GreenTree);
 
 #[ast_of]
@@ -170,6 +175,23 @@ impl QualifiedPath {
         }
 
         FunctionId::new(&paths.join("."))
+    }
+}
+
+impl Located for QualifiedPath {
+    fn location(&self) -> Cow<'_, Loc> {
+        if self.segments().is_empty() {
+            return Cow::Owned(Loc::Synthetic);
+        }
+
+        Cow::Owned(
+            self.segments().first().unwrap().location().on(self
+                .segments()
+                .last()
+                .unwrap()
+                .location()
+                .into_owned()),
+        )
     }
 }
 
@@ -197,6 +219,59 @@ impl Walkable for QualifiedPath {
 
     fn walk(&self, walker: &mut Self::Walker<'_>) {
         walker.visit_qualified_path(self.clone());
+        for segment in self.segments().iter() {
+            segment.walk(walker)
+        }
+    }
+}
+
+/// Identifier's key to a global identifier, that's not declared locally, almost everything with
+/// Pascal Case, as a language pattern. This can contain symbols like: `Person.new`, as it can
+/// contain `.`. But as the original reference.
+#[derive(Default, Node, Located, Clone)]
+pub struct QualifiedId(GreenTree);
+
+#[ast_of]
+impl QualifiedId {
+    #[ast_leaf]
+    pub fn segments(&self) -> Vec<Lexeme<FunctionId>> {
+        self.filter_terminal()
+    }
+
+    pub fn to_fn_id(&self) -> FunctionId {
+        let mut paths = Vec::new();
+        for lexeme in self.segments().iter() {
+            paths.push(lexeme.0.clone())
+        }
+
+        FunctionId::new(&paths.join("."))
+    }
+}
+
+impl Debug for QualifiedId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "QualifiedId")?;
+        for segment in self.segments().iter() {
+            write!(f, " [{:?}]", segment.0)?;
+        }
+        Ok(())
+    }
+}
+
+impl Leaf for QualifiedId {
+    fn make(tree: GreenTree) -> Option<Self> {
+        Some(match tree.kind() {
+            QualifiedPathTree => QualifiedId::new(tree),
+            _ => return None,
+        })
+    }
+}
+
+impl Walkable for QualifiedId {
+    type Walker<'a> = &'a mut dyn AsenaVisitor<()>;
+
+    fn walk(&self, walker: &mut Self::Walker<'_>) {
+        walker.visit_qualified_id(self.clone());
         for segment in self.segments().iter() {
             segment.walk(walker)
         }

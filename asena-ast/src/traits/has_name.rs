@@ -1,29 +1,29 @@
-use crate::{Class, Decl, Enum, QualifiedPath, Signature, Trait};
+use crate::{Class, Decl, Enum, QualifiedId, Signature, Trait};
 
 pub trait HasName {
-    fn name(&self) -> QualifiedPath;
+    fn name(&self) -> QualifiedId;
 }
 
 impl HasName for Enum {
-    fn name(&self) -> QualifiedPath {
+    fn name(&self) -> QualifiedId {
         self.find_name().as_leaf()
     }
 }
 
 impl HasName for Class {
-    fn name(&self) -> QualifiedPath {
+    fn name(&self) -> QualifiedId {
         self.find_name().as_leaf()
     }
 }
 
 impl HasName for Signature {
-    fn name(&self) -> QualifiedPath {
+    fn name(&self) -> QualifiedId {
         self.find_name().as_leaf()
     }
 }
 
 impl HasName for Trait {
-    fn name(&self) -> QualifiedPath {
+    fn name(&self) -> QualifiedId {
         self.find_name().as_leaf()
     }
 }

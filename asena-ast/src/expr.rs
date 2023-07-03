@@ -32,12 +32,12 @@ use asena_span::{Span, Spanned};
 
 use crate::*;
 
-pub mod accessor;
+pub mod accessor_segment;
 pub mod branch;
 pub mod case;
 pub mod lam_parameter;
 
-pub use accessor::*;
+pub use accessor_segment::*;
 pub use branch::*;
 pub use case::*;
 pub use lam_parameter::*;
@@ -171,7 +171,6 @@ impl Located for Infix {
 pub struct Accessor(GreenTree);
 
 #[ast_of]
-#[ast_debug]
 impl Accessor {
     #[ast_leaf]
     pub fn receiver(&self) -> Expr {
@@ -182,21 +181,90 @@ impl Accessor {
     pub fn segments(&self) -> Vec<AccessorSegment> {
         self.filter()
     }
+
+    /// Represents the module canonical path of the module that contains this accessor.
+    pub fn compute_receiver_paths(&self) -> ReceiverPaths {
+        let Expr::LocalExpr(receiver) = self.receiver() else {
+            let receiver = Receiver::Expr(self.receiver());
+            return ReceiverPaths { receiver, segments: self.segments() };
+        };
+
+        let mut path = vec![receiver.name().map(|local| local.to_fn_id())];
+        let mut remaining_segments = vec![];
+        let mut should_skip_path = false;
+
+        for argument in self.segments().iter() {
+            if should_skip_path {
+                remaining_segments.push(argument.clone());
+            } else {
+                path.push(argument.name().map(|local| local.to_fn_id()));
+            }
+            if !argument.arguments().is_empty() {
+                should_skip_path = true;
+                remaining_segments.push(argument.clone());
+            }
+        }
+
+        ReceiverPaths {
+            receiver: Receiver::Path(QualifiedPath::of(path)),
+            segments: remaining_segments,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum Receiver {
+    Expr(Expr),
+    Path(QualifiedPath),
+}
+
+#[derive(Debug)]
+pub struct ReceiverPaths {
+    pub receiver: Receiver,
+    pub segments: Vec<AccessorSegment>,
+}
+
+impl Walkable for Receiver {
+    type Walker<'a> = &'a mut dyn AsenaVisitor<()>;
+
+    fn walk(&self, walker: &mut Self::Walker<'_>) {
+        match self {
+            Receiver::Expr(expr) => expr.walk(walker),
+            Receiver::Path(path) => path.walk(walker),
+        }
+    }
+}
+
+impl Walkable for ReceiverPaths {
+    type Walker<'a> = &'a mut dyn AsenaVisitor<()>;
+
+    fn walk(&self, walker: &mut Self::Walker<'_>) {
+        self.receiver.walk(walker);
+        self.segments.walk(walker);
+    }
 }
 
 impl Walkable for Accessor {
     type Walker<'a> = &'a mut dyn AsenaVisitor<()>;
 
     fn walk(&self, walker: &mut Self::Walker<'_>) {
-        self.lhs().walk(walker);
-        self.fn_id().walk(walker);
-        self.rhs().walk(walker);
+        self.receiver().walk(walker);
+        self.compute_receiver_paths().walk(walker);
     }
 }
 
 impl Located for Accessor {
     fn location(&self) -> std::borrow::Cow<'_, asena_span::Loc> {
         std::borrow::Cow::Owned(self.lhs().location().on(self.rhs().location().into_owned()))
+    }
+}
+
+impl Debug for Accessor {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Accessor")
+            .field("receiver", &self.receiver())
+            .field("module_canonical_path", &self.compute_receiver_paths())
+            .finish()
     }
 }
 
@@ -221,12 +289,12 @@ pub struct App(GreenTree);
 impl App {
     #[ast_leaf]
     pub fn callee(&self) -> Expr {
-        self.at(0)
+        self.filter().nth(0)
     }
 
     #[ast_leaf]
     pub fn argument(&self) -> Expr {
-        self.at(1)
+        self.filter().nth(1)
     }
 }
 

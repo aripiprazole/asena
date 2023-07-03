@@ -1,6 +1,6 @@
 use asena_derive::*;
 
-use asena_leaf::ast::Cursor;
+use asena_leaf::ast::{Cursor, Lexeme};
 use asena_leaf::ast_enum;
 use asena_leaf::node::TreeKind::*;
 
@@ -38,8 +38,17 @@ pub struct Use(GreenTree);
 #[ast_walkable(AsenaVisitor)]
 impl Use {
     #[ast_leaf]
-    pub fn path(&self) -> QualifiedPath {
-        self.filter().first()
+    pub fn segments(&self) -> Vec<Lexeme<FunctionId>> {
+        self.filter_terminal()
+    }
+
+    pub fn to_fn_id(&self) -> FunctionId {
+        let mut paths = Vec::new();
+        for lexeme in self.segments().iter() {
+            paths.push(lexeme.0.clone())
+        }
+
+        FunctionId::new(&paths.join("."))
     }
 }
 
@@ -65,7 +74,7 @@ pub struct Signature(GreenTree);
 #[ast_walkable(AsenaVisitor)]
 impl Signature {
     #[ast_leaf]
-    pub fn name(&self) -> QualifiedPath {
+    pub fn name(&self) -> QualifiedId {
         self.filter().first()
     }
 
@@ -106,7 +115,7 @@ pub struct Assign(GreenTree);
 #[ast_walkable(AsenaVisitor)]
 impl Assign {
     #[ast_leaf]
-    pub fn name(&self) -> QualifiedPath {
+    pub fn name(&self) -> QualifiedId {
         self.filter().first()
     }
 
@@ -138,7 +147,7 @@ pub struct Command(GreenTree);
 #[ast_walkable(AsenaVisitor)]
 impl Command {
     #[ast_leaf]
-    pub fn name(&self) -> QualifiedPath {
+    pub fn name(&self) -> QualifiedId {
         self.filter().first()
     }
 
@@ -169,7 +178,7 @@ pub struct Class(GreenTree);
 #[ast_walkable(AsenaVisitor)]
 impl Class {
     #[ast_leaf]
-    pub fn name(&self) -> QualifiedPath {
+    pub fn name(&self) -> QualifiedId {
         self.filter().first()
     }
 
@@ -212,7 +221,7 @@ pub struct Enum(GreenTree);
 #[ast_walkable(AsenaVisitor)]
 impl Enum {
     #[ast_leaf]
-    pub fn name(&self) -> QualifiedPath {
+    pub fn name(&self) -> QualifiedId {
         self.filter().first()
     }
 
@@ -260,7 +269,7 @@ pub struct Trait(GreenTree);
 #[ast_walkable(AsenaVisitor)]
 impl Trait {
     #[ast_leaf]
-    pub fn name(&self) -> QualifiedPath {
+    pub fn name(&self) -> QualifiedId {
         self.filter().first()
     }
 
@@ -297,7 +306,7 @@ pub struct Instance(GreenTree);
 #[ast_walkable(AsenaVisitor)]
 impl Instance {
     #[ast_leaf]
-    pub fn name(&self) -> QualifiedPath {
+    pub fn name(&self) -> QualifiedId {
         self.filter().first()
     }
 

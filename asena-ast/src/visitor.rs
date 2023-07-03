@@ -19,6 +19,10 @@ pub trait AsenaVisitor<T: Default> {
         default()
     }
 
+    fn visit_qualified_id(&mut self, value: QualifiedId) -> T {
+        default()
+    }
+
     fn visit_parameter(&mut self, value: Parameter) -> T {
         default()
     }

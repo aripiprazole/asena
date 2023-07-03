@@ -21,7 +21,7 @@ pub struct TypeVariant(GreenTree);
 #[ast_walkable(AsenaVisitor)]
 impl TypeVariant {
     #[ast_leaf]
-    pub fn name(&self) -> QualifiedPath {
+    pub fn name(&self) -> QualifiedId {
         self.filter().first()
     }
 
@@ -46,7 +46,7 @@ pub struct ConstructorVariant(GreenTree);
 #[ast_walkable(AsenaVisitor)]
 impl ConstructorVariant {
     #[ast_leaf]
-    pub fn name(&self) -> QualifiedPath {
+    pub fn name(&self) -> QualifiedId {
         self.filter().first()
     }
 

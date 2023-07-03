@@ -35,7 +35,7 @@ pub struct GlobalPat(GreenTree);
 #[ast_walkable(AsenaVisitor)]
 impl GlobalPat {
     #[ast_leaf]
-    pub fn name(&self) -> QualifiedPath {
+    pub fn name(&self) -> QualifiedId {
         self.filter().first()
     }
 }

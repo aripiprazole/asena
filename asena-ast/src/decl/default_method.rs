@@ -19,7 +19,7 @@ pub struct DefaultMethod(GreenTree);
 #[ast_walkable(AsenaVisitor)]
 impl DefaultMethod {
     #[ast_leaf]
-    pub fn name(&self) -> QualifiedPath {
+    pub fn name(&self) -> QualifiedId {
         self.filter().first()
     }
 

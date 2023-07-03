@@ -12,7 +12,9 @@ asena-leaf = {path = "../asena-leaf"}
 asena-lexer = {path = "../asena-lexer"}
 asena-parser = {path = "../asena-parser"}
 asena-prec = {path = "../asena-prec"}
+asena-report = {path = "../asena-report"}
 asena-span = {path = "../asena-span"}
 fxhash = "0.2.1"
 im = "15.1.0"
 itertools = "0.10.5"
+thiserror = "1.0.40"

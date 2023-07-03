@@ -2,7 +2,12 @@ use std::sync::Arc;
 
 use asena_ast::{reporter::Reporter, AsenaVisitor, FunctionId};
 use asena_ast_db::{driver::Driver, CanonicalPath};
+use asena_leaf::ast::Located;
+use asena_report::InternalError;
 use im::HashMap;
+use thiserror::Error;
+
+use crate::ResolutionError::*;
 
 pub struct AstResolver<'a> {
     pub db: Driver,
@@ -12,15 +17,54 @@ pub struct AstResolver<'a> {
     pub reporter: &'a mut Reporter,
 }
 
+#[derive(Error, Debug, Clone, PartialEq, Eq)]
+pub enum ResolutionError {
+    #[error("Unresolved import: {0}")]
+    UnresolvedImportError(FunctionId),
+
+    #[error("Could not find the declared name {0}")]
+    UnresolvedNameError(FunctionId),
+}
+
+impl ResolutionError {
+    pub fn discriminant(&self) -> u8 {
+        // SAFETY: Because `Self` is marked `repr(u8)`, its layout is a `repr(C)` `union`
+        // between `repr(C)` structs, each of which has the `u8` discriminant as its first
+        // field, so we can read the discriminant without offsetting the pointer.
+        unsafe { *<*const _>::from(self).cast::<u8>() }
+    }
+}
+
+impl InternalError for ResolutionError {
+    fn code(&self) -> u16 {
+        self.discriminant() as u16
+    }
+
+    fn kind(&self) -> asena_report::DiagnosticKind {
+        asena_report::DiagnosticKind::Error
+    }
+}
+
 impl AsenaVisitor<()> for AstResolver<'_> {
     fn visit_use(&mut self, value: asena_ast::Use) {
-        let module_ref = self.db.module_ref(value.path().to_fn_id().as_str());
+        let module_ref = self.db.module_ref(value.to_fn_id().as_str());
 
         self.db.add_path_dep(self.current_file.clone(), module_ref);
     }
 
-    fn visit_qualified_path(&mut self, qualified_path: asena_ast::QualifiedPath) {
-        println!("visit_qualified_path: {:?}", qualified_path);
+    fn visit_qualified_path(&mut self, value: asena_ast::QualifiedPath) {
+        println!("Qualified path: {:?}", value.to_fn_id().as_str());
+
+        match self.db.decl_of(value.to_fn_id(), self.current_file.clone()) {
+            Some(_) => {
+                println!("  > Found declaration({value:?})");
+            }
+            None => {
+                let fn_id = value.to_fn_id();
+                println!("  > Unresolved name at Loc: {}", value.location());
+                self.reporter.report(&value, UnresolvedNameError(fn_id));
+            }
+        }
     }
 }
 
@@ -28,10 +72,10 @@ impl AsenaVisitor<()> for AstResolver<'_> {
 mod tests {
     use std::sync::Arc;
 
-    use asena_ast::reporter::Reporter;
     use asena_ast_db::{
         driver::Driver, implementation::NonResolvingAstDatabase, FileSystem, PackageData, VfsFile,
     };
+    use asena_grammar::parse_asena_file;
     use asena_prec::{default_prec_table, InfixHandler, PrecReorder};
 
     #[test]
@@ -46,30 +90,28 @@ mod tests {
         VfsFile::new(&db, &vfs, local_pkg, "Nat", "./Nat.ase".into());
         VfsFile::new(&db, &vfs, local_pkg, "IO", "./IO.ase".into());
 
-        let mut reporter = Reporter::default();
+        let mut asena_file = parse_asena_file!("../Test.ase");
 
         let file = db
             .abstract_syntax_tree(current_file.clone())
             .arc_walks(InfixHandler {
                 prec_table: &mut prec_table,
-                reporter: &mut reporter,
+                reporter: &mut asena_file.reporter,
             })
             .arc_walks(PrecReorder {
                 prec_table: &prec_table,
-                reporter: &mut reporter,
+                reporter: &mut asena_file.reporter,
             })
             .arc_walks(super::AstResolver {
                 db,
-                current_file: current_file.clone(),
+                current_file,
                 imports: Vec::new(),
                 canonical_paths: Default::default(),
-                reporter: &mut reporter,
+                reporter: &mut asena_file.reporter,
             });
 
-        reporter.dump();
+        println!("{file:#?}");
 
-        println!("{:#?}", current_file);
-
-        // println!("{file:#?}");
+        asena_file.reporter.dump();
     }
 }

@@ -174,7 +174,10 @@ pub fn decl_command(p: &mut Parser) {
 pub fn decl_use(p: &mut Parser) {
     let m = p.open();
     p.expect(UseKeyword);
-    global(p);
+    p.advance();
+    while p.eat(Dot) && !p.eof() {
+        p.advance();
+    }
     _semi(p, Semi::Optional);
     p.close(m, DeclUse);
 }
