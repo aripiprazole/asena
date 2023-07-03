@@ -7,6 +7,6 @@ enum Vec (a: Set) (n: Nat) where Monad Nat {
 }
 
 Main {
-  let simple_vec = Vec.cons (Vec.cons Vec.nil)
+  let simple_vec = cons (cons nil)
   IO.println "hello, world"
 }

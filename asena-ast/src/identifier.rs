@@ -38,6 +38,11 @@ impl FunctionId {
     pub fn create_path<I: Into<FunctionId>>(a: I, b: I) -> Self {
         Self(format!("{}.{}", a.into().as_str(), b.into().as_str()))
     }
+
+    pub fn optional_path<I: Clone + Into<FunctionId>>(a: Option<I>, b: I) -> Self {
+        a.map(|a| Self::create_path(a.into(), b.clone().into()))
+            .unwrap_or(b.into())
+    }
 }
 
 impl From<&str> for FunctionId {
@@ -164,7 +169,7 @@ pub struct QualifiedPath(GreenTree);
 #[ast_of]
 impl QualifiedPath {
     #[ast_leaf]
-    pub fn segments(&self) -> Vec<Lexeme<FunctionId>> {
+    pub fn segments(&self) -> Vec<Lexeme<Local>> {
         self.filter_terminal()
     }
 
@@ -234,7 +239,7 @@ pub struct QualifiedId(GreenTree);
 #[ast_of]
 impl QualifiedId {
     #[ast_leaf]
-    pub fn segments(&self) -> Vec<Lexeme<FunctionId>> {
+    pub fn segments(&self) -> Vec<Lexeme<Local>> {
         self.filter_terminal()
     }
 

@@ -3,10 +3,7 @@ use std::{
     sync::{Arc, RwLock},
 };
 
-use asena_ast::{Decl, FunctionId};
-use im::HashMap;
-
-use crate::{driver::Driver, package::Package};
+use crate::{driver::Driver, package::Package, scope::ScopeData};
 
 #[derive(Debug, Default)]
 pub struct FileSystem {}
@@ -16,7 +13,7 @@ pub struct VfsFile {
     pub name: String,
     pub pkg: Package,
     pub vfs: Arc<FileSystem>,
-    pub dependencies: RwLock<HashMap<FunctionId, Arc<Decl>>>,
+    pub scope: RwLock<ScopeData>,
 }
 
 #[derive(Debug, Default, Clone, Hash, Eq, PartialEq, PartialOrd, Ord)]
@@ -39,7 +36,7 @@ impl VfsFile {
             vfs: data.vfs.clone(),
             pkg,
             name: name.to_string(),
-            dependencies: RwLock::new(HashMap::new()),
+            scope: RwLock::new(ScopeData::default()),
         })
     }
 

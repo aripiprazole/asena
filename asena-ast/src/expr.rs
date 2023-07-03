@@ -189,7 +189,7 @@ impl Accessor {
             return ReceiverPaths { receiver, segments: self.segments() };
         };
 
-        let mut path = vec![receiver.name().map(|local| local.to_fn_id())];
+        let mut path = vec![receiver.name()];
         let mut remaining_segments = vec![];
         let mut should_skip_path = false;
 
@@ -197,7 +197,7 @@ impl Accessor {
             if should_skip_path {
                 remaining_segments.push(argument.clone());
             } else {
-                path.push(argument.name().map(|local| local.to_fn_id()));
+                path.push(argument.name());
             }
             if !argument.arguments().is_empty() {
                 should_skip_path = true;

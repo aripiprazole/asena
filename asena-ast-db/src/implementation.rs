@@ -1,16 +1,17 @@
 use std::cell::RefCell;
 
-use asena_ast::AsenaFile;
+use asena_ast::{AsenaFile, Variant};
 use asena_leaf::ast::Node;
 
 use crate::package::{Package, PackageData};
+use crate::scope::{Function, ScopeData};
 use crate::vfs::VfsFile;
 use crate::*;
 
 #[derive(Default)]
 pub struct NonResolvingAstDatabase {
+    scope: RefCell<ScopeData>,
     internal_module_refs: RefCell<HashMap<String, ModuleRef>>,
-    internal_decls: RefCell<HashMap<FunctionId, Arc<Decl>>>,
     internal_packages: RefCell<HashMap<Package, Arc<PackageData>>>,
     internal_vfs_files: RefCell<HashMap<VfsPath, Arc<VfsFile>>>,
 }
@@ -28,14 +29,26 @@ impl crate::database::AstDatabase for NonResolvingAstDatabase {
             .into()
     }
 
-    fn decl_of(&self, name: FunctionId, vfs_file: Arc<VfsFile>) -> Option<Arc<Decl>> {
+    fn constructor_data(&self, name: FunctionId, vfs_file: Arc<VfsFile>) -> Option<Arc<Variant>> {
         vfs_file
-            .dependencies
+            .scope
             .read()
             .unwrap()
+            .constructors
             .get(&name)
             .cloned()
-            .or_else(|| self.internal_decls.borrow().get(&name).cloned())
+            .or_else(|| self.scope.borrow().constructors.get(&name).cloned())
+    }
+
+    fn function_data(&self, name: FunctionId, vfs_file: Arc<VfsFile>) -> Option<Function> {
+        vfs_file
+            .scope
+            .read()
+            .unwrap()
+            .functions
+            .get(&name)
+            .cloned()
+            .or_else(|| self.scope.borrow().functions.get(&name).cloned())
     }
 
     fn module_ref(&self, path: &str) -> ModuleRef {
@@ -81,31 +94,42 @@ impl crate::database::AstDatabase for NonResolvingAstDatabase {
         Arc::new(AsenaFile::new(tree.data))
     }
 
-    fn add_path_dep(&self, vfs_file: Arc<VfsFile>, module: ModuleRef) {
-        let mut names = vfs_file.dependencies.write().unwrap();
-        let file = self.vfs_file(module);
-        for (fn_id, decl) in self.items(file).iter() {
-            names.insert(fn_id.clone(), decl.clone());
+    fn constructors(&self, vfs_file: Arc<VfsFile>) -> Arc<HashMap<FunctionId, Arc<Variant>>> {
+        let ast = self.abstract_syntax_tree(vfs_file);
+        let mut variants = HashMap::new();
+        for decl in ast.declarations() {
+            let Decl::Enum(enum_decl) = decl else {
+                continue;
+            };
+            for variant in enum_decl.variants() {
+                variants.insert(enum_decl.name().to_fn_id(), Arc::new(variant));
+            }
         }
+        Arc::new(variants)
+    }
+
+    fn add_path_dep(&self, vfs_file: Arc<VfsFile>, module: ModuleRef) {
+        let mut scope_data = vfs_file.scope.write().unwrap();
+        let from_file = self.vfs_file(module);
+        scope_data.rename_all(self, from_file, None);
     }
 
     fn intern_vfs_file(&self, vfs_file: VfsFile) -> Arc<VfsFile> {
-        let vfs_file = Arc::new(vfs_file);
-        let name = FunctionId::new(&vfs_file.name);
+        let mut global_scope = self.scope.borrow_mut();
+
+        let vf = Arc::new(vfs_file);
+        let name = FunctionId::new(&vf.name);
+
         self.internal_module_refs
             .borrow_mut()
-            .insert(vfs_file.name.clone(), ModuleRef::Found(vfs_file.id.clone()));
+            .insert(vf.name.clone(), ModuleRef::Found(vf.id.clone()));
+
         self.internal_vfs_files
             .borrow_mut()
-            .insert(vfs_file.id.clone(), vfs_file.clone());
-        for (partial_name, decl) in self.items(vfs_file.clone()).iter() {
-            let global_name = FunctionId::create_path(name.clone(), partial_name.clone());
-            println!("Global name: {:?}", global_name.as_str());
-            self.internal_decls
-                .borrow_mut()
-                .insert(global_name, decl.clone());
-        }
-        vfs_file
+            .insert(vf.id.clone(), vf.clone());
+
+        global_scope.rename_all(self, vf.clone(), Some(name));
+        vf
     }
 
     fn intern_package(&self, package: PackageData) -> Package {
@@ -117,9 +141,9 @@ impl crate::database::AstDatabase for NonResolvingAstDatabase {
     }
 
     fn intern_resolved_name(&self, module: FunctionId, decl: Decl) -> Arc<Decl> {
-        let mut internal_decls = self.internal_decls.borrow_mut();
+        let mut global_scope = self.scope.borrow_mut();
         let decl = Arc::new(decl);
-        internal_decls.insert(module, decl.clone());
+        global_scope.declarations.insert(module, decl.clone());
         decl
     }
 }

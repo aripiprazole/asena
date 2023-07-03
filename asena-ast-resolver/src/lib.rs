@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use asena_ast::{reporter::Reporter, AsenaVisitor, FunctionId};
 use asena_ast_db::{driver::Driver, vfs::*};
-use asena_leaf::ast::Located;
 use asena_report::InternalError;
 use im::HashMap;
 use thiserror::Error;
@@ -11,7 +10,7 @@ use crate::ResolutionError::*;
 
 pub struct AstResolver<'a> {
     pub db: Driver,
-    pub current_file: Arc<VfsFile>,
+    pub curr_vf: Arc<VfsFile>,
     pub imports: Vec<VfsPath>,
     pub canonical_paths: HashMap<FunctionId, VfsPath>,
     pub reporter: &'a mut Reporter,
@@ -49,19 +48,26 @@ impl AsenaVisitor<()> for AstResolver<'_> {
     fn visit_use(&mut self, value: asena_ast::Use) {
         let module_ref = self.db.module_ref(value.to_fn_id().as_str());
 
-        self.db.add_path_dep(self.current_file.clone(), module_ref);
+        self.db.add_path_dep(self.curr_vf.clone(), module_ref);
     }
 
     fn visit_qualified_path(&mut self, value: asena_ast::QualifiedPath) {
-        println!("Qualified path: {:?}", value.to_fn_id().as_str());
-
-        match self.db.decl_of(value.to_fn_id(), self.current_file.clone()) {
-            Some(_) => {
-                println!("  > Found declaration({value:?})");
-            }
+        let path = value.to_fn_id();
+        match self.db.function_data(path, self.curr_vf.clone()) {
+            Some(_) => {}
             None => {
                 let fn_id = value.to_fn_id();
-                println!("  > Unresolved name at Loc: {}", value.location());
+                self.reporter.report(&value, UnresolvedNameError(fn_id));
+            }
+        }
+    }
+
+    fn visit_global_pat(&mut self, value: asena_ast::GlobalPat) {
+        let path = value.name().to_fn_id();
+        match self.db.constructor_data(path, self.curr_vf.clone()) {
+            Some(_) => {}
+            None => {
+                let fn_id = value.name().to_fn_id();
                 self.reporter.report(&value, UnresolvedNameError(fn_id));
             }
         }
@@ -101,7 +107,7 @@ mod tests {
             })
             .arc_walks(super::AstResolver {
                 db,
-                current_file,
+                curr_vf: current_file,
                 imports: Vec::new(),
                 canonical_paths: Default::default(),
                 reporter: &mut asena_file.reporter,
