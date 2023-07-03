@@ -1,65 +1,22 @@
 use std::sync::Arc;
 
-use asena_ast::{reporter::Reporter, AsenaVisitor, Decl, FunctionId};
+use asena_ast::{reporter::Reporter, AsenaVisitor, FunctionId};
+use asena_ast_db::{driver::Driver, CanonicalPath};
 use im::HashMap;
 
-#[derive(Hash)]
-pub struct CanonicalPath {
-    pub path: String,
-}
-
-#[derive(Hash)]
-pub enum ModuleRef {
-    NotFound,
-    Found(CanonicalPath),
-}
-
-pub struct VfsFile {
-    pub id: FunctionId,
-}
-
-pub trait AstDatabase {
-    fn get_module(&self, path: &str) -> ModuleRef;
-    fn get_file(&self, module: ModuleRef) -> Arc<VfsFile>;
-    fn items(&self, module: FunctionId) -> Arc<HashMap<FunctionId, Decl>>;
-    fn resolve_ast(&self, vfs_file: Arc<VfsFile>) -> Arc<asena_ast::AsenaFile>;
-}
-
 pub struct AstResolver<'a> {
-    pub db: Arc<dyn AstDatabase>,
+    pub db: Driver,
+    pub current_file: Arc<asena_ast_db::VfsFile>,
     pub imports: Vec<CanonicalPath>,
     pub canonical_paths: HashMap<FunctionId, CanonicalPath>,
     pub reporter: &'a mut Reporter,
 }
 
-pub struct NonResolvingAstDatabase {}
-
-#[derive(Hash)]
-pub struct GetFileQuery(ModuleRef);
-
-impl AstDatabase for NonResolvingAstDatabase {
-    fn get_module(&self, path: &str) -> ModuleRef {
-        ModuleRef::NotFound
-    }
-
-    fn get_file(&self, path: ModuleRef) -> Arc<VfsFile> {
-        todo!()
-    }
-
-    fn items(&self, module: FunctionId) -> Arc<HashMap<FunctionId, Decl>> {
-        todo!()
-    }
-
-    fn resolve_ast(&self, vfs_file: Arc<VfsFile>) -> Arc<asena_ast::AsenaFile> {
-        todo!()
-    }
-}
-
 impl AsenaVisitor<()> for AstResolver<'_> {
     fn visit_use(&mut self, value: asena_ast::Use) {
-        let module_ref = self.db.get_module(value.path().to_fn_id().as_str());
-        let file = self.db.get_file(module_ref);
-        self.db.items(file.id.clone());
+        let module_ref = self.db.module_ref(value.path().to_fn_id().as_str());
+
+        self.db.add_path_dep(self.current_file.clone(), module_ref);
     }
 
     fn visit_qualified_path(&mut self, qualified_path: asena_ast::QualifiedPath) {
@@ -71,35 +28,48 @@ impl AsenaVisitor<()> for AstResolver<'_> {
 mod tests {
     use std::sync::Arc;
 
-    use asena_ast::AsenaFile;
-    use asena_grammar::parse_asena_file;
-    use asena_leaf::ast::Node;
+    use asena_ast::reporter::Reporter;
+    use asena_ast_db::{
+        driver::Driver, implementation::NonResolvingAstDatabase, FileSystem, PackageData, VfsFile,
+    };
     use asena_prec::{default_prec_table, InfixHandler, PrecReorder};
 
     #[test]
     fn it_works() {
         let mut prec_table = default_prec_table();
 
-        let mut tree = parse_asena_file!("./test.ase");
+        let vfs = Arc::new(FileSystem::default());
+        let db = Driver(Arc::new(NonResolvingAstDatabase::default()));
+        let local_pkg = PackageData::new(&db, "Local", "0.0.0", Arc::new(Default::default()));
+        let current_file = VfsFile::new(&db, &vfs, local_pkg, "Test", "./Test.ase".into());
+        // stub files
+        VfsFile::new(&db, &vfs, local_pkg, "Nat", "./Nat.ase".into());
+        VfsFile::new(&db, &vfs, local_pkg, "IO", "./IO.ase".into());
 
-        let file = AsenaFile::new(tree.clone())
-            .walks(InfixHandler {
+        let mut reporter = Reporter::default();
+
+        let file = db
+            .abstract_syntax_tree(current_file.clone())
+            .arc_walks(InfixHandler {
                 prec_table: &mut prec_table,
-                reporter: &mut tree.reporter,
+                reporter: &mut reporter,
             })
-            .walks(PrecReorder {
+            .arc_walks(PrecReorder {
                 prec_table: &prec_table,
-                reporter: &mut tree.reporter,
+                reporter: &mut reporter,
             })
-            .walks(super::AstResolver {
+            .arc_walks(super::AstResolver {
+                db,
+                current_file: current_file.clone(),
                 imports: Vec::new(),
-                db: Arc::new(super::NonResolvingAstDatabase {}),
                 canonical_paths: Default::default(),
-                reporter: &mut tree.reporter,
+                reporter: &mut reporter,
             });
 
-        tree.reporter.dump();
+        reporter.dump();
 
-        println!("{file:#?}");
+        println!("{:#?}", current_file);
+
+        // println!("{file:#?}");
     }
 }

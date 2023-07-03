@@ -95,6 +95,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "asena-ast-db"
+version = "0.1.0"
+dependencies = [
+ "asena-ast",
+ "asena-grammar",
+ "asena-leaf",
+ "asena-lexer",
+ "asena-parser",
+ "asena-prec",
+ "asena-span",
+ "fxhash",
+ "im",
+ "itertools",
+]
+
+[[package]]
 name = "asena-ast-format"
 version = "0.1.0"
 dependencies = [
@@ -123,6 +139,7 @@ name = "asena-ast-resolver"
 version = "0.1.0"
 dependencies = [
  "asena-ast",
+ "asena-ast-db",
  "asena-grammar",
  "asena-leaf",
  "asena-lexer",

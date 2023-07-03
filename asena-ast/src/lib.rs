@@ -1,6 +1,7 @@
 #![feature(default_free_fn)]
 
 use std::fmt::{Debug, Formatter};
+use std::sync::Arc;
 
 use asena_derive::*;
 
@@ -34,6 +35,12 @@ impl AsenaFile {
         self.walk(&mut visitor::new_walker(&mut visitor));
         self
     }
+
+    /// I hate my life
+    pub fn arc_walks<T: AsenaVisitor<()>>(self: Arc<Self>, mut visitor: T) -> Arc<Self> {
+        self.walk(&mut visitor::new_walker(&mut visitor));
+        self
+    }
 }
 
 pub use body::*;
@@ -62,4 +69,5 @@ pub mod visitor;
 pub mod traits {
     pub mod binary;
     pub mod function;
+    pub mod has_name;
 }

@@ -1,5 +1,5 @@
-use Std.IO
-use Std.Nat
+use IO
+use Nat
 
 enum Vec (a: Set) (n: Nat) where Monad Nat {
   nil  : Vec a 0,
@@ -8,5 +8,5 @@ enum Vec (a: Set) (n: Nat) where Monad Nat {
 
 Main {
   let simple_vec = Vec.cons (Vec.cons Vec.nil)
-  Std.IO.println "hello, world"
+  IO.println "hello, world"
 }

@@ -4,6 +4,7 @@ members = [
   "asena-ast",
   "asena-derive",
   "asena-highlight",
+  "asena-ast-db",
   "asena-ast-format",
   "asena-ast-lowering",
   "asena-ast-resolver",
