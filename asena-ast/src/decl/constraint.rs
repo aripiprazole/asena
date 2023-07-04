@@ -17,6 +17,7 @@ pub struct Constraint(GreenTree);
 #[ast_of]
 #[ast_debug]
 #[ast_walkable(AsenaVisitor)]
+#[ast_listenable(AsenaListener)]
 impl Constraint {
     #[ast_leaf]
     pub fn value(&self) -> Typed {

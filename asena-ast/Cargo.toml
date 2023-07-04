@@ -9,4 +9,5 @@ asena-derive = {path = "../asena-derive"}
 asena-leaf = {path = "../asena-leaf"}
 asena-report = {path = "../asena-report"}
 asena-span = {path = "../asena-span"}
+im = "15.1.0"
 thiserror = "1.0.40"

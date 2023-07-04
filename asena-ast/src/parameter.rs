@@ -20,6 +20,7 @@ pub struct Parameter(GreenTree);
 #[ast_of]
 #[ast_debug]
 #[ast_walkable(AsenaVisitor)]
+#[ast_listenable(AsenaListener)]
 impl Parameter {
     /// Optional parameter's name
     #[ast_leaf]

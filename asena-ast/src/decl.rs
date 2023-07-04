@@ -38,6 +38,7 @@ pub struct Use(GreenTree);
 #[ast_of]
 #[ast_debug]
 #[ast_walkable(AsenaVisitor)]
+#[ast_listenable(AsenaListener)]
 impl Use {
     #[ast_leaf]
     pub fn segments(&self) -> Vec<Lexeme<FunctionId>> {
@@ -74,9 +75,10 @@ pub struct Signature(GreenTree);
 #[ast_of]
 #[ast_debug]
 #[ast_walkable(AsenaVisitor)]
+#[ast_listenable(AsenaListener)]
 impl Signature {
     #[ast_leaf]
-    pub fn name(&self) -> QualifiedId {
+    pub fn name(&self) -> BindingId {
         self.filter().first()
     }
 
@@ -115,9 +117,10 @@ pub struct Assign(GreenTree);
 #[ast_of]
 #[ast_debug]
 #[ast_walkable(AsenaVisitor)]
+#[ast_listenable(AsenaListener)]
 impl Assign {
     #[ast_leaf]
-    pub fn name(&self) -> QualifiedId {
+    pub fn name(&self) -> BindingId {
         self.filter().first()
     }
 
@@ -147,9 +150,10 @@ pub struct Command(GreenTree);
 #[ast_of]
 #[ast_debug]
 #[ast_walkable(AsenaVisitor)]
+#[ast_listenable(AsenaListener)]
 impl Command {
     #[ast_leaf]
-    pub fn name(&self) -> QualifiedId {
+    pub fn name(&self) -> BindingId {
         self.filter().first()
     }
 
@@ -178,9 +182,10 @@ pub struct Class(GreenTree);
 #[ast_of]
 #[ast_debug]
 #[ast_walkable(AsenaVisitor)]
+#[ast_listenable(AsenaListener)]
 impl Class {
     #[ast_leaf]
-    pub fn name(&self) -> QualifiedId {
+    pub fn name(&self) -> BindingId {
         self.filter().first()
     }
 
@@ -221,9 +226,10 @@ pub struct Enum(GreenTree);
 #[ast_of]
 #[ast_debug]
 #[ast_walkable(AsenaVisitor)]
+#[ast_listenable(AsenaListener)]
 impl Enum {
     #[ast_leaf]
-    pub fn name(&self) -> QualifiedId {
+    pub fn name(&self) -> BindingId {
         self.filter().first()
     }
 
@@ -277,9 +283,10 @@ pub struct Trait(GreenTree);
 #[ast_of]
 #[ast_debug]
 #[ast_walkable(AsenaVisitor)]
+#[ast_listenable(AsenaListener)]
 impl Trait {
     #[ast_leaf]
-    pub fn name(&self) -> QualifiedId {
+    pub fn name(&self) -> BindingId {
         self.filter().first()
     }
 
@@ -314,9 +321,10 @@ pub struct Instance(GreenTree);
 #[ast_of]
 #[ast_debug]
 #[ast_walkable(AsenaVisitor)]
+#[ast_listenable(AsenaListener)]
 impl Instance {
     #[ast_leaf]
-    pub fn name(&self) -> QualifiedId {
+    pub fn name(&self) -> BindingId {
         self.filter().first()
     }
 
@@ -347,6 +355,7 @@ impl Decl {
 
 ast_enum! {
     #[ast_walker(AsenaVisitor)]
+    #[ast_listener(AsenaListener)]
     pub enum Decl {
         Use       <- DeclUse,
         Signature <- DeclSignature,

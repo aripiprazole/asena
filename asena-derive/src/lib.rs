@@ -11,6 +11,8 @@ mod ast_derive_leaf;
 mod ast_derive_located;
 mod ast_derive_node;
 mod ast_leaf;
+mod ast_listenable;
+mod ast_listener;
 mod ast_of;
 mod ast_walkable;
 mod ast_walker;
@@ -211,4 +213,16 @@ pub fn ast_command(args: TokenStream, input: TokenStream) -> TokenStream {
 #[proc_macro_attribute]
 pub fn ast_leaf(args: TokenStream, input: TokenStream) -> TokenStream {
     ast_leaf::expand_ast_leaf(args, input)
+}
+
+/// `ast_listener` attribute macro, it does generates:
+#[proc_macro_attribute]
+pub fn ast_listener(args: TokenStream, input: TokenStream) -> TokenStream {
+    ast_listener::expand_ast_listener(args, input)
+}
+
+/// `ast_listenable` attribute macro, it does generates:
+#[proc_macro_attribute]
+pub fn ast_listenable(args: TokenStream, input: TokenStream) -> TokenStream {
+    ast_listenable::expand_ast_listenable(args, input)
 }

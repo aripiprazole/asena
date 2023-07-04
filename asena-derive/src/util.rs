@@ -1,3 +1,4 @@
+use proc_macro2::Span;
 use quote::quote;
 use syn::*;
 
@@ -43,8 +44,9 @@ pub fn iter_leaf(input: &ItemImpl) -> Vec<NodeLeaf> {
         .collect()
 }
 
-pub fn to_camel_case(s: String) -> String {
-    s.chars()
+pub fn to_camel_case(s: String) -> Ident {
+    let name = s
+        .chars()
         .enumerate()
         .flat_map(|(i, char)| {
             if char.is_uppercase() && i > 0 {
@@ -54,5 +56,6 @@ pub fn to_camel_case(s: String) -> String {
             }
         })
         .collect::<String>()
-        .to_lowercase()
+        .to_lowercase();
+    Ident::new(&name, Span::call_site())
 }

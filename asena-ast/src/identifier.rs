@@ -3,13 +3,16 @@ use std::fmt::{Debug, Display};
 
 use asena_derive::*;
 
-use asena_leaf::ast::{GreenTree, Leaf, Lexeme, LexemeWalkable, Located, Node, Terminal, Walkable};
+use asena_leaf::ast::{
+    Ast, GreenTree, Leaf, Lexeme, LexemeListenable, LexemeWalkable, Listenable, Located, Node,
+    Terminal, Walkable,
+};
 use asena_leaf::node::TreeKind::*;
 use asena_leaf::token::{kind::TokenKind, Token};
 
 use asena_span::{Loc, Span, Spanned};
 
-use crate::AsenaVisitor;
+use crate::{AsenaListener, AsenaVisitor};
 
 //>>>Identifiers
 /// Identifier's key to a function (everything on the language), this can be abstracted in another
@@ -82,6 +85,14 @@ impl LexemeWalkable for FunctionId {
 
     fn lexeme_walk(value: Lexeme<Self>, walker: &mut Self::Walker<'_>) {
         walker.visit_function_id(value)
+    }
+}
+
+impl LexemeListenable for FunctionId {
+    type Listener<'a> = &'a mut dyn AsenaListener<()>;
+
+    fn lexeme_listen(value: Lexeme<Self>, listener: &mut Self::Listener<'_>) {
+        listener.visit_function_id(value);
     }
 }
 
@@ -160,20 +171,36 @@ impl LexemeWalkable for Local {
     }
 }
 
-/// Identifier's key to a global identifier, that's not declared locally, almost everything with
-/// Pascal Case, as a language pattern. This can contain symbols like: `Person.new`, as it can
-/// contain `.`.
-#[derive(Default, Node, Clone)]
-pub struct QualifiedPath(GreenTree);
+impl LexemeListenable for Local {
+    type Listener<'a> = &'a mut dyn AsenaListener<()>;
 
-#[ast_of]
-impl QualifiedPath {
+    fn lexeme_listen(value: Lexeme<Self>, listener: &mut Self::Listener<'_>) {
+        listener.visit_local(value)
+    }
+}
+
+/// Global name section
+pub trait GlobalName: Default + Ast {
     #[ast_leaf]
-    pub fn segments(&self) -> Vec<Lexeme<Local>> {
-        self.filter_terminal()
+    fn segments(&self) -> Vec<Lexeme<Local>> {
+        self.filter()
     }
 
-    pub fn to_fn_id(&self) -> FunctionId {
+    fn of(segments: Vec<Lexeme<Local>>) -> Self {
+        let identifier = Self::default();
+        identifier.set_segments(segments);
+        identifier
+    }
+
+    fn is_ident(&self) -> Option<Lexeme<Local>> {
+        if self.segments().len() != 1 {
+            return None;
+        }
+
+        self.segments().first().cloned()
+    }
+
+    fn to_fn_id(&self) -> FunctionId {
         let mut paths = Vec::new();
         for lexeme in self.segments().iter() {
             paths.push(lexeme.0.clone())
@@ -181,10 +208,8 @@ impl QualifiedPath {
 
         FunctionId::new(&paths.join("."))
     }
-}
 
-impl Located for QualifiedPath {
-    fn location(&self) -> Cow<'_, Loc> {
+    fn segmented_loc(&self) -> Cow<'_, Loc> {
         if self.segments().is_empty() {
             return Cow::Owned(Loc::Synthetic);
         }
@@ -197,6 +222,22 @@ impl Located for QualifiedPath {
                 .location()
                 .into_owned()),
         )
+    }
+}
+
+pub struct ConcreteAnyId(pub Vec<Lexeme<Local>>);
+
+/// Identifier's key to a global identifier, that's not declared locally, almost everything with
+/// Pascal Case, as a language pattern. This can contain symbols like: `Person.new`, as it can
+/// contain `.`.
+#[derive(Default, Node, Clone)]
+pub struct QualifiedPath(GreenTree);
+
+impl GlobalName for QualifiedPath {}
+
+impl Located for QualifiedPath {
+    fn location(&self) -> Cow<'_, Loc> {
+        self.segmented_loc()
     }
 }
 
@@ -219,6 +260,18 @@ impl Leaf for QualifiedPath {
     }
 }
 
+impl Listenable for QualifiedPath {
+    type Listener<'a> = &'a mut dyn AsenaListener<()>;
+
+    fn listen(&self, listener: &mut Self::Listener<'_>) {
+        listener.enter_qualified_path(self.clone());
+        for segment in self.segments().iter() {
+            segment.listen(listener)
+        }
+        listener.exit_qualified_path(self.clone());
+    }
+}
+
 impl Walkable for QualifiedPath {
     type Walker<'a> = &'a mut dyn AsenaVisitor<()>;
 
@@ -234,53 +287,19 @@ impl Walkable for QualifiedPath {
 /// Pascal Case, as a language pattern. This can contain symbols like: `Person.new`, as it can
 /// contain `.`. But as the original reference.
 #[derive(Default, Node, Clone)]
-pub struct QualifiedId(GreenTree);
+pub struct BindingId(GreenTree);
 
-#[ast_of]
-impl QualifiedId {
-    #[ast_leaf]
-    pub fn segments(&self) -> Vec<Lexeme<Local>> {
-        self.filter_terminal()
-    }
+impl GlobalName for BindingId {}
 
-    pub fn is_ident(&self) -> Option<Lexeme<Local>> {
-        if self.segments().len() != 1 {
-            return None;
-        }
-
-        self.segments().first().cloned()
-    }
-
-    pub fn to_fn_id(&self) -> FunctionId {
-        let mut paths = Vec::new();
-        for lexeme in self.segments().iter() {
-            paths.push(lexeme.0.clone())
-        }
-
-        FunctionId::new(&paths.join("."))
-    }
-}
-
-impl Located for QualifiedId {
+impl Located for BindingId {
     fn location(&self) -> Cow<'_, Loc> {
-        if self.segments().is_empty() {
-            return Cow::Owned(Loc::Synthetic);
-        }
-
-        Cow::Owned(
-            self.segments().first().unwrap().location().on(self
-                .segments()
-                .last()
-                .unwrap()
-                .location()
-                .into_owned()),
-        )
+        self.segmented_loc()
     }
 }
 
-impl Debug for QualifiedId {
+impl Debug for BindingId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "QualifiedId")?;
+        write!(f, "QualifiedBindingId")?;
         for segment in self.segments().iter() {
             write!(f, " [{:?}]", segment.0)?;
         }
@@ -288,20 +307,32 @@ impl Debug for QualifiedId {
     }
 }
 
-impl Leaf for QualifiedId {
+impl Leaf for BindingId {
     fn make(tree: GreenTree) -> Option<Self> {
         Some(match tree.kind() {
-            QualifiedPathTree => QualifiedId::new(tree),
+            QualifiedPathTree => BindingId::new(tree),
             _ => return None,
         })
     }
 }
 
-impl Walkable for QualifiedId {
+impl Listenable for BindingId {
+    type Listener<'a> = &'a mut dyn AsenaListener<()>;
+
+    fn listen(&self, listener: &mut Self::Listener<'_>) {
+        listener.enter_qualified_binding_id(self.clone());
+        for segment in self.segments().iter() {
+            segment.listen(listener)
+        }
+        listener.exit_qualified_binding_id(self.clone());
+    }
+}
+
+impl Walkable for BindingId {
     type Walker<'a> = &'a mut dyn AsenaVisitor<()>;
 
     fn walk(&self, walker: &mut Self::Walker<'_>) {
-        walker.visit_qualified_id(self.clone());
+        walker.visit_qualified_binding_id(self.clone());
         for segment in self.segments().iter() {
             segment.walk(walker)
         }

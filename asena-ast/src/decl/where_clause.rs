@@ -18,6 +18,7 @@ pub struct Where(GreenTree);
 #[ast_of]
 #[ast_debug]
 #[ast_walkable(AsenaVisitor)]
+#[ast_listenable(AsenaListener)]
 impl Where {
     #[ast_leaf]
     pub fn constraints(&self) -> Vec<Constraint> {

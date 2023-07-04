@@ -3,12 +3,13 @@ use std::rc::Rc;
 use asena_leaf::{ast::Located, node::Tree};
 use asena_report::{BoxInternalError, Diagnostic, InternalError, Report};
 use asena_span::Spanned;
+use im::HashSet;
 
 #[derive(Default, Clone)]
 pub struct Reporter {
     pub src: String,
     pub tree: Spanned<Tree>,
-    pub(crate) errors: Vec<Diagnostic<BoxInternalError>>,
+    pub(crate) errors: HashSet<Diagnostic<BoxInternalError>>,
 }
 
 pub trait Reports {
@@ -29,7 +30,7 @@ impl Reporter {
     }
 
     pub fn diagnostic<E: InternalError + 'static, T>(&mut self, at: Spanned<T>, error: E) {
-        self.errors.push(Diagnostic::new(
+        self.errors.insert(Diagnostic::new(
             at.replace(BoxInternalError(Rc::new(error))),
         ));
     }
@@ -40,7 +41,7 @@ impl Reporter {
         }
 
         let mut report = Report::<BoxInternalError>::new(&self.src, self.tree.clone());
-        report.diagnostics = self.errors.clone();
+        report.diagnostics = self.errors.iter().cloned().collect();
         report.dump();
     }
 

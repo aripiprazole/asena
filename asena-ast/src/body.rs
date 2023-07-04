@@ -12,6 +12,7 @@ pub struct Value(GreenTree);
 #[ast_of]
 #[ast_debug]
 #[ast_walkable(AsenaVisitor)]
+#[ast_listenable(AsenaListener)]
 impl Value {
     #[ast_leaf]
     pub fn value(&self) -> Expr {
@@ -26,6 +27,7 @@ pub struct Do(GreenTree);
 #[ast_of]
 #[ast_debug]
 #[ast_walkable(AsenaVisitor)]
+#[ast_listenable(AsenaListener)]
 impl Do {
     #[ast_leaf]
     pub fn stmts(&self) -> Vec<Stmt> {

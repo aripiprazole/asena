@@ -1,7 +1,13 @@
-use std::sync::Arc;
+use std::{cell::RefCell, rc::Rc, sync::Arc};
 
-use asena_ast::{reporter::Reporter, AsenaVisitor, FunctionId};
-use asena_ast_db::{driver::Driver, vfs::*};
+use asena_ast::{
+    reporter::Reporter, AsenaListener, AsenaVisitor, BindingId, Expr, FunctionId, GlobalName,
+};
+use asena_ast_db::{
+    driver::Driver,
+    scope::{ScopeData, VariantResolution},
+    vfs::*,
+};
 use asena_report::InternalError;
 use im::HashMap;
 use thiserror::Error;
@@ -11,18 +17,44 @@ use crate::ResolutionError::*;
 pub struct AstResolver<'a> {
     pub db: Driver,
     pub curr_vf: Arc<VfsFile>,
-    pub imports: Vec<VfsPath>,
     pub canonical_paths: HashMap<FunctionId, VfsPath>,
     pub reporter: &'a mut Reporter,
 }
 
-#[derive(Error, Debug, Clone, PartialEq, Eq)]
+pub struct ScopeResolver<'gctx> {
+    pub db: Driver,
+    pub frames: Vec<Rc<RefCell<ScopeData>>>,
+    pub resolver: &'gctx mut AstResolver<'gctx>,
+    pub file: &'gctx ScopeData,
+    pub reporter: &'gctx mut Reporter,
+}
+
+#[derive(Default, Error, Debug, Clone, PartialEq, Eq)]
 pub enum ResolutionError {
+    #[error("Not resolved")]
+    #[default]
+    NotResolved,
+
     #[error("Unresolved import: {0}")]
     UnresolvedImportError(FunctionId),
 
     #[error("Could not find the declared name {0}")]
     UnresolvedNameError(FunctionId),
+
+    #[error("Could not find the type constructor {0}")]
+    UnresolvedConstructorError(FunctionId),
+}
+
+pub enum Resolution {
+    OkExpr(Arc<Expr>),
+    OkBinding(Arc<BindingId>),
+    Err(ResolutionError),
+}
+
+impl Default for Resolution {
+    fn default() -> Self {
+        Resolution::Err(NotResolved)
+    }
 }
 
 impl ResolutionError {
@@ -41,6 +73,26 @@ impl InternalError for ResolutionError {
 
     fn kind(&self) -> asena_report::DiagnosticKind {
         asena_report::DiagnosticKind::Error
+    }
+}
+
+impl ScopeResolver<'_> {
+    pub fn last_scope(&mut self) -> Rc<RefCell<ScopeData>> {
+        self.frames
+            .last()
+            .cloned()
+            .unwrap_or_else(|| self.db.global_scope())
+    }
+}
+
+impl AsenaListener for ScopeResolver<'_> {
+    fn enter_pi(&mut self, _value: asena_ast::Pi) {
+        let scope = self.last_scope().borrow().fork();
+        self.frames.push(scope);
+    }
+
+    fn exit_pi(&mut self, _value: asena_ast::Pi) {
+        self.frames.pop();
     }
 }
 
@@ -63,33 +115,31 @@ impl AsenaVisitor<()> for AstResolver<'_> {
     }
 
     fn visit_global_pat(&mut self, value: asena_ast::GlobalPat) {
-        let path = value.name().to_fn_id();
+        let path = value.name();
 
         // Global pattern finding logic
-        match self.db.constructor_data(path, self.curr_vf.clone()) {
-            Some(_) => {}
+        match self.db.constructor_data(value.name(), self.curr_vf.clone()) {
+            VariantResolution::Variant(_) => {}
 
             // if it is not a constructor, it is a variable binding: Vec.cons x xs
             //                                                                ^ ^^
-            None if value.name().is_ident().is_some() => {}
+            VariantResolution::Binding(_) => {}
 
             // if it is a constructor and it is not found, report an error
-            None => {
-                let fn_id = value.name().to_fn_id();
-                self.reporter
-                    .report(&value.name(), UnresolvedNameError(fn_id));
+            VariantResolution::None => {
+                let fn_id = path.to_fn_id();
+                self.reporter.report(&path, UnresolvedNameError(fn_id));
             }
         }
     }
 
     fn visit_constructor_pat(&mut self, value: asena_ast::ConstructorPat) {
         let name = value.name();
-        let path = name.to_fn_id();
 
-        match self.db.constructor_data(path, self.curr_vf.clone()) {
-            Some(_) => {}
-            None => {
-                let fn_id = value.name().to_fn_id();
+        match self.db.constructor_data(value.name(), self.curr_vf.clone()) {
+            VariantResolution::Variant(_) | VariantResolution::Binding(_) => {}
+            VariantResolution::None => {
+                let fn_id = name.to_fn_id();
                 self.reporter.report(&name, UnresolvedNameError(fn_id));
             }
         }
@@ -132,7 +182,6 @@ mod tests {
             .arc_walks(super::AstResolver {
                 db,
                 curr_vf: file,
-                imports: Vec::new(),
                 canonical_paths: Default::default(),
                 reporter: &mut asena_file.reporter,
             });

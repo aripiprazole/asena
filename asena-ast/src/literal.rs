@@ -1,12 +1,12 @@
 use std::borrow::Cow;
 use std::fmt::Debug;
 
-use asena_leaf::ast::{Lexeme, LexemeWalkable, Located, Terminal};
+use asena_leaf::ast::{Lexeme, LexemeListenable, LexemeWalkable, Located, Terminal};
 use asena_leaf::token::{kind::TokenKind::*, Token};
 use asena_span::{Loc, Spanned};
 
-use crate::AsenaVisitor;
 use crate::Signed::{self, *};
+use crate::{AsenaListener, AsenaVisitor};
 
 /// Represents a language literal construct, can hold numbers, strings, booleans, etc.
 #[derive(Default, Clone)]
@@ -84,6 +84,14 @@ impl LexemeWalkable for Literal {
 
     fn lexeme_walk(value: Lexeme<Self>, walker: &mut Self::Walker<'_>) {
         walker.visit_literal(value);
+    }
+}
+
+impl LexemeListenable for Literal {
+    type Listener<'a> = &'a mut dyn AsenaListener<()>;
+
+    fn lexeme_listen(value: Lexeme<Self>, listener: &mut Self::Listener<'_>) {
+        listener.visit_literal(value);
     }
 }
 

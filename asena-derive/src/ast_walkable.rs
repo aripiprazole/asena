@@ -58,7 +58,6 @@ pub fn expand_ast_walkable(args: TokenStream, input: TokenStream) -> TokenStream
     });
 
     let fn_name = to_camel_case(format!("visit{type_name}"));
-    let fn_name = Ident::new(&fn_name, Span::call_site()); // to_camel_case
 
     TokenStream::from(quote! {
         #input

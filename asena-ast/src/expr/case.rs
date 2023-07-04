@@ -18,6 +18,7 @@ pub struct Case(GreenTree);
 #[ast_of]
 #[ast_debug]
 #[ast_walkable(AsenaVisitor)]
+#[ast_listenable(AsenaListener)]
 impl Case {
     #[ast_leaf]
     pub fn pat(&self) -> Pat {

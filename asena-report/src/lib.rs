@@ -1,4 +1,5 @@
 use std::fmt::Debug;
+use std::hash::Hash;
 use std::ops::Range;
 use std::path::PathBuf;
 use std::rc::Rc;
@@ -56,7 +57,7 @@ pub enum Fragment {
     Remove(String),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct Quickfix {
     pub loc: Loc,
     pub position: Position,
@@ -78,6 +79,37 @@ pub struct Diagnostic<T: InternalError> {
     pub message: Spanned<T>,
     pub quickfixes: Vec<Quickfix>,
     pub children: Vec<Diagnostic<T>>,
+}
+
+impl<T: InternalError> Eq for Diagnostic<T> {}
+
+impl<T: InternalError> PartialEq for Diagnostic<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.kind == other.kind
+            && self.code == other.code
+            && self.message.span == other.message.span
+            && self.message.value.code() == other.message.value.code()
+            && self.message.value.kind() == other.message.value.kind()
+            && self.message.value.to_string() == other.message.value.to_string()
+            && self.quickfixes == other.quickfixes
+            && self.children == other.children
+    }
+}
+
+impl<T: InternalError> Hash for Diagnostic<T> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        let message = (
+            &self.message.span,
+            self.message.value.code(),
+            self.message.value.kind(),
+        );
+
+        self.kind.hash(state);
+        self.code.hash(state);
+        message.hash(state);
+        self.quickfixes.hash(state);
+        self.children.hash(state);
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]

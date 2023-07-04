@@ -20,6 +20,7 @@ pub struct Ask(GreenTree);
 #[ast_of]
 #[ast_debug]
 #[ast_walkable(AsenaVisitor)]
+#[ast_listenable(AsenaListener)]
 impl Ask {
     #[ast_leaf]
     pub fn pattern(&self) -> Pat {
@@ -48,6 +49,7 @@ pub struct IfStmt(GreenTree);
 #[ast_of]
 #[ast_debug]
 #[ast_walkable(AsenaVisitor)]
+#[ast_listenable(AsenaListener)]
 impl IfStmt {
     #[ast_leaf]
     pub fn cond(&self) -> Expr {
@@ -79,6 +81,7 @@ pub struct LetStmt(GreenTree);
 #[ast_of]
 #[ast_debug]
 #[ast_walkable(AsenaVisitor)]
+#[ast_listenable(AsenaListener)]
 impl LetStmt {
     #[ast_leaf]
     pub fn pattern(&self) -> Pat {
@@ -104,6 +107,7 @@ pub struct Return(GreenTree);
 #[ast_of]
 #[ast_debug]
 #[ast_walkable(AsenaVisitor)]
+#[ast_listenable(AsenaListener)]
 impl Return {
     /// The value to return, if it's not present, it will return `None`. And it means that the
     /// return type is `()`.
@@ -121,6 +125,7 @@ pub struct ExprStmt(GreenTree);
 #[ast_of]
 #[ast_debug]
 #[ast_walkable(AsenaVisitor)]
+#[ast_listenable(AsenaListener)]
 impl ExprStmt {
     #[ast_leaf]
     pub fn value(&self) -> Expr {
@@ -141,6 +146,7 @@ ast_enum! {
     /// A statement, it's a part of a program, it's an imperative action, it only works with
     /// monads, and are part of the called "do-notation".
     #[ast_walker(AsenaVisitor)]
+    #[ast_listener(AsenaListener)]
     pub enum Stmt {
         Ask      <- StmtAsk,    // <local_id> <- <expr>
         Return   <- StmtReturn, // return <expr?>

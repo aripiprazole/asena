@@ -19,9 +19,10 @@ pub struct TypeVariant(GreenTree);
 #[ast_of]
 #[ast_debug]
 #[ast_walkable(AsenaVisitor)]
+#[ast_listenable(AsenaListener)]
 impl TypeVariant {
     #[ast_leaf]
-    pub fn name(&self) -> QualifiedId {
+    pub fn name(&self) -> BindingId {
         self.filter().first()
     }
 
@@ -44,9 +45,10 @@ pub struct ConstructorVariant(GreenTree);
 #[ast_of]
 #[ast_debug]
 #[ast_walkable(AsenaVisitor)]
+#[ast_listenable(AsenaListener)]
 impl ConstructorVariant {
     #[ast_leaf]
-    pub fn name(&self) -> QualifiedId {
+    pub fn name(&self) -> BindingId {
         self.filter().first()
     }
 
@@ -57,17 +59,18 @@ impl ConstructorVariant {
 }
 
 impl Variant {
-    pub fn name(&self) -> QualifiedId {
+    pub fn name(&self) -> BindingId {
         match self {
             Variant::TypeVariant(v) => v.name(),
             Variant::ConstructorVariant(v) => v.name(),
-            Variant::Error => QualifiedId::default(),
+            Variant::Error => BindingId::default(),
         }
     }
 }
 
 ast_enum! {
     #[ast_walker(AsenaVisitor)]
+    #[ast_listener(AsenaListener)]
     pub enum Variant {
         TypeVariant        <- VariantType,
         ConstructorVariant <- VariantConstructor,

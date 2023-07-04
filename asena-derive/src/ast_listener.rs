@@ -2,10 +2,8 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{parse_macro_input, ItemEnum};
 
-use crate::util::to_camel_case;
-
 #[allow(clippy::redundant_clone)]
-pub fn expand_ast_walker(args: TokenStream, input: TokenStream) -> TokenStream {
+pub fn expand_ast_listener(args: TokenStream, input: TokenStream) -> TokenStream {
     let args: proc_macro2::TokenStream = args.into();
     let input = parse_macro_input!(input as ItemEnum);
 
@@ -18,20 +16,18 @@ pub fn expand_ast_walker(args: TokenStream, input: TokenStream) -> TokenStream {
         .filter(|variant| variant.ident != "Error")
         .fold(quote!(), |acc, next| {
             let variant_name = next.ident;
-            let fn_name = to_camel_case(format!("visit{variant_name}"));
 
             quote!(#acc Self::#variant_name(value) => {
-                asena_leaf::ast::Walkable::walk(value, walker);
-                walker.#fn_name(value.clone());
+                asena_leaf::ast::Listenable::listen(value, listener);
             },)
         });
 
     TokenStream::from(quote! {
         #input
-        impl asena_leaf::ast::Walkable for #name {
-            type Walker<'a> = &'a mut dyn #args<()>;
+        impl asena_leaf::ast::Listenable for #name {
+            type Listener<'a> = &'a mut dyn #args<()>;
 
-            fn walk(&self, walker: &mut Self::Walker<'_>) {
+            fn listen(&self, listener: &mut Self::Listener<'_>) {
                 match self {
                     Self::Error => {},
                     #patterns

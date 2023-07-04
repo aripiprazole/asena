@@ -11,6 +11,7 @@ pub struct AccessorSegment(GreenTree);
 #[ast_of]
 #[ast_debug]
 #[ast_walkable(AsenaVisitor)]
+#[ast_listenable(AsenaListener)]
 impl AccessorSegment {
     #[ast_leaf]
     pub fn name(&self) -> Lexeme<Local> {

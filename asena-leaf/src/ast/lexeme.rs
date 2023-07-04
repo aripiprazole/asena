@@ -67,6 +67,12 @@ pub trait LexemeWalkable: Sized {
     fn lexeme_walk(value: Lexeme<Self>, walker: &mut Self::Walker<'_>);
 }
 
+pub trait LexemeListenable: Sized {
+    type Listener<'a>;
+
+    fn lexeme_listen(value: Lexeme<Self>, walker: &mut Self::Listener<'_>);
+}
+
 impl<T: Walkable> LexemeWalkable for Option<T> {
     fn lexeme_walk(value: Lexeme<Self>, walker: &mut Self::Walker<'_>) {
         if let Some(value) = value.value {
@@ -75,6 +81,14 @@ impl<T: Walkable> LexemeWalkable for Option<T> {
     }
 
     type Walker<'a> = T::Walker<'a>;
+}
+
+impl<T: LexemeListenable + Clone> Listenable for Lexeme<T> {
+    type Listener<'a> = T::Listener<'a>;
+
+    fn listen(&self, listener: &mut Self::Listener<'_>) {
+        T::lexeme_listen(self.clone(), listener)
+    }
 }
 
 impl<T: LexemeWalkable + Clone> Walkable for Lexeme<T> {

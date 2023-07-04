@@ -17,9 +17,10 @@ pub struct Field(GreenTree);
 #[ast_of]
 #[ast_debug]
 #[ast_walkable(AsenaVisitor)]
+#[ast_listenable(AsenaListener)]
 impl Field {
     #[ast_leaf]
-    pub fn name(&self) -> QualifiedId {
+    pub fn name(&self) -> BindingId {
         self.filter().first()
     }
 
@@ -56,6 +57,7 @@ pub struct Method(GreenTree);
 #[ast_of]
 #[ast_debug]
 #[ast_walkable(AsenaVisitor)]
+#[ast_listenable(AsenaListener)]
 impl Method {
     #[ast_leaf]
     pub fn name(&self) -> QualifiedPath {

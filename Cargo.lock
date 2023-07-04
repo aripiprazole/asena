@@ -91,6 +91,7 @@ dependencies = [
  "asena-leaf",
  "asena-report",
  "asena-span",
+ "im",
  "thiserror",
 ]
 

@@ -1,11 +1,11 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use asena_ast::{AsenaFile, Variant};
+use asena_ast::{AsenaFile, BindingId, GlobalName, Variant};
 use asena_leaf::ast::Node;
 
 use crate::package::{Package, PackageData};
-use crate::scope::{ScopeData, Value};
+use crate::scope::{ScopeData, Value, VariantResolution};
 use crate::vfs::VfsFile;
 use crate::*;
 
@@ -34,15 +34,13 @@ impl crate::database::AstDatabase for NonResolvingAstDatabase {
             .into()
     }
 
-    fn constructor_data(&self, name: FunctionId, vfs_file: Arc<VfsFile>) -> Option<Arc<Variant>> {
+    fn constructor_data(&self, name: BindingId, vfs_file: Arc<VfsFile>) -> VariantResolution {
         vfs_file
             .scope
             .read()
             .unwrap()
-            .constructors
-            .get(&name)
-            .cloned()
-            .or_else(|| self.scope.borrow().constructors.get(&name).cloned())
+            .find_type_constructor(&name)
+            .or_else(|| self.scope.borrow().find_type_constructor(&name))
     }
 
     fn function_data(&self, name: FunctionId, vfs_file: Arc<VfsFile>) -> Option<Value> {

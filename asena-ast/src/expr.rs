@@ -24,7 +24,7 @@ use std::fmt::Debug;
 
 use asena_derive::*;
 
-use asena_leaf::ast::{Cursor, Leaf, Lexeme, Located, Node, Walkable};
+use asena_leaf::ast::{Cursor, Leaf, Lexeme, Listenable, Located, Node, Walkable};
 use asena_leaf::ast_enum;
 use asena_leaf::node::TreeKind::*;
 
@@ -48,6 +48,7 @@ pub struct LocalExpr(GreenTree);
 #[ast_of]
 #[ast_debug]
 #[ast_walkable(AsenaVisitor)]
+#[ast_listenable(AsenaListener)]
 impl LocalExpr {
     #[ast_leaf]
     pub fn name(&self) -> Lexeme<Local> {
@@ -61,6 +62,7 @@ pub struct LiteralExpr(GreenTree);
 #[ast_of]
 #[ast_debug]
 #[ast_walkable(AsenaVisitor)]
+#[ast_listenable(AsenaListener)]
 impl LiteralExpr {
     #[ast_leaf]
     pub fn literal(&self) -> Lexeme<Literal> {
@@ -82,6 +84,7 @@ pub struct Unit(GreenTree);
 #[ast_of]
 #[ast_debug]
 #[ast_walkable(AsenaVisitor)]
+#[ast_listenable(AsenaListener)]
 impl Unit {}
 
 /// Group expression, is an expression that is a call between two operands, and is surrounded by
@@ -99,6 +102,7 @@ pub struct Group(GreenTree);
 #[ast_of]
 #[ast_debug]
 #[ast_walkable(AsenaVisitor)]
+#[ast_listenable(AsenaListener)]
 impl Group {
     /// Returns the expression inside the group, this is the expression that is surrounded by
     /// parenthesis.
@@ -139,6 +143,16 @@ impl Debug for Infix {
             .field("fn_id", &self.fn_id())
             .field("rhs", &self.rhs())
             .finish()
+    }
+}
+
+impl Listenable for Infix {
+    type Listener<'a> = &'a mut dyn AsenaListener<()>;
+
+    fn listen(&self, listener: &mut Self::Listener<'_>) {
+        self.lhs().listen(listener);
+        self.fn_id().listen(listener);
+        self.rhs().listen(listener);
     }
 }
 
@@ -224,6 +238,17 @@ pub struct ReceiverPaths {
     pub segments: Vec<AccessorSegment>,
 }
 
+impl Listenable for Receiver {
+    type Listener<'a> = &'a mut dyn AsenaListener<()>;
+
+    fn listen(&self, listener: &mut Self::Listener<'_>) {
+        match self {
+            Receiver::Expr(expr) => expr.listen(listener),
+            Receiver::Path(path) => path.listen(listener),
+        }
+    }
+}
+
 impl Walkable for Receiver {
     type Walker<'a> = &'a mut dyn AsenaVisitor<()>;
 
@@ -235,12 +260,30 @@ impl Walkable for Receiver {
     }
 }
 
+impl Listenable for ReceiverPaths {
+    type Listener<'a> = &'a mut dyn AsenaListener<()>;
+
+    fn listen(&self, walker: &mut Self::Listener<'_>) {
+        self.receiver.listen(walker);
+        self.segments.listen(walker);
+    }
+}
+
 impl Walkable for ReceiverPaths {
     type Walker<'a> = &'a mut dyn AsenaVisitor<()>;
 
     fn walk(&self, walker: &mut Self::Walker<'_>) {
         self.receiver.walk(walker);
         self.segments.walk(walker);
+    }
+}
+
+impl Listenable for Accessor {
+    type Listener<'a> = &'a mut dyn AsenaListener<()>;
+
+    fn listen(&self, listener: &mut Self::Listener<'_>) {
+        self.receiver().listen(listener);
+        self.compute_receiver_paths().listen(listener);
     }
 }
 
@@ -286,6 +329,7 @@ pub struct App(GreenTree);
 #[ast_of]
 #[ast_debug]
 #[ast_walkable(AsenaVisitor)]
+#[ast_listenable(AsenaListener)]
 impl App {
     #[ast_leaf]
     pub fn callee(&self) -> Expr {
@@ -319,6 +363,7 @@ pub struct Dsl(GreenTree);
 #[ast_of]
 #[ast_debug]
 #[ast_walkable(AsenaVisitor)]
+#[ast_listenable(AsenaListener)]
 impl Dsl {
     #[ast_leaf]
     pub fn callee(&self) -> Expr {
@@ -352,6 +397,7 @@ pub struct Array(GreenTree);
 #[ast_of]
 #[ast_debug]
 #[ast_walkable(AsenaVisitor)]
+#[ast_listenable(AsenaListener)]
 impl Array {
     #[ast_leaf]
     pub fn items(&self) -> Vec<Expr> {
@@ -383,6 +429,7 @@ pub struct Lam(GreenTree);
 #[ast_of]
 #[ast_debug]
 #[ast_walkable(AsenaVisitor)]
+#[ast_listenable(AsenaListener)]
 impl Lam {
     #[ast_leaf]
     pub fn parameters(&self) -> Vec<LamParameter> {
@@ -411,6 +458,7 @@ pub struct Let(GreenTree);
 #[ast_of]
 #[ast_debug]
 #[ast_walkable(AsenaVisitor)]
+#[ast_listenable(AsenaListener)]
 impl Let {
     #[ast_leaf]
     pub fn pat(&self) -> Pat {
@@ -443,6 +491,7 @@ pub struct If(GreenTree);
 #[ast_of]
 #[ast_debug]
 #[ast_walkable(AsenaVisitor)]
+#[ast_listenable(AsenaListener)]
 impl If {
     #[ast_leaf]
     pub fn cond(&self) -> Expr {
@@ -478,6 +527,7 @@ pub struct Match(GreenTree);
 #[ast_of]
 #[ast_debug]
 #[ast_walkable(AsenaVisitor)]
+#[ast_listenable(AsenaListener)]
 impl Match {
     #[ast_leaf]
     pub fn scrutinee(&self) -> Expr {
@@ -504,6 +554,8 @@ pub struct Ann(GreenTree);
 
 #[ast_of]
 #[ast_debug]
+#[ast_walkable(AsenaVisitor)]
+#[ast_listenable(AsenaListener)]
 impl Ann {
     #[ast_leaf]
     pub fn value(&self) -> Expr {
@@ -513,16 +565,6 @@ impl Ann {
     #[ast_leaf]
     pub fn against(&self) -> Expr {
         self.find_rhs()
-    }
-}
-
-impl Walkable for Ann {
-    type Walker<'a> = &'a mut dyn AsenaVisitor<()>;
-
-    fn walk(&self, walker: &mut Self::Walker<'_>) {
-        self.lhs().walk(walker);
-        self.fn_id().walk(walker);
-        self.rhs().walk(walker);
     }
 }
 
@@ -564,8 +606,16 @@ impl Walkable for Qual {
 
     fn walk(&self, walker: &mut Self::Walker<'_>) {
         self.lhs().walk(walker);
-        self.fn_id().walk(walker);
         self.rhs().walk(walker);
+    }
+}
+
+impl Listenable for Qual {
+    type Listener<'a> = &'a mut dyn AsenaListener<()>;
+
+    fn listen(&self, listener: &mut Self::Listener<'_>) {
+        self.lhs().listen(listener);
+        self.rhs().listen(listener);
     }
 }
 
@@ -594,6 +644,7 @@ pub struct Pi(GreenTree);
 #[ast_of]
 #[ast_debug]
 #[ast_walkable(AsenaVisitor)]
+#[ast_listenable(AsenaListener)]
 impl Pi {
     #[ast_leaf]
     pub fn parameter_name(&self) -> Option<Lexeme<Local>> {
@@ -672,6 +723,7 @@ pub struct Sigma(GreenTree);
 #[ast_of]
 #[ast_debug]
 #[ast_walkable(AsenaVisitor)]
+#[ast_listenable(AsenaListener)]
 impl Sigma {
     #[ast_leaf]
     pub fn parameter_name(&self) -> Lexeme<Local> {
@@ -701,6 +753,7 @@ pub struct Help(GreenTree);
 #[ast_of]
 #[ast_debug]
 #[ast_walkable(AsenaVisitor)]
+#[ast_listenable(AsenaListener)]
 impl Help {
     #[ast_leaf]
     pub fn value(&self) -> Expr {
@@ -720,6 +773,7 @@ impl Expr {
 ast_enum! {
     /// The expression enum, it is the main type of the language.
     #[ast_walker(AsenaVisitor)]
+    #[ast_listener(AsenaListener)]
     pub enum Expr {
         Unit            <- ExprUnit,
         Group           <- ExprGroup,
@@ -804,6 +858,17 @@ impl Debug for Typed {
         match self {
             Self::Infer => write!(f, "_"),
             Self::Explicit(expr) => write!(f, "Type({:#?})", expr),
+        }
+    }
+}
+
+impl Listenable for Typed {
+    type Listener<'a> = &'a mut dyn AsenaListener<()>;
+
+    fn listen(&self, listener: &mut Self::Listener<'_>) {
+        match self.clone() {
+            Typed::Infer => {}
+            Typed::Explicit(explicit) => explicit.listen(listener),
         }
     }
 }

@@ -14,6 +14,7 @@ pub struct LiteralPat(GreenTree);
 #[ast_of]
 #[ast_debug]
 #[ast_walkable(AsenaVisitor)]
+#[ast_listenable(AsenaListener)]
 impl LiteralPat {
     #[ast_leaf]
     pub fn literal(&self) -> Lexeme<Literal> {
@@ -33,9 +34,10 @@ pub struct GlobalPat(GreenTree);
 #[ast_of]
 #[ast_debug]
 #[ast_walkable(AsenaVisitor)]
+#[ast_listenable(AsenaListener)]
 impl GlobalPat {
     #[ast_leaf]
-    pub fn name(&self) -> QualifiedId {
+    pub fn name(&self) -> BindingId {
         self.filter().first()
     }
 }
@@ -52,9 +54,10 @@ pub struct ConstructorPat(GreenTree);
 #[ast_of]
 #[ast_debug]
 #[ast_walkable(AsenaVisitor)]
+#[ast_listenable(AsenaListener)]
 impl ConstructorPat {
     #[ast_leaf]
-    pub fn name(&self) -> QualifiedId {
+    pub fn name(&self) -> BindingId {
         self.filter().first()
     }
 
@@ -76,6 +79,7 @@ pub struct ListPat(GreenTree);
 #[ast_of]
 #[ast_debug]
 #[ast_walkable(AsenaVisitor)]
+#[ast_listenable(AsenaListener)]
 impl ListPat {
     #[ast_leaf]
     pub fn items(&self) -> Vec<Pat> {
@@ -96,6 +100,7 @@ pub struct SpreadPat(GreenTree);
 #[ast_of]
 #[ast_debug]
 #[ast_walkable(AsenaVisitor)]
+#[ast_listenable(AsenaListener)]
 impl SpreadPat {}
 
 /// Wildcard pattern, is the same as `_` pattern [Pat::Local]
@@ -105,6 +110,7 @@ pub struct WildcardPat(GreenTree);
 #[ast_of]
 #[ast_debug]
 #[ast_walkable(AsenaVisitor)]
+#[ast_listenable(AsenaListener)]
 impl WildcardPat {}
 
 /// Units pattern, matches agains't ()
@@ -119,10 +125,12 @@ pub struct UnitPat(GreenTree);
 #[ast_of]
 #[ast_debug]
 #[ast_walkable(AsenaVisitor)]
+#[ast_listenable(AsenaListener)]
 impl UnitPat {}
 
 ast_enum! {
     #[ast_walker(AsenaVisitor)]
+    #[ast_listener(AsenaListener)]
     pub enum Pat {
         WildcardPat    <- PatWildcard,    // _
         SpreadPat      <- PatSpread,      // ..
