@@ -176,6 +176,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "asena-drop-bomb"
+version = "0.1.0"
+dependencies = [
+ "asena-span",
+ "colored",
+ "fxhash",
+ "im",
+ "itertools",
+ "once_cell",
+]
+
+[[package]]
 name = "asena-grammar"
 version = "0.1.0"
 dependencies = [

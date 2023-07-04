@@ -9,6 +9,7 @@ members = [
   "asena-ast-lowering",
   "asena-ast-resolver",
   "asena-grammar",
+  "asena-drop-bomb",
   "asena-interner",
   "asena-leaf",
   "asena-lexer",
