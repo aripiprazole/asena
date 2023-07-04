@@ -1,6 +1,8 @@
 use std::{borrow::Borrow, cell::RefCell, rc::Rc, sync::Arc};
 
-use asena_ast::{Decl, Enum, Expr, FunctionId, GlobalName, Local, Signature, Variant};
+use asena_ast::{
+    Decl, Enum, Expr, FunctionId, GlobalName, Local, Parameter, Pat, Signature, Variant,
+};
 use asena_leaf::ast::Lexeme;
 
 use crate::{database::AstDatabase, vfs::VfsFile};
@@ -14,8 +16,11 @@ pub enum ScopeKind {
 
 #[derive(Debug, Clone)]
 pub enum Value {
+    None,
     Sign(Arc<Signature>),
     Cons(Arc<Variant>),
+    Pat(Arc<Pat>),
+    Param(Arc<Parameter>),
     Expr(Arc<Expr>),
 }
 
@@ -50,6 +55,15 @@ impl ScopeData {
 
             println!("Declared enum constructor: {}", name);
         }
+    }
+
+    pub fn find_value<T>(&self, name: &T) -> Value
+    where
+        T: GlobalName,
+    {
+        let name = name.to_fn_id();
+
+        self.functions.get(&name).cloned().unwrap_or(Value::None)
     }
 
     pub fn find_type_constructor<T>(&self, name: &T) -> VariantResolution
@@ -91,6 +105,18 @@ impl ScopeData {
                 }
                 Decl::Command(_) | Decl::Use(_) | Decl::Error => {}
             }
+        }
+    }
+}
+
+impl Value {
+    pub fn or_else<F>(&self, other: F) -> Value
+    where
+        F: Fn() -> Value,
+    {
+        match self {
+            Value::None => other(),
+            _ => self.clone(),
         }
     }
 }

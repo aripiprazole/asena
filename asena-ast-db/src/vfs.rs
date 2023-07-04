@@ -43,6 +43,10 @@ impl VfsFile {
     pub fn vfs(&self) -> Arc<FileSystem> {
         self.vfs.clone()
     }
+
+    pub fn read_scope(&self) -> std::sync::RwLockReadGuard<'_, ScopeData> {
+        self.scope.read().unwrap()
+    }
 }
 
 impl Debug for VfsFile {

@@ -744,6 +744,7 @@ pub fn case_branch(p: &mut Parser) {
             p.close(m, BranchBlock);
         }
         _ if p.at_any(EXPR_FIRST) => {
+            // TODO: FIXME
             rec_expr!(p, &[], ExpectedCaseExprError, expr, Linebreak::Cont);
             p.close(m, BranchExpr);
         }
@@ -766,16 +767,14 @@ pub fn expr_match(p: &mut Parser) -> Option<MarkClosed> {
     while !p.eof() && !p.at(RightBrace) {
         p.expect(Comma);
         if p.at(Comma) {
+            p.advance();
             if comma_count > 0 {
                 p.report(UselessCommaError);
             }
             comma_count += 1;
             continue;
-        } else if p.at_any(PAT_FIRST) {
+        } else {
             case(p);
-        } else if p.at_any(EXPR_RECOVERY) {
-            p.report(ExpectedCaseError);
-            break;
         }
     }
     p.expect(RightBrace);

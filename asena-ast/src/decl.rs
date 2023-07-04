@@ -8,6 +8,7 @@ use asena_leaf::node::TreeKind::*;
 
 use asena_leaf::token::kind::TokenKind;
 
+use crate::traits::global_decl::GlobalDecl;
 use crate::visitor::AsenaVisitor;
 use crate::*;
 
@@ -84,7 +85,8 @@ impl Signature {
 
     #[ast_leaf]
     pub fn parameters(&self) -> Vec<Parameter> {
-        self.filter()
+        // bridge
+        GlobalDecl::find_parameters(self)
     }
 
     #[ast_leaf]
@@ -191,12 +193,8 @@ impl Class {
 
     #[ast_leaf]
     pub fn parameters(&self) -> Vec<Parameter> {
-        self.filter().first()
-    }
-
-    #[ast_leaf]
-    pub fn where_clause(&self) -> Option<Where> {
-        self.filter().try_as_nth(0)
+        // bridge
+        GlobalDecl::find_parameters(self)
     }
 
     #[ast_leaf]
@@ -235,12 +233,8 @@ impl Enum {
 
     #[ast_leaf]
     pub fn parameters(&self) -> Vec<Parameter> {
-        self.filter()
-    }
-
-    #[ast_leaf]
-    pub fn where_clause(&self) -> Option<Where> {
-        self.filter().try_as_nth(0)
+        // bridge
+        GlobalDecl::find_parameters(self)
     }
 
     #[ast_leaf]

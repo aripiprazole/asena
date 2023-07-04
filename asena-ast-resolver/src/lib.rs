@@ -1,11 +1,9 @@
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 
-use asena_ast::{
-    reporter::Reporter, AsenaListener, AsenaVisitor, BindingId, Expr, FunctionId, GlobalName,
-};
+use asena_ast::{reporter::Reporter, *};
 use asena_ast_db::{
     driver::Driver,
-    scope::{ScopeData, VariantResolution},
+    scope::{ScopeData, Value, VariantResolution},
     vfs::*,
 };
 use asena_report::InternalError;
@@ -35,13 +33,13 @@ pub enum ResolutionError {
     #[default]
     NotResolved,
 
-    #[error("Unresolved import: {0}")]
+    #[error("Unresolved import: `{0}`")]
     UnresolvedImportError(FunctionId),
 
-    #[error("Could not find the declared name {0}")]
+    #[error("Could not find the declared name: `{0}`")]
     UnresolvedNameError(FunctionId),
 
-    #[error("Could not find the type constructor {0}")]
+    #[error("Could not find the type constructor: `{0}`")]
     UnresolvedConstructorError(FunctionId),
 }
 
@@ -86,13 +84,65 @@ impl ScopeResolver<'_> {
 }
 
 impl AsenaListener for ScopeResolver<'_> {
-    fn enter_pi(&mut self, _value: asena_ast::Pi) {
+    fn enter_pi(&mut self, pi: asena_ast::Pi) {
         let scope = self.last_scope().borrow().fork();
+        if let Some(name) = pi.parameter_name() {
+            let name = name.to_fn_id();
+            let value = pi.parameter_type();
+            let mut scope = scope.borrow_mut();
+            scope.functions.insert(name, Value::Expr(Arc::new(value)));
+        }
+
         self.frames.push(scope);
     }
 
     fn exit_pi(&mut self, _value: asena_ast::Pi) {
         self.frames.pop();
+    }
+
+    fn enter_local_expr(&mut self, value: LocalExpr) {
+        println!("enter_local_expr({:?})", value);
+    }
+
+    fn enter_qualified_path(&mut self, value: asena_ast::QualifiedPath) {
+        self.resolver.visit_qualified_path(value);
+    }
+
+    fn enter_global_pat(&mut self, value: asena_ast::GlobalPat) {
+        let name = value.name();
+        let file = self.resolver.curr_vf.clone();
+
+        match self.db.constructor_data(value.name(), file) {
+            VariantResolution::Variant(_) => {}
+            VariantResolution::Binding(name) => {
+                let scope = self.last_scope();
+                let mut scope = scope.borrow_mut();
+                let name = name.to_fn_id();
+                let value = Arc::new(value.into());
+                scope.functions.insert(name, Value::Pat(value));
+            }
+            VariantResolution::None => {
+                let fn_id = name.to_fn_id();
+                self.reporter.report(&name, UnresolvedNameError(fn_id));
+            }
+        }
+    }
+
+    fn enter_constructor_pat(&mut self, value: asena_ast::ConstructorPat) {
+        let name = value.name();
+        let file = self.resolver.curr_vf.clone();
+
+        match self.db.constructor_data(value.name(), file) {
+            VariantResolution::Binding(_) if !value.arguments().is_empty() => {
+                let fn_id = name.to_fn_id();
+                self.reporter.report(&name, UnresolvedNameError(fn_id));
+            }
+            VariantResolution::Variant(_) | VariantResolution::Binding(_) => {}
+            VariantResolution::None => {
+                let fn_id = name.to_fn_id();
+                self.reporter.report(&name, UnresolvedNameError(fn_id));
+            }
+        }
     }
 }
 
@@ -101,48 +151,6 @@ impl AsenaVisitor<()> for AstResolver<'_> {
         let module_ref = self.db.module_ref(value.to_fn_id().as_str());
 
         self.db.add_path_dep(self.curr_vf.clone(), module_ref);
-    }
-
-    fn visit_qualified_path(&mut self, value: asena_ast::QualifiedPath) {
-        let path = value.to_fn_id();
-        match self.db.function_data(path, self.curr_vf.clone()) {
-            Some(_) => {}
-            None => {
-                let fn_id = value.to_fn_id();
-                self.reporter.report(&value, UnresolvedNameError(fn_id));
-            }
-        }
-    }
-
-    fn visit_global_pat(&mut self, value: asena_ast::GlobalPat) {
-        let path = value.name();
-
-        // Global pattern finding logic
-        match self.db.constructor_data(value.name(), self.curr_vf.clone()) {
-            VariantResolution::Variant(_) => {}
-
-            // if it is not a constructor, it is a variable binding: Vec.cons x xs
-            //                                                                ^ ^^
-            VariantResolution::Binding(_) => {}
-
-            // if it is a constructor and it is not found, report an error
-            VariantResolution::None => {
-                let fn_id = path.to_fn_id();
-                self.reporter.report(&path, UnresolvedNameError(fn_id));
-            }
-        }
-    }
-
-    fn visit_constructor_pat(&mut self, value: asena_ast::ConstructorPat) {
-        let name = value.name();
-
-        match self.db.constructor_data(value.name(), self.curr_vf.clone()) {
-            VariantResolution::Variant(_) | VariantResolution::Binding(_) => {}
-            VariantResolution::None => {
-                let fn_id = name.to_fn_id();
-                self.reporter.report(&name, UnresolvedNameError(fn_id));
-            }
-        }
     }
 }
 

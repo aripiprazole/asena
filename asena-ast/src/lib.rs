@@ -69,5 +69,6 @@ pub mod visitor;
 pub mod traits {
     pub mod binary;
     pub mod function;
+    pub mod global_decl;
     pub mod has_name;
 }

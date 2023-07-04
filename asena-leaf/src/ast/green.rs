@@ -69,6 +69,13 @@ impl GreenTree {
         })
     }
 
+    pub fn as_node<T>(&self) -> T
+    where
+        T: Leaf,
+    {
+        Leaf::make(self.clone()).unwrap_or_default()
+    }
+
     /// Checks if the tree matches the given kind.
     pub fn matches(&self, nth: usize, kind: TokenKind) -> bool {
         match self {

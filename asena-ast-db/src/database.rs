@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use asena_ast::{BindingId, Variant};
+use asena_ast::{BindingId, QualifiedPath, Variant};
 
 use crate::package::{Package, PackageData};
 use crate::scope::{ScopeData, Value, VariantResolution};
@@ -18,7 +18,7 @@ pub trait AstDatabase {
     fn constructors(&self, module: Arc<VfsFile>) -> Arc<HashMap<FunctionId, Arc<Variant>>>;
     fn abstract_syntax_tree(&self, vfs_file: Arc<VfsFile>) -> Arc<asena_ast::AsenaFile>;
     fn add_path_dep(&self, vfs_file: Arc<VfsFile>, module: ModuleRef);
-    fn function_data(&self, name: FunctionId, vfs_file: Arc<VfsFile>) -> Option<Value>;
+    fn function_data(&self, name: QualifiedPath, vfs_file: Arc<VfsFile>) -> Value;
     fn constructor_data(&self, name: BindingId, vfs_file: Arc<VfsFile>) -> VariantResolution;
 
     fn intern_package(&self, package: PackageData) -> Package;

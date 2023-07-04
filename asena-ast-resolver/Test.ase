@@ -7,8 +7,9 @@ enum Vec (a: Set) (n: Nat) where Monad Nat {
 }
 
 Main {
-  let Vec.pao = match y {
-    Vec.cons x xs -> print x
+  let x = match y {
+    Vec.cons x xs -> { Vec.cons x xs },
+    Vec.nil       -> { Vec.nil },
   }
   let Vec.nil = Vec.cons (Vec.cons Vec.nil)
   IO.println "hello, world"

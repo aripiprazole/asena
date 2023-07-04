@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use asena_ast::{AsenaFile, BindingId, GlobalName, Variant};
+use asena_ast::{AsenaFile, BindingId, GlobalName, QualifiedPath, Variant};
 use asena_leaf::ast::Node;
 
 use crate::package::{Package, PackageData};
@@ -43,15 +43,11 @@ impl crate::database::AstDatabase for NonResolvingAstDatabase {
             .or_else(|| self.scope.borrow().find_type_constructor(&name))
     }
 
-    fn function_data(&self, name: FunctionId, vfs_file: Arc<VfsFile>) -> Option<Value> {
+    fn function_data(&self, name: QualifiedPath, vfs_file: Arc<VfsFile>) -> Value {
         vfs_file
-            .scope
-            .read()
-            .unwrap()
-            .functions
-            .get(&name)
-            .cloned()
-            .or_else(|| self.scope.borrow().functions.get(&name).cloned())
+            .read_scope()
+            .find_value(&name)
+            .or_else(|| self.scope.borrow().find_value(&name))
     }
 
     fn module_ref(&self, path: &str) -> ModuleRef {

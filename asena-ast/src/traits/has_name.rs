@@ -1,4 +1,4 @@
-use crate::{BindingId, Class, Decl, Enum, Signature, Trait};
+use crate::*;
 
 pub trait HasName {
     fn name(&self) -> BindingId;

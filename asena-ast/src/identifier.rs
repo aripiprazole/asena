@@ -183,7 +183,7 @@ impl LexemeListenable for Local {
 pub trait GlobalName: Default + Ast {
     #[ast_leaf]
     fn segments(&self) -> Vec<Lexeme<Local>> {
-        self.filter()
+        self.filter_terminal()
     }
 
     fn of(segments: Vec<Lexeme<Local>>) -> Self {
