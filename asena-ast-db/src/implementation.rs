@@ -1,22 +1,27 @@
 use std::cell::RefCell;
+use std::rc::Rc;
 
 use asena_ast::{AsenaFile, Variant};
 use asena_leaf::ast::Node;
 
 use crate::package::{Package, PackageData};
-use crate::scope::{Function, ScopeData};
+use crate::scope::{ScopeData, Value};
 use crate::vfs::VfsFile;
 use crate::*;
 
 #[derive(Default)]
 pub struct NonResolvingAstDatabase {
-    scope: RefCell<ScopeData>,
+    scope: Rc<RefCell<ScopeData>>,
     internal_module_refs: RefCell<HashMap<String, ModuleRef>>,
     internal_packages: RefCell<HashMap<Package, Arc<PackageData>>>,
     internal_vfs_files: RefCell<HashMap<VfsPath, Arc<VfsFile>>>,
 }
 
 impl crate::database::AstDatabase for NonResolvingAstDatabase {
+    fn global_scope(&self) -> Rc<RefCell<ScopeData>> {
+        self.scope.clone()
+    }
+
     fn package_of(&self, _module: ModuleRef) -> Arc<PackageData> {
         todo!()
     }
@@ -40,7 +45,7 @@ impl crate::database::AstDatabase for NonResolvingAstDatabase {
             .or_else(|| self.scope.borrow().constructors.get(&name).cloned())
     }
 
-    fn function_data(&self, name: FunctionId, vfs_file: Arc<VfsFile>) -> Option<Function> {
+    fn function_data(&self, name: FunctionId, vfs_file: Arc<VfsFile>) -> Option<Value> {
         vfs_file
             .scope
             .read()
@@ -101,9 +106,8 @@ impl crate::database::AstDatabase for NonResolvingAstDatabase {
             let Decl::Enum(enum_decl) = decl else {
                 continue;
             };
-            for variant in enum_decl.variants() {
-                variants.insert(enum_decl.name().to_fn_id(), Arc::new(variant));
-            }
+
+            variants.extend(enum_decl.constructors());
         }
         Arc::new(variants)
     }
@@ -111,7 +115,7 @@ impl crate::database::AstDatabase for NonResolvingAstDatabase {
     fn add_path_dep(&self, vfs_file: Arc<VfsFile>, module: ModuleRef) {
         let mut scope_data = vfs_file.scope.write().unwrap();
         let from_file = self.vfs_file(module);
-        scope_data.rename_all(self, from_file, None);
+        scope_data.import(self, from_file, None);
     }
 
     fn intern_vfs_file(&self, vfs_file: VfsFile) -> Arc<VfsFile> {
@@ -128,7 +132,7 @@ impl crate::database::AstDatabase for NonResolvingAstDatabase {
             .borrow_mut()
             .insert(vf.id.clone(), vf.clone());
 
-        global_scope.rename_all(self, vf.clone(), Some(name));
+        global_scope.import(self, vf.clone(), Some(name));
         vf
     }
 

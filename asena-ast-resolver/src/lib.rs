@@ -64,11 +64,33 @@ impl AsenaVisitor<()> for AstResolver<'_> {
 
     fn visit_global_pat(&mut self, value: asena_ast::GlobalPat) {
         let path = value.name().to_fn_id();
+
+        // Global pattern finding logic
+        match self.db.constructor_data(path, self.curr_vf.clone()) {
+            Some(_) => {}
+
+            // if it is not a constructor, it is a variable binding: Vec.cons x xs
+            //                                                                ^ ^^
+            None if value.name().is_ident().is_some() => {}
+
+            // if it is a constructor and it is not found, report an error
+            None => {
+                let fn_id = value.name().to_fn_id();
+                self.reporter
+                    .report(&value.name(), UnresolvedNameError(fn_id));
+            }
+        }
+    }
+
+    fn visit_constructor_pat(&mut self, value: asena_ast::ConstructorPat) {
+        let name = value.name();
+        let path = name.to_fn_id();
+
         match self.db.constructor_data(path, self.curr_vf.clone()) {
             Some(_) => {}
             None => {
                 let fn_id = value.name().to_fn_id();
-                self.reporter.report(&value, UnresolvedNameError(fn_id));
+                self.reporter.report(&name, UnresolvedNameError(fn_id));
             }
         }
     }
@@ -86,17 +108,19 @@ mod tests {
     fn it_works() {
         let mut prec_table = default_prec_table();
 
-        let db = Driver(Arc::new(NonResolvingAstDatabase::default()));
+        let mut db = Driver(Arc::new(NonResolvingAstDatabase::default()));
         let local_pkg = Package::new(&db, "Local", "0.0.0", Arc::new(Default::default()));
-        let current_file = VfsFile::new(&db, "Test", "./Test.ase".into(), local_pkg);
-        // stub files
+        let file = VfsFile::new(&db, "Test", "./Test.ase".into(), local_pkg);
         VfsFile::new(&db, "Nat", "./Nat.ase".into(), local_pkg);
         VfsFile::new(&db, "IO", "./IO.ase".into(), local_pkg);
 
         let mut asena_file = parse_asena_file!("../Test.ase");
 
-        let file = db
-            .abstract_syntax_tree(current_file.clone())
+        db.global_scope()
+            .borrow_mut()
+            .import(Arc::get_mut(&mut db).unwrap(), file.clone(), None);
+
+        db.abstract_syntax_tree(file.clone())
             .arc_walks(InfixHandler {
                 prec_table: &mut prec_table,
                 reporter: &mut asena_file.reporter,
@@ -107,13 +131,11 @@ mod tests {
             })
             .arc_walks(super::AstResolver {
                 db,
-                curr_vf: current_file,
+                curr_vf: file,
                 imports: Vec::new(),
                 canonical_paths: Default::default(),
                 reporter: &mut asena_file.reporter,
             });
-
-        println!("{file:#?}");
 
         asena_file.reporter.dump();
     }

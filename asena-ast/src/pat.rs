@@ -54,7 +54,7 @@ pub struct ConstructorPat(GreenTree);
 #[ast_walkable(AsenaVisitor)]
 impl ConstructorPat {
     #[ast_leaf]
-    pub fn name(&self) -> QualifiedPath {
+    pub fn name(&self) -> QualifiedId {
         self.filter().first()
     }
 

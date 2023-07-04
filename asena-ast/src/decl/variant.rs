@@ -56,6 +56,16 @@ impl ConstructorVariant {
     }
 }
 
+impl Variant {
+    pub fn name(&self) -> QualifiedId {
+        match self {
+            Variant::TypeVariant(v) => v.name(),
+            Variant::ConstructorVariant(v) => v.name(),
+            Variant::Error => QualifiedId::default(),
+        }
+    }
+}
+
 ast_enum! {
     #[ast_walker(AsenaVisitor)]
     pub enum Variant {

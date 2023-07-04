@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use asena_derive::*;
 
 use asena_leaf::ast::{Cursor, Lexeme};
@@ -248,6 +250,14 @@ impl Enum {
     #[ast_leaf]
     pub fn methods(&self) -> Vec<Method> {
         self.filter()
+    }
+
+    pub fn constructors(&self) -> HashMap<FunctionId, Variant> {
+        let mut variants = HashMap::new();
+        for variant in self.variants().into_iter() {
+            variants.insert(variant.name().to_fn_id(), variant);
+        }
+        variants
     }
 }
 

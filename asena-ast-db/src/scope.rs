@@ -1,6 +1,6 @@
 use std::{borrow::Borrow, sync::Arc};
 
-use asena_ast::{Decl, Expr, FunctionId, Signature, Variant};
+use asena_ast::{Decl, Enum, Expr, FunctionId, Signature, Variant};
 
 use crate::{database::AstDatabase, vfs::VfsFile};
 
@@ -12,9 +12,9 @@ pub enum ScopeKind {
 }
 
 #[derive(Debug, Clone)]
-pub enum Function {
-    Signature(Arc<Signature>),
-    Constructor(Arc<Variant>),
+pub enum Value {
+    Sign(Arc<Signature>),
+    Cons(Arc<Variant>),
     Expr(Arc<Expr>),
 }
 
@@ -23,36 +23,40 @@ pub struct ScopeData {
     pub kind: ScopeKind,
     pub declarations: im::HashMap<FunctionId, Arc<Decl>>,
     pub constructors: im::HashMap<FunctionId, Arc<Variant>>,
-    pub functions: im::HashMap<FunctionId, Function>,
+    pub functions: im::HashMap<FunctionId, Value>,
     pub variables: im::HashMap<FunctionId, usize>,
 }
 
 impl ScopeData {
-    pub fn rename_all(
-        &mut self,
-        db: &dyn AstDatabase,
-        vfs_file: Arc<VfsFile>,
-        prefix: Option<FunctionId>,
-    ) {
-        for (name, constructor) in db.constructors(vfs_file.clone()).iter() {
+    pub fn declare_enum(&mut self, enum_decl: Enum, prefix: Option<FunctionId>) {
+        for (name, variant) in enum_decl.constructors() {
             let name = FunctionId::optional_path(prefix.clone(), name.clone());
+            let variant = Arc::new(variant);
 
-            self.constructors.insert(name.clone(), constructor.clone());
+            self.constructors.insert(name.clone(), variant.clone());
+            self.functions.insert(name.clone(), Value::Cons(variant));
+
+            println!("Declared enum constructor: {}", name);
         }
+    }
 
-        for (name, decl) in db.items(vfs_file).iter() {
+    pub fn import<P>(&mut self, db: &dyn AstDatabase, file: Arc<VfsFile>, prefix: P)
+    where
+        P: Into<Option<FunctionId>>,
+    {
+        let prefix = prefix.into();
+        for (name, decl) in db.items(file).iter() {
             let name = FunctionId::optional_path(prefix.clone(), name.clone());
 
             match decl.borrow() {
                 Decl::Signature(signature) => {
-                    let function = Function::Signature(Arc::new(signature.clone()));
+                    let function = Value::Sign(Arc::new(signature.clone()));
                     self.functions.insert(name.clone(), function);
                 }
-                Decl::Assign(_)
-                | Decl::Class(_)
-                | Decl::Instance(_)
-                | Decl::Enum(_)
-                | Decl::Trait(_) => {
+                Decl::Enum(enum_decl) => {
+                    self.declare_enum(enum_decl.clone(), Some(name.clone()));
+                }
+                Decl::Assign(_) | Decl::Class(_) | Decl::Instance(_) | Decl::Trait(_) => {
                     self.declarations.insert(name.clone(), decl.clone());
                 }
                 Decl::Command(_) | Decl::Use(_) | Decl::Error => {}

@@ -233,7 +233,7 @@ impl Walkable for QualifiedPath {
 /// Identifier's key to a global identifier, that's not declared locally, almost everything with
 /// Pascal Case, as a language pattern. This can contain symbols like: `Person.new`, as it can
 /// contain `.`. But as the original reference.
-#[derive(Default, Node, Located, Clone)]
+#[derive(Default, Node, Clone)]
 pub struct QualifiedId(GreenTree);
 
 #[ast_of]
@@ -243,6 +243,14 @@ impl QualifiedId {
         self.filter_terminal()
     }
 
+    pub fn is_ident(&self) -> Option<Lexeme<Local>> {
+        if self.segments().len() != 1 {
+            return None;
+        }
+
+        self.segments().first().cloned()
+    }
+
     pub fn to_fn_id(&self) -> FunctionId {
         let mut paths = Vec::new();
         for lexeme in self.segments().iter() {
@@ -250,6 +258,23 @@ impl QualifiedId {
         }
 
         FunctionId::new(&paths.join("."))
+    }
+}
+
+impl Located for QualifiedId {
+    fn location(&self) -> Cow<'_, Loc> {
+        if self.segments().is_empty() {
+            return Cow::Owned(Loc::Synthetic);
+        }
+
+        Cow::Owned(
+            self.segments().first().unwrap().location().on(self
+                .segments()
+                .last()
+                .unwrap()
+                .location()
+                .into_owned()),
+        )
     }
 }
 
