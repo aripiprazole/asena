@@ -10,6 +10,12 @@ pub enum Loc {
     Concrete(Range<usize>),
 }
 
+impl Loc {
+    pub fn new(start: usize, end: usize) -> Self {
+        Self::Concrete(start..end)
+    }
+}
+
 impl Display for Loc {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {

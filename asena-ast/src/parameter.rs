@@ -3,6 +3,8 @@ use asena_derive::*;
 use asena_leaf::ast::{GreenTree, Leaf, Lexeme, Node};
 use asena_leaf::node::TreeKind::*;
 use asena_leaf::token::kind::TokenKind;
+use if_chain::if_chain;
+use im::HashMap;
 
 use crate::*;
 
@@ -43,6 +45,26 @@ impl Parameter {
     /// If the parameter is the `self` parameter.
     pub fn is_self(&self) -> bool {
         !self.token(TokenKind::SelfKeyword).is_error()
+    }
+
+    pub fn compute_parameters(parameters: Vec<Parameter>) -> HashMap<FunctionId, Parameter> {
+        let mut map = HashMap::new();
+        for parameter in parameters.into_iter() {
+            if parameter.explicit() {
+                map.insert(parameter.name().to_fn_id(), parameter);
+                continue;
+            }
+
+            if_chain! {
+                if let Typed::Explicit(Expr::Ann(ann)) = parameter.parameter_type();
+                if let Expr::LocalExpr(local_expr) = ann.value();
+                if let Some(name) = local_expr.is_ident();
+                then {
+                    map.insert(name.to_fn_id(), parameter);
+                }
+            }
+        }
+        map
     }
 }
 

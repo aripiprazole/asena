@@ -7,10 +7,11 @@ enum Vec (a: Set) (n: Nat) {
 }
 
 Main {
-  let x = match y {
-    Vec.cons x xs => (cons x xs),
+  let y = Vec.cons 10 Vec.nil
+  let a = match afka {
+    Vec.cons x xs => Vec.cons x xs,
     Vec.nil => Vec.nil
   }
-  let Vec.nil = Vec.cons (Vec.cons Vec.nil)
+  let Vec.nil = Vec.cons a
   IO.println "hello, world"
 }

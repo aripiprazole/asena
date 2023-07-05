@@ -3,7 +3,7 @@ use std::fmt::{Debug, Display};
 use std::ops::{ControlFlow, Deref, DerefMut, FromResidual, Try};
 use std::rc::Rc;
 
-use asena_span::{Loc, Spanned};
+use asena_span::{Loc, Span, Spanned};
 
 use crate::node::{Child, TreeKind};
 use crate::token::kind::TokenKind;
@@ -95,6 +95,19 @@ pub trait Node: Sized + Debug + Clone {
 
     fn as_new_ast<T: Node>(&self) -> T {
         T::new(self.clone().unwrap().as_new_node())
+    }
+}
+
+impl<T: Located> Located for Vec<T> {
+    fn location(&self) -> Cow<'_, Loc> {
+        if self.is_empty() {
+            return Cow::Owned(Loc::default());
+        }
+
+        let start = self.first().unwrap().location().into_owned();
+        let end = self.last().unwrap().location().into_owned();
+
+        Cow::Owned(start.on(end))
     }
 }
 

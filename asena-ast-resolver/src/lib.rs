@@ -6,6 +6,7 @@ use asena_ast_db::{
     scope::{ScopeData, Value, VariantResolution},
     vfs::*,
 };
+use asena_leaf::ast::Listenable;
 use asena_report::InternalError;
 use im::HashMap;
 use thiserror::Error;
@@ -19,12 +20,11 @@ pub struct AstResolver<'a> {
     pub reporter: &'a mut Reporter,
 }
 
-pub struct ScopeResolver<'gctx> {
+pub struct ScopeResolver<'gctx, 'a> {
     pub db: Driver,
+    pub local_scope: Rc<RefCell<ScopeData>>,
     pub frames: Vec<Rc<RefCell<ScopeData>>>,
-    pub resolver: &'gctx mut AstResolver<'gctx>,
-    pub file: &'gctx ScopeData,
-    pub reporter: &'gctx mut Reporter,
+    pub resolver: &'gctx mut AstResolver<'a>,
 }
 
 #[derive(Default, Error, Debug, Clone, PartialEq, Eq)]
@@ -74,7 +74,24 @@ impl InternalError for ResolutionError {
     }
 }
 
-impl ScopeResolver<'_> {
+impl<'gctx, 'a> ScopeResolver<'gctx, 'a> {
+    pub fn new(name: BindingId, resolver: &'gctx mut AstResolver<'a>) -> Self {
+        let global_scope = resolver.db.global_scope();
+        let local_scope = {
+            let named_scope = global_scope.borrow().fork();
+            let mut scope_mut = named_scope.borrow_mut();
+            scope_mut.variables.insert(name.to_fn_id(), 0);
+            named_scope.clone()
+        };
+
+        Self {
+            db: resolver.db.clone(),
+            local_scope: local_scope.clone(),
+            frames: vec![local_scope],
+            resolver,
+        }
+    }
+
     pub fn last_scope(&mut self) -> Rc<RefCell<ScopeData>> {
         self.frames
             .last()
@@ -83,7 +100,7 @@ impl ScopeResolver<'_> {
     }
 }
 
-impl AsenaListener for ScopeResolver<'_> {
+impl AsenaListener for ScopeResolver<'_, '_> {
     fn enter_pi(&mut self, pi: asena_ast::Pi) {
         let scope = self.last_scope().borrow().fork();
         if let Some(name) = pi.parameter_name() {
@@ -96,12 +113,49 @@ impl AsenaListener for ScopeResolver<'_> {
         self.frames.push(scope);
     }
 
-    fn exit_pi(&mut self, _value: asena_ast::Pi) {
+    fn exit_pi(&mut self, _: asena_ast::Pi) {
         self.frames.pop();
     }
 
+    fn enter_case(&mut self, _: Case) {
+        let scope = self.last_scope().borrow().fork();
+        self.frames.push(scope);
+    }
+
+    fn exit_case(&mut self, _: Case) {
+        self.frames.pop();
+    }
+
+    fn enter_lam(&mut self, _: Lam) {
+        let scope = self.last_scope().borrow().fork();
+        self.frames.push(scope);
+    }
+
+    fn exit_lam(&mut self, _: Lam) {
+        self.frames.pop();
+    }
+
+    fn enter_lam_parameter(&mut self, value: LamParameter) {
+        let scope = self.last_scope();
+        let mut scope = scope.borrow_mut();
+
+        let value = Arc::new(value);
+        scope
+            .functions
+            .insert(value.name().to_fn_id(), Value::LamParam(value));
+    }
+
     fn enter_local_expr(&mut self, value: LocalExpr) {
-        println!("enter_local_expr({:?})", value);
+        let scope = self.last_scope();
+        let scope = scope.borrow();
+        match scope.functions.get(&value.to_fn_id()) {
+            Some(_) => {}
+            None => {
+                self.resolver
+                    .reporter
+                    .report(&value.segments(), UnresolvedNameError(value.to_fn_id()));
+            }
+        }
     }
 
     fn enter_qualified_path(&mut self, value: asena_ast::QualifiedPath) {
@@ -123,7 +177,9 @@ impl AsenaListener for ScopeResolver<'_> {
             }
             VariantResolution::None => {
                 let fn_id = name.to_fn_id();
-                self.reporter.report(&name, UnresolvedNameError(fn_id));
+                self.resolver
+                    .reporter
+                    .report(&name, UnresolvedNameError(fn_id));
             }
         }
     }
@@ -135,22 +191,57 @@ impl AsenaListener for ScopeResolver<'_> {
         match self.db.constructor_data(value.name(), file) {
             VariantResolution::Binding(_) if !value.arguments().is_empty() => {
                 let fn_id = name.to_fn_id();
-                self.reporter.report(&name, UnresolvedNameError(fn_id));
+                self.resolver
+                    .reporter
+                    .report(&name, UnresolvedNameError(fn_id));
             }
             VariantResolution::Variant(_) | VariantResolution::Binding(_) => {}
             VariantResolution::None => {
                 let fn_id = name.to_fn_id();
-                self.reporter.report(&name, UnresolvedNameError(fn_id));
+                self.resolver
+                    .reporter
+                    .report(&name, UnresolvedNameError(fn_id));
             }
         }
     }
 }
 
-impl AsenaVisitor<()> for AstResolver<'_> {
+impl<'a> AsenaVisitor<()> for AstResolver<'a> {
     fn visit_use(&mut self, value: asena_ast::Use) {
         let module_ref = self.db.module_ref(value.to_fn_id().as_str());
 
         self.db.add_path_dep(self.curr_vf.clone(), module_ref);
+    }
+
+    fn visit_signature(&mut self, signature: Signature) {
+        let name = signature.name();
+        let mut resolver = ScopeResolver::new(name, self);
+
+        for (name, parameter) in Parameter::compute_parameters(signature.parameters()) {
+            let mut scope = resolver.local_scope.borrow_mut();
+            let value = Arc::new(parameter);
+            scope.functions.insert(name, Value::Param(value));
+        }
+
+        let mut resolver: &mut dyn AsenaListener<()> = &mut resolver;
+
+        signature.return_type().listen(&mut resolver);
+        signature.body().listen(&mut resolver);
+    }
+
+    fn visit_assign(&mut self, assign: Assign) {
+        let name = assign.name();
+        let resolver = &mut ScopeResolver::new(name, self);
+
+        for pat in assign.patterns() {
+            let mut resolver: &mut dyn AsenaListener<()> = resolver;
+
+            pat.listen(&mut resolver);
+        }
+
+        let mut resolver: &mut dyn AsenaListener<()> = resolver;
+
+        assign.body().listen(&mut resolver);
     }
 }
 

@@ -15,6 +15,7 @@ asena-prec = {path = "../asena-prec"}
 asena-report = {path = "../asena-report"}
 asena-span = {path = "../asena-span"}
 fxhash = "0.2.1"
+if_chain = "1.0.2"
 im = "15.1.0"
 itertools = "0.10.5"
 thiserror = "1.0.40"

@@ -9,5 +9,6 @@ asena-derive = {path = "../asena-derive"}
 asena-leaf = {path = "../asena-leaf"}
 asena-report = {path = "../asena-report"}
 asena-span = {path = "../asena-span"}
+if_chain = "1.0.2"
 im = "15.1.0"
 thiserror = "1.0.40"

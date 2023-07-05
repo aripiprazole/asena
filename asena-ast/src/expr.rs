@@ -54,6 +54,8 @@ impl LocalExpr {
     }
 }
 
+impl GlobalName for LocalExpr {}
+
 #[derive(Default, Node, Located, Clone)]
 pub struct LiteralExpr(GreenTree);
 
@@ -715,7 +717,11 @@ impl Debug for Typed {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Infer => write!(f, "_"),
-            Self::Explicit(expr) => write!(f, "Type({:#?})", expr),
+            Self::Explicit(expr) => {
+                write!(f, "Type(")?;
+                Debug::fmt(expr, f)?;
+                write!(f, ")")
+            }
         }
     }
 }

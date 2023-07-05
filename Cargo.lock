@@ -91,6 +91,7 @@ dependencies = [
  "asena-leaf",
  "asena-report",
  "asena-span",
+ "if_chain",
  "im",
  "thiserror",
 ]
@@ -107,6 +108,7 @@ dependencies = [
  "asena-prec",
  "asena-span",
  "fxhash",
+ "if_chain",
  "im",
  "itertools",
 ]
@@ -149,6 +151,7 @@ dependencies = [
  "asena-report",
  "asena-span",
  "fxhash",
+ "if_chain",
  "im",
  "itertools",
  "thiserror",
@@ -497,6 +500,12 @@ name = "hermit-abi"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fed44880c466736ef9a5c5b5facefb5ed0785676d0c02d612db14e54f0d84286"
+
+[[package]]
+name = "if_chain"
+version = "1.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cb56e1aa765b4b4f3aadfab769793b7087bb03a4ea4920644a6d238e2df5b9ed"
 
 [[package]]
 name = "im"

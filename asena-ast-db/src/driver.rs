@@ -5,6 +5,7 @@ use std::{
 
 use crate::database::AstDatabase;
 
+#[derive(Clone)]
 pub struct Driver(pub Arc<dyn AstDatabase>);
 
 impl DerefMut for Driver {

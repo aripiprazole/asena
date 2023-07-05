@@ -1,7 +1,8 @@
 use std::{borrow::Borrow, cell::RefCell, rc::Rc, sync::Arc};
 
 use asena_ast::{
-    Decl, Enum, Expr, FunctionId, GlobalName, Local, Parameter, Pat, Signature, Variant,
+    Decl, Enum, Expr, FunctionId, GlobalName, LamParameter, Local, Parameter, Pat, Signature,
+    Variant,
 };
 use asena_leaf::ast::Lexeme;
 
@@ -21,16 +22,17 @@ pub enum Value {
     Cons(Arc<Variant>),
     Pat(Arc<Pat>),
     Param(Arc<Parameter>),
+    LamParam(Arc<LamParameter>),
     Expr(Arc<Expr>),
 }
 
 #[derive(Default, Debug, Clone)]
 pub struct ScopeData {
     pub kind: ScopeKind,
-    pub declarations: im::HashMap<FunctionId, Arc<Decl>>,
-    pub constructors: im::HashMap<FunctionId, Arc<Variant>>,
-    pub functions: im::HashMap<FunctionId, Value>,
-    pub variables: im::HashMap<FunctionId, usize>,
+    pub declarations: std::collections::HashMap<FunctionId, Arc<Decl>>,
+    pub constructors: std::collections::HashMap<FunctionId, Arc<Variant>>,
+    pub functions: std::collections::HashMap<FunctionId, Value>,
+    pub variables: std::collections::HashMap<FunctionId, usize>,
 }
 
 #[derive(Clone)]
