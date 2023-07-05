@@ -1,15 +1,14 @@
 use IO
 use Nat
 
-enum Vec (a: Set) (n: Nat) where Monad Nat {
+enum Vec (a: Set) (n: Nat) {
   nil  : Vec a 0,
   cons : (head: a) -> (tail: Vec a n) -> Vec a (n + 1),
 }
 
 Main {
   let x = match y {
-    Vec.cons x xs -> { Vec.cons x xs },
-    Vec.nil       -> { Vec.nil },
+    Vec.cons x xs => (cons x xs),
   }
   let Vec.nil = Vec.cons (Vec.cons Vec.nil)
   IO.println "hello, world"

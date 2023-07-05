@@ -731,7 +731,7 @@ pub fn expr_if(p: &mut Parser, linebreak: Linebreak) -> Option<MarkClosed> {
 pub fn case(p: &mut Parser) {
     let m = p.open();
     pat_app(p);
-    p.expect(RightArrow);
+    p.expect(DoubleArrow);
     case_branch(p);
     p.close(m, MatchCase);
 }
@@ -767,7 +767,6 @@ pub fn expr_match(p: &mut Parser) -> Option<MarkClosed> {
     while !p.eof() && !p.at(RightBrace) {
         p.expect(Comma);
         if p.at(Comma) {
-            p.advance();
             if comma_count > 0 {
                 p.report(UselessCommaError);
             }
@@ -790,7 +789,7 @@ pub fn expr_ann(p: &mut Parser, linebreak: Linebreak) -> Option<MarkClosed> {
     // simplify by returning the lhs symbol directly
     if p.at(Colon) {
         while !p.eof() && p.eat(Colon) {
-            if rec_expr!(p, &[], ExpectedAnnAgainstError, expr, linebreak) {
+            if rec_expr!(p, &[], ExpectedAnnAgainstError, expr_qual, linebreak) {
                 break;
             }
         }
@@ -806,12 +805,12 @@ pub fn expr_ann(p: &mut Parser, linebreak: Linebreak) -> Option<MarkClosed> {
 pub fn expr_qual(p: &mut Parser, linebreak: Linebreak) -> Option<MarkClosed> {
     let m = p.open();
 
-    rec_expr!(p, &[], ExpectedExprError, expr_anonymous_pi, linebreak);
+    rec_expr!(p, &[], ExpectedExprError, expr_anon_pi, linebreak);
 
     // simplify by returning the lhs symbol directly
     if p.at(DoubleArrow) {
         while !p.eof() && p.eat(DoubleArrow) {
-            if rec_expr!(p, &[], ExpectedQualReturnError, expr, linebreak) {
+            if rec_expr!(p, &[], ExpectedQualReturnError, expr_anon_pi, linebreak) {
                 break;
             }
         }
@@ -824,7 +823,7 @@ pub fn expr_qual(p: &mut Parser, linebreak: Linebreak) -> Option<MarkClosed> {
 }
 
 /// ExprAnonymousPi = ExprAccessor ('->' ExprAccessor)*
-pub fn expr_anonymous_pi(p: &mut Parser, linebreak: Linebreak) -> Option<MarkClosed> {
+pub fn expr_anon_pi(p: &mut Parser, linebreak: Linebreak) -> Option<MarkClosed> {
     let m = p.open();
 
     rec_expr!(p, &[], ExpectedExprError, expr_binary, linebreak);
@@ -832,7 +831,7 @@ pub fn expr_anonymous_pi(p: &mut Parser, linebreak: Linebreak) -> Option<MarkClo
     // simplify by returning the lhs symbol directly
     if p.at(RightArrow) {
         while !p.eof() && p.eat(RightArrow) {
-            if rec_expr!(p, &[], ExpectedPiReturnError, expr, linebreak) {
+            if rec_expr!(p, &[], ExpectedPiReturnError, expr_binary, linebreak) {
                 break;
             }
         }
@@ -888,7 +887,7 @@ pub fn expr_binary(p: &mut Parser, linebreak: Linebreak) {
     // simplify by returning the lhs symbol directly
     if p.at(Symbol) {
         while !p.eof() && p.eat(Symbol) {
-            if rec_expr!(p, &[], ExpectedInfixRhsError, expr, linebreak) {
+            if rec_expr!(p, &[], ExpectedInfixRhsError, expr_accessor, linebreak) {
                 break;
             }
         }
@@ -921,30 +920,7 @@ pub fn expr_accessor(p: &mut Parser, linebreak: Linebreak) -> Option<MarkClosed>
 pub fn accessor(p: &mut Parser) {
     let m = p.open();
     p.expect(Identifier);
-    if p.eat(LeftParen) {
-        if !p.at(RightParen) {
-            if let Some(mut lhs) = expr_accessor(p, Linebreak::Cont) {
-                while p.at_any(EXPR_FIRST) {
-                    expr(p, Linebreak::Cont);
-                    let m = p.open_before(lhs);
-                    lhs = p.close(m, ExprApp);
-                }
-            }
-        }
-        while !p.eof() && !p.at(RightParen) {
-            p.expect(Comma);
-            if p.at_any(EXPR_FIRST) {
-                expr_dsl(p, Linebreak::Cont);
-            } else if p.at_any(EXPR_RECOVERY) {
-                p.report(ExpectedExprError);
-                break;
-            } else if p.at_any(ARRAY_RECOVERY) {
-                p.report(ExpectedExprAndCloseParamsError);
-                continue;
-            }
-        }
-        p.expect(RightParen);
-    }
+    // FIXME
     p.close(m, AccessorArg);
 }
 
@@ -1125,8 +1101,14 @@ pub fn pat_app(p: &mut Parser) {
 pub fn pat_constructor(p: &mut Parser) -> MarkClosed {
     let m = p.open();
     global(p);
+    if p.at(DoubleArrow) || p.at(EqualSymbol) {
+        return p.close(m, PatConstructor);
+    }
     while !p.eof() && p.at_any(PAT_FIRST) {
         pat(p);
+        if p.at(DoubleArrow) || p.at(EqualSymbol) {
+            break;
+        }
     }
     p.close(m, PatConstructor)
 }
