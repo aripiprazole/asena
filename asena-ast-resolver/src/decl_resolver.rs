@@ -30,10 +30,8 @@ impl<'a> AsenaVisitor<()> for AstResolver<'a> {
             scope.functions.insert(name, Value::Param(value));
         }
 
-        let mut resolver: &mut dyn AsenaListener<()> = &mut resolver;
-
-        signature.return_type().listen(&mut resolver);
-        signature.body().listen(&mut resolver);
+        resolver.listens(signature.return_type());
+        resolver.listens(signature.body());
     }
 
     fn visit_assign(&mut self, assign: Assign) {
@@ -47,13 +45,9 @@ impl<'a> AsenaVisitor<()> for AstResolver<'a> {
         let mut resolver = ScopeResolver::new(name, self);
 
         for pat in assign.patterns() {
-            let mut resolver: &mut dyn AsenaListener<()> = &mut resolver;
-
-            pat.listen(&mut resolver);
+            resolver.listens(pat);
         }
 
-        let mut resolver: &mut dyn AsenaListener<()> = &mut resolver;
-
-        assign.body().listen(&mut resolver);
+        resolver.listens(assign.body());
     }
 }

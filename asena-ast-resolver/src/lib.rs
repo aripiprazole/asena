@@ -6,7 +6,6 @@ use asena_ast_db::driver::Driver;
 use asena_ast_db::scope::{ScopeData, Value, VariantResolution};
 use asena_ast_db::vfs::*;
 
-use asena_leaf::ast::Listenable;
 use asena_report::InternalError;
 
 use im::HashMap;

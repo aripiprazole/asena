@@ -2,7 +2,7 @@
 
 use std::default::default;
 
-use asena_leaf::ast::Lexeme;
+use asena_leaf::ast::{Lexeme, Listenable};
 
 use crate::*;
 
@@ -11,6 +11,15 @@ pub fn new_walker<T: AsenaVisitor<()>>(concrete: &mut T) -> &mut dyn AsenaVisito
 }
 
 pub trait AsenaVisitor<T: Default> {
+    fn walks<A>(&mut self, value: A)
+    where
+        A: for<'a> Listenable<Listener<'a> = &'a mut dyn AsenaListener<()>>,
+        Self: Sized + AsenaListener,
+    {
+        let mut resolver: &mut dyn AsenaListener<()> = self;
+        value.listen(&mut resolver);
+    }
+
     fn visit_asena_file(&mut self, value: AsenaFile) -> T {
         default()
     }
@@ -265,6 +274,15 @@ pub trait AsenaVisitor<T: Default> {
 }
 
 pub trait AsenaListener<T: Default = ()> {
+    fn listens<A>(&mut self, value: A)
+    where
+        A: for<'a> Listenable<Listener<'a> = &'a mut dyn AsenaListener<()>>,
+        Self: Sized + AsenaListener,
+    {
+        let mut resolver: &mut dyn AsenaListener<()> = self;
+        value.listen(&mut resolver);
+    }
+
     fn enter_asena_file(&mut self, value: AsenaFile) -> T {
         default()
     }
