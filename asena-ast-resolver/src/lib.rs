@@ -41,7 +41,7 @@ mod tests {
 
         db.global_scope()
             .borrow_mut()
-            .import(Arc::get_mut(&mut db).unwrap(), file.clone(), None);
+            .import(db, file.clone(), None);
 
         db.abstract_syntax_tree(file.clone())
             .arc_walks(InfixHandler {

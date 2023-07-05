@@ -1,4 +1,4 @@
-use std::{borrow::Borrow, cell::RefCell, rc::Rc, sync::Arc};
+use std::{borrow::Borrow, cell::RefCell, ops::Deref, rc::Rc, sync::Arc};
 
 use asena_ast::{
     Decl, Enum, Expr, FunctionId, GlobalName, LamParameter, Local, Parameter, Pat, Signature,
@@ -84,8 +84,9 @@ impl ScopeData {
         }
     }
 
-    pub fn import<P>(&mut self, db: &dyn AstDatabase, file: Arc<VfsFile>, prefix: P)
+    pub fn import<B, P>(&mut self, db: B, file: Arc<VfsFile>, prefix: P)
     where
+        B: Deref<Target = dyn AstDatabase>,
         P: Into<Option<FunctionId>>,
     {
         let prefix = prefix.into();
