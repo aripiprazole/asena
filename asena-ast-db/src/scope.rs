@@ -54,8 +54,6 @@ impl ScopeData {
 
             self.constructors.insert(name.clone(), variant.clone());
             self.functions.insert(name.clone(), Value::Cons(variant));
-
-            println!("Declared enum constructor: {}", name);
         }
     }
 
