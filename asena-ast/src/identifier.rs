@@ -200,6 +200,12 @@ pub trait GlobalName: Default + Ast {
         self.segments().first().cloned()
     }
 
+    fn is_some_ident(&self, id: &str) -> bool {
+        self.is_ident()
+            .map(|ident| ident.0 == id)
+            .unwrap_or_default()
+    }
+
     fn to_fn_id(&self) -> FunctionId {
         let mut paths = Vec::new();
         for lexeme in self.segments().iter() {

@@ -41,7 +41,7 @@ impl AsenaVisitor<()> for ParserSemanticHighlight<'_> {
         if name.segments().len() == 1 {
             let segments = name.segments();
             let name = segments.first().unwrap();
-            highlight_local(self.buf, name.value.clone(), name)
+            highlight_local(self.buf, name.to_fn_id(), name)
         }
     }
 
@@ -105,13 +105,13 @@ impl AsenaVisitor<()> for ParserSemanticHighlight<'_> {
 
     fn visit_app(&mut self, value: App) {
         match value.callee() {
-            Expr::LocalExpr(local) if local.name().is_ident("println") => {
+            Expr::LocalExpr(local) if local.is_some_ident("println") => {
                 self.buf.annotate(&local, BuiltinFunction);
             }
-            Expr::LocalExpr(local) if local.name().is_ident("print") => {
+            Expr::LocalExpr(local) if local.is_some_ident("print") => {
                 self.buf.annotate(&local, BuiltinFunction);
             }
-            Expr::LocalExpr(local) if local.name().is_ident("todo") => {
+            Expr::LocalExpr(local) if local.is_some_ident("todo") => {
                 self.buf.annotate(&local, BuiltinFunction);
             }
             _ => {}
