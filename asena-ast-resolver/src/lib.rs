@@ -56,6 +56,7 @@ mod tests {
                 db,
                 file,
                 binding_groups: Default::default(),
+                enum_declarations: Default::default(),
                 reporter: &mut asena_file.reporter,
             });
 
