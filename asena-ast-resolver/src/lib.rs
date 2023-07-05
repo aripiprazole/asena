@@ -31,17 +31,17 @@ mod tests {
     fn it_works() {
         let mut prec_table = default_prec_table();
 
-        let mut db = Driver(Arc::new(NonResolvingAstDatabase::default()));
+        let db = Driver(Arc::new(NonResolvingAstDatabase::default()));
         let local_pkg = Package::new(&db, "Local", "0.0.0", Arc::new(Default::default()));
+        let global_scope = db.global_scope();
+
         let file = VfsFile::new(&db, "Test", "./Test.ase".into(), local_pkg);
         VfsFile::new(&db, "Nat", "./Nat.ase".into(), local_pkg);
         VfsFile::new(&db, "IO", "./IO.ase".into(), local_pkg);
 
         let mut asena_file = parse_asena_file!("../Test.ase");
 
-        db.global_scope()
-            .borrow_mut()
-            .import(db, file.clone(), None);
+        global_scope.borrow_mut().import(&db, file.clone(), None);
 
         db.abstract_syntax_tree(file.clone())
             .arc_walks(InfixHandler {
@@ -54,7 +54,7 @@ mod tests {
             })
             .arc_walks(AstResolver {
                 db,
-                curr_vf: file,
+                file,
                 binding_groups: Default::default(),
                 reporter: &mut asena_file.reporter,
             });

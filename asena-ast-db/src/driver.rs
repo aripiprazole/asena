@@ -1,22 +1,24 @@
-use std::{
-    ops::{Deref, DerefMut},
-    sync::Arc,
-};
+use std::{borrow::Borrow, ops::Deref, sync::Arc};
 
 use crate::database::AstDatabase;
 
 #[derive(Clone)]
 pub struct Driver(pub Arc<dyn AstDatabase>);
 
-impl DerefMut for Driver {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
+pub trait HasDB<'a> {
+    fn db(self) -> &'a dyn AstDatabase;
+}
+
+impl<'a> HasDB<'a> for &'a Driver {
+    fn db(self) -> &'a dyn AstDatabase {
+        self.0.borrow()
     }
 }
+
 impl Deref for Driver {
-    type Target = Arc<dyn AstDatabase>;
+    type Target = dyn AstDatabase;
 
     fn deref(&self) -> &Self::Target {
-        &self.0
+        self.0.borrow()
     }
 }

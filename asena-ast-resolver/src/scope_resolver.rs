@@ -100,7 +100,7 @@ impl AsenaListener for ScopeResolver<'_, '_> {
 
     fn enter_global_pat(&mut self, value: asena_ast::GlobalPat) {
         let name = value.name();
-        let file = self.resolver.curr_vf.clone();
+        let file = self.resolver.file.clone();
 
         match self.db.constructor_data(value.name(), file) {
             VariantResolution::Variant(_) => {}
@@ -122,7 +122,7 @@ impl AsenaListener for ScopeResolver<'_, '_> {
 
     fn enter_constructor_pat(&mut self, value: asena_ast::ConstructorPat) {
         let name = value.name();
-        let file = self.resolver.curr_vf.clone();
+        let file = self.resolver.file.clone();
 
         match self.db.constructor_data(value.name(), file) {
             VariantResolution::Binding(_) if !value.arguments().is_empty() => {

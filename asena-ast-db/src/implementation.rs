@@ -5,6 +5,7 @@ use asena_ast::{AsenaFile, BindingId, GlobalName, QualifiedPath, Variant};
 use asena_leaf::ast::Node;
 
 use crate::database::AstDatabase;
+use crate::driver::HasDB;
 use crate::package::{Package, PackageData};
 use crate::scope::{ScopeData, Value, VariantResolution};
 use crate::vfs::VfsFile;
@@ -110,7 +111,7 @@ impl crate::database::AstDatabase for NonResolvingAstDatabase {
     fn add_path_dep(&self, vfs_file: Arc<VfsFile>, module: ModuleRef) {
         let mut scope_data = vfs_file.scope.write().unwrap();
         let from_file = self.vfs_file(module);
-        scope_data.import(self as &dyn AstDatabase, from_file, None);
+        scope_data.import(self, from_file, None);
     }
 
     fn intern_vfs_file(&self, vfs_file: VfsFile) -> Arc<VfsFile> {
@@ -127,7 +128,7 @@ impl crate::database::AstDatabase for NonResolvingAstDatabase {
             .borrow_mut()
             .insert(vf.id.clone(), vf.clone());
 
-        global_scope.import(self as &dyn AstDatabase, vf.clone(), Some(name));
+        global_scope.import(self, vf.clone(), Some(name));
         vf
     }
 
@@ -144,5 +145,11 @@ impl crate::database::AstDatabase for NonResolvingAstDatabase {
         let decl = Arc::new(decl);
         global_scope.declarations.insert(module, decl.clone());
         decl
+    }
+}
+
+impl<'a> HasDB<'a> for &'a NonResolvingAstDatabase {
+    fn db(self) -> &'a dyn AstDatabase {
+        self
     }
 }

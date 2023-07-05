@@ -8,7 +8,7 @@ use crate::scope::{ScopeData, Value, VariantResolution};
 use crate::vfs::VfsFile;
 use crate::*;
 
-pub trait AstDatabase {
+pub trait AstDatabase: 'static {
     fn global_scope(&self) -> Rc<RefCell<ScopeData>>;
     fn module_ref(&self, path: &str) -> ModuleRef;
     fn package_data(&self, file: Package) -> Interned<PackageData>;

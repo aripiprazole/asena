@@ -2,7 +2,7 @@ use crate::{scope_resolver::ScopeResolver, *};
 
 pub struct AstResolver<'a> {
     pub db: Driver,
-    pub curr_vf: Arc<VfsFile>,
+    pub file: Arc<VfsFile>,
     pub binding_groups: HashMap<FunctionId, Vec<Arc<Decl>>>,
     pub reporter: &'a mut Reporter,
 }
@@ -11,7 +11,7 @@ impl<'a> AsenaVisitor<()> for AstResolver<'a> {
     fn visit_use(&mut self, value: asena_ast::Use) {
         let module_ref = self.db.module_ref(value.to_fn_id().as_str());
 
-        self.db.add_path_dep(self.curr_vf.clone(), module_ref);
+        self.db.add_path_dep(self.file.clone(), module_ref);
     }
 
     fn visit_signature(&mut self, signature: Signature) {

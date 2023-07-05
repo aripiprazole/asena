@@ -1,12 +1,9 @@
-use std::{borrow::Borrow, cell::RefCell, ops::Deref, rc::Rc, sync::Arc};
+use std::{borrow::Borrow, cell::RefCell, rc::Rc, sync::Arc};
 
-use asena_ast::{
-    Decl, Enum, Expr, FunctionId, GlobalName, LamParameter, Local, Parameter, Pat, Signature,
-    Variant,
-};
+use asena_ast::*;
 use asena_leaf::ast::Lexeme;
 
-use crate::{database::AstDatabase, vfs::VfsFile};
+use crate::{database::AstDatabase, driver::HasDB, vfs::VfsFile};
 
 #[derive(Default, Debug, Clone)]
 pub enum ScopeKind {
@@ -84,12 +81,12 @@ impl ScopeData {
         }
     }
 
-    pub fn import<B, P>(&mut self, db: B, file: Arc<VfsFile>, prefix: P)
+    pub fn import<'a, B: HasDB<'a>, P>(&mut self, db: B, file: Arc<VfsFile>, prefix: P)
     where
-        B: Deref<Target = dyn AstDatabase>,
         P: Into<Option<FunctionId>>,
     {
         let prefix = prefix.into();
+        let db: &dyn AstDatabase = db.db();
         for (name, decl) in db.items(file).iter() {
             let name = FunctionId::optional_path(prefix.clone(), name.clone());
 
