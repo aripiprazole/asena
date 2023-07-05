@@ -71,10 +71,6 @@ pub trait AsenaVisitor<T: Default> {
         default()
     }
 
-    fn visit_accessor_segment(&mut self, value: AccessorSegment) -> T {
-        default()
-    }
-
     fn visit_expr_branch(&mut self, value: ExprBranch) -> T {
         self.visit_branch(value.into())
     }
@@ -152,10 +148,6 @@ pub trait AsenaVisitor<T: Default> {
     }
 
     fn visit_infix(&mut self, value: Infix) -> T {
-        self.visit_expr(value.into())
-    }
-
-    fn visit_accessor(&mut self, value: Accessor) -> T {
         self.visit_expr(value.into())
     }
 
@@ -333,10 +325,6 @@ pub trait AsenaListener<T: Default = ()> {
         default()
     }
 
-    fn enter_accessor_segment(&mut self, value: AccessorSegment) -> T {
-        default()
-    }
-
     fn enter_expr_branch(&mut self, value: ExprBranch) -> T {
         self.enter_branch(value.into())
     }
@@ -414,10 +402,6 @@ pub trait AsenaListener<T: Default = ()> {
     }
 
     fn enter_infix(&mut self, value: Infix) -> T {
-        self.enter_expr(value.into())
-    }
-
-    fn enter_accessor(&mut self, value: Accessor) -> T {
         self.enter_expr(value.into())
     }
 
@@ -593,10 +577,6 @@ pub trait AsenaListener<T: Default = ()> {
         default()
     }
 
-    fn exit_accessor_segment(&mut self, value: AccessorSegment) -> T {
-        default()
-    }
-
     fn exit_expr_branch(&mut self, value: ExprBranch) -> T {
         self.exit_branch(value.into())
     }
@@ -674,10 +654,6 @@ pub trait AsenaListener<T: Default = ()> {
     }
 
     fn exit_infix(&mut self, value: Infix) -> T {
-        self.exit_expr(value.into())
-    }
-
-    fn exit_accessor(&mut self, value: Accessor) -> T {
         self.exit_expr(value.into())
     }
 

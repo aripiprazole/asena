@@ -882,12 +882,12 @@ pub fn expr_dsl(p: &mut Parser, linebreak: Linebreak) -> Option<MarkClosed> {
 pub fn expr_binary(p: &mut Parser, linebreak: Linebreak) {
     let m = p.open();
 
-    rec_expr!(p, &[], ExpectedExprError, expr_accessor, linebreak);
+    rec_expr!(p, &[], ExpectedExprError, expr_app, linebreak);
 
     // simplify by returning the lhs symbol directly
     if p.at(Symbol) {
         while !p.eof() && p.eat(Symbol) {
-            if rec_expr!(p, &[], ExpectedInfixRhsError, expr_accessor, linebreak) {
+            if rec_expr!(p, &[], ExpectedInfixRhsError, expr_app, linebreak) {
                 break;
             }
         }
@@ -899,30 +899,40 @@ pub fn expr_binary(p: &mut Parser, linebreak: Linebreak) {
 }
 
 /// ExprAccessor = ExprApp ('.' Accessor)*
-pub fn expr_accessor(p: &mut Parser, linebreak: Linebreak) -> Option<MarkClosed> {
-    let m = p.open();
+// pub fn expr_accessor(p: &mut Parser, linebreak: Linebreak) -> Option<MarkClosed> {
+//     let m = p.open();
 
-    rec_expr!(p, &[], ExpectedExprError, expr_app, linebreak);
+//     rec_expr!(p, &[], ExpectedExprError, expr_app, linebreak);
 
-    // simplify by returning the lhs symbol directly
-    if p.at(Dot) {
-        while !p.eof() && p.eat(Dot) {
-            accessor(p);
-        }
+//     // simplify by returning the lhs symbol directly
+//     if p.at(Dot) {
+//         while !p.eof() && p.at(Dot) {
+//             accessor(p, linebreak);
+//         }
 
-        p.close(m, ExprAccessor).into()
-    } else {
-        p.abandon(m);
-        None
-    }
-}
+//         p.close(m, ExprAccessor).into()
+//     } else {
+//         p.abandon(m);
+//         None
+//     }
+// }
 
-pub fn accessor(p: &mut Parser) {
-    let m = p.open();
-    p.expect(Identifier);
-    // FIXME
-    p.close(m, AccessorArg);
-}
+// pub fn accessor(p: &mut Parser, linebreak: Linebreak) {
+//     let m = p.open();
+//     p.expect(Dot);
+//     p.expect(Identifier);
+//     while !p.eof() && p.at_any(PAT_FIRST) {
+//         if arg.has_errors() && p.eof() {
+//             break;
+//         } else if arg.has_errors() {
+//             p.report(ExpectedAccessorArgExprError);
+//             break;
+//         } else {
+//             p.return_at(arg);
+//         }
+//     }
+//     p.close(m, AccessorArg);
+// }
 
 /// ExprApp = Primary Primary*
 pub fn expr_app(p: &mut Parser, linebreak: Linebreak) -> Option<MarkClosed> {
@@ -1054,6 +1064,10 @@ pub fn primary(p: &mut Parser) -> Option<MarkClosed> {
         Identifier => {
             let m = p.open();
             p.advance();
+            while p.at(Dot) && !p.eof() {
+                p.advance();
+                p.expect(Identifier);
+            }
             p.close(m, ExprLocal)
         }
         // Parse array or named sigma expressions

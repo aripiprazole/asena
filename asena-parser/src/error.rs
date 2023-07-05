@@ -64,6 +64,9 @@ pub enum ParseError {
     #[error("Expected expression")]
     ExpectedExprError,
 
+    #[error("Expected accessor argument")]
+    ExpectedAccessorArgExprError,
+
     #[error("Expected match scrutinee")]
     ExpectedMatchScrutineeError,
 

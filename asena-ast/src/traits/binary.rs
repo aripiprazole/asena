@@ -41,7 +41,6 @@ pub trait Binary: Ast {
 }
 
 /// Binary operation represented by `fn_id`: `.`, and the two operands: `receiver`, `name`
-impl Binary for Accessor {}
 
 impl Binary for Infix {}
 
@@ -67,7 +66,6 @@ ast_virtual! {
     pub enum VirtualBinary : Expr {
         #[node]
         Infix,
-        Accessor,
         Ann,
         Qual,
     }

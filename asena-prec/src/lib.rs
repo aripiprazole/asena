@@ -19,18 +19,6 @@ impl Reports for PrecReorder<'_> {
 }
 
 impl AsenaVisitor<()> for PrecReorder<'_> {
-    fn visit_infix(&mut self, value: Infix) {
-        self.impl_reorder_prec(&value);
-    }
-
-    fn visit_accessor(&mut self, value: Accessor) {
-        self.impl_reorder_prec(&value);
-    }
-
-    fn visit_ann(&mut self, value: Ann) {
-        self.impl_reorder_prec(&value);
-    }
-
     fn visit_qual(&mut self, value: Qual) {
         self.impl_reorder_prec(&value);
     }
