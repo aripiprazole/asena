@@ -51,7 +51,7 @@ impl<T: Node + Leaf> Cursor<T> {
     {
         match &*self.read() {
             GreenTree::Token(lexeme) => {
-                let Some(value) = lexeme.downcast_ref::<T>() else {
+                let Some(value) = lexeme.value.downcast_ref::<T>() else {
                     return Default::default();
                 };
 
@@ -208,7 +208,7 @@ impl<T: Default + Leaf + Node + 'static> Try for Cursor<T> {
     fn branch(self) -> ControlFlow<Self::Residual, Self::Output> {
         let tree = self.read();
         match &*tree {
-            GreenTree::Token(lexeme) => match lexeme.downcast_ref::<T>() {
+            GreenTree::Token(lexeme) => match lexeme.value.downcast_ref::<T>() {
                 Some(value) => ControlFlow::Continue(value.clone()),
                 None => ControlFlow::Break(None),
             },

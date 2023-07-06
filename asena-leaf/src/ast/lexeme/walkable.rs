@@ -8,7 +8,7 @@ pub trait LexemeWalkable: Sized {
 
 impl<T: Walkable> LexemeWalkable for Option<T> {
     fn lexeme_walk(value: Lexeme<Self>, walker: &mut Self::Walker<'_>) {
-        if let Some(value) = value.value {
+        if let Some(value) = value.data() {
             value.walk(walker);
         }
     }

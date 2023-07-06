@@ -11,24 +11,28 @@ pub use walkable::*;
 pub mod ast;
 pub mod bridges;
 pub mod listener;
+pub mod maybe;
 pub mod walkable;
 
 /// Represents a lexeme, a token with a value, represented in the Rust language.
 #[derive(Clone)]
 pub struct Lexeme<T> {
     pub token: Spanned<Token>,
-    pub value: T,
-
-    /// If the lexeme is `None`, it means that the lexeme is a placeholder.
-    pub(crate) is_none: bool,
+    pub value: maybe::Maybe<T>,
 }
 
 impl<T> Lexeme<T> {
     pub fn map<U>(self, f: impl FnOnce(T) -> U) -> Lexeme<U> {
         Lexeme {
             token: self.token,
-            value: f(self.value),
-            is_none: false,
+            value: maybe::Maybe::Just(f(self.value.unwrap())),
+        }
+    }
+
+    pub fn data(&self) -> &T {
+        match self.value {
+            maybe::Maybe::Just(ref value) => value,
+            maybe::Maybe::Default(ref value) => value,
         }
     }
 
@@ -50,11 +54,10 @@ impl<T> Lexeme<T> {
     /// });
     /// ```
     pub fn map_token<U>(self, f: impl FnOnce(T, &Spanned<Token>) -> U) -> Lexeme<U> {
-        let value = f(self.value, &self.token);
+        let value = f(self.value.unwrap(), &self.token);
         Lexeme {
             token: self.token,
-            is_none: false,
-            value,
+            value: maybe::Maybe::Just(value),
         }
     }
 }

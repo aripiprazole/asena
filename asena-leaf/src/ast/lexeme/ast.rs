@@ -1,4 +1,6 @@
-use super::*;
+use std::any::Any;
+
+use super::{maybe::Maybe, *};
 
 impl<T: Terminal + 'static> Leaf for Lexeme<T> {
     fn terminal(token: Spanned<Token>) -> Option<Self> {
@@ -7,8 +9,7 @@ impl<T: Terminal + 'static> Leaf for Lexeme<T> {
 
         Some(Self {
             token: spanned,
-            value: terminal,
-            is_none: false,
+            value: Maybe::Just(terminal),
         })
     }
 }
@@ -18,13 +19,11 @@ impl<T: Leaf + 'static> Node for Lexeme<T> {
         match tree.into() {
             GreenTree::Leaf(ref leaf) => Self {
                 token: get_single_token(leaf),
-                value: T::make(GreenTree::Leaf(leaf.clone())).unwrap_or_default(),
-                is_none: false,
+                value: Maybe::Just(T::make(GreenTree::Leaf(leaf.clone())).unwrap_or_default()),
             },
             GreenTree::None => Self {
                 token: Default::default(),
-                value: T::default(),
-                is_none: true,
+                value: Maybe::Default(T::default()),
             },
             GreenTree::Token(lexeme) => {
                 let value = match lexeme.value.downcast_ref::<T>() {
@@ -34,8 +33,7 @@ impl<T: Leaf + 'static> Node for Lexeme<T> {
 
                 Self {
                     token: lexeme.token,
-                    is_none: false,
-                    value,
+                    value: Maybe::Just(value),
                 }
             }
             _ => Self::default(),
@@ -45,8 +43,7 @@ impl<T: Leaf + 'static> Node for Lexeme<T> {
     fn unwrap(self) -> GreenTree {
         GreenTree::Token(Lexeme {
             token: self.token,
-            value: Rc::new(self.value),
-            is_none: self.is_none,
+            value: self.value.map(|value| Rc::new(value) as Rc<dyn Any>),
         })
     }
 }
