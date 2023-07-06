@@ -254,6 +254,7 @@ name = "asena-parser"
 version = "0.1.0"
 dependencies = [
  "ariadne",
+ "asena-drop-bomb",
  "asena-leaf",
  "asena-lexer",
  "asena-report",

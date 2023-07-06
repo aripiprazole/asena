@@ -23,10 +23,14 @@ impl<'a> Parser<'a> {
         let mark = MarkOpened::new(mark.index(), span.clone());
         let open_at = Spanned::new(span, TreeKind::Error);
         self.events.insert(mark.index(), Event::Open(open_at));
+        // its needed to be closed again
+        mark.0.setup();
         mark
     }
 
     pub fn abandon(&mut self, mark: MarkOpened) {
+        mark.0.defuse();
+
         self.events.remove(mark.index());
     }
 
@@ -44,6 +48,8 @@ impl<'a> Parser<'a> {
         // Replace the state in the tree builder
         self.events[mark.index()] = Event::Open(Spanned::new(position.into(), kind));
         self.events.push(Event::Close);
+
+        mark.0.defuse();
 
         MarkClosed::new(mark.index(), mark.span())
     }

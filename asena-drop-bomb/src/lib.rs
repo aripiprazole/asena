@@ -51,6 +51,11 @@ impl<T> DropBomb<T> {
         #[cfg(debug_assertions)]
         self.defused.set(true);
     }
+
+    pub fn setup(&self) {
+        #[cfg(debug_assertions)]
+        self.defused.set(false);
+    }
 }
 
 impl<T> Drop for DropBomb<T> {

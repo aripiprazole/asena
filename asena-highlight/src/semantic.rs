@@ -121,7 +121,7 @@ impl AsenaVisitor<()> for ParserSemanticHighlight<'_> {
     fn visit_literal(&mut self, literal: Lexeme<Literal>) {
         self.buf.annotate(
             &literal,
-            match literal.value {
+            match literal.data() {
                 Literal::Nat(_) => Number,
                 Literal::String(_) => String,
                 Literal::Int8(_, _) => Number,

@@ -1,6 +1,7 @@
 use std::fmt::Debug;
 
 use crate::builder::EventBuilder;
+use asena_drop_bomb::DropBomb;
 use asena_leaf::node::{Child, Tree, TreeKind};
 use asena_report::{Diagnostic, Report};
 use asena_span::{Loc, Spanned};
@@ -16,7 +17,7 @@ pub enum Event {
     Advance,
 }
 
-pub struct MarkOpened(usize, Loc);
+pub struct MarkOpened(pub(crate) DropBomb<usize>, Loc);
 
 pub struct MarkClosed(usize, Loc);
 
@@ -124,11 +125,11 @@ impl<'a> Parser<'a> {
 
 impl MarkOpened {
     pub fn new(index: usize, loc: Loc) -> Self {
-        Self(index, loc)
+        Self(DropBomb::new(index), loc)
     }
 
     pub fn index(&self) -> usize {
-        self.0
+        *self.0
     }
 
     pub fn span(&self) -> Loc {
