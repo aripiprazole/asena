@@ -88,6 +88,7 @@ name = "asena-ast"
 version = "0.1.0"
 dependencies = [
  "asena-derive",
+ "asena-interner",
  "asena-leaf",
  "asena-report",
  "asena-span",
@@ -114,7 +115,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "asena-ast-format"
+name = "asena-ast-formatter"
 version = "0.1.0"
 dependencies = [
  "asena-ast",
@@ -195,6 +196,7 @@ name = "asena-grammar"
 version = "0.1.0"
 dependencies = [
  "asena-ast",
+ "asena-interner",
  "asena-leaf",
  "asena-lexer",
  "asena-parser",
@@ -221,6 +223,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "asena-hir"
+version = "0.1.0"
+dependencies = [
+ "asena-ast",
+ "asena-leaf",
+ "asena-span",
+ "fxhash",
+ "im",
+ "itertools",
+]
+
+[[package]]
 name = "asena-interner"
 version = "0.1.0"
 dependencies = [
@@ -238,6 +252,7 @@ version = "0.1.0"
 dependencies = [
  "asena-interner",
  "asena-span",
+ "im",
 ]
 
 [[package]]
@@ -254,6 +269,7 @@ name = "asena-parser"
 version = "0.1.0"
 dependencies = [
  "ariadne",
+ "asena-interner",
  "asena-leaf",
  "asena-lexer",
  "asena-report",
@@ -295,6 +311,7 @@ name = "asena-report"
 version = "0.1.0"
 dependencies = [
  "ariadne",
+ "asena-interner",
  "asena-leaf",
  "asena-span",
 ]

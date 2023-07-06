@@ -3,6 +3,7 @@ use std::fmt::{Debug, Display};
 use std::ops::{ControlFlow, Deref, DerefMut, FromResidual, Try};
 use std::rc::Rc;
 
+use asena_interner::Intern;
 use asena_span::{Loc, Span, Spanned};
 
 use crate::node::{Child, TreeKind};
@@ -39,7 +40,7 @@ pub trait Leaf: Debug + Sized + Clone + Default {
         None
     }
 
-    fn terminal(token: Spanned<Token>) -> Option<Self> {
+    fn terminal(token: Intern<Spanned<Token>>) -> Option<Self> {
         let _ = token;
         None
     }
@@ -50,7 +51,7 @@ pub trait Leaf: Debug + Sized + Clone + Default {
 ///
 /// A `Literal` enum should be a good example for this trait.
 pub trait Terminal: Leaf + Sized + Debug + Sized + Clone + Default {
-    fn terminal(token: Spanned<Token>) -> Option<Self>;
+    fn terminal(token: Intern<Spanned<Token>>) -> Option<Self>;
 }
 
 pub trait VirtualNode: Node {
@@ -119,7 +120,10 @@ impl<T: Terminal + 'static> Leaf for T {
                     return None;
                 }
 
-                Leaf::terminal(leaf.data.clone().swap(leaf.data.single().clone()))
+                let first_item = leaf.data.single().clone();
+                let spanned = leaf.data.replace(first_item);
+
+                Leaf::terminal(Intern::new(spanned))
             }
             GreenTree::Token(lexeme) => Leaf::terminal(lexeme.token),
             _ => None,
@@ -127,7 +131,7 @@ impl<T: Terminal + 'static> Leaf for T {
     }
 
     #[inline(always)]
-    fn terminal(token: Spanned<Token>) -> Option<Self> {
+    fn terminal(token: Intern<Spanned<Token>>) -> Option<Self> {
         <T as Terminal>::terminal(token)
     }
 }
@@ -144,16 +148,16 @@ impl<T: Leaf> Leaf for Vec<T> {
             GreenTree::Leaf(leaf) => {
                 let mut items = vec![];
                 for child in &leaf.data.children {
-                    match &child.value {
+                    match &child {
                         Child::Tree(tree) => {
-                            let green_child = GreenTree::new(child.replace(tree.clone()));
+                            let green_child = GreenTree::new(tree.clone());
 
                             if let Some(item) = T::make(green_child) {
                                 items.push(item);
                             }
                         }
                         Child::Token(token) => {
-                            if let Some(item) = T::terminal(child.replace(token.clone())) {
+                            if let Some(item) = T::terminal(token.clone()) {
                                 items.push(item);
                             }
                         }

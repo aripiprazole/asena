@@ -1,6 +1,7 @@
 use std::sync::{Arc, RwLock};
 use std::{any::Any, borrow::Cow, collections::HashMap, rc::Rc};
 
+use asena_interner::Intern;
 use asena_span::Spanned;
 
 use crate::node::{Child, Named, Tree, TreeKind};
@@ -10,11 +11,11 @@ use super::*;
 
 #[derive(Debug, Clone)]
 pub struct AstLeaf {
-    pub(crate) data: Spanned<Tree>,
+    pub(crate) data: Intern<Spanned<Tree>>,
 
     synthetic: bool,
 
-    children: HashMap<LeafKey, Spanned<Child>>,
+    children: HashMap<LeafKey, Child>,
 
     keys: Arc<RwLock<HashMap<&'static str, Rc<dyn Any>>>>,
 
@@ -46,9 +47,9 @@ pub enum GreenTree {
 }
 
 impl GreenTree {
-    pub fn new(data: Spanned<Tree>) -> Self {
+    pub fn new(data: Intern<Spanned<Tree>>) -> Self {
         Self::Leaf(AstLeaf {
-            children: compute_named_children(&data),
+            children: children(&data),
             data,
             synthetic: false,
             names: AstLeaf::new_ref(HashMap::new()),
@@ -57,7 +58,7 @@ impl GreenTree {
     }
 
     pub fn of(kind: TreeKind) -> Self {
-        let mut data: Spanned<Tree> = Spanned::default();
+        let mut data: Intern<Spanned<Tree>> = Default::default();
         data.value.kind = kind;
 
         Self::Leaf(AstLeaf {
@@ -86,10 +87,10 @@ impl GreenTree {
 
     /// Returns the [Spanned] value of the tree, if it's not an error node, then it should
     /// return the default value.
-    pub fn or_empty(self) -> Spanned<Tree> {
+    pub fn or_empty(self) -> Intern<Spanned<Tree>> {
         match self {
             Self::Leaf(leaf) => leaf.data,
-            _ => Spanned::default(),
+            _ => Default::default(),
         }
     }
 
@@ -122,7 +123,7 @@ impl GreenTree {
     }
 
     /// Returns the tree children, if it's not an error node.
-    pub fn children(&mut self) -> Option<&mut Vec<Spanned<Child>>> {
+    pub fn children(&mut self) -> Option<&mut Vec<Child>> {
         match self {
             Self::Leaf(leaf) => Some(&mut leaf.data.children),
             _ => None,
@@ -138,14 +139,14 @@ impl GreenTree {
     }
 
     /// Returns a terminal node, if it's not an error node.
-    pub fn any_token(&self, kind: TokenKind) -> Vec<Spanned<Token>> {
+    pub fn any_token(&self, kind: TokenKind) -> Vec<Intern<Spanned<Token>>> {
         match self {
             Self::Leaf(leaf) => leaf.data.token(kind),
             _ => vec![],
         }
     }
 
-    pub fn token(&self, kind: TokenKind) -> Spanned<Token> {
+    pub fn token(&self, kind: TokenKind) -> Intern<Spanned<Token>> {
         match self {
             Self::Leaf(leaf) => leaf.data.token(kind).first().cloned().unwrap_or_default(),
             _ => Default::default(),
@@ -191,9 +192,9 @@ impl GreenTree {
                 let borrow = leaf.names();
                 let Some(child) = borrow.get(name).and_then(|x| x.downcast_ref::<Cursor<A>>()) else {
                     return match leaf.children.get(name) {
-                        Some(Spanned { value: Child::Token(..), .. }) => Cursor::empty(),
-                        Some(spanned @ Spanned { value: Child::Tree(ref tree), .. }) => {
-                            A::make(GreenTree::new(spanned.replace(tree.clone()))).into()
+                        Some(Child::Token(..)) => Cursor::empty(),
+                        Some(Child::Tree(ref tree)) => {
+                            A::make(GreenTree::new(tree.clone())).into()
                         },
                         None => Cursor::empty(),
                     };
@@ -212,9 +213,9 @@ impl GreenTree {
                 let names = leaf.names();
                 let Some(child) = names.get(name).and_then(|x| x.downcast_ref::<Cursor<Lexeme<A>>>()) else {
                     return match leaf.children.get(name) {
-                        Some(Spanned { value: Child::Tree(..), .. }) => Cursor::empty(),
-                        Some(spanned @ Spanned { value: Child::Token(ref token), .. }) => {
-                            Lexeme::<A>::terminal(spanned.replace(token.clone())).into()
+                        Some(Child::Tree(..)) => Cursor::empty(),
+                        Some(Child::Token(ref token)) => {
+                            Lexeme::<A>::terminal(token.clone()).into()
                         },
                         None => Cursor::empty(),
                     };
@@ -237,7 +238,7 @@ impl GreenTree {
             Self::Leaf(leaf) => Self::Leaf(AstLeaf {
                 data: leaf.data.clone(),
                 synthetic: leaf.synthetic,
-                children: compute_named_children(&leaf.data),
+                children: children(&leaf.data),
                 names: AstLeaf::new_ref(HashMap::new()),
                 keys: AstLeaf::new_ref(HashMap::new()),
             }),
@@ -313,7 +314,7 @@ impl GreenTree {
 impl Default for GreenTree {
     fn default() -> Self {
         Self::Leaf(AstLeaf {
-            data: Spanned::default(),
+            data: Default::default(),
             children: HashMap::new(),
             synthetic: false,
             keys: AstLeaf::new_ref(HashMap::new()),
@@ -338,14 +339,14 @@ impl Debug for GreenTree {
     }
 }
 
-impl From<Spanned<Tree>> for GreenTree {
-    fn from(value: Spanned<Tree>) -> Self {
+impl From<Intern<Spanned<Tree>>> for GreenTree {
+    fn from(value: Intern<Spanned<Tree>>) -> Self {
         Self::new(value)
     }
 }
 
 impl HasTokens for GreenTree {
-    fn tokens(&self) -> Vec<Spanned<Token>> {
+    fn tokens(&self) -> Vec<Intern<Spanned<Token>>> {
         match self {
             Self::Leaf(leaf) => leaf.data.tokens(),
             Self::Vec(vec) => vec.iter().flat_map(|tree| tree.tokens()).collect(),
@@ -369,11 +370,11 @@ impl Located for GreenTree {
 /// Computes the named children of the given tree, and returns a hash map with the named children.
 ///
 /// This function is used to compute the tree that the `name` property is not [None].
-fn compute_named_children(data: &Spanned<Tree>) -> HashMap<LeafKey, Spanned<Child>> {
+fn children(data: &Intern<Spanned<Tree>>) -> HashMap<LeafKey, Child> {
     let mut named_children = HashMap::new();
 
     for child in &data.children {
-        match child.value() {
+        match child {
             Child::Tree(tree) => {
                 if let Some(name) = tree.name {
                     named_children.insert(name, child.clone());

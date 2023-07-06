@@ -1,5 +1,6 @@
 use std::rc::Rc;
 
+use asena_interner::Intern;
 use asena_leaf::{ast::Located, node::Tree};
 use asena_report::{BoxInternalError, Diagnostic, InternalError, Report};
 use asena_span::Spanned;
@@ -8,7 +9,7 @@ use im::HashSet;
 #[derive(Default, Clone)]
 pub struct Reporter {
     pub src: String,
-    pub tree: Spanned<Tree>,
+    pub tree: Intern<Spanned<Tree>>,
     pub(crate) errors: HashSet<Diagnostic<BoxInternalError>>,
 }
 
@@ -17,7 +18,7 @@ pub trait Reports {
 }
 
 impl Reporter {
-    pub fn new(src: &str, tree: Spanned<Tree>) -> Self {
+    pub fn new(src: &str, tree: Intern<Spanned<Tree>>) -> Self {
         Self {
             src: src.to_owned(),
             tree,

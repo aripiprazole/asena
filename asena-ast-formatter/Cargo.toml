@@ -1,11 +1,13 @@
 
 [package]
 edition = "2021"
-name = "asena-report"
+name = "asena-ast-formatter"
 version = "0.1.0"
 
 [dependencies]
-ariadne = "0.2"
-asena-interner = {path = "../asena-interner"}
+asena-ast = {path = "../asena-ast"}
 asena-leaf = {path = "../asena-leaf"}
 asena-span = {path = "../asena-span"}
+fxhash = "0.2.1"
+im = "15.1.0"
+itertools = "0.10.5"

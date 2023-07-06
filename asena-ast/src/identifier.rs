@@ -3,10 +3,8 @@ use std::fmt::{Debug, Display};
 
 use asena_derive::*;
 
-use asena_leaf::ast::{
-    Ast, GreenTree, Leaf, Lexeme, LexemeListenable, LexemeWalkable, Listenable, Located, Node,
-    Terminal, Walkable,
-};
+use asena_interner::Intern;
+use asena_leaf::ast::*;
 use asena_leaf::node::TreeKind::*;
 use asena_leaf::token::{kind::TokenKind, Token};
 
@@ -18,7 +16,7 @@ use crate::{AsenaListener, AsenaVisitor};
 /// Identifier's key to a function (everything on the language), this can be abstracted in another
 /// identifiers. Serves as a key on a graph, or the abstract syntax tree representation.
 #[derive(Default, Clone, Hash, PartialEq, Eq)]
-pub struct FunctionId(pub String);
+pub struct FunctionId(pub Intern<String>);
 
 impl Located for FunctionId {
     fn location(&self) -> std::borrow::Cow<'_, Loc> {
@@ -28,8 +26,8 @@ impl Located for FunctionId {
 
 impl FunctionId {
     /// Creates a new [FunctionId] by a string
-    pub fn new(id: &str) -> Self {
-        Self(id.into())
+    pub fn new<T: Into<String>>(id: T) -> Self {
+        Self(Intern::new(id.into()))
     }
 
     /// Gets the local's identifier as string borrow
@@ -39,7 +37,7 @@ impl FunctionId {
 
     /// Creates a new [FunctionId] by appending a path to the current identifier
     pub fn create_path<I: Into<FunctionId>>(a: I, b: I) -> Self {
-        Self(format!("{}.{}", a.into().as_str(), b.into().as_str()))
+        Self::new(format!("{}.{}", a.into().as_str(), b.into().as_str()))
     }
 
     pub fn optional_path<I: Clone + Into<FunctionId>>(a: Option<I>, b: I) -> Self {
@@ -55,7 +53,7 @@ impl From<&str> for FunctionId {
 }
 
 impl Terminal for FunctionId {
-    fn terminal(token: Spanned<Token>) -> Option<Self> {
+    fn terminal(token: Intern<Spanned<Token>>) -> Option<Self> {
         Some(match token.kind {
             TokenKind::Identifier => Self(token.text.clone()),
             TokenKind::Symbol => Self(token.text.clone()),
@@ -139,17 +137,17 @@ impl Located for Local {
 }
 
 impl Terminal for Local {
-    fn terminal(token: Spanned<Token>) -> Option<Self> {
+    fn terminal(token: Intern<Spanned<Token>>) -> Option<Self> {
         Some(match token.kind {
             TokenKind::SelfKeyword => {
                 let text = token.text.clone();
-                let span = token.span;
+                let span = token.span.clone();
 
                 Local::new(span, &text)
             }
             TokenKind::Identifier => {
                 let text = token.text.clone();
-                let span = token.span;
+                let span = token.span.clone();
 
                 Local::new(span, &text)
             }
@@ -213,7 +211,7 @@ pub trait GlobalName: Default + Ast {
             paths.push(lexeme.0.clone())
         }
 
-        FunctionId::new(&paths.join("."))
+        FunctionId::new(paths.join("."))
     }
 
     fn segmented_loc(&self) -> Cow<'_, Loc> {

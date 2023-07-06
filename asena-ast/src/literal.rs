@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 use std::fmt::Debug;
 
+use asena_interner::Intern;
 use asena_leaf::ast::{Lexeme, LexemeListenable, LexemeWalkable, Located, Terminal};
 use asena_leaf::token::{kind::TokenKind::*, Token};
 use asena_span::{Loc, Spanned};
@@ -96,7 +97,7 @@ impl LexemeListenable for Literal {
 }
 
 impl Terminal for Literal {
-    fn terminal(from: Spanned<Token>) -> Option<Self> {
+    fn terminal(from: Intern<Spanned<Token>>) -> Option<Self> {
         let text = from.text.clone();
 
         match from.kind {

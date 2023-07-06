@@ -6,8 +6,8 @@ impl Tree {
             return Cursor::empty();
         };
 
-        match &child.value {
-            Child::Tree(tree) => T::make(GreenTree::new(child.replace(tree.clone()))).into(),
+        match child {
+            Child::Tree(ref tree) => T::make(GreenTree::new(tree.clone())).into(),
             Child::Token(..) => Cursor::empty(),
         }
     }
@@ -17,17 +17,17 @@ impl Tree {
             return Cursor::empty();
         };
 
-        match &child.value {
+        match child {
             Child::Tree(..) => Cursor::empty(),
-            Child::Token(token) => Lexeme::<T>::terminal(child.replace(token.clone())).into(),
+            Child::Token(ref token) => Lexeme::<T>::terminal(token.clone()).into(),
         }
     }
 
     pub fn filter<T: Node + Leaf>(&self) -> Cursor<Vec<T>> {
         self.children
             .iter()
-            .filter_map(|child| match child.value.clone() {
-                Child::Tree(tree) => T::make(GreenTree::new(child.replace(tree))),
+            .filter_map(|child| match child {
+                Child::Tree(ref tree) => T::make(GreenTree::new(tree.clone())),
                 Child::Token(..) => None,
             })
             .collect::<Vec<_>>()
@@ -37,20 +37,20 @@ impl Tree {
     pub fn filter_terminal<T: Terminal + 'static>(&self) -> Cursor<Vec<Lexeme<T>>> {
         self.children
             .iter()
-            .filter_map(|child| match child.value.clone() {
+            .filter_map(|child| match child {
                 Child::Tree(..) => None,
-                Child::Token(token) => Lexeme::<T>::terminal(child.replace(token)),
+                Child::Token(ref token) => Lexeme::<T>::terminal(token.clone()),
             })
             .collect::<Vec<_>>()
             .into()
     }
 
-    pub fn token(&self, kind: TokenKind) -> Vec<Spanned<Token>> {
+    pub fn token(&self, kind: TokenKind) -> Vec<Intern<Spanned<Token>>> {
         self.children
             .iter()
-            .filter_map(|child| match child.value.clone() {
+            .filter_map(|child| match child {
                 Child::Tree(..) => None,
-                Child::Token(token) if token.kind == kind => Some(child.replace(token)),
+                Child::Token(ref token) if token.kind == kind => Some(token.clone()),
                 Child::Token(..) => None,
             })
             .collect::<Vec<_>>()

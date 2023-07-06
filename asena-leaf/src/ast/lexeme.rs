@@ -8,7 +8,7 @@ use super::*;
 /// Represents a lexeme, a token with a value, represented in the Rust language.
 #[derive(Clone)]
 pub struct Lexeme<T> {
-    pub token: Spanned<Token>,
+    pub token: Intern<Spanned<Token>>,
     pub value: T,
 
     /// If the lexeme is `None`, it means that the lexeme is a placeholder.
@@ -54,7 +54,7 @@ impl<T> Lexeme<T> {
 impl<T: Default> Default for Lexeme<T> {
     fn default() -> Self {
         Self {
-            token: Spanned::new(Loc::default(), Token::new(TokenKind::Error, "")),
+            token: Default::default(),
             value: Default::default(),
             is_none: false,
         }
@@ -119,7 +119,7 @@ impl<T: Node> Node for Option<T> {
 }
 
 impl<T> HasTokens for Lexeme<T> {
-    fn tokens(&self) -> Vec<Spanned<Token>> {
+    fn tokens(&self) -> Vec<Intern<Spanned<Token>>> {
         self.token.tokens()
     }
 }
@@ -165,7 +165,7 @@ impl<T> std::borrow::Borrow<T> for Lexeme<T> {
 }
 
 impl<T: Terminal + 'static> Leaf for Lexeme<T> {
-    fn terminal(token: Spanned<Token>) -> Option<Self> {
+    fn terminal(token: Intern<Spanned<Token>>) -> Option<Self> {
         let spanned = token.clone();
         let terminal = <T as Terminal>::terminal(token)?;
 
@@ -181,17 +181,18 @@ impl<T: Leaf + 'static> Node for Lexeme<T> {
     fn new<I: Into<GreenTree>>(tree: I) -> Self {
         match tree.into() {
             ref tree @ GreenTree::Leaf(ref leaf) => {
-                #[cfg(debug_assertions)]
-                if leaf.data.children.is_empty() {
+                let token = if leaf.data.children.is_empty() {
+                    #[cfg(debug_assertions)]
                     println!("Lexeme::new: Leaf node has no children: {}", leaf.data.kind);
-                }
+                    Default::default()
+                } else {
+                    let first_item = leaf.data.single().clone();
+                    let spanned = leaf.data.replace(first_item);
+                    Intern::new(spanned)
+                };
 
                 Self {
-                    token: if leaf.data.children.is_empty() {
-                        Spanned::new(Loc::default(), Token::new(TokenKind::Error, ""))
-                    } else {
-                        leaf.data.clone().swap(leaf.data.single().clone())
-                    },
+                    token,
                     value: T::make(tree.clone()).unwrap_or_default(),
                     is_none: false,
                 }
@@ -199,13 +200,7 @@ impl<T: Leaf + 'static> Node for Lexeme<T> {
             GreenTree::Token(lexeme) => {
                 let value = match lexeme.value.downcast_ref::<T>() {
                     Some(value) => value.clone(),
-                    None => {
-                        return Self {
-                            token: Spanned::new(Loc::default(), Token::new(TokenKind::Error, "")),
-                            is_none: false,
-                            value: T::default(),
-                        }
-                    }
+                    None => return Default::default(),
                 };
 
                 Self {
@@ -215,15 +210,11 @@ impl<T: Leaf + 'static> Node for Lexeme<T> {
                 }
             }
             GreenTree::None => Self {
-                token: Spanned::new(Loc::default(), Token::new(TokenKind::Error, "")),
+                token: Default::default(),
                 value: T::default(),
                 is_none: true,
             },
-            _ => Self {
-                token: Spanned::new(Loc::default(), Token::new(TokenKind::Error, "")),
-                value: T::default(),
-                is_none: false,
-            },
+            _ => Self::default(),
         }
     }
 

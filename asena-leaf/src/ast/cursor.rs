@@ -56,7 +56,7 @@ impl<T: Node + Leaf> Cursor<T> {
                     return Spanned::default();
                 };
 
-                lexeme.token.clone().swap(value.clone())
+                lexeme.token.replace(value.clone())
             }
             _ => Spanned::default(),
         }
@@ -138,11 +138,9 @@ impl<T: Node + Leaf> Node for Vec<T> {
                 .data
                 .children
                 .iter()
-                .map(|child| match child.value {
-                    Child::Tree(ref tree) => T::new(child.replace(tree.clone())),
-                    Child::Token(ref token) => {
-                        T::terminal(child.replace(token.clone())).unwrap_or_default()
-                    }
+                .map(|child| match child {
+                    Child::Tree(ref tree) => T::new(tree.clone()),
+                    Child::Token(ref token) => T::terminal(token.clone()).unwrap_or_default(),
                 })
                 .collect::<Vec<_>>(),
             _ => vec![],

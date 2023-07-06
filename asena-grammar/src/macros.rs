@@ -12,6 +12,7 @@
 use std::ops::{Deref, DerefMut};
 
 use asena_ast::reporter::Reporter;
+use asena_interner::Intern;
 use asena_leaf::{ast::GreenTree, node::Tree};
 use asena_span::Spanned;
 
@@ -80,7 +81,7 @@ macro_rules! parse_asena_file {
 #[derive(Clone)]
 pub struct Reportable {
     pub reporter: Reporter,
-    pub data: Spanned<Tree>,
+    pub data: Intern<Spanned<Tree>>,
 }
 
 impl std::borrow::Borrow<Spanned<Tree>> for Reportable {
@@ -96,7 +97,7 @@ impl From<Reportable> for GreenTree {
 }
 
 impl Reportable {
-    pub fn new(src: &str, tree: Spanned<Tree>) -> Reportable {
+    pub fn new(src: &str, tree: Intern<Spanned<Tree>>) -> Reportable {
         let reporter = Reporter::new(src, tree.clone());
 
         Reportable {
@@ -104,7 +105,8 @@ impl Reportable {
             reporter,
         }
     }
-    pub fn unwrap(&self) -> Spanned<Tree> {
+
+    pub fn unwrap(&self) -> Intern<Spanned<Tree>> {
         self.data.clone()
     }
 }

@@ -1,5 +1,7 @@
 use std::fmt::Debug;
 
+use asena_interner::Intern;
+use asena_span::Loc;
 use asena_span::Spanned;
 
 use self::kind::TokenKind;
@@ -31,14 +33,14 @@ pub use super::token::*;
 pub struct Tree {
     pub name: Option<&'static str>,
     pub kind: TreeKind,
-    pub children: Vec<Spanned<Child>>,
+    pub children: Vec<Child>,
 }
 
 /// Polymorphic variants of [Token] and [Tree], it can and must be used as an abstract to them.
 #[derive(Debug, Clone, Hash)]
 pub enum Child {
-    Tree(Tree),
-    Token(Token),
+    Tree(Intern<Spanned<Tree>>),
+    Token(Intern<Spanned<Token>>),
 }
 
 impl Tree {
@@ -52,7 +54,7 @@ impl Tree {
 
     pub fn single(&self) -> &Token {
         match self.children.first() {
-            Some(token) => match &token.value {
+            Some(token) => match &token {
                 Child::Token(token) => token,
                 Child::Tree(..) => panic!("called `Tree::single` on a non-terminal node"),
             },
@@ -69,7 +71,7 @@ impl Tree {
             return false;
         };
 
-        match &child.value {
+        match &child {
             Child::Tree(..) => false,
             Child::Token(token) => token.kind == kind,
         }
@@ -103,10 +105,10 @@ impl Tree {
         write!(f, "{}", self.kind.name())?;
         for child in &self.children {
             writeln!(f)?;
-            child.value.render(f, &format!("{tab}    "))?;
-            if matches!(child.value, Child::Token(..)) {
+            child.render(f, &format!("{tab}    "))?;
+            if matches!(child, Child::Token(..)) {
                 write!(f, " @ ")?;
-                write!(f, "{:?}", child.span)?;
+                write!(f, "{:?}", child.span())?;
             }
         }
         Ok(())
@@ -114,6 +116,13 @@ impl Tree {
 }
 
 impl Child {
+    pub fn span(&self) -> Loc {
+        match self {
+            Child::Tree(tree) => tree.span.clone(),
+            Child::Token(token) => token.span.clone(),
+        }
+    }
+
     /// Uses the [std::fmt::Formatter] to write a pretty-printed tree in the terminal for debug
     /// porpuses.
     ///

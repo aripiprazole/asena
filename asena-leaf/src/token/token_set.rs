@@ -1,3 +1,4 @@
+use asena_interner::Intern;
 use asena_span::Spanned;
 
 use crate::{
@@ -6,19 +7,19 @@ use crate::{
 };
 
 pub trait HasTokens {
-    fn tokens(&self) -> Vec<Spanned<Token>>;
+    fn tokens(&self) -> Vec<Intern<Spanned<Token>>>;
 }
 
 impl HasTokens for Tree {
-    fn tokens(&self) -> Vec<Spanned<Token>> {
+    fn tokens(&self) -> Vec<Intern<Spanned<Token>>> {
         let mut buf = Vec::new();
         for child in self.children.iter() {
-            match child.value {
+            match child {
                 Child::Tree(ref tree) => {
                     buf.extend(tree.tokens());
                 }
                 Child::Token(ref token) => {
-                    buf.push(child.replace(token.clone()));
+                    buf.push(token.clone());
                 }
             }
         }
@@ -27,13 +28,13 @@ impl HasTokens for Tree {
 }
 
 impl<T: HasTokens> HasTokens for Spanned<T> {
-    fn tokens(&self) -> Vec<Spanned<Token>> {
+    fn tokens(&self) -> Vec<Intern<Spanned<Token>>> {
         self.value.tokens()
     }
 }
 
-impl HasTokens for Spanned<Token> {
-    fn tokens(&self) -> Vec<Spanned<Token>> {
+impl HasTokens for Intern<Spanned<Token>> {
+    fn tokens(&self) -> Vec<Intern<Spanned<Token>>> {
         vec![self.clone()]
     }
 }

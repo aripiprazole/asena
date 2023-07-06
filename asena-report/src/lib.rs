@@ -5,6 +5,7 @@ use std::path::PathBuf;
 use std::rc::Rc;
 use std::{error::Error, fmt::Display};
 
+use asena_interner::Intern;
 use asena_leaf::node::Tree;
 use asena_span::{Loc, Spanned};
 
@@ -68,7 +69,7 @@ pub struct Quickfix {
 pub struct Report<T: InternalError> {
     pub path: Option<PathBuf>,
     pub source: String,
-    pub tree: Spanned<Tree>,
+    pub tree: Intern<Spanned<Tree>>,
     pub diagnostics: Vec<Diagnostic<T>>,
 }
 
@@ -126,7 +127,7 @@ pub enum DiagnosticKind {
 }
 
 impl<E: InternalError> Report<E> {
-    pub fn new(source: &str, tree: Spanned<Tree>) -> Self {
+    pub fn new(source: &str, tree: Intern<Spanned<Tree>>) -> Self {
         Self {
             path: None,
             source: source.into(),

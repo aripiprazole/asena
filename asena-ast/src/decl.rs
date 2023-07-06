@@ -49,10 +49,10 @@ impl Use {
     pub fn to_fn_id(&self) -> FunctionId {
         let mut paths = Vec::new();
         for lexeme in self.segments().iter() {
-            paths.push(lexeme.0.clone())
+            paths.push(lexeme.as_str().to_string())
         }
 
-        FunctionId::new(&paths.join("."))
+        FunctionId::new(paths.join("."))
     }
 }
 

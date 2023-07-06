@@ -1,6 +1,7 @@
 use std::fmt::Debug;
 
 use crate::builder::EventBuilder;
+use asena_interner::Intern;
 use asena_leaf::node::{Child, Tree, TreeKind};
 use asena_report::{Diagnostic, Report};
 use asena_span::{Loc, Spanned};
@@ -21,7 +22,7 @@ pub struct MarkOpened(usize, Loc);
 pub struct MarkClosed(usize, Loc);
 
 pub struct RedTree {
-    pub data: Spanned<Tree>,
+    pub data: Intern<Spanned<Tree>>,
     pub report: Report<ParseError>,
 }
 
@@ -56,6 +57,7 @@ impl<'a> Parser<'a> {
                 // Pop it off the stack and append to a new current tree.
                 Event::Close => {
                     let tree = stack.pop().expect("Stack should be not empty");
+                    let value = tree.value.clone();
 
                     stack
                         .last_mut()
@@ -68,12 +70,13 @@ impl<'a> Parser<'a> {
                         })
                         .value
                         .children
-                        .push(tree.replace(Child::Tree(tree.value.clone())))
+                        .push(Child::Tree(Intern::new(tree.replace(value))))
                 }
 
                 // Consume a token and append it to the current tree
                 Event::Advance => {
                     let token = tokens.next().expect("Stack should have next element");
+                    let value = token.value().clone();
 
                     stack
                         .last_mut()
@@ -84,13 +87,13 @@ impl<'a> Parser<'a> {
                         })
                         .value
                         .children
-                        .push(token.replace(Child::Token(token.value().clone())))
+                        .push(Child::Token(Intern::new(token.replace(value))))
                 }
 
                 Event::Field(name) => {
                     let last_item = stack.last_mut().unwrap();
-                    let last_child = last_item.children.last_mut().unwrap();
-                    match &mut last_child.value {
+                    let mut last_child = last_item.children.last_mut().unwrap();
+                    match &mut last_child {
                         Child::Tree(tree) => tree.name = Some(name),
                         Child::Token(token) => token.name = Some(name),
                     }
@@ -113,12 +116,15 @@ impl<'a> Parser<'a> {
         }
 
         let tree = stack.pop().unwrap();
-        let mut report = Report::new(self.source, tree.clone());
+        let mut report = Report::new(self.source, Intern::new(tree.clone()));
         for diagnostic in &self.errors {
             report.diagnostics.push(diagnostic.clone());
         }
 
-        RedTree { data: tree, report }
+        RedTree {
+            data: Intern::new(tree),
+            report,
+        }
     }
 }
 
@@ -151,7 +157,7 @@ impl MarkClosed {
 }
 
 impl RedTree {
-    pub fn unwrap(mut self) -> Spanned<Tree> {
+    pub fn unwrap(mut self) -> Intern<Spanned<Tree>> {
         if self.has_errors() {
             self.report.dump();
 
@@ -185,7 +191,7 @@ impl Debug for Event {
     }
 }
 
-impl From<RedTree> for Spanned<Tree> {
+impl From<RedTree> for Intern<Spanned<Tree>> {
     fn from(value: RedTree) -> Self {
         value.data
     }

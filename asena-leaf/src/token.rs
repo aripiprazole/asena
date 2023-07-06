@@ -1,5 +1,7 @@
 use std::fmt::Display;
 
+use asena_interner::Intern;
+
 use self::{kind::TokenKind, text::Text};
 
 use super::named::Named;
@@ -12,7 +14,7 @@ pub mod token_set;
 pub struct Token {
     pub name: Option<&'static str>,
     pub kind: TokenKind,
-    pub text: String,
+    pub text: Intern<String>,
     pub full_text: Text,
 }
 
@@ -21,7 +23,7 @@ impl Token {
         Self {
             name: None,
             kind,
-            text: text.into(),
+            text: Intern::new(text.into()),
             full_text: Default::default(),
         }
     }
