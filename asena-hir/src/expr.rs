@@ -1,0 +1,155 @@
+use asena_hir_derive::*;
+
+use asena_hir_leaf::{HirId, HirNode};
+
+use crate::{
+    pattern::HirPatternId, stmt::HirStmtId, HirLiteralId, HirTypeId, HirVisitor, NameId, ScopeId,
+};
+
+#[derive(Hash, Copy, Clone, Debug)]
+#[hir_id]
+pub struct HirExprId(usize);
+
+impl HirId for HirExprId {
+    type Node = HirExpr;
+
+    fn new(node: Self::Node) -> Self {
+        node.id
+    }
+}
+
+#[derive(Hash, Clone, Debug)]
+#[hir_node]
+pub struct HirExprGroup {
+    pub value: HirExprId,
+}
+
+#[derive(Hash, Clone, Debug)]
+#[hir_node]
+pub struct HirExprLiteral {
+    pub value: HirLiteralId,
+}
+
+#[derive(Hash, Clone, Debug)]
+#[hir_node]
+pub struct HirDsl {
+    pub parameters: Vec<NameId>,
+    pub stmts: Vec<HirStmtId>,
+}
+
+#[derive(Hash, Clone, Debug)]
+#[hir_node]
+pub struct HirExprCall {
+    pub callee: HirExprId,
+    pub arguments: Vec<HirExprId>,
+    pub as_dsl: Option<HirDsl>,
+}
+
+#[derive(Hash, Clone, Debug)]
+#[hir_node]
+pub struct HirExprReference {
+    pub scope: ScopeId,
+    pub name: NameId,
+}
+
+#[derive(Hash, Clone, Debug)]
+#[hir_node]
+pub enum HirMatchArm {
+    Expr(HirExprId),
+    Block(HirStmtId),
+}
+
+#[derive(Hash, Clone, Debug)]
+#[hir_node]
+pub struct HirMatchCase {
+    pub pattern: HirPatternId,
+    pub value: HirMatchArm,
+}
+
+#[derive(Hash, Clone, Debug)]
+#[hir_node]
+pub struct HirExprMatch {
+    pub scrutinee: HirExprId,
+    pub cases: Vec<HirMatchCase>,
+}
+
+#[derive(Hash, Clone, Debug)]
+#[hir_node]
+pub struct HirExprHelp {
+    pub value: HirExprId,
+}
+
+#[derive(Hash, Clone, Debug)]
+#[hir_node]
+pub struct HirExprAnn {
+    pub value: HirExprId,
+    pub against: HirTypeId,
+}
+
+#[derive(Hash, Clone, Debug)]
+#[hir_node]
+pub struct HirExprLam {
+    pub parameters: Vec<NameId>,
+    pub value: HirExprId,
+}
+
+#[derive(Hash, Clone, Debug)]
+#[hir_node]
+pub enum HirIfBranch {
+    Expr(HirExprId),
+    Block(Vec<HirStmtId>),
+}
+
+#[derive(Hash, Clone, Debug)]
+#[hir_node]
+pub struct HirExprIf {
+    pub condition: HirExprId,
+    pub then_branch: HirIfBranch,
+    pub otherwise_branch: Option<HirIfBranch>,
+}
+
+#[derive(Hash, Clone, Debug)]
+#[hir_node]
+pub struct HirExprArray {
+    pub items: Vec<HirExprId>,
+}
+
+#[derive(Hash, Clone, Debug)]
+#[hir_node]
+pub enum HirUnimplemented {}
+
+#[derive(Hash, Clone, Debug)]
+#[hir_kind]
+pub enum HirExprKind {
+    Error,
+    Unit,
+    This,
+    Unimplemented(HirUnimplemented),
+    Group(HirExprGroup),
+    Literal(HirExprLiteral),
+    Reference(HirExprReference),
+    Call(HirExprCall),
+    Match(HirExprMatch),
+    Help(HirExprHelp),
+    Ann(HirExprAnn),
+    Lam(HirExprLam),
+    If(HirExprIf),
+    Array(HirExprArray),
+}
+
+#[derive(Hash, Clone, Debug)]
+#[hir_struct]
+pub struct HirExpr {
+    pub span: asena_span::Loc,
+    pub id: HirExprId,
+    pub kind: HirExprKind,
+}
+
+impl HirNode for HirExpr {
+    type Id = HirExprId;
+    type Visitor<'a, T> = dyn HirVisitor<T>;
+
+    fn accept<O: Default>(&mut self, _visitor: &mut Self::Visitor<'_, O>) -> O {
+        todo!()
+    }
+}

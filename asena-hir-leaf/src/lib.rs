@@ -2,8 +2,6 @@
 
 use std::{fmt::Debug, hash::Hash};
 
-pub mod macros;
-
 pub trait HirId: Debug + Copy + Hash {
     type Node: HirNode;
 

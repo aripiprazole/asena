@@ -4,6 +4,9 @@ edition = "2021"
 name = "asena-hir-derive"
 version = "0.1.0"
 
+[lib]
+proc-macro = true
+
 [dependencies]
 asena-ast = {path = "../asena-ast"}
 asena-leaf = {path = "../asena-leaf"}
