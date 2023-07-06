@@ -1,5 +1,3 @@
-use asena_ast_db::scope::TypeValue;
-
 use crate::{scopes::*, *};
 
 mod class_decl;

@@ -14,7 +14,6 @@ members = [
   "asena-leaf",
   "asena-lexer",
   "asena-parser",
-  "asena-typer",
   "asena-prec",
   "asena-coverage",
   "asena-query",

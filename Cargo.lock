@@ -304,25 +304,6 @@ name = "asena-span"
 version = "0.1.0"
 
 [[package]]
-name = "asena-typer"
-version = "0.1.0"
-dependencies = [
- "asena-ast",
- "asena-derive",
- "asena-grammar",
- "asena-leaf",
- "asena-lexer",
- "asena-parser",
- "asena-prec",
- "asena-report",
- "asena-span",
- "fxhash",
- "im",
- "itertools",
- "thiserror",
-]
-
-[[package]]
 name = "atty"
 version = "0.2.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
