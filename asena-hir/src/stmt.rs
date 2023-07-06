@@ -2,7 +2,7 @@ use asena_hir_derive::*;
 
 use asena_hir_leaf::{HirId, HirNode};
 
-use crate::{expr::HirExprId, pattern::HirPatternId, HirVisitor};
+use crate::{pattern::HirPatternId, value::HirValueId, HirVisitor};
 
 #[derive(Hash, Copy, Clone, Debug)]
 pub struct HirStmtId(usize);
@@ -19,13 +19,13 @@ impl HirId for HirStmtId {
 #[hir_node]
 pub struct HirStmtAsk {
     pub pattern: HirPatternId,
-    pub value: HirExprId,
+    pub value: HirValueId,
 }
 
 #[derive(Hash, Clone, Debug)]
 #[hir_node]
 pub struct HirStmtReturn {
-    pub value: HirExprId,
+    pub value: HirValueId,
 }
 
 #[derive(Hash, Clone, Debug)]
@@ -35,7 +35,7 @@ pub enum HirStmtKind {
 
     Ask(HirStmtAsk),
     Return(HirStmtReturn),
-    Expr(HirExprId),
+    Value(HirValueId),
 }
 
 #[derive(Hash, Clone, Debug)]

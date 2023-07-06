@@ -8,6 +8,7 @@ pub mod expr;
 pub mod pattern;
 pub mod stmt;
 pub mod top_level;
+pub mod value;
 
 #[derive(Hash, Copy, Clone, Debug)]
 pub struct HirTypeId(usize);

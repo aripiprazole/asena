@@ -3,7 +3,8 @@ use asena_hir_derive::*;
 use asena_hir_leaf::{HirId, HirNode};
 
 use crate::{
-    pattern::HirPatternId, stmt::HirStmtId, HirLiteralId, HirTypeId, HirVisitor, NameId, ScopeId,
+    pattern::HirPatternId, stmt::HirStmtId, value::HirValueId, HirLiteralId, HirTypeId, HirVisitor,
+    NameId, ScopeId,
 };
 
 #[derive(Hash, Copy, Clone, Debug)]
@@ -21,7 +22,7 @@ impl HirId for HirExprId {
 #[derive(Hash, Clone, Debug)]
 #[hir_node]
 pub struct HirExprGroup {
-    pub value: HirExprId,
+    pub value: HirValueId,
 }
 
 #[derive(Hash, Clone, Debug)]
@@ -40,8 +41,8 @@ pub struct HirDsl {
 #[derive(Hash, Clone, Debug)]
 #[hir_node]
 pub struct HirExprCall {
-    pub callee: HirExprId,
-    pub arguments: Vec<HirExprId>,
+    pub callee: HirValueId,
+    pub arguments: Vec<HirValueId>,
     pub as_dsl: Option<HirDsl>,
 }
 
@@ -55,7 +56,7 @@ pub struct HirExprReference {
 #[derive(Hash, Clone, Debug)]
 #[hir_node]
 pub enum HirMatchArm {
-    Expr(HirExprId),
+    Expr(HirValueId),
     Block(HirStmtId),
 }
 
@@ -69,20 +70,20 @@ pub struct HirMatchCase {
 #[derive(Hash, Clone, Debug)]
 #[hir_node]
 pub struct HirExprMatch {
-    pub scrutinee: HirExprId,
+    pub scrutinee: HirValueId,
     pub cases: Vec<HirMatchCase>,
 }
 
 #[derive(Hash, Clone, Debug)]
 #[hir_node]
 pub struct HirExprHelp {
-    pub value: HirExprId,
+    pub value: HirValueId,
 }
 
 #[derive(Hash, Clone, Debug)]
 #[hir_node]
 pub struct HirExprAnn {
-    pub value: HirExprId,
+    pub value: HirValueId,
     pub against: HirTypeId,
 }
 
@@ -96,14 +97,14 @@ pub struct HirExprLam {
 #[derive(Hash, Clone, Debug)]
 #[hir_node]
 pub enum HirIfBranch {
-    Expr(HirExprId),
+    Expr(HirValueId),
     Block(Vec<HirStmtId>),
 }
 
 #[derive(Hash, Clone, Debug)]
 #[hir_node]
 pub struct HirExprIf {
-    pub condition: HirExprId,
+    pub condition: HirValueId,
     pub then_branch: HirIfBranch,
     pub otherwise_branch: Option<HirIfBranch>,
 }
@@ -111,7 +112,7 @@ pub struct HirExprIf {
 #[derive(Hash, Clone, Debug)]
 #[hir_node]
 pub struct HirExprArray {
-    pub items: Vec<HirExprId>,
+    pub items: Vec<HirValueId>,
 }
 
 #[derive(Hash, Clone, Debug)]
