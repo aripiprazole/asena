@@ -3,14 +3,11 @@ use std::fmt::{Debug, Display};
 
 use asena_derive::*;
 
-use asena_leaf::ast::{
-    Ast, GreenTree, Leaf, Lexeme, LexemeListenable, LexemeWalkable, Listenable, Located, Node,
-    Terminal, Walkable,
-};
+use asena_leaf::ast::*;
 use asena_leaf::node::TreeKind::*;
 use asena_leaf::token::{kind::TokenKind, Token};
 
-use asena_span::{Loc, Span, Spanned};
+use asena_span::{Loc, Spanned};
 
 use crate::{AsenaListener, AsenaVisitor};
 
@@ -215,21 +212,6 @@ pub trait GlobalName: Default + Ast {
 
         FunctionId::new(&paths.join("."))
     }
-
-    fn segmented_loc(&self) -> Cow<'_, Loc> {
-        if self.segments().is_empty() {
-            return Cow::Owned(Loc::Synthetic);
-        }
-
-        Cow::Owned(
-            self.segments().first().unwrap().location().on(self
-                .segments()
-                .last()
-                .unwrap()
-                .location()
-                .into_owned()),
-        )
-    }
 }
 
 pub struct ConcreteAnyId(pub Vec<Lexeme<Local>>);
@@ -244,7 +226,7 @@ impl GlobalName for QualifiedPath {}
 
 impl Located for QualifiedPath {
     fn location(&self) -> Cow<'_, Loc> {
-        self.segmented_loc()
+        Cow::Owned(self.segments().location().into_owned())
     }
 }
 
@@ -300,7 +282,7 @@ impl GlobalName for BindingId {}
 
 impl Located for BindingId {
     fn location(&self) -> Cow<'_, Loc> {
-        self.segmented_loc()
+        Cow::Owned(self.segments().location().into_owned())
     }
 }
 
