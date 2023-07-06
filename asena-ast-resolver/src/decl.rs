@@ -1,17 +1,22 @@
 use asena_ast_db::scope::TypeValue;
 
-use crate::{scope_resolver::*, *};
+use crate::{scopes::*, *};
+
+mod class_decl;
+mod enum_decl;
+mod instance_decl;
+mod trait_decl;
 
 #[non_exhaustive]
 pub struct AstResolver<'a> {
     pub db: Driver,
     pub file: Arc<VfsFile>,
+    pub reporter: &'a mut Reporter,
     pub binding_groups: im::HashMap<FunctionId, Vec<Arc<Decl>>>,
     pub enum_declarations: im::HashMap<FunctionId, Enum>,
     pub class_declarations: im::HashMap<FunctionId, Class>,
     pub trait_declarations: im::HashMap<FunctionId, Trait>,
     pub instance_declarations: Vec<Instance>, // TODO: change to hashset
-    pub reporter: &'a mut Reporter,
 }
 
 impl AstResolver<'_> {
@@ -49,88 +54,6 @@ impl<'a> AsenaVisitor<()> for AstResolver<'a> {
         self.db.add_path_dep(self.file.clone(), module_ref);
     }
 
-    fn visit_enum(&mut self, enum_decl: Enum) {
-        self.enum_declarations
-            .insert(enum_decl.name().to_fn_id(), enum_decl.clone());
-
-        self.db
-            .global_scope()
-            .borrow_mut()
-            .create_enum(&enum_decl, None);
-
-        let mut resolver = ScopeResolver::new(enum_decl.name(), Level::Value, self);
-
-        for name in Parameter::compute_parameters(enum_decl.parameters()).keys() {
-            let mut scope = resolver.local_scope.borrow_mut();
-            scope.types.insert(name.clone(), TypeValue::Synthetic);
-        }
-
-        resolver.listens(enum_decl.gadt_type());
-        resolver.listens(enum_decl.variants());
-        for method in enum_decl.methods() {
-            self.resolve_method(method);
-        }
-    }
-
-    fn visit_class(&mut self, class: Class) {
-        self.class_declarations
-            .insert(class.name().to_fn_id(), class.clone());
-
-        self.db
-            .global_scope()
-            .borrow_mut()
-            .create_class(&class, None);
-
-        let mut resolver = ScopeResolver::new(class.name(), Level::Value, self);
-
-        for name in Parameter::compute_parameters(class.parameters()).keys() {
-            let mut scope = resolver.local_scope.borrow_mut();
-            scope.types.insert(name.clone(), TypeValue::Synthetic);
-        }
-
-        resolver.listens(class.fields());
-        for method in class.methods() {
-            self.resolve_method(method);
-        }
-    }
-
-    fn visit_trait(&mut self, trait_decl: Trait) {
-        self.trait_declarations
-            .insert(trait_decl.name().to_fn_id(), trait_decl.clone());
-
-        self.db
-            .global_scope()
-            .borrow_mut()
-            .create_trait(&trait_decl, None);
-
-        let mut resolver = ScopeResolver::new(trait_decl.name(), Level::Value, self);
-
-        for name in Parameter::compute_parameters(trait_decl.parameters()).keys() {
-            let mut scope = resolver.local_scope.borrow_mut();
-            scope.types.insert(name.clone(), TypeValue::Synthetic);
-        }
-
-        resolver.listens(trait_decl.fields());
-        for method in trait_decl.default_methods() {
-            self.resolve_default_method(method);
-        }
-    }
-
-    fn visit_instance(&mut self, instance: Instance) {
-        self.instance_declarations.push(instance.clone());
-
-        let resolver = ScopeResolver::empty(Level::Value, self);
-
-        for name in Parameter::compute_parameters(instance.parameters()).keys() {
-            let mut scope = resolver.local_scope.borrow_mut();
-            scope.types.insert(name.clone(), TypeValue::Synthetic);
-        }
-
-        for method in instance.methods() {
-            self.resolve_method(method);
-        }
-    }
-
     fn visit_signature(&mut self, signature: Signature) {
         // associate the type declaration with the implementations.
         self.binding_groups
@@ -166,5 +89,21 @@ impl<'a> AsenaVisitor<()> for AstResolver<'a> {
         }
 
         resolver.listens(assign.body());
+    }
+
+    fn visit_enum(&mut self, enum_decl: Enum) {
+        self.resolve_enum_decl(enum_decl);
+    }
+
+    fn visit_class(&mut self, class: Class) {
+        self.resolve_class_decl(class);
+    }
+
+    fn visit_trait(&mut self, trait_decl: Trait) {
+        self.resolve_trait_decl(trait_decl);
+    }
+
+    fn visit_instance(&mut self, instance: Instance) {
+        self.resolve_instance_decl(instance);
     }
 }

@@ -12,9 +12,9 @@ use thiserror::Error;
 
 use crate::error::ResolutionError::*;
 
-pub mod decl_resolver;
+pub mod decl;
 pub mod error;
-pub mod scope_resolver;
+pub mod scopes;
 
 #[cfg(test)]
 mod tests {
@@ -24,7 +24,7 @@ mod tests {
     use asena_grammar::parse_asena_file;
     use asena_prec::{default_prec_table, InfixHandler, PrecReorder};
 
-    use crate::decl_resolver::AstResolver;
+    use crate::decl::AstResolver;
 
     #[test]
     fn it_works() {

@@ -1,6 +1,6 @@
 use asena_ast_db::scope::TypeValue;
 
-use crate::{decl_resolver::AstResolver, *};
+use crate::{decl::AstResolver, *};
 
 pub enum Level {
     Type,

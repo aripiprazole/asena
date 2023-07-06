@@ -2,7 +2,6 @@ use std::{borrow::Borrow, cell::RefCell, rc::Rc, sync::Arc};
 
 use asena_ast::*;
 use asena_leaf::ast::Lexeme;
-use itertools::Itertools;
 
 use crate::{database::AstDatabase, driver::HasDB, vfs::VfsFile};
 
