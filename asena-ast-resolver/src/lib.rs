@@ -8,7 +8,6 @@ use asena_ast_db::vfs::*;
 
 use asena_report::InternalError;
 
-use im::HashMap;
 use thiserror::Error;
 
 use crate::error::ResolutionError::*;
@@ -57,6 +56,9 @@ mod tests {
                 file,
                 binding_groups: Default::default(),
                 enum_declarations: Default::default(),
+                class_declarations: Default::default(),
+                trait_declarations: Default::default(),
+                instance_declarations: Default::default(),
                 reporter: &mut asena_file.reporter,
             });
 

@@ -318,11 +318,6 @@ pub struct Instance(GreenTree);
 #[ast_listenable(AsenaListener)]
 impl Instance {
     #[ast_leaf]
-    pub fn name(&self) -> BindingId {
-        self.filter().first()
-    }
-
-    #[ast_leaf]
     pub fn parameters(&self) -> Vec<Parameter> {
         self.filter()
     }

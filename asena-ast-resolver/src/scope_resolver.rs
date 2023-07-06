@@ -1,19 +1,27 @@
+use asena_ast_db::scope::TypeValue;
+
 use crate::{decl_resolver::AstResolver, *};
 
-pub struct ScopeResolver<'gctx, 'a> {
+pub enum Level {
+    Type,
+    Value,
+}
+
+pub struct ScopeResolver<'ctx, 'a> {
     pub db: Driver,
     pub local_scope: Rc<RefCell<ScopeData>>,
     pub frames: Vec<Rc<RefCell<ScopeData>>>,
-    pub resolver: &'gctx mut AstResolver<'a>,
+    pub level: Level,
+    pub resolver: &'ctx mut AstResolver<'a>,
 }
 
-impl<'gctx, 'a> ScopeResolver<'gctx, 'a> {
-    pub fn new(name: BindingId, resolver: &'gctx mut AstResolver<'a>) -> Self {
+impl<'ctx, 'a> ScopeResolver<'ctx, 'a> {
+    pub fn new(name: BindingId, level: Level, resolver: &'ctx mut AstResolver<'a>) -> Self {
         let global_scope = resolver.db.global_scope();
         let local_scope = {
             let named_scope = global_scope.borrow().fork();
-            let mut scope_mut = named_scope.borrow_mut();
-            scope_mut.variables.insert(name.to_fn_id(), 0);
+            let mut scope = named_scope.borrow_mut();
+            scope.variables.insert(name.to_fn_id(), 0);
             named_scope.clone()
         };
 
@@ -21,6 +29,20 @@ impl<'gctx, 'a> ScopeResolver<'gctx, 'a> {
             db: resolver.db.clone(),
             local_scope: local_scope.clone(),
             frames: vec![local_scope],
+            level,
+            resolver,
+        }
+    }
+
+    pub fn empty(level: Level, resolver: &'ctx mut AstResolver<'a>) -> Self {
+        let global_scope = resolver.db.global_scope();
+        let local_scope = global_scope.borrow().fork();
+
+        Self {
+            db: resolver.db.clone(),
+            local_scope: local_scope.clone(),
+            frames: vec![local_scope],
+            level,
             resolver,
         }
     }
@@ -68,6 +90,14 @@ impl AsenaListener for ScopeResolver<'_, '_> {
     fn exit_lam(&mut self, _: Lam) {
         self.frames.pop();
     }
+
+    fn enter_typed_explicit(&mut self, _: Expr) {
+        self.level = Level::Type;
+    }
+
+    fn exit_typed_explicit(&mut self, _: Expr) {
+        self.level = Level::Value;
+    }
     // <<< Enter/Exit scope abstractions
 
     /// Just bridges to ast resolver, which will search, and report if it's bound.
@@ -88,13 +118,24 @@ impl AsenaListener for ScopeResolver<'_, '_> {
     fn enter_local_expr(&mut self, value: LocalExpr) {
         let scope = self.last_scope();
         let scope = scope.borrow();
-        match scope.functions.get(&value.to_fn_id()) {
-            Some(_) => {}
-            None => {
-                self.resolver
-                    .reporter
-                    .report(&value.segments(), UnresolvedNameError(value.to_fn_id()));
-            }
+        match self.level {
+            Level::Type => match scope.find_type(&value) {
+                TypeValue::Decl(_) | TypeValue::Synthetic => {}
+                TypeValue::None => {
+                    println!("Unresolved type: {:?}", scope.types);
+                    self.resolver
+                        .reporter
+                        .report(&value.segments(), UnresolvedTypeNameError(value.to_fn_id()));
+                }
+            },
+            Level::Value => match scope.functions.get(&value.to_fn_id()) {
+                Some(_) => {}
+                None => {
+                    self.resolver
+                        .reporter
+                        .report(&value.segments(), UnresolvedNameError(value.to_fn_id()));
+                }
+            },
         }
     }
 
@@ -126,6 +167,7 @@ impl AsenaListener for ScopeResolver<'_, '_> {
 
         match self.db.constructor_data(value.name(), file) {
             VariantResolution::Binding(_) if !value.arguments().is_empty() => {
+                println!("  -> binding");
                 let fn_id = name.to_fn_id();
                 self.resolver
                     .reporter

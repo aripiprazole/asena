@@ -63,6 +63,7 @@ impl Terminal for FunctionId {
             TokenKind::DoubleArrow => Self(token.text.clone()),
             TokenKind::LeftArrow => Self(token.text.clone()),
             TokenKind::RightArrow => Self(token.text.clone()),
+            TokenKind::SelfKeyword => Self(token.text.clone()),
             _ => return None,
         })
     }

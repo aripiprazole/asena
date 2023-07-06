@@ -44,6 +44,7 @@ pub enum TreeKind {
     ExprLam,
     ExprLet,
     ExprLocal,
+    ExprSelf,
     ExprLit,
     ExprAnn,
     ExprQual,

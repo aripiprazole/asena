@@ -41,6 +41,22 @@ pub use case::*;
 pub use lam_parameter::*;
 
 #[derive(Default, Node, Located, Clone)]
+pub struct SelfExpr(GreenTree);
+
+#[ast_of]
+#[ast_debug]
+#[ast_walkable(AsenaVisitor)]
+#[ast_listenable(AsenaListener)]
+impl SelfExpr {
+    #[ast_leaf]
+    pub fn keyword(&self) -> Lexeme<FunctionId> {
+        self.filter_terminal().first()
+    }
+}
+
+impl GlobalName for SelfExpr {}
+
+#[derive(Default, Node, Located, Clone)]
 pub struct LocalExpr(GreenTree);
 
 #[ast_of]
@@ -636,6 +652,7 @@ ast_enum! {
     #[ast_walker(AsenaVisitor)]
     #[ast_listener(AsenaListener)]
     pub enum Expr {
+        SelfExpr        <- ExprSelf,
         Unit            <- ExprUnit,
         Group           <- ExprGroup,
         Infix           <- ExprBinary,
@@ -732,7 +749,11 @@ impl Listenable for Typed {
     fn listen(&self, listener: &mut Self::Listener<'_>) {
         match self.clone() {
             Typed::Infer => {}
-            Typed::Explicit(explicit) => explicit.listen(listener),
+            Typed::Explicit(explicit) => {
+                listener.enter_typed_explicit(explicit.clone());
+                explicit.listen(listener);
+                listener.exit_typed_explicit(explicit);
+            }
         }
     }
 }

@@ -148,6 +148,10 @@ pub trait AsenaVisitor<T: Default> {
         default()
     }
 
+    fn visit_self_expr(&mut self, value: SelfExpr) -> T {
+        self.visit_expr(value.into())
+    }
+
     fn visit_unit(&mut self, value: Unit) -> T {
         self.visit_expr(value.into())
     }
@@ -283,6 +287,10 @@ pub trait AsenaListener<T: Default = ()> {
         value.listen(&mut resolver);
     }
 
+    fn enter_typed_explicit(&mut self, expr: Expr) -> T {
+        default()
+    }
+
     fn enter_asena_file(&mut self, value: AsenaFile) -> T {
         default()
     }
@@ -411,6 +419,10 @@ pub trait AsenaListener<T: Default = ()> {
         default()
     }
 
+    fn enter_self_expr(&mut self, value: SelfExpr) -> T {
+        self.enter_expr(value.into())
+    }
+
     fn enter_unit(&mut self, value: Unit) -> T {
         self.enter_expr(value.into())
     }
@@ -532,6 +544,10 @@ pub trait AsenaListener<T: Default = ()> {
     }
 
     fn visit_literal(&mut self, value: Lexeme<Literal>) -> T {
+        default()
+    }
+
+    fn exit_typed_explicit(&mut self, expr: Expr) -> T {
         default()
     }
 
@@ -661,6 +677,10 @@ pub trait AsenaListener<T: Default = ()> {
 
     fn exit_expr(&mut self, value: Expr) -> T {
         default()
+    }
+
+    fn exit_self_expr(&mut self, value: SelfExpr) -> T {
+        self.exit_expr(value.into())
     }
 
     fn exit_unit(&mut self, value: Unit) -> T {

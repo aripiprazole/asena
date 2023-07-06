@@ -2,16 +2,19 @@ use IO
 use Nat
 
 enum Vec (a: Set) (n: Nat) {
-  nil  : Vec a 0,
-  cons : (head: a) -> (tail: Vec a n) -> Vec a (n + 1),
+  Nil  : Vec a 0,
+  Cons : (head: a) -> (tail: Vec a n) -> Vec a (n + 1),
+
+  fun show (vec: Vec) {
+    let a = match vec {
+      Test.Cons x xs => Cons x xs,
+      Test.Nil => Nil
+    }
+  }
 }
 
 Main {
-  let y = Vec.cons 10 Vec.nil
-  let a = match y {
-    Vec.cons x xs => Vec.cons x xs,
-    Vec.nil => Vec.nil
-  }
-  let Vec.nil = Vec.cons a
+  let y = Cons 10 Nil
+  let Nil = Cons y
   IO.println "hello, world"
 }

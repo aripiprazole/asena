@@ -60,7 +60,7 @@ pub struct Method(GreenTree);
 #[ast_listenable(AsenaListener)]
 impl Method {
     #[ast_leaf]
-    pub fn name(&self) -> QualifiedPath {
+    pub fn name(&self) -> BindingId {
         self.filter().first()
     }
 

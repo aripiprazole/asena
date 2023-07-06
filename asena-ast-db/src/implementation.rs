@@ -7,7 +7,7 @@ use asena_leaf::ast::Node;
 use crate::database::AstDatabase;
 use crate::driver::HasDB;
 use crate::package::{Package, PackageData};
-use crate::scope::{ScopeData, Value, VariantResolution};
+use crate::scope::{ScopeData, TypeValue, Value, VariantResolution};
 use crate::vfs::VfsFile;
 use crate::*;
 
@@ -143,7 +143,9 @@ impl crate::database::AstDatabase for NonResolvingAstDatabase {
     fn intern_resolved_name(&self, module: FunctionId, decl: Decl) -> Arc<Decl> {
         let mut global_scope = self.scope.borrow_mut();
         let decl = Arc::new(decl);
-        global_scope.declarations.insert(module, decl.clone());
+        global_scope
+            .types
+            .insert(module, TypeValue::Decl(decl.clone()));
         decl
     }
 }

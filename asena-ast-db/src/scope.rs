@@ -2,6 +2,7 @@ use std::{borrow::Borrow, cell::RefCell, rc::Rc, sync::Arc};
 
 use asena_ast::*;
 use asena_leaf::ast::Lexeme;
+use itertools::Itertools;
 
 use crate::{database::AstDatabase, driver::HasDB, vfs::VfsFile};
 
@@ -15,6 +16,7 @@ pub enum ScopeKind {
 #[derive(Debug, Clone)]
 pub enum Value {
     None,
+    Synthetic,
     Sign(Arc<Signature>),
     Cons(Arc<Variant>),
     Pat(Arc<Pat>),
@@ -23,13 +25,20 @@ pub enum Value {
     Expr(Arc<Expr>),
 }
 
+#[derive(Debug, Clone)]
+pub enum TypeValue {
+    Decl(Arc<Decl>),
+    Synthetic,
+    None,
+}
+
 #[derive(Default, Debug, Clone)]
 pub struct ScopeData {
     pub kind: ScopeKind,
-    pub declarations: std::collections::HashMap<FunctionId, Arc<Decl>>,
-    pub constructors: std::collections::HashMap<FunctionId, Arc<Variant>>,
-    pub functions: std::collections::HashMap<FunctionId, Value>,
-    pub variables: std::collections::HashMap<FunctionId, usize>,
+    pub types: im::HashMap<FunctionId, TypeValue>,
+    pub constructors: im::HashMap<FunctionId, Arc<Variant>>,
+    pub functions: im::HashMap<FunctionId, Value>,
+    pub variables: im::HashMap<FunctionId, usize>,
 }
 
 #[derive(Clone)]
@@ -44,7 +53,10 @@ impl ScopeData {
         Rc::new(RefCell::new(self.clone()))
     }
 
-    pub fn create_enum(&mut self, enum_decl: Enum, prefix: Option<FunctionId>) {
+    pub fn create_enum(&mut self, enum_decl: &Enum, prefix: Option<FunctionId>) {
+        let name = FunctionId::optional_path(prefix.clone(), enum_decl.name().to_fn_id());
+        let enum_value = TypeValue::Decl(Arc::new(enum_decl.clone().into()));
+        self.types.insert(name, enum_value);
         for (name, variant) in enum_decl.constructors() {
             let name = FunctionId::optional_path(prefix.clone(), name.clone());
             let variant = Arc::new(variant);
@@ -54,19 +66,55 @@ impl ScopeData {
         }
     }
 
-    pub fn find_value<T>(&self, name: &T) -> Value
-    where
-        T: GlobalName,
-    {
+    pub fn create_trait(&mut self, trait_decl: &Trait, prefix: Option<FunctionId>) {
+        let prefix = FunctionId::optional_path(prefix, trait_decl.name().to_fn_id());
+        let class_value = TypeValue::Decl(Arc::new(trait_decl.clone().into()));
+        self.types.insert(prefix.clone(), class_value);
+        for method in trait_decl.default_methods() {
+            let method_name = method.name().to_fn_id();
+            let name = FunctionId::optional_path(prefix.clone().into(), method_name);
+
+            self.functions.insert(name.clone(), Value::Synthetic);
+        }
+        for field in trait_decl.fields() {
+            let method_name = field.name().to_fn_id();
+            let name = FunctionId::optional_path(prefix.clone().into(), method_name);
+
+            self.functions.insert(name.clone(), Value::Synthetic);
+        }
+    }
+
+    pub fn create_class(&mut self, class_decl: &Class, prefix: Option<FunctionId>) {
+        let prefix = FunctionId::optional_path(prefix, class_decl.name().to_fn_id());
+        let class_value = TypeValue::Decl(Arc::new(class_decl.clone().into()));
+        self.types.insert(prefix.clone(), class_value);
+        for method in class_decl.methods() {
+            let method_name = method.name().to_fn_id();
+            let name = FunctionId::optional_path(prefix.clone().into(), method_name);
+
+            self.functions.insert(name.clone(), Value::Synthetic);
+        }
+        for field in class_decl.fields() {
+            let method_name = field.name().to_fn_id();
+            let name = FunctionId::optional_path(prefix.clone().into(), method_name);
+
+            self.functions.insert(name.clone(), Value::Synthetic);
+        }
+    }
+
+    pub fn find_value(&self, name: &impl GlobalName) -> Value {
         let name = name.to_fn_id();
 
         self.functions.get(&name).cloned().unwrap_or(Value::None)
     }
 
-    pub fn find_type_constructor<T>(&self, name: &T) -> VariantResolution
-    where
-        T: GlobalName,
-    {
+    pub fn find_type(&self, name: &impl GlobalName) -> TypeValue {
+        let name = name.to_fn_id();
+
+        self.types.get(&name).cloned().unwrap_or(TypeValue::None)
+    }
+
+    pub fn find_type_constructor(&self, name: &impl GlobalName) -> VariantResolution {
         match self.constructors.get(&name.to_fn_id()) {
             Some(variant) => VariantResolution::Variant(variant.clone()),
 
@@ -85,7 +133,7 @@ impl ScopeData {
     where
         P: Into<Option<FunctionId>>,
     {
-        let prefix = prefix.into();
+        let prefix: Option<_> = prefix.into();
         let db: &dyn AstDatabase = db.db();
         for (name, decl) in db.items(file).iter() {
             let name = FunctionId::optional_path(prefix.clone(), name.clone());
@@ -96,10 +144,17 @@ impl ScopeData {
                     self.functions.insert(name.clone(), function);
                 }
                 Decl::Enum(enum_decl) => {
-                    self.create_enum(enum_decl.clone(), Some(name.clone()));
+                    self.create_enum(enum_decl, prefix.clone());
                 }
-                Decl::Assign(_) | Decl::Class(_) | Decl::Instance(_) | Decl::Trait(_) => {
-                    self.declarations.insert(name.clone(), decl.clone());
+                Decl::Class(class_decl) => {
+                    self.create_class(class_decl, prefix.clone());
+                }
+                Decl::Trait(trait_decl) => {
+                    self.create_trait(trait_decl, prefix.clone());
+                }
+                Decl::Assign(_) | Decl::Instance(_) => {
+                    self.types
+                        .insert(name.clone(), TypeValue::Decl(decl.clone()));
                 }
                 Decl::Command(_) | Decl::Use(_) | Decl::Error => {}
             }
@@ -108,10 +163,7 @@ impl ScopeData {
 }
 
 impl Value {
-    pub fn or_else<F>(&self, other: F) -> Value
-    where
-        F: Fn() -> Value,
-    {
+    pub fn or_else(&self, other: impl Fn() -> Value) -> Value {
         match self {
             Value::None => other(),
             _ => self.clone(),
@@ -120,12 +172,18 @@ impl Value {
 }
 
 impl VariantResolution {
-    pub fn or_else<F>(&self, other: F) -> VariantResolution
-    where
-        F: Fn() -> VariantResolution,
-    {
+    pub fn or_else(&self, other: impl Fn() -> VariantResolution) -> VariantResolution {
         match self {
             VariantResolution::None => other(),
+            _ => self.clone(),
+        }
+    }
+}
+
+impl TypeValue {
+    pub fn or_else(&self, other: impl Fn() -> TypeValue) -> TypeValue {
+        match self {
+            TypeValue::None => other(),
             _ => self.clone(),
         }
     }
