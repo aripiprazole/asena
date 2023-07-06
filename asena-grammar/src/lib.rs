@@ -247,7 +247,7 @@ pub fn _trait_fields(p: &mut Parser) {
         p.expect(Comma);
         if p.at(Comma) {
             if comma_count > 0 {
-                p.report(UselessCommaError);
+                p.report(UselessCommaWarning);
             }
             comma_count += 1;
             continue;
@@ -317,7 +317,7 @@ pub fn _class_fields(p: &mut Parser) {
         p.expect(Comma);
         if p.at(Comma) {
             if comma_count > 0 {
-                p.report(UselessCommaError);
+                p.report(UselessCommaWarning);
             }
             comma_count += 1;
             continue;
@@ -358,7 +358,7 @@ pub fn _enum_variants(p: &mut Parser) {
         p.expect(Comma);
         if p.at(Comma) {
             if comma_count > 0 {
-                p.report(UselessCommaError);
+                p.report(UselessCommaWarning);
             }
             comma_count += 1;
             continue;
@@ -412,7 +412,7 @@ pub fn enum_variant(p: &mut Parser) {
                 p.expect(Comma);
                 if p.at(Comma) {
                     if comma_count > 0 {
-                        p.report(UselessCommaError);
+                        p.report(UselessCommaWarning);
                     }
                     comma_count += 1;
                     continue;
@@ -768,7 +768,7 @@ pub fn expr_match(p: &mut Parser) -> Option<MarkClosed> {
         p.expect(Comma);
         if p.at(Comma) {
             if comma_count > 0 {
-                p.report(UselessCommaError);
+                p.report(UselessCommaWarning);
             }
             comma_count += 1;
             continue;
@@ -1291,7 +1291,7 @@ fn _semi(p: &mut Parser, mode: Semi) -> bool {
             }
 
             while !p.eof() && p.eat(Semi) {
-                p.warning(UeselessSemiError);
+                p.warning(UeselessSemiWarning);
             }
 
             // returns if can continues

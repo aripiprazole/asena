@@ -6,16 +6,16 @@ pub enum ResolutionError {
     #[default]
     NotResolved,
 
-    #[error("Unresolved import: `{0}`")]
+    #[error("unresolved import: `{0}`")]
     UnresolvedImportError(FunctionId),
 
-    #[error("Could not find the value name: `{0}`")]
+    #[error("could not find the value name: `{0}`")]
     UnresolvedNameError(FunctionId),
 
-    #[error("Could not find the type name: `{0}`")]
+    #[error("could not find the type name: `{0}`")]
     UnresolvedTypeNameError(FunctionId),
 
-    #[error("Could not find the type constructor: `{0}`")]
+    #[error("could not find the type constructor: `{0}`")]
     UnresolvedConstructorError(FunctionId),
 }
 
