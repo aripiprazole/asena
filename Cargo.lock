@@ -114,7 +114,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "asena-ast-format"
+name = "asena-ast-formatter"
 version = "0.1.0"
 dependencies = [
  "asena-ast",
@@ -215,6 +215,60 @@ dependencies = [
  "asena-report",
  "asena-span",
  "colored",
+ "fxhash",
+ "im",
+ "itertools",
+]
+
+[[package]]
+name = "asena-hir"
+version = "0.1.0"
+dependencies = [
+ "asena-ast",
+ "asena-hir-derive",
+ "asena-hir-leaf",
+ "asena-leaf",
+ "asena-span",
+ "enum_dispatch",
+ "fxhash",
+ "im",
+ "itertools",
+ "paste",
+]
+
+[[package]]
+name = "asena-hir-derive"
+version = "0.1.0"
+dependencies = [
+ "asena-ast",
+ "asena-leaf",
+ "asena-span",
+ "fxhash",
+ "im",
+ "itertools",
+]
+
+[[package]]
+name = "asena-hir-leaf"
+version = "0.1.0"
+dependencies = [
+ "asena-ast",
+ "asena-leaf",
+ "asena-span",
+ "enum_dispatch",
+ "fxhash",
+ "im",
+ "itertools",
+ "paste",
+]
+
+[[package]]
+name = "asena-hir-lowering"
+version = "0.1.0"
+dependencies = [
+ "asena-ast",
+ "asena-leaf",
+ "asena-span",
  "fxhash",
  "im",
  "itertools",
@@ -424,6 +478,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7fcaabb2fef8c910e7f4c7ce9f67a1283a1715879a7c230ca9d6d1ae31f16d91"
 
 [[package]]
+name = "enum_dispatch"
+version = "0.3.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8f33313078bb8d4d05a2733a94ac4c2d8a0df9a2b84424ebf4f33bfc224a890e"
+dependencies = [
+ "once_cell",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "errno"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -558,6 +624,12 @@ name = "once_cell"
 version = "1.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dd8b5dd2ae5ed71462c540258bedcb51965123ad7e7ccf4b9a8cafaa4a63576d"
+
+[[package]]
+name = "paste"
+version = "1.0.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b4b27ab7be369122c218afc2079489cdcb4b517c0a3fc386ff11e1fedfcc2b35"
 
 [[package]]
 name = "proc-macro2"

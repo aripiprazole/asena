@@ -1,0 +1,13 @@
+
+[package]
+edition = "2021"
+name = "asena-hir-lowering"
+version = "0.1.0"
+
+[dependencies]
+asena-ast = {path = "../asena-ast"}
+asena-leaf = {path = "../asena-leaf"}
+asena-span = {path = "../asena-span"}
+fxhash = "0.2.1"
+im = "15.1.0"
+itertools = "0.10.5"
