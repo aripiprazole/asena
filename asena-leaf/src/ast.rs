@@ -119,7 +119,7 @@ impl<T: Terminal + 'static> Leaf for T {
                     return None;
                 }
 
-                Leaf::terminal(leaf.data.clone().swap(leaf.data.single().clone()))
+                Leaf::terminal(leaf.data.replace(leaf.data.single().clone()))
             }
             GreenTree::Token(lexeme) => Leaf::terminal(lexeme.token),
             _ => None,

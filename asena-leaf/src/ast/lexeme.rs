@@ -5,6 +5,14 @@ use crate::token::Token;
 
 use super::*;
 
+pub use listener::*;
+pub use walkable::*;
+
+pub mod ast;
+pub mod bridges;
+pub mod listener;
+pub mod walkable;
+
 /// Represents a lexeme, a token with a value, represented in the Rust language.
 #[derive(Clone)]
 pub struct Lexeme<T> {
@@ -48,190 +56,5 @@ impl<T> Lexeme<T> {
             is_none: false,
             value,
         }
-    }
-}
-
-impl<T: Default> Default for Lexeme<T> {
-    fn default() -> Self {
-        Self {
-            token: Spanned::new(Loc::default(), Token::new(TokenKind::Error, "")),
-            value: Default::default(),
-            is_none: false,
-        }
-    }
-}
-
-pub trait LexemeWalkable: Sized {
-    type Walker<'a>;
-
-    fn lexeme_walk(value: Lexeme<Self>, walker: &mut Self::Walker<'_>);
-}
-
-pub trait LexemeListenable: Sized {
-    type Listener<'a>;
-
-    fn lexeme_listen(value: Lexeme<Self>, walker: &mut Self::Listener<'_>);
-}
-
-impl<T: Walkable> LexemeWalkable for Option<T> {
-    fn lexeme_walk(value: Lexeme<Self>, walker: &mut Self::Walker<'_>) {
-        if let Some(value) = value.value {
-            value.walk(walker);
-        }
-    }
-
-    type Walker<'a> = T::Walker<'a>;
-}
-
-impl<T: LexemeListenable + Clone> Listenable for Lexeme<T> {
-    type Listener<'a> = T::Listener<'a>;
-
-    fn listen(&self, listener: &mut Self::Listener<'_>) {
-        T::lexeme_listen(self.clone(), listener)
-    }
-}
-
-impl<T: LexemeWalkable + Clone> Walkable for Lexeme<T> {
-    type Walker<'a> = T::Walker<'a>;
-
-    fn walk(&self, walker: &mut Self::Walker<'_>) {
-        T::lexeme_walk(self.clone(), walker)
-    }
-}
-
-impl<T: Node> Node for Option<T> {
-    fn new<I: Into<GreenTree>>(tree: I) -> Self {
-        let tree: GreenTree = tree.into();
-
-        match tree {
-            GreenTree::None => None,
-            GreenTree::Empty => None,
-            _ => Some(T::new(tree)),
-        }
-    }
-
-    fn unwrap(self) -> GreenTree {
-        match self {
-            Some(vale) => vale.unwrap(),
-            None => GreenTree::None,
-        }
-    }
-}
-
-impl<T> HasTokens for Lexeme<T> {
-    fn tokens(&self) -> Vec<Spanned<Token>> {
-        self.token.tokens()
-    }
-}
-
-impl<T> Located for Lexeme<T> {
-    fn location(&self) -> Cow<'_, Loc> {
-        Cow::Borrowed(&self.token.span)
-    }
-}
-
-impl<T: std::fmt::Display> std::fmt::Display for Lexeme<T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        if self.is_none {
-            write!(f, "None[{}]", std::any::type_name::<T>())
-        } else {
-            std::fmt::Display::fmt(&self.value, f)
-        }
-    }
-}
-
-impl<T: std::fmt::Debug> std::fmt::Debug for Lexeme<T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        if self.is_none {
-            write!(f, "None[{}]", std::any::type_name::<T>())
-        } else {
-            std::fmt::Debug::fmt(&self.value, f)
-        }
-    }
-}
-
-impl<T> std::ops::Deref for Lexeme<T> {
-    type Target = T;
-
-    fn deref(&self) -> &Self::Target {
-        &self.value
-    }
-}
-
-impl<T> std::borrow::Borrow<T> for Lexeme<T> {
-    fn borrow(&self) -> &T {
-        &self.value
-    }
-}
-
-impl<T: Terminal + 'static> Leaf for Lexeme<T> {
-    fn terminal(token: Spanned<Token>) -> Option<Self> {
-        let spanned = token.clone();
-        let terminal = <T as Terminal>::terminal(token)?;
-
-        Some(Self {
-            token: spanned,
-            value: terminal,
-            is_none: false,
-        })
-    }
-}
-
-impl<T: Leaf + 'static> Node for Lexeme<T> {
-    fn new<I: Into<GreenTree>>(tree: I) -> Self {
-        match tree.into() {
-            ref tree @ GreenTree::Leaf(ref leaf) => {
-                #[cfg(debug_assertions)]
-                if leaf.data.children.is_empty() {
-                    println!("Lexeme::new: Leaf node has no children: {}", leaf.data.kind);
-                }
-
-                Self {
-                    token: if leaf.data.children.is_empty() {
-                        Spanned::new(Loc::default(), Token::new(TokenKind::Error, ""))
-                    } else {
-                        leaf.data.clone().swap(leaf.data.single().clone())
-                    },
-                    value: T::make(tree.clone()).unwrap_or_default(),
-                    is_none: false,
-                }
-            }
-            GreenTree::Token(lexeme) => {
-                let value = match lexeme.value.downcast_ref::<T>() {
-                    Some(value) => value.clone(),
-                    None => {
-                        return Self {
-                            token: Spanned::new(Loc::default(), Token::new(TokenKind::Error, "")),
-                            is_none: false,
-                            value: T::default(),
-                        }
-                    }
-                };
-
-                Self {
-                    token: lexeme.token,
-                    is_none: false,
-                    value,
-                }
-            }
-            GreenTree::None => Self {
-                token: Spanned::new(Loc::default(), Token::new(TokenKind::Error, "")),
-                value: T::default(),
-                is_none: true,
-            },
-            _ => Self {
-                token: Spanned::new(Loc::default(), Token::new(TokenKind::Error, "")),
-                value: T::default(),
-                is_none: false,
-            },
-        }
-    }
-
-    fn unwrap(self) -> GreenTree {
-        GreenTree::Token(Lexeme {
-            token: self.token,
-            value: Rc::new(self.value),
-            is_none: self.is_none,
-        })
     }
 }

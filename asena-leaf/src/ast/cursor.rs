@@ -50,14 +50,14 @@ impl<T: Node + Leaf> Cursor<T> {
         T: Located + 'static,
     {
         match &*self.read() {
-            GreenTree::Leaf(leaf) => leaf.data.replace(T::new(leaf.data.clone())),
             GreenTree::Token(lexeme) => {
                 let Some(value) = lexeme.downcast_ref::<T>() else {
-                    return Spanned::default();
+                    return Default::default();
                 };
 
                 lexeme.token.clone().swap(value.clone())
             }
+            tree @ GreenTree::Leaf(leaf) => leaf.data.replace(T::new(tree.clone())),
             _ => Spanned::default(),
         }
     }
