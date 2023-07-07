@@ -1,20 +1,15 @@
 use asena_hir_derive::*;
 
-use crate::{
-    pattern::HirPatternId, stmt::HirStmtId, value::HirValueId, HirLiteralId, HirTypeId, HirVisitor,
-    NameId, ScopeId,
-};
+use crate::{pattern::HirPatternId, stmt::HirStmtId, value::HirValueId, *};
 
 #[derive(Hash, Clone, Debug)]
-#[hir_node]
+#[hir_node(transparent)]
+pub struct HirExprLiteral(pub HirLiteralId);
+
+#[derive(Hash, Clone, Debug)]
+#[hir_node(bridge)]
 pub struct HirExprGroup {
     pub value: HirValueId,
-}
-
-#[derive(Hash, Clone, Debug)]
-#[hir_node]
-pub struct HirExprLiteral {
-    pub value: HirLiteralId,
 }
 
 #[derive(Hash, Clone, Debug)]
@@ -41,23 +36,9 @@ pub struct HirExprReference {
 
 #[derive(Hash, Clone, Debug)]
 #[hir_node]
-pub enum HirMatchArm {
-    Expr(HirValueId),
-    Block(HirStmtId),
-}
-
-#[derive(Hash, Clone, Debug)]
-#[hir_node]
-pub struct HirMatchCase {
-    pub pattern: HirPatternId,
-    pub value: HirMatchArm,
-}
-
-#[derive(Hash, Clone, Debug)]
-#[hir_node]
 pub struct HirExprMatch {
     pub scrutinee: HirValueId,
-    pub cases: Vec<HirMatchCase>,
+    pub cases: Vec<data::HirMatchCase>,
 }
 
 #[derive(Hash, Clone, Debug)]
@@ -82,17 +63,10 @@ pub struct HirExprLam {
 
 #[derive(Hash, Clone, Debug)]
 #[hir_node]
-pub enum HirIfBranch {
-    Expr(HirValueId),
-    Block(Vec<HirStmtId>),
-}
-
-#[derive(Hash, Clone, Debug)]
-#[hir_node]
 pub struct HirExprIf {
     pub condition: HirValueId,
-    pub then_branch: HirIfBranch,
-    pub otherwise_branch: Option<HirIfBranch>,
+    pub then_branch: data::HirIfBranch,
+    pub otherwise_branch: Option<data::HirIfBranch>,
 }
 
 #[derive(Hash, Clone, Debug)]
@@ -102,16 +76,11 @@ pub struct HirExprArray {
 }
 
 #[derive(Hash, Clone, Debug)]
-#[hir_node]
-pub enum HirUnimplemented {}
-
-#[derive(Hash, Clone, Debug)]
 #[hir_kind]
 pub enum HirExprKind {
     Error,
     Unit,
     This,
-    Unimplemented(HirUnimplemented),
     Group(HirExprGroup),
     Literal(HirExprLiteral),
     Reference(HirExprReference),
@@ -130,4 +99,28 @@ pub struct HirExpr {
     pub span: asena_span::Loc,
     pub id: HirExprId,
     pub kind: HirExprKind,
+}
+
+/// Data structures module split into its own module to better disposition, as
+/// it is a bit large, and it's used as extension to [`Expr`].
+pub mod data {
+    use super::*;
+
+    #[derive(Hash, Clone, Debug)]
+    pub enum HirIfBranch {
+        Expr(HirValueId),
+        Block(Vec<HirStmtId>),
+    }
+
+    #[derive(Hash, Clone, Debug)]
+    pub enum HirMatchArm {
+        Expr(HirValueId),
+        Block(HirStmtId),
+    }
+
+    #[derive(Hash, Clone, Debug)]
+    pub struct HirMatchCase {
+        pub pattern: HirPatternId,
+        pub value: HirMatchArm,
+    }
 }

@@ -16,12 +16,16 @@ pub struct HirStmtReturn {
 }
 
 #[derive(Hash, Clone, Debug)]
+#[hir_node(transparent)]
+pub struct HirStmtValue(pub HirValueId);
+
+#[derive(Hash, Clone, Debug)]
 #[hir_kind]
 pub enum HirStmtKind {
     Error,
     Ask(HirStmtAsk),
     Return(HirStmtReturn),
-    Value(HirValueId),
+    Value(HirStmtValue),
 }
 
 #[derive(Hash, Clone, Debug)]
