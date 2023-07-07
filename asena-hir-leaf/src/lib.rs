@@ -2,6 +2,8 @@
 
 use std::{fmt::Debug, hash::Hash};
 
+pub mod hir_debug;
+
 pub trait HirId: Debug + Copy + Hash {
     type Node: HirNode;
 
@@ -21,5 +23,7 @@ pub struct HirBorrow<'a, N: HirNode> {
 
 pub trait HirBaseDatabase {
     /// Finds the node in the given database.
-    fn node<N: HirNode>(&self, id: N::Id) -> Option<HirBorrow<'_, N>>;
+    fn node<N: HirNode>(&self, id: N::Id) -> Option<HirBorrow<'_, N>>
+    where
+        Self: Sized;
 }
