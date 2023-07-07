@@ -4,6 +4,7 @@
 //! It's an abstraction layer over the AST, and it's not meant to be used for parsing, but for
 //! semantic analysis and code generation.
 
+pub mod attr;
 pub mod expr;
 pub mod pattern;
 pub mod stmt;

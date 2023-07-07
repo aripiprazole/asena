@@ -246,6 +246,9 @@ dependencies = [
  "fxhash",
  "im",
  "itertools",
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]

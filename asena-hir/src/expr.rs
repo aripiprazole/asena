@@ -1,23 +1,9 @@
 use asena_hir_derive::*;
 
-use asena_hir_leaf::{HirId, HirNode};
-
 use crate::{
     pattern::HirPatternId, stmt::HirStmtId, value::HirValueId, HirLiteralId, HirTypeId, HirVisitor,
     NameId, ScopeId,
 };
-
-#[derive(Hash, Copy, Clone, Debug)]
-#[hir_id]
-pub struct HirExprId(usize);
-
-impl HirId for HirExprId {
-    type Node = HirExpr;
-
-    fn new(node: Self::Node) -> Self {
-        node.id
-    }
-}
 
 #[derive(Hash, Clone, Debug)]
 #[hir_node]
@@ -139,18 +125,9 @@ pub enum HirExprKind {
 }
 
 #[derive(Hash, Clone, Debug)]
-#[hir_struct]
+#[hir_struct(HirVisitor)]
 pub struct HirExpr {
     pub span: asena_span::Loc,
     pub id: HirExprId,
     pub kind: HirExprKind,
-}
-
-impl HirNode for HirExpr {
-    type Id = HirExprId;
-    type Visitor<'a, T> = dyn HirVisitor<T>;
-
-    fn accept<O: Default>(&mut self, _visitor: &mut Self::Visitor<'_, O>) -> O {
-        todo!()
-    }
 }

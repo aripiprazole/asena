@@ -14,3 +14,6 @@ asena-span = {path = "../asena-span"}
 fxhash = "0.2.1"
 im = "15.1.0"
 itertools = "0.10.5"
+proc-macro2 = "1.0.60"
+quote = "1.0.28"
+syn = {version = "2.0", features = ["full"]}
