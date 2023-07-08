@@ -3,7 +3,7 @@ use asena_hir_derive::*;
 use crate::HirVisitor;
 
 #[derive(Hash, Clone, Debug)]
-#[hir_kind]
+#[hir_kind(HirPattern)]
 pub enum HirPatternKind {
     Error,
 }

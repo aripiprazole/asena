@@ -3,6 +3,9 @@
 use std::{fmt::Debug, hash::Hash};
 
 pub mod hir_debug;
+pub mod hir_sexpr;
+
+pub use hir_debug::*;
 
 pub trait HirId: Debug + Copy + Hash {
     type Node: HirNode;
@@ -13,6 +16,8 @@ pub trait HirId: Debug + Copy + Hash {
 pub trait HirNode: From<<Self::Id as HirId>::Node> {
     type Id: HirId<Node: Into<Self>>;
     type Visitor<'a, T>: ?Sized;
+
+    fn new(id: Self::Id) -> Self;
 
     fn accept<O: Default>(&mut self, visitor: &mut Self::Visitor<'_, O>) -> O;
 }

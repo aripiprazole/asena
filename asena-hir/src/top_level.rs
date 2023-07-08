@@ -3,7 +3,7 @@ use asena_hir_derive::*;
 use crate::{attr::HirAttrId, expr::HirExprId, pattern::HirPatternId, *};
 
 #[derive(Hash, Clone, Debug)]
-#[hir_node]
+#[hir_node(HirTopLevel)]
 pub struct HirTopLevelEnum {
     pub signature: data::HirSignature,
     pub variants: im::HashMap<NameId, data::HirVariant>,
@@ -11,7 +11,7 @@ pub struct HirTopLevelEnum {
 }
 
 #[derive(Hash, Clone, Debug)]
-#[hir_node]
+#[hir_node(HirTopLevel)]
 pub struct HirTopLevelStruct {
     pub signature: data::HirSignature,
     pub fields: im::HashMap<NameId, HirTypeId>,
@@ -19,21 +19,21 @@ pub struct HirTopLevelStruct {
 }
 
 #[derive(Hash, Clone, Debug)]
-#[hir_node]
+#[hir_node(HirTopLevel)]
 pub struct HirTopLevelTrait {
     pub signature: data::HirSignature,
     pub groups: Vec<HirBindingGroup>,
 }
 
 #[derive(Hash, Clone, Debug)]
-#[hir_node]
+#[hir_node(HirTopLevel)]
 pub struct HirBindingGroup {
     pub signature: data::HirSignature,
     pub declarations: Vec<data::HirDeclaration>,
 }
 
 #[derive(Hash, Clone, Debug)]
-#[hir_kind]
+#[hir_kind(HirTopLevel)]
 pub enum HirTopLevelKind {
     Error,
     Enum(HirTopLevelEnum),
@@ -71,6 +71,7 @@ pub mod data {
 
     #[derive(Hash, Clone, Debug)]
     pub struct HirSignature {
+        pub name: NameId,
         pub parameters: im::HashMap<NameId, HirParameterKind>,
         pub return_type: Option<HirTypeId>,
     }

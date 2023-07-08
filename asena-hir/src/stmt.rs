@@ -3,24 +3,24 @@ use asena_hir_derive::*;
 use crate::{pattern::HirPatternId, value::HirValueId, HirVisitor};
 
 #[derive(Hash, Clone, Debug)]
-#[hir_node]
+#[hir_node(HirStmt)]
 pub struct HirStmtAsk {
     pub pattern: HirPatternId,
     pub value: HirValueId,
 }
 
 #[derive(Hash, Clone, Debug)]
-#[hir_node]
+#[hir_node(HirStmt)]
 pub struct HirStmtReturn {
     pub value: HirValueId,
 }
 
 #[derive(Hash, Clone, Debug)]
-#[hir_node(transparent)]
+#[hir_node(HirStmt)]
 pub struct HirStmtValue(pub HirValueId);
 
 #[derive(Hash, Clone, Debug)]
-#[hir_kind]
+#[hir_kind(HirStmt)]
 pub enum HirStmtKind {
     Error,
     Ask(HirStmtAsk),
