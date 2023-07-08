@@ -86,11 +86,9 @@ pub enum HirExprKind {
     Array(HirExprArray),
 }
 
-#[derive(Hash, Clone, Debug)]
 #[hir_struct(HirVisitor)]
+#[derive(Hash, Clone, Debug)]
 pub struct HirExpr {
-    pub span: asena_span::Loc,
-    pub id: HirExprId,
     pub kind: HirExprKind,
 }
 

@@ -130,6 +130,8 @@ name = "asena-ast-lowering"
 version = "0.1.0"
 dependencies = [
  "asena-ast",
+ "asena-hir",
+ "asena-hir-leaf",
  "asena-leaf",
  "asena-span",
  "fxhash",

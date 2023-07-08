@@ -8,10 +8,8 @@ pub enum HirPatternKind {
     Error,
 }
 
-#[derive(Hash, Clone, Debug)]
 #[hir_struct(HirVisitor)]
+#[derive(Hash, Clone, Debug)]
 pub struct HirPattern {
-    pub span: asena_span::Loc,
-    pub id: HirPatternId,
     pub kind: HirPatternKind,
 }

@@ -1,5 +1,7 @@
 use proc_macro::TokenStream;
+use proc_macro2::Span;
 use quote::quote;
+use syn::{parse_quote, token::Pub, Field, FieldMutability, Fields, Ident, Token, Visibility};
 
 #[proc_macro_attribute]
 #[allow(clippy::redundant_clone)]
@@ -93,11 +95,43 @@ pub fn hir_kind(args: TokenStream, input: TokenStream) -> TokenStream {
 #[proc_macro_attribute]
 pub fn hir_struct(args: TokenStream, input: TokenStream) -> TokenStream {
     let visitor: proc_macro2::TokenStream = args.into();
-    let input = syn::parse_macro_input!(input as syn::ItemStruct);
+    let mut input = syn::parse_macro_input!(input as syn::ItemStruct);
 
     let name = input.ident.clone();
 
-    let id_name = syn::Ident::new(&format!("{}Id", name), name.span());
+    let id_name = Ident::new(&format!("{}Id", name), name.span());
+
+    let Fields::Named(ref mut fields) = input.fields else {
+        panic!("HirStruct must be a named struct");
+    };
+
+    fields.named.push(Field {
+        attrs: vec![],
+        vis: Visibility::Public(Pub {
+            span: Span::call_site(),
+        }),
+        mutability: FieldMutability::None,
+        ident: Some(Ident::new("span", Span::call_site())),
+        colon_token: Some(Token![:](Span::call_site())),
+        ty: parse_quote!(asena_hir_leaf::HirLoc),
+    });
+
+    let parameters = fields.named.clone().iter().fold(quote!(), |acc, next| {
+        let name = next.ident.clone();
+        let ty = next.ty.clone();
+        quote!(#acc, #name: #ty)
+    });
+
+    fields.named.push(Field {
+        attrs: vec![],
+        vis: Visibility::Public(Pub {
+            span: Span::call_site(),
+        }),
+        mutability: FieldMutability::None,
+        ident: Some(Ident::new("id", Span::call_site())),
+        colon_token: Some(Token![:](Span::call_site())),
+        ty: parse_quote!(#id_name),
+    });
 
     TokenStream::from(quote! {
         #input
@@ -119,6 +153,12 @@ pub fn hir_struct(args: TokenStream, input: TokenStream) -> TokenStream {
             }
         }
 
+        impl asena_hir_leaf::HirLocated for #name {
+            fn location(&self) -> asena_hir_leaf::HirLoc {
+                self.span.clone()
+            }
+        }
+
         impl asena_hir_leaf::HirNode for #name {
             type Id = #id_name;
             type Visitor<'a, T> = dyn #visitor<T>;
@@ -128,6 +168,12 @@ pub fn hir_struct(args: TokenStream, input: TokenStream) -> TokenStream {
             }
 
             fn accept<O: Default>(&mut self, _visitor: &mut Self::Visitor<'_, O>) -> O {
+                todo!()
+            }
+        }
+
+        impl #name {
+            pub fn new(db: &dyn asena_hir_leaf::HirBaseDatabase #parameters) -> <Self as asena_hir_leaf::HirNode>::Id {
                 todo!()
             }
         }

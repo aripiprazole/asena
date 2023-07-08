@@ -28,10 +28,8 @@ pub enum HirStmtKind {
     Value(HirStmtValue),
 }
 
-#[derive(Hash, Clone, Debug)]
 #[hir_struct(HirVisitor)]
+#[derive(Hash, Clone, Debug)]
 pub struct HirStmt {
-    pub span: asena_span::Loc,
-    pub id: HirStmtId,
     pub kind: HirStmtKind,
 }

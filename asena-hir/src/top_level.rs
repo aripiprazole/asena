@@ -42,11 +42,9 @@ pub enum HirTopLevelKind {
     BindingGroup(HirBindingGroup),
 }
 
-#[derive(Hash, Clone, Debug)]
 #[hir_struct(HirVisitor)]
+#[derive(Hash, Clone, Debug)]
 pub struct HirTopLevel {
-    pub span: asena_span::Loc,
-    pub id: HirTopLevelId,
     pub kind: HirTopLevelKind,
     pub attributes: Vec<HirAttrId>,
 }
@@ -85,6 +83,6 @@ pub mod data {
     #[derive(Hash, Clone, Debug)]
     pub struct HirVariant {
         pub name: NameId,
-        pub ty: HirTypeId,
+        pub variant_type: HirTypeId,
     }
 }

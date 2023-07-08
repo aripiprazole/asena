@@ -7,6 +7,8 @@ pub mod hir_sexpr;
 
 pub use hir_debug::*;
 
+pub type HirLoc = asena_span::Loc;
+
 pub trait HirId: Debug + Copy + Hash {
     type Node: HirNode;
 
@@ -20,6 +22,10 @@ pub trait HirNode: From<<Self::Id as HirId>::Node> {
     fn new(id: Self::Id) -> Self;
 
     fn accept<O: Default>(&mut self, visitor: &mut Self::Visitor<'_, O>) -> O;
+}
+
+pub trait HirLocated {
+    fn location(&self) -> HirLoc;
 }
 
 pub struct HirBorrow<'a, N: HirNode> {

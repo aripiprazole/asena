@@ -9,11 +9,9 @@ pub enum HirAttrKind {
     Inline(data::HirInlineKind),
 }
 
-#[derive(Hash, Clone, Debug)]
 #[hir_struct(HirVisitor)]
+#[derive(Hash, Clone, Debug)]
 pub struct HirAttr {
-    pub span: asena_span::Loc,
-    pub id: HirAttrId,
     pub kind: HirAttrKind,
 }
 
