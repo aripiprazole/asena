@@ -1,10 +1,10 @@
 use asena_hir_derive::*;
 
-use crate::{pattern::HirPatternId, stmt::HirStmtId, value::HirValueId, *};
+use crate::{literal::HirLiteral, pattern::HirPatternId, stmt::HirStmtId, value::HirValueId, *};
 
 #[derive(Hash, Clone, Debug)]
 #[hir_node(transparent)]
-pub struct HirExprLiteral(pub HirLiteralId);
+pub struct HirExprLiteral(pub HirLiteral);
 
 #[derive(Hash, Clone, Debug)]
 #[hir_node(bridge)]

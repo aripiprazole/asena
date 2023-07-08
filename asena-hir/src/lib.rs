@@ -6,6 +6,7 @@
 
 pub mod attr;
 pub mod expr;
+pub mod literal;
 pub mod pattern;
 pub mod stmt;
 pub mod top_level;
@@ -13,12 +14,6 @@ pub mod value;
 
 #[derive(Hash, Copy, Clone, Debug)]
 pub struct HirTypeId(usize);
-
-#[derive(Hash, Copy, Clone, Debug)]
-pub struct HirAttributeId(usize);
-
-#[derive(Hash, Copy, Clone, Debug)]
-pub struct HirLiteralId(usize);
 
 #[derive(Hash, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ScopeId(usize);

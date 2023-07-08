@@ -1,6 +1,6 @@
 use asena_hir_derive::*;
 
-use crate::{expr::HirExprId, pattern::HirPatternId, *};
+use crate::{attr::HirAttrId, expr::HirExprId, pattern::HirPatternId, *};
 
 #[derive(Hash, Clone, Debug)]
 #[hir_node]
@@ -48,7 +48,7 @@ pub struct HirTopLevel {
     pub span: asena_span::Loc,
     pub id: HirTopLevelId,
     pub kind: HirTopLevelKind,
-    pub attributes: Vec<HirAttributeId>,
+    pub attributes: Vec<HirAttrId>,
 }
 
 /// Data structures module split into its own module to better disposition, as
