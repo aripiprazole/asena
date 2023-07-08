@@ -3,14 +3,14 @@ use asena_hir::{
     expr::{HirExpr, HirExprGroup, HirExprId, HirExprKind},
     value::{HirExprValue, HirValue, HirValueId, HirValueKind},
 };
-use asena_hir_leaf::{HirBaseDatabase, HirLoc};
+use asena_hir_leaf::HirBaseDatabase;
 use asena_leaf::ast::Located;
 
-pub struct HirLoweringDb<'a, D: HirBaseDatabase> {
+pub struct AstLowering<'a, D: HirBaseDatabase> {
     pub db: &'a D,
 }
 
-impl<'a, D: HirBaseDatabase> HirLoweringDb<'a, D> {
+impl<'a, D: HirBaseDatabase> AstLowering<'a, D> {
     pub fn new(db: &'a D) -> Self {
         Self { db }
     }
@@ -49,5 +49,27 @@ impl<'a, D: HirBaseDatabase> HirLoweringDb<'a, D> {
         };
 
         HirExpr::new(self.db, kind, expr.location().into_owned())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use asena_ast::Expr;
+    use asena_hir::value::HirValueKind;
+    use asena_hir_leaf::HirBaseDatabase;
+
+    #[test]
+    fn test_lower_value() {
+        let db = HirBaseDatabase::default();
+        let lowering = AstLowering::new(&db);
+        let value_id = lowering.run_lower_value(value);
+
+        assert_eq!(
+            db.value_data(value_id).kind,
+            HirValueKind::Expr(HirExprValue(
+                db.expr_data(db.expr_data(value_id).kind.into()).value
+            ))
+        );
     }
 }

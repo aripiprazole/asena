@@ -5,15 +5,14 @@
 //! semantic analysis and code generation.
 
 pub mod attr;
+pub mod database;
 pub mod expr;
+pub mod hir_type;
 pub mod literal;
 pub mod pattern;
 pub mod stmt;
 pub mod top_level;
 pub mod value;
-
-#[derive(Hash, Copy, Clone, Debug)]
-pub struct HirTypeId(usize);
 
 #[derive(Hash, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ScopeId(usize);

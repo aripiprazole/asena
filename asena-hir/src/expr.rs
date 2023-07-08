@@ -1,6 +1,9 @@
 use asena_hir_derive::*;
 
-use crate::{literal::HirLiteral, pattern::HirPatternId, stmt::HirStmtId, value::HirValueId, *};
+use crate::{
+    hir_type::HirTypeId, literal::HirLiteral, pattern::HirPatternId, stmt::HirStmtId,
+    value::HirValueId, *,
+};
 
 #[derive(Hash, Clone, Debug)]
 #[hir_node(HirExpr)]
