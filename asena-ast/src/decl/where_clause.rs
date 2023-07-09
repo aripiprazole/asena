@@ -21,7 +21,7 @@ pub struct Where(GreenTree);
 #[ast_listenable(AsenaListener)]
 impl Where {
     #[ast_leaf]
-    pub fn constraints(&self) -> Vec<Constraint> {
+    pub fn constraints(&self) -> Cursor<Vec<Constraint>> {
         self.filter()
     }
 }

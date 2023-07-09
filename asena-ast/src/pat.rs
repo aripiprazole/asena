@@ -17,7 +17,7 @@ pub struct LiteralPat(GreenTree);
 #[ast_listenable(AsenaListener)]
 impl LiteralPat {
     #[ast_leaf]
-    pub fn literal(&self) -> Lexeme<Literal> {
+    pub fn literal(&self) -> Cursor<Lexeme<Literal>> {
         self.filter_terminal().first()
     }
 }
@@ -37,7 +37,7 @@ pub struct GlobalPat(GreenTree);
 #[ast_listenable(AsenaListener)]
 impl GlobalPat {
     #[ast_leaf]
-    pub fn name(&self) -> BindingId {
+    pub fn name(&self) -> Cursor<BindingId> {
         self.filter().first()
     }
 }
@@ -57,12 +57,12 @@ pub struct ConstructorPat(GreenTree);
 #[ast_listenable(AsenaListener)]
 impl ConstructorPat {
     #[ast_leaf]
-    pub fn name(&self) -> BindingId {
+    pub fn name(&self) -> Cursor<BindingId> {
         self.filter().first()
     }
 
     #[ast_leaf]
-    pub fn arguments(&self) -> Vec<Pat> {
+    pub fn arguments(&self) -> Cursor<Vec<Pat>> {
         self.filter()
     }
 }
@@ -82,7 +82,7 @@ pub struct ListPat(GreenTree);
 #[ast_listenable(AsenaListener)]
 impl ListPat {
     #[ast_leaf]
-    pub fn items(&self) -> Vec<Pat> {
+    pub fn items(&self) -> Cursor<Vec<Pat>> {
         self.filter()
     }
 }

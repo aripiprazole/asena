@@ -3,7 +3,7 @@ use super::*;
 /// Global name section
 pub trait GlobalName: Default + Ast {
     #[ast_leaf]
-    fn segments(&self) -> Vec<Lexeme<Local>> {
+    fn segments(&self) -> Cursor<Vec<Lexeme<Local>>> {
         self.filter_terminal()
     }
 

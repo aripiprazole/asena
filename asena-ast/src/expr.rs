@@ -49,7 +49,7 @@ pub struct SelfExpr(GreenTree);
 #[ast_listenable(AsenaListener)]
 impl SelfExpr {
     #[ast_leaf]
-    pub fn keyword(&self) -> Lexeme<FunctionId> {
+    pub fn keyword(&self) -> Cursor<Lexeme<FunctionId>> {
         self.filter_terminal().first()
     }
 }
@@ -65,7 +65,7 @@ pub struct LocalExpr(GreenTree);
 #[ast_listenable(AsenaListener)]
 impl LocalExpr {
     #[ast_leaf]
-    pub fn segments(&self) -> Vec<Lexeme<Local>> {
+    pub fn segments(&self) -> Cursor<Vec<Lexeme<Local>>> {
         self.filter_terminal()
     }
 }
@@ -81,7 +81,7 @@ pub struct LiteralExpr(GreenTree);
 #[ast_listenable(AsenaListener)]
 impl LiteralExpr {
     #[ast_leaf]
-    pub fn literal(&self) -> Lexeme<Literal> {
+    pub fn literal(&self) -> Cursor<Lexeme<Literal>> {
         self.filter_terminal().first()
     }
 }
@@ -123,7 +123,7 @@ impl Group {
     /// Returns the expression inside the group, this is the expression that is surrounded by
     /// parenthesis.
     #[ast_leaf]
-    pub fn value(&self) -> Expr {
+    pub fn value(&self) -> Cursor<Expr> {
         self.filter().first()
     }
 }
@@ -209,12 +209,12 @@ pub struct App(GreenTree);
 #[ast_listenable(AsenaListener)]
 impl App {
     #[ast_leaf]
-    pub fn callee(&self) -> Expr {
+    pub fn callee(&self) -> Cursor<Expr> {
         self.filter().nth(0)
     }
 
     #[ast_leaf]
-    pub fn argument(&self) -> Expr {
+    pub fn argument(&self) -> Cursor<Expr> {
         self.filter().nth(1)
     }
 }
@@ -243,18 +243,18 @@ pub struct Dsl(GreenTree);
 #[ast_listenable(AsenaListener)]
 impl Dsl {
     #[ast_leaf]
-    pub fn callee(&self) -> Expr {
+    pub fn callee(&self) -> Cursor<Expr> {
         self.filter().first()
     }
 
     #[ast_leaf]
-    pub fn parameters(&self) -> Vec<Parameter> {
+    pub fn parameters(&self) -> Cursor<Vec<Parameter>> {
         // TODO: Implement this
         vec![].into()
     }
 
     #[ast_leaf]
-    pub fn block(&self) -> Vec<Stmt> {
+    pub fn block(&self) -> Cursor<Vec<Stmt>> {
         self.filter()
     }
 }
@@ -277,7 +277,7 @@ pub struct Array(GreenTree);
 #[ast_listenable(AsenaListener)]
 impl Array {
     #[ast_leaf]
-    pub fn items(&self) -> Vec<Expr> {
+    pub fn items(&self) -> Cursor<Vec<Expr>> {
         self.filter()
     }
 }
@@ -309,12 +309,12 @@ pub struct Lam(GreenTree);
 #[ast_listenable(AsenaListener)]
 impl Lam {
     #[ast_leaf]
-    pub fn parameters(&self) -> Vec<LamParameter> {
+    pub fn parameters(&self) -> Cursor<Vec<LamParameter>> {
         self.filter()
     }
 
     #[ast_leaf]
-    pub fn value(&self) -> Expr {
+    pub fn value(&self) -> Cursor<Expr> {
         self.filter().first()
     }
 }
@@ -338,17 +338,17 @@ pub struct Let(GreenTree);
 #[ast_listenable(AsenaListener)]
 impl Let {
     #[ast_leaf]
-    pub fn pat(&self) -> Pat {
+    pub fn pat(&self) -> Cursor<Pat> {
         self.filter().first()
     }
 
     #[ast_leaf]
-    pub fn value(&self) -> Expr {
+    pub fn value(&self) -> Cursor<Expr> {
         self.filter().nth(1)
     }
 
     #[ast_leaf]
-    pub fn in_value(&self) -> Expr {
+    pub fn in_value(&self) -> Cursor<Expr> {
         self.filter().nth(2)
     }
 }
@@ -371,17 +371,17 @@ pub struct If(GreenTree);
 #[ast_listenable(AsenaListener)]
 impl If {
     #[ast_leaf]
-    pub fn cond(&self) -> Expr {
+    pub fn cond(&self) -> Cursor<Expr> {
         self.filter().first()
     }
 
     #[ast_leaf]
-    pub fn then_branch(&self) -> Branch {
+    pub fn then_branch(&self) -> Cursor<Branch> {
         self.filter().nth(0)
     }
 
     #[ast_leaf]
-    pub fn else_branch(&self) -> Branch {
+    pub fn else_branch(&self) -> Cursor<Branch> {
         self.filter().nth(1)
     }
 }
@@ -407,12 +407,12 @@ pub struct Match(GreenTree);
 #[ast_listenable(AsenaListener)]
 impl Match {
     #[ast_leaf]
-    pub fn scrutinee(&self) -> Expr {
+    pub fn scrutinee(&self) -> Cursor<Expr> {
         self.filter().first()
     }
 
     #[ast_leaf]
-    pub fn cases(&self) -> Vec<Case> {
+    pub fn cases(&self) -> Cursor<Vec<Case>> {
         self.filter()
     }
 }
@@ -435,12 +435,12 @@ pub struct Ann(GreenTree);
 #[ast_listenable(AsenaListener)]
 impl Ann {
     #[ast_leaf]
-    pub fn value(&self) -> Expr {
+    pub fn value(&self) -> Cursor<Expr> {
         self.find_lhs()
     }
 
     #[ast_leaf]
-    pub fn against(&self) -> Expr {
+    pub fn against(&self) -> Cursor<Expr> {
         self.find_rhs()
     }
 }
@@ -524,7 +524,7 @@ pub struct Pi(GreenTree);
 #[ast_listenable(AsenaListener)]
 impl Pi {
     #[ast_leaf]
-    pub fn parameter_name(&self) -> Option<Lexeme<Local>> {
+    pub fn parameter_name(&self) -> Cursor<Option<Lexeme<Local>>> {
         if self.has("parameter_name") {
             let fn_id = self
                 .named_terminal::<FunctionId>("parameter_name")
@@ -542,7 +542,7 @@ impl Pi {
     }
 
     #[ast_leaf]
-    pub fn parameter_type(&self) -> Expr {
+    pub fn parameter_type(&self) -> Cursor<Expr> {
         if self.has("parameter_type") {
             self.named_at("parameter_type")
         } else {
@@ -551,7 +551,7 @@ impl Pi {
     }
 
     #[ast_leaf]
-    pub fn return_type(&self) -> Expr {
+    pub fn return_type(&self) -> Cursor<Expr> {
         if self.has("parameter_name") {
             return self.named_at("return_type");
         }
@@ -603,7 +603,7 @@ pub struct Sigma(GreenTree);
 #[ast_listenable(AsenaListener)]
 impl Sigma {
     #[ast_leaf]
-    pub fn parameter_name(&self) -> Lexeme<Local> {
+    pub fn parameter_name(&self) -> Cursor<Lexeme<Local>> {
         let fn_id = self
             .named_terminal::<FunctionId>("parameter_name")
             .as_leaf()
@@ -613,12 +613,12 @@ impl Sigma {
     }
 
     #[ast_leaf]
-    pub fn parameter_type(&self) -> Expr {
+    pub fn parameter_type(&self) -> Cursor<Expr> {
         self.named_at("parameter_type")
     }
 
     #[ast_leaf]
-    pub fn return_type(&self) -> Expr {
+    pub fn return_type(&self) -> Cursor<Expr> {
         self.named_at("parameter_type")
     }
 }
@@ -633,7 +633,7 @@ pub struct Help(GreenTree);
 #[ast_listenable(AsenaListener)]
 impl Help {
     #[ast_leaf]
-    pub fn value(&self) -> Expr {
+    pub fn value(&self) -> Cursor<Expr> {
         self.filter().first()
     }
 }
@@ -642,7 +642,7 @@ impl Expr {
     /// Walks the tree using the given visitor, it will call the visitor's methods for each node
     /// in the tree.
     pub fn walks<T: AsenaVisitor<()>>(self, mut visitor: T) -> Self {
-        self.walk(&mut visitor::new_walker(&mut visitor));
+        visitor.walks(self.clone());
         self
     }
 }

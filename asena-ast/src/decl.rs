@@ -42,7 +42,7 @@ pub struct Use(GreenTree);
 #[ast_listenable(AsenaListener)]
 impl Use {
     #[ast_leaf]
-    pub fn segments(&self) -> Vec<Lexeme<FunctionId>> {
+    pub fn segments(&self) -> Cursor<Vec<Lexeme<FunctionId>>> {
         self.filter_terminal()
     }
 
@@ -79,24 +79,24 @@ pub struct Signature(GreenTree);
 #[ast_listenable(AsenaListener)]
 impl Signature {
     #[ast_leaf]
-    pub fn name(&self) -> BindingId {
+    pub fn name(&self) -> Cursor<BindingId> {
         self.filter().first()
     }
 
     #[ast_leaf]
-    pub fn parameters(&self) -> Vec<Parameter> {
+    pub fn parameters(&self) -> Cursor<Vec<Parameter>> {
         // bridge
         GlobalDecl::find_parameters(self)
     }
 
     #[ast_leaf]
-    pub fn return_type(&self) -> Typed {
+    pub fn return_type(&self) -> Cursor<Typed> {
         self.filter().first()
     }
 
     /// Holds, optionally the value of the [Signature], this is an sugar to [Assign].
     #[ast_leaf]
-    pub fn body(&self) -> Option<Vec<Stmt>> {
+    pub fn body(&self) -> Cursor<Option<Vec<Stmt>>> {
         if self.token(TokenKind::LeftBrace).is_error() {
             Cursor::from(None)
         } else {
@@ -122,18 +122,18 @@ pub struct Assign(GreenTree);
 #[ast_listenable(AsenaListener)]
 impl Assign {
     #[ast_leaf]
-    pub fn name(&self) -> BindingId {
+    pub fn name(&self) -> Cursor<BindingId> {
         self.filter().first()
     }
 
     #[ast_leaf]
-    pub fn patterns(&self) -> Vec<Pat> {
+    pub fn patterns(&self) -> Cursor<Vec<Pat>> {
         self.filter()
     }
 
     /// Holds the value of the [Assign].
     #[ast_leaf]
-    pub fn body(&self) -> Expr {
+    pub fn body(&self) -> Cursor<Expr> {
         self.filter().first()
     }
 }
@@ -155,12 +155,12 @@ pub struct Command(GreenTree);
 #[ast_listenable(AsenaListener)]
 impl Command {
     #[ast_leaf]
-    pub fn name(&self) -> BindingId {
+    pub fn name(&self) -> Cursor<BindingId> {
         self.filter().first()
     }
 
     #[ast_leaf]
-    pub fn arguments(&self) -> Vec<Expr> {
+    pub fn arguments(&self) -> Cursor<Vec<Expr>> {
         self.filter().skip(1)
     }
 }
@@ -187,23 +187,23 @@ pub struct Class(GreenTree);
 #[ast_listenable(AsenaListener)]
 impl Class {
     #[ast_leaf]
-    pub fn name(&self) -> BindingId {
+    pub fn name(&self) -> Cursor<BindingId> {
         self.filter().first()
     }
 
     #[ast_leaf]
-    pub fn parameters(&self) -> Vec<Parameter> {
+    pub fn parameters(&self) -> Cursor<Vec<Parameter>> {
         // bridge
         GlobalDecl::find_parameters(self)
     }
 
     #[ast_leaf]
-    pub fn fields(&self) -> Vec<Field> {
+    pub fn fields(&self) -> Cursor<Vec<Field>> {
         self.filter()
     }
 
     #[ast_leaf]
-    pub fn methods(&self) -> Vec<Method> {
+    pub fn methods(&self) -> Cursor<Vec<Method>> {
         self.filter()
     }
 }
@@ -227,28 +227,28 @@ pub struct Enum(GreenTree);
 #[ast_listenable(AsenaListener)]
 impl Enum {
     #[ast_leaf]
-    pub fn name(&self) -> BindingId {
+    pub fn name(&self) -> Cursor<BindingId> {
         self.filter().first()
     }
 
     #[ast_leaf]
-    pub fn parameters(&self) -> Vec<Parameter> {
+    pub fn parameters(&self) -> Cursor<Vec<Parameter>> {
         // bridge
         GlobalDecl::find_parameters(self)
     }
 
     #[ast_leaf]
-    pub fn gadt_type(&self) -> Typed {
+    pub fn gadt_type(&self) -> Cursor<Typed> {
         self.filter().first()
     }
 
     #[ast_leaf]
-    pub fn variants(&self) -> Vec<Variant> {
+    pub fn variants(&self) -> Cursor<Vec<Variant>> {
         self.filter()
     }
 
     #[ast_leaf]
-    pub fn methods(&self) -> Vec<Method> {
+    pub fn methods(&self) -> Cursor<Vec<Method>> {
         self.filter()
     }
 
@@ -280,22 +280,22 @@ pub struct Trait(GreenTree);
 #[ast_listenable(AsenaListener)]
 impl Trait {
     #[ast_leaf]
-    pub fn name(&self) -> BindingId {
+    pub fn name(&self) -> Cursor<BindingId> {
         self.filter().first()
     }
 
     #[ast_leaf]
-    pub fn parameters(&self) -> Vec<Parameter> {
+    pub fn parameters(&self) -> Cursor<Vec<Parameter>> {
         self.filter()
     }
 
     #[ast_leaf]
-    pub fn fields(&self) -> Vec<Field> {
+    pub fn fields(&self) -> Cursor<Vec<Field>> {
         self.filter()
     }
 
     #[ast_leaf]
-    pub fn default_methods(&self) -> Vec<DefaultMethod> {
+    pub fn default_methods(&self) -> Cursor<Vec<DefaultMethod>> {
         self.filter()
     }
 }
@@ -318,17 +318,17 @@ pub struct Instance(GreenTree);
 #[ast_listenable(AsenaListener)]
 impl Instance {
     #[ast_leaf]
-    pub fn parameters(&self) -> Vec<Parameter> {
+    pub fn parameters(&self) -> Cursor<Vec<Parameter>> {
         self.filter()
     }
 
     #[ast_leaf]
-    pub fn where_clause(&self) -> Option<Where> {
+    pub fn where_clause(&self) -> Cursor<Option<Where>> {
         self.filter().try_as_nth(0)
     }
 
     #[ast_leaf]
-    pub fn methods(&self) -> Vec<Method> {
+    pub fn methods(&self) -> Cursor<Vec<Method>> {
         self.filter()
     }
 }
@@ -337,7 +337,7 @@ impl Decl {
     /// Walks the tree using the given visitor, it will call the visitor's methods for each node
     /// in the tree.
     pub fn walks<T: AsenaVisitor<()>>(self, mut visitor: T) -> Self {
-        self.walk(&mut visitor::new_walker(&mut visitor));
+        visitor.walks(self.clone());
         self
     }
 }

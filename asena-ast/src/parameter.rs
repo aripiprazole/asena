@@ -26,13 +26,13 @@ pub struct Parameter(GreenTree);
 impl Parameter {
     /// Optional parameter's name
     #[ast_leaf]
-    pub fn name(&self) -> Lexeme<Local> {
+    pub fn name(&self) -> Cursor<Lexeme<Local>> {
         self.filter_terminal::<Local>().first()
     }
 
     /// Parameter's type
     #[ast_leaf]
-    pub fn parameter_type(&self) -> Typed {
+    pub fn parameter_type(&self) -> Cursor<Typed> {
         self.filter::<Typed>().first()
     }
 
@@ -72,7 +72,7 @@ impl Parameter {
     /// Walks the tree using the given visitor, it will call the visitor's methods for each node
     /// in the tree.
     pub fn walks<T: AsenaVisitor<()>>(self, mut visitor: T) -> Self {
-        self.walk(&mut visitor::new_walker(&mut visitor));
+        visitor.walks(self.clone());
         self
     }
 }

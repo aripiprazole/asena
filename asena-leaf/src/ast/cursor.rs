@@ -13,6 +13,15 @@ pub struct Cursor<T> {
     _marker: PhantomData<T>,
 }
 
+/// Trait to make easier to derive proc macros
+pub trait HasCursor {
+    type Output: Sized;
+}
+
+impl<T> HasCursor for Cursor<T> {
+    type Output = T;
+}
+
 impl<T: Leaf> Cursor<T> {
     /// Creates a new cursor without any value.
     pub fn empty() -> Self {

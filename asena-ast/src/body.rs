@@ -15,7 +15,7 @@ pub struct Value(GreenTree);
 #[ast_listenable(AsenaListener)]
 impl Value {
     #[ast_leaf]
-    pub fn value(&self) -> Expr {
+    pub fn value(&self) -> Cursor<Expr> {
         self.filter().first()
     }
 }
@@ -30,7 +30,7 @@ pub struct Do(GreenTree);
 #[ast_listenable(AsenaListener)]
 impl Do {
     #[ast_leaf]
-    pub fn stmts(&self) -> Vec<Stmt> {
+    pub fn stmts(&self) -> Cursor<Vec<Stmt>> {
         self.filter()
     }
 }

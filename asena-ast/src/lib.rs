@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use asena_derive::*;
 
-use asena_leaf::ast::GreenTree;
+use asena_leaf::ast::{Cursor, GreenTree};
 use asena_leaf::ast::Walkable;
 
 /// Represents a true-false value, just like an wrapper to [bool], this represents if an integer
@@ -25,20 +25,20 @@ pub struct AsenaFile(GreenTree);
 #[ast_walkable(AsenaVisitor)]
 impl AsenaFile {
     #[ast_leaf]
-    pub fn declarations(&self) -> Vec<Decl> {
+    pub fn declarations(&self) -> Cursor<Vec<Decl>> {
         self.filter()
     }
 
     /// Walks the tree using the given visitor, it will call the visitor's methods for each node
     /// in the tree.
     pub fn walks<T: AsenaVisitor<()>>(self, mut visitor: T) -> Self {
-        self.walk(&mut visitor::new_walker(&mut visitor));
+        visitor.walks(self.clone());
         self
     }
 
     /// I hate my life
     pub fn arc_walks<T: AsenaVisitor<()>>(self: Arc<Self>, mut visitor: T) -> Arc<Self> {
-        self.walk(&mut visitor::new_walker(&mut visitor));
+        visitor.walks(self.clone());
         self
     }
 }

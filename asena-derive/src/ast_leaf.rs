@@ -10,10 +10,10 @@ pub fn expand_ast_leaf(_args: TokenStream, input: TokenStream) -> TokenStream {
     let cursor_name = Ident::new(&format!("find_{name}"), Span::call_site());
     let output = match input.sig.output {
         ReturnType::Default => quote!(()),
-        ReturnType::Type(_, ty) => quote!(#ty),
+        ReturnType::Type(_, ref ty) => quote!(<#ty as asena_leaf::ast::HasCursor>::Output),
     };
 
-    input.sig.output = parse_quote!(-> asena_leaf::ast::Cursor<#output>);
+    // input.sig.output = parse_quote!(-> #output);
 
     let mut impl_fn_tokens = input.clone();
     impl_fn_tokens.attrs.push(parse_quote! {

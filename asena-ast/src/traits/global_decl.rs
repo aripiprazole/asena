@@ -1,4 +1,4 @@
-use asena_leaf::ast::Ast;
+use asena_leaf::ast::{Ast, Cursor};
 
 use crate::*;
 
@@ -11,7 +11,7 @@ pub trait GlobalDecl: Ast {
     }
 
     #[ast_leaf]
-    fn parameters(&self) -> Vec<Parameter> {
+    fn parameters(&self) -> Cursor<Vec<Parameter>> {
         self.filter()
     }
 }

@@ -5,17 +5,17 @@ use crate::*;
 
 pub trait Binary: Ast {
     #[ast_leaf]
-    fn lhs(&self) -> Expr {
+    fn lhs(&self) -> Cursor<Expr> {
         self.at(0)
     }
 
     #[ast_leaf]
-    fn fn_id(&self) -> Lexeme<FunctionId> {
+    fn fn_id(&self) -> Cursor<Lexeme<FunctionId>> {
         self.terminal(1)
     }
 
     #[ast_leaf]
-    fn rhs(&self) -> Expr {
+    fn rhs(&self) -> Cursor<Expr> {
         let mut rhs = self.clone();
         let Some(children) = rhs.children() else {
             return Cursor::empty();

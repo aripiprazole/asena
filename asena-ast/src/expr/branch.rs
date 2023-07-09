@@ -1,4 +1,5 @@
 use asena_derive::*;
+use asena_leaf::ast::Cursor;
 
 use asena_leaf::ast_enum;
 use asena_leaf::node::TreeKind::*;
@@ -21,7 +22,7 @@ pub struct ExprBranch(GreenTree);
 #[ast_listenable(AsenaListener)]
 impl ExprBranch {
     #[ast_leaf]
-    pub fn value(&self) -> Expr {
+    pub fn value(&self) -> Cursor<Expr> {
         self.filter().first()
     }
 }
@@ -43,7 +44,7 @@ pub struct BlockBranch(GreenTree);
 #[ast_listenable(AsenaListener)]
 impl BlockBranch {
     #[ast_leaf]
-    pub fn stmts(&self) -> Vec<Stmt> {
+    pub fn stmts(&self) -> Cursor<Vec<Stmt>> {
         self.filter()
     }
 }

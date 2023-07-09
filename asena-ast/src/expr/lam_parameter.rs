@@ -15,7 +15,7 @@ pub struct LamParameter(GreenTree);
 #[ast_listenable(AsenaListener)]
 impl LamParameter {
     #[ast_leaf]
-    pub fn name(&self) -> Lexeme<Local> {
+    pub fn name(&self) -> Cursor<Lexeme<Local>> {
         self.filter_terminal().first()
     }
 }

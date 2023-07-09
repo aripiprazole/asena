@@ -1,4 +1,5 @@
 use asena_derive::*;
+use asena_leaf::ast::Cursor;
 
 use asena_leaf::ast_enum;
 use asena_leaf::node::TreeKind::*;
@@ -22,12 +23,12 @@ pub struct TypeVariant(GreenTree);
 #[ast_listenable(AsenaListener)]
 impl TypeVariant {
     #[ast_leaf]
-    pub fn name(&self) -> BindingId {
+    pub fn name(&self) -> Cursor<BindingId> {
         self.filter().first()
     }
 
     #[ast_leaf]
-    pub fn value(&self) -> Typed {
+    pub fn value(&self) -> Cursor<Typed> {
         self.filter().first()
     }
 }
@@ -48,18 +49,18 @@ pub struct ConstructorVariant(GreenTree);
 #[ast_listenable(AsenaListener)]
 impl ConstructorVariant {
     #[ast_leaf]
-    pub fn name(&self) -> BindingId {
+    pub fn name(&self) -> Cursor<BindingId> {
         self.filter().first()
     }
 
     #[ast_leaf]
-    pub fn parameters(&self) -> Vec<Typed> {
+    pub fn parameters(&self) -> Cursor<Vec<Typed>> {
         self.filter().first()
     }
 }
 
 impl Variant {
-    pub fn name(&self) -> BindingId {
+    pub fn name(&self) -> Cursor<BindingId> {
         match self {
             Variant::TypeVariant(v) => v.name(),
             Variant::ConstructorVariant(v) => v.name(),

@@ -1,4 +1,4 @@
-use asena_leaf::ast::{Leaf, Node};
+use asena_leaf::ast::{Cursor, Leaf, Node};
 use asena_leaf::node::TreeKind::*;
 
 use crate::*;
@@ -20,7 +20,7 @@ pub struct Constraint(GreenTree);
 #[ast_listenable(AsenaListener)]
 impl Constraint {
     #[ast_leaf]
-    pub fn value(&self) -> Typed {
+    pub fn value(&self) -> Cursor<Typed> {
         self.filter().first()
     }
 }

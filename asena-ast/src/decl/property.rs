@@ -1,4 +1,4 @@
-use asena_leaf::ast::{Leaf, Node};
+use asena_leaf::ast::{Cursor, Leaf, Node};
 use asena_leaf::kind::TreeKind::*;
 
 use crate::*;
@@ -20,12 +20,12 @@ pub struct Field(GreenTree);
 #[ast_listenable(AsenaListener)]
 impl Field {
     #[ast_leaf]
-    pub fn name(&self) -> BindingId {
+    pub fn name(&self) -> Cursor<BindingId> {
         self.filter().first()
     }
 
     #[ast_leaf]
-    pub fn field_type(&self) -> Typed {
+    pub fn field_type(&self) -> Cursor<Typed> {
         self.filter().first()
     }
 }
@@ -60,27 +60,27 @@ pub struct Method(GreenTree);
 #[ast_listenable(AsenaListener)]
 impl Method {
     #[ast_leaf]
-    pub fn name(&self) -> BindingId {
+    pub fn name(&self) -> Cursor<BindingId> {
         self.filter().first()
     }
 
     #[ast_leaf]
-    pub fn parameters(&self) -> Vec<Parameter> {
+    pub fn parameters(&self) -> Cursor<Vec<Parameter>> {
         self.filter()
     }
 
     #[ast_leaf]
-    pub fn where_clause(&self) -> Option<Where> {
+    pub fn where_clause(&self) -> Cursor<Option<Where>> {
         self.filter().try_as_nth(0)
     }
 
     #[ast_leaf]
-    pub fn return_type(&self) -> Typed {
+    pub fn return_type(&self) -> Cursor<Typed> {
         self.filter().first()
     }
 
     #[ast_leaf]
-    pub fn body(&self) -> Vec<Stmt> {
+    pub fn body(&self) -> Cursor<Vec<Stmt>> {
         self.filter()
     }
 }

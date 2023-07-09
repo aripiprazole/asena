@@ -23,12 +23,12 @@ pub struct Ask(GreenTree);
 #[ast_listenable(AsenaListener)]
 impl Ask {
     #[ast_leaf]
-    pub fn pattern(&self) -> Pat {
+    pub fn pattern(&self) -> Cursor<Pat> {
         self.filter().first()
     }
 
     #[ast_leaf]
-    pub fn value(&self) -> Expr {
+    pub fn value(&self) -> Cursor<Expr> {
         self.filter().first()
     }
 }
@@ -52,17 +52,17 @@ pub struct IfStmt(GreenTree);
 #[ast_listenable(AsenaListener)]
 impl IfStmt {
     #[ast_leaf]
-    pub fn cond(&self) -> Expr {
+    pub fn cond(&self) -> Cursor<Expr> {
         self.filter().first()
     }
 
     #[ast_leaf]
-    pub fn then_branch(&self) -> Branch {
+    pub fn then_branch(&self) -> Cursor<Branch> {
         self.filter().nth(0)
     }
 
     #[ast_leaf]
-    pub fn else_branch(&self) -> Option<Branch> {
+    pub fn else_branch(&self) -> Cursor<Option<Branch>> {
         self.filter().try_as_nth(1)
     }
 }
@@ -84,12 +84,12 @@ pub struct LetStmt(GreenTree);
 #[ast_listenable(AsenaListener)]
 impl LetStmt {
     #[ast_leaf]
-    pub fn pattern(&self) -> Pat {
+    pub fn pattern(&self) -> Cursor<Pat> {
         self.filter().first()
     }
 
     #[ast_leaf]
-    pub fn value(&self) -> Expr {
+    pub fn value(&self) -> Cursor<Expr> {
         self.filter().first()
     }
 }
@@ -112,7 +112,7 @@ impl Return {
     /// The value to return, if it's not present, it will return `None`. And it means that the
     /// return type is `()`.
     #[ast_leaf]
-    pub fn value(&self) -> Option<Expr> {
+    pub fn value(&self) -> Cursor<Option<Expr>> {
         self.filter().first()
     }
 }
@@ -128,7 +128,7 @@ pub struct ExprStmt(GreenTree);
 #[ast_listenable(AsenaListener)]
 impl ExprStmt {
     #[ast_leaf]
-    pub fn value(&self) -> Expr {
+    pub fn value(&self) -> Cursor<Expr> {
         self.filter::<Expr>().first()
     }
 }
@@ -137,7 +137,7 @@ impl Stmt {
     /// Walks the tree using the given visitor, it will call the visitor's methods for each node
     /// in the tree.
     pub fn walks<T: AsenaVisitor<()>>(self, mut visitor: T) -> Self {
-        self.walk(&mut visitor::new_walker(&mut visitor));
+        visitor.walks(self.clone());
         self
     }
 }

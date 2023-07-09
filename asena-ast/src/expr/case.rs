@@ -21,12 +21,12 @@ pub struct Case(GreenTree);
 #[ast_listenable(AsenaListener)]
 impl Case {
     #[ast_leaf]
-    pub fn pat(&self) -> Pat {
+    pub fn pat(&self) -> Cursor<Pat> {
         self.filter().first()
     }
 
     #[ast_leaf]
-    pub fn value(&self) -> Branch {
+    pub fn value(&self) -> Cursor<Branch> {
         self.filter().first()
     }
 }
