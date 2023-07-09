@@ -8,8 +8,6 @@ version = "0.1.0"
 asena-ast = {path = "../asena-ast"}
 asena-grammar = {path = "../asena-grammar"}
 asena-hir = {path = "../asena-hir"}
-asena-hir-db = {path = "../asena-hir-db"}
-asena-hir-leaf = {path = "../asena-hir-leaf"}
 asena-leaf = {path = "../asena-leaf"}
 asena-lexer = {path = "../asena-lexer"}
 asena-parser = {path = "../asena-parser"}

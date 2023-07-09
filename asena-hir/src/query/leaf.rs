@@ -1,11 +1,4 @@
-#![feature(associated_type_bounds)]
-
-use std::{fmt::Debug, hash::Hash};
-
-pub mod hir_debug;
-pub mod hir_sexpr;
-
-pub use hir_debug::*;
+use std::{fmt::Debug, hash::Hash, sync::Arc};
 
 pub type HirLoc = asena_span::Loc;
 
@@ -22,6 +15,13 @@ pub trait HirNode: From<<Self::Id as HirId>::Node> {
     fn hash_id(&self) -> Self::Id;
 
     fn accept<O: Default>(&mut self, visitor: &mut Self::Visitor<'_, O>) -> O;
+}
+
+pub trait HirInterned {
+    type Id;
+    type Database: ?Sized;
+
+    fn interned(db: std::sync::Arc<Self::Database>, id: Self::Id) -> Arc<Self>;
 }
 
 pub trait HirLocated {

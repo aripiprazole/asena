@@ -7,7 +7,6 @@ version = "0.1.0"
 [dependencies]
 asena-ast = {path = "../asena-ast"}
 asena-hir-derive = {path = "../asena-hir-derive"}
-asena-hir-leaf = {path = "../asena-hir-leaf"}
 asena-leaf = {path = "../asena-leaf"}
 asena-span = {path = "../asena-span"}
 enum_dispatch = "0.3.12"

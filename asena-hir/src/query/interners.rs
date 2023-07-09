@@ -1,7 +1,9 @@
-use super::*;
+use crate::top_level::HirTopLevelId;
+
+use super::{leaf::HirNode, *};
 
 impl HirInterner for HirDatabase {
-    fn intern_name(&self, data: String) -> asena_hir::NameId {
+    fn intern_name(self: Arc<Self>, data: String) -> NameId {
         if let Some(id) = self.id_name.read().unwrap().get(&data) {
             return *id;
         }
@@ -15,7 +17,7 @@ impl HirInterner for HirDatabase {
         id
     }
 
-    fn intern_expr(&self, data: expr::HirExpr) -> expr::HirExprId {
+    fn intern_expr(self: Arc<Self>, data: expr::HirExpr) -> expr::HirExprId {
         if let Some(id) = self.id_expr.read().unwrap().get(&data) {
             return *id;
         }
@@ -29,7 +31,7 @@ impl HirInterner for HirDatabase {
         id
     }
 
-    fn intern_value(&self, data: value::HirValue) -> value::HirValueId {
+    fn intern_value(self: Arc<Self>, data: value::HirValue) -> value::HirValueId {
         if let Some(id) = self.id_value.read().unwrap().get(&data) {
             return *id;
         }
@@ -43,7 +45,7 @@ impl HirInterner for HirDatabase {
         id
     }
 
-    fn intern_pattern(&self, data: pattern::HirPattern) -> pattern::HirPatternId {
+    fn intern_pattern(self: Arc<Self>, data: pattern::HirPattern) -> pattern::HirPatternId {
         let id = data.hash_id();
         if let Some(id) = self.id_pattern.read().unwrap().get(&data) {
             return *id;
@@ -57,7 +59,7 @@ impl HirInterner for HirDatabase {
         id
     }
 
-    fn intern_stmt(&self, data: stmt::HirStmt) -> stmt::HirStmtId {
+    fn intern_stmt(self: Arc<Self>, data: stmt::HirStmt) -> stmt::HirStmtId {
         if let Some(id) = self.id_stmt.read().unwrap().get(&data) {
             return *id;
         }
@@ -71,7 +73,7 @@ impl HirInterner for HirDatabase {
         id
     }
 
-    fn intern_top_level(&self, data: top_level::HirTopLevel) -> top_level::HirTopLevelId {
+    fn intern_top_level(self: Arc<Self>, data: top_level::HirTopLevel) -> HirTopLevelId {
         if let Some(id) = self.id_top_level.read().unwrap().get(&data) {
             return *id;
         }
@@ -85,7 +87,7 @@ impl HirInterner for HirDatabase {
         id
     }
 
-    fn intern_attr(&self, data: attr::HirAttr) -> attr::HirAttrId {
+    fn intern_attr(self: Arc<Self>, data: attr::HirAttr) -> attr::HirAttrId {
         if let Some(id) = self.id_attr.read().unwrap().get(&data) {
             return *id;
         }
@@ -99,7 +101,7 @@ impl HirInterner for HirDatabase {
         id
     }
 
-    fn intern_type(&self, data: hir_type::HirType) -> hir_type::HirTypeId {
+    fn intern_type(self: Arc<Self>, data: hir_type::HirType) -> hir_type::HirTypeId {
         if let Some(id) = self.id_type.read().unwrap().get(&data) {
             return *id;
         }
@@ -115,35 +117,35 @@ impl HirInterner for HirDatabase {
 }
 
 impl HirBag for HirDatabase {
-    fn name_data(&self, id: NameId) -> Arc<String> {
+    fn name_data(self: Arc<Self>, id: NameId) -> Arc<String> {
         self.name_id.read().unwrap().get(&id).unwrap().clone()
     }
 
-    fn expr_data(&self, id: expr::HirExprId) -> Arc<expr::HirExpr> {
+    fn expr_data(self: Arc<Self>, id: expr::HirExprId) -> Arc<expr::HirExpr> {
         self.expr_id.read().unwrap().get(&id).unwrap().clone()
     }
 
-    fn value_data(&self, id: value::HirValueId) -> Arc<value::HirValue> {
+    fn value_data(self: Arc<Self>, id: value::HirValueId) -> Arc<value::HirValue> {
         self.value_id.read().unwrap().get(&id).unwrap().clone()
     }
 
-    fn pattern_data(&self, id: pattern::HirPatternId) -> Arc<pattern::HirPattern> {
+    fn pattern_data(self: Arc<Self>, id: pattern::HirPatternId) -> Arc<pattern::HirPattern> {
         self.pattern_id.read().unwrap().get(&id).unwrap().clone()
     }
 
-    fn stmt_data(&self, id: stmt::HirStmtId) -> Arc<stmt::HirStmt> {
+    fn stmt_data(self: Arc<Self>, id: stmt::HirStmtId) -> Arc<stmt::HirStmt> {
         self.stmt_id.read().unwrap().get(&id).unwrap().clone()
     }
 
-    fn top_level_data(&self, id: top_level::HirTopLevelId) -> Arc<top_level::HirTopLevel> {
+    fn top_level_data(self: Arc<Self>, id: HirTopLevelId) -> Arc<top_level::HirTopLevel> {
         self.top_level_id.read().unwrap().get(&id).unwrap().clone()
     }
 
-    fn attr_data(&self, id: attr::HirAttrId) -> Arc<attr::HirAttr> {
+    fn attr_data(self: Arc<Self>, id: attr::HirAttrId) -> Arc<attr::HirAttr> {
         self.attr_id.read().unwrap().get(&id).unwrap().clone()
     }
 
-    fn type_data(&self, id: hir_type::HirTypeId) -> Arc<hir_type::HirType> {
+    fn type_data(self: Arc<Self>, id: hir_type::HirTypeId) -> Arc<hir_type::HirType> {
         self.type_id.read().unwrap().get(&id).unwrap().clone()
     }
 }

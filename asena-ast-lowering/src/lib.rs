@@ -1,21 +1,21 @@
+use std::sync::Arc;
+
 use asena_ast::{Binary, Expr, Infix, Literal, Signed};
-use asena_hir::{
-    database::HirBag,
-    expr::{
-        data::HirCallee, HirExpr, HirExprArray, HirExprCall, HirExprGroup, HirExprId, HirExprKind,
-        HirExprLiteral, HirExprReference,
-    },
-    literal::{HirDecimal, HirFSize, HirISize, HirIntSign, HirLiteral, HirString},
-    value::{HirValue, HirValueExpr, HirValueId, HirValueKind},
+use asena_hir::database::HirBag;
+use asena_hir::expr::{
+    data::HirCallee, HirExpr, HirExprArray, HirExprCall, HirExprGroup, HirExprId, HirExprKind,
+    HirExprLiteral, HirExprReference,
 };
+use asena_hir::literal::{HirDecimal, HirFSize, HirISize, HirIntSign, HirLiteral, HirString};
+use asena_hir::value::{HirValue, HirValueExpr, HirValueId, HirValueKind};
 use asena_leaf::ast::Located;
 
-pub struct AstLowering<'a, D> {
-    pub db: &'a D,
+pub struct AstLowering<D> {
+    pub db: Arc<D>,
 }
 
-impl<'a, D: HirBag> AstLowering<'a, D> {
-    pub fn new(db: &'a D) -> Self {
+impl<D: HirBag + 'static> AstLowering<D> {
+    pub fn new(db: Arc<D>) -> Self {
         Self { db }
     }
 
@@ -24,7 +24,7 @@ impl<'a, D: HirBag> AstLowering<'a, D> {
         let value_id = self.run_lower_expr(value);
         let kind = HirValueKind::HirValueExpr(HirValueExpr(value_id));
 
-        HirValue::new(self.db, kind, location)
+        HirValue::new(self.db.clone(), kind, location)
     }
 
     pub fn run_lower_expr(&self, expr: Expr) -> HirExprId {
@@ -90,7 +90,7 @@ impl<'a, D: HirBag> AstLowering<'a, D> {
             }
         };
 
-        HirExpr::new(self.db, kind, expr.location().into_owned())
+        HirExpr::new(self.db.clone(), kind, expr.location().into_owned())
     }
 
     fn make_literal(&self, literal: Literal) -> HirLiteral {
@@ -153,11 +153,11 @@ impl<'a, D: HirBag> AstLowering<'a, D> {
 
     fn make_callee(&self, infix: &Infix, fn_id: &str) -> HirCallee {
         let loc = infix.fn_id().location().into_owned();
-        let name = self.db.intern_name(fn_id.into());
+        let name = self.db.clone().intern_name(fn_id.into());
         let reference = HirExprReference { name };
-        let expr = HirExpr::new(self.db, reference.into(), loc.clone());
+        let expr = HirExpr::new(self.db.clone(), reference.into(), loc.clone());
         let value = HirValueExpr(expr);
-        let value = HirValue::new(self.db, value.into(), loc);
+        let value = HirValue::new(self.db.clone(), value.into(), loc);
 
         HirCallee::Value(value)
     }
@@ -165,20 +165,21 @@ impl<'a, D: HirBag> AstLowering<'a, D> {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::Arc;
+
     use asena_ast::Expr;
     use asena_grammar::asena_expr;
-    use asena_hir::database::HirBag;
-    use asena_hir_leaf::hir_dbg;
+    use asena_hir::{database::HirBag, hir_dbg, query::HirDatabase};
     use asena_leaf::ast::Node;
 
     #[test]
     fn it_works() {
-        let db = asena_hir_db::HirDatabase::default();
-        let ast_lowering = super::AstLowering::new(&db);
+        let db = Arc::new(HirDatabase::default());
+        let ast_lowering = super::AstLowering::new(db.clone());
 
         let expr = asena_expr! { 1 + 1 };
         let id = ast_lowering.run_lower_value(Expr::new(expr));
-        let value = db.value_data(id);
+        let value = db.clone().value_data(id);
 
         println!("{:#?}", hir_dbg!(db, value));
     }

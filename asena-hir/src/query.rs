@@ -1,10 +1,15 @@
 use std::sync::{Arc, RwLock};
 
-use asena_hir::database::{HirBag, HirInterner};
-use asena_hir::*;
-use asena_hir_leaf::{HirBaseDatabase, HirNode};
+use crate::database::{HirBag, HirInterner};
+use crate::*;
 
+pub mod dbg;
 pub mod interners;
+pub mod leaf;
+
+pub use dbg::*;
+
+use self::leaf::HirBaseDatabase;
 
 #[derive(Default)]
 pub struct HirDatabase {
