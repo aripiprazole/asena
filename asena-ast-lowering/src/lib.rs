@@ -98,10 +98,7 @@ impl<'a, D: HirBag> AstLowering<'a, D> {
             Literal::Error => HirLiteral::Error,
             Literal::True => HirLiteral::Int(1, HirISize::U1, HirIntSign::Unsigned),
             Literal::False => HirLiteral::Int(0, HirISize::U1, HirIntSign::Unsigned),
-            Literal::String(value) => HirLiteral::String(HirString {
-                value: value.clone(),
-                name: None,
-            }),
+            Literal::String(value) => HirLiteral::String(HirString { value, name: None }),
             Literal::Nat(_) => todo!("lowering nat literals is not yet implemented"),
             Literal::Int8(value, Signed::Signed) => {
                 HirLiteral::Int(value as _, HirISize::U8, HirIntSign::Signed)
@@ -170,6 +167,8 @@ impl<'a, D: HirBag> AstLowering<'a, D> {
 mod tests {
     use asena_ast::Expr;
     use asena_grammar::asena_expr;
+    use asena_hir::database::HirBag;
+    use asena_hir_leaf::hir_dbg;
     use asena_leaf::ast::Node;
 
     #[test]
@@ -178,7 +177,9 @@ mod tests {
         let ast_lowering = super::AstLowering::new(&db);
 
         let expr = asena_expr! { 1 + 1 };
+        let id = ast_lowering.run_lower_value(Expr::new(expr));
+        let value = db.value_data(id);
 
-        println!("{:#?}", ast_lowering.run_lower_value(Expr::new(expr)));
+        println!("{:#?}", hir_dbg!(db, value));
     }
 }

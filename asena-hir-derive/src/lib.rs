@@ -14,30 +14,62 @@ pub fn hir_node(args: TokenStream, input: TokenStream) -> TokenStream {
     let name = input.ident.clone();
     let kind_name = Ident::new(&format!("{}Kind", struct_name), Span::call_site());
 
+    let dbg = match input.fields {
+        Fields::Named(ref fields) => {
+            let fields = fields.named.iter().cloned().map(|next| {
+                let name = next.ident.clone();
+                quote!(s.field(stringify!(#name), &self.#name);)
+            });
+
+            quote! {
+                let mut s = f.debug_struct(stringify!(#name));
+                #(#fields);*
+                s.finish()
+            }
+        }
+        Fields::Unnamed(ref fields) => {
+            let fields = fields.unnamed.iter().cloned().enumerate().map(|(i, _)| {
+                let i = syn::Index::from(i);
+
+                quote!(s.field(&self.#i);)
+            });
+
+            quote! {
+                let mut s = f.debug_tuple(stringify!(#name));
+                #(#fields);*
+                s.finish()
+            }
+        }
+        Fields::Unit => quote!(f.debug_struct(stringify!(#name)).finish()),
+    };
+
     TokenStream::from(quote! {
         #input
 
         impl From<#struct_name> for #name {
             fn from(node: #struct_name) -> Self {
-                todo!()
+                match node.kind {
+                    #kind_name::#name(value) => value,
+                    _ => panic!("Invalid conversion"),
+                }
             }
         }
 
         impl From<#name> for #struct_name {
             fn from(node: #name) -> Self {
-                todo!()
+                #kind_name::#name(node).into()
             }
         }
 
         impl From<#name> for #kind_name {
             fn from(node: #name) -> Self {
-                todo!()
+                #kind_name::#name(node)
             }
         }
 
         impl asena_hir_leaf::HirDebug for #name {
             fn fmt(&self, db: &dyn asena_hir_leaf::HirBaseDatabase, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                todo!()
+                #dbg
             }
         }
 
@@ -46,10 +78,10 @@ pub fn hir_node(args: TokenStream, input: TokenStream) -> TokenStream {
             type Visitor<'a, T> = <#struct_name as asena_hir_leaf::HirNode>::Visitor<'a, T>;
 
             fn hash_id(&self) -> Self::Id {
-                todo!()
+                <<#struct_name as asena_hir_leaf::HirNode>::Id>::of(fxhash::hash(self))
             }
 
-            fn accept<O: Default>(&mut self, _visitor: &mut Self::Visitor<'_, O>) -> O {
+            fn accept<O: Default>(&mut self, visitor: &mut Self::Visitor<'_, O>) -> O {
                 todo!()
             }
         }
@@ -79,6 +111,25 @@ pub fn hir_kind(args: TokenStream, input: TokenStream) -> TokenStream {
             }
             Fields::Unit => {
                 quote!(#name::#ident => fxhash::hash(&(std::any::TypeId::of::<Self>(), std::any::TypeId::of::<#struct_name>(), ())))
+            }
+        };
+
+        quote!(#acc #pattern,)
+    });
+
+    let fmt_patterns = input.variants.iter().cloned().fold(quote!(), |acc, next| {
+        let ident = next.ident;
+        let pattern = match next.fields {
+            Fields::Named(_) => {
+                ident.span().unwrap().error("Unsupported field variants");
+
+                quote!()
+            }
+            Fields::Unnamed(_) => {
+                quote!(#name::#ident(value) => value.fmt(db, f))
+            }
+            Fields::Unit => {
+                quote!(#name::#ident => write!(f, "{}", stringify!(#ident)))
             }
         };
 
@@ -124,7 +175,9 @@ pub fn hir_kind(args: TokenStream, input: TokenStream) -> TokenStream {
 
         impl asena_hir_leaf::HirDebug for #name {
             fn fmt(&self, db: &dyn asena_hir_leaf::HirBaseDatabase, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                todo!()
+                match self {
+                    #fmt_patterns
+                }
             }
         }
 
@@ -224,7 +277,7 @@ pub fn hir_struct(args: TokenStream, input: TokenStream) -> TokenStream {
 
         impl asena_hir_leaf::HirDebug for #name {
             fn fmt(&self, db: &dyn asena_hir_leaf::HirBaseDatabase, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                todo!()
+                self.kind.fmt(db, f)
             }
         }
 

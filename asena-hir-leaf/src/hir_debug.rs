@@ -1,9 +1,21 @@
-use std::fmt::Debug;
+use std::{fmt::Debug, sync::Arc};
 
 use crate::HirBaseDatabase;
 
 pub trait HirDebug {
     fn fmt(&self, db: &dyn HirBaseDatabase, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result;
+}
+
+impl<'a, A: HirDebug> HirDebug for &'a A {
+    fn fmt(&self, db: &dyn HirBaseDatabase, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        (*self).fmt(db, f)
+    }
+}
+
+impl<A: HirDebug> HirDebug for Arc<A> {
+    fn fmt(&self, db: &dyn HirBaseDatabase, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        (**self).fmt(db, f)
+    }
 }
 
 pub struct HirDebugger<'ctx> {

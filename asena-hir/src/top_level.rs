@@ -37,10 +37,10 @@ pub struct HirBindingGroup {
 pub enum HirTopLevelKind {
     #[default]
     Error,
-    Enum(HirTopLevelEnum),
-    Struct(HirTopLevelStruct),
-    Trait(HirTopLevelTrait),
-    BindingGroup(HirBindingGroup),
+    HirTopLevelEnum(HirTopLevelEnum),
+    HirTopLevelStruct(HirTopLevelStruct),
+    HirTopLevelTrait(HirTopLevelTrait),
+    HirBindingGroup(HirBindingGroup),
 }
 
 #[hir_struct(HirVisitor)]

@@ -24,9 +24,9 @@ pub struct HirStmtValue(pub HirValueId);
 pub enum HirStmtKind {
     #[default]
     Error,
-    Ask(HirStmtAsk),
-    Return(HirStmtReturn),
-    Value(HirStmtValue),
+    HirStmtAsk(HirStmtAsk),
+    HirStmtReturn(HirStmtReturn),
+    HirStmtValue(HirStmtValue),
 }
 
 #[hir_struct(HirVisitor)]
