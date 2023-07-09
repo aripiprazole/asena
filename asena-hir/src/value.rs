@@ -4,24 +4,25 @@ use crate::{expr::HirExprId, HirVisitor};
 
 #[derive(Hash, Clone, Debug)]
 #[hir_node(HirValue)]
-pub struct HirBlockValue {
+pub struct HirValueBlock {
     pub instructions: Vec<HirValueId>,
 }
 
 #[derive(Hash, Clone, Debug)]
 #[hir_node(HirValue)]
-pub struct HirExprValue(pub HirExprId);
+pub struct HirValueExpr(pub HirExprId);
 
-#[derive(Hash, Clone, Debug)]
+#[derive(Default, Hash, Clone, Debug)]
 #[hir_kind(HirValue)]
 pub enum HirValueKind {
+    #[default]
     Error,
-    Block(HirBlockValue),
-    Expr(HirExprValue),
+    HirValueBlock(HirValueBlock),
+    HirValueExpr(HirValueExpr),
 }
 
 #[hir_struct(HirVisitor)]
-#[derive(Hash, Clone, Debug)]
+#[derive(Default, Hash, Clone, Debug)]
 pub struct HirValue {
     pub kind: HirValueKind,
 }

@@ -1,7 +1,7 @@
 use asena_ast::Expr;
 use asena_hir::{
     expr::{HirExpr, HirExprGroup, HirExprId, HirExprKind},
-    value::{HirExprValue, HirValue, HirValueId, HirValueKind},
+    value::{HirValue, HirValueExpr, HirValueId, HirValueKind},
 };
 use asena_hir_leaf::HirBaseDatabase;
 use asena_leaf::ast::Located;
@@ -18,7 +18,7 @@ impl<'a, D: HirBaseDatabase> AstLowering<'a, D> {
     pub fn run_lower_value(&self, value: Expr) -> HirValueId {
         let location = value.location().into_owned();
         let value_id = self.run_lower_expr(value);
-        let kind = HirValueKind::Expr(HirExprValue(value_id));
+        let kind = HirValueKind::Expr(HirValueExpr(value_id));
 
         HirValue::new(self.db, kind, location)
     }
@@ -67,7 +67,7 @@ mod tests {
 
         assert_eq!(
             db.value_data(value_id).kind,
-            HirValueKind::Expr(HirExprValue(
+            HirValueKind::Expr(HirValueExpr(
                 db.expr_data(db.expr_data(value_id).kind.into()).value
             ))
         );

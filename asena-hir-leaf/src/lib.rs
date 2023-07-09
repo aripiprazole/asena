@@ -19,7 +19,7 @@ pub trait HirNode: From<<Self::Id as HirId>::Node> {
     type Id: HirId<Node: Into<Self>>;
     type Visitor<'a, T>: ?Sized;
 
-    fn new(id: Self::Id) -> Self;
+    fn hash_id(&self) -> Self::Id;
 
     fn accept<O: Default>(&mut self, visitor: &mut Self::Visitor<'_, O>) -> O;
 }

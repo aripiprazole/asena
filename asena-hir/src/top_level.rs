@@ -32,9 +32,10 @@ pub struct HirBindingGroup {
     pub declarations: Vec<data::HirDeclaration>,
 }
 
-#[derive(Hash, Clone, Debug)]
+#[derive(Default, Hash, Clone, Debug)]
 #[hir_kind(HirTopLevel)]
 pub enum HirTopLevelKind {
+    #[default]
     Error,
     Enum(HirTopLevelEnum),
     Struct(HirTopLevelStruct),
@@ -43,16 +44,23 @@ pub enum HirTopLevelKind {
 }
 
 #[hir_struct(HirVisitor)]
-#[derive(Hash, Clone, Debug)]
+#[derive(Default, Hash, Clone, Debug)]
 pub struct HirTopLevel {
     pub kind: HirTopLevelKind,
     pub attributes: Vec<HirAttrId>,
+    pub docs: Vec<data::HirDoc>,
 }
 
 /// Data structures module split into its own module to better disposition, as
 /// it is a bit large, and it's used as extension to [`HirTopLevel`].
 pub mod data {
     use super::*;
+
+    #[derive(Hash, Clone, Debug)]
+    #[hir_debug]
+    pub struct HirDoc {
+        pub text: String,
+    }
 
     #[derive(Hash, Clone, Debug)]
     #[hir_debug]

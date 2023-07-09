@@ -1,3 +1,5 @@
+#![feature(proc_macro_diagnostic)]
+
 use proc_macro::TokenStream;
 use proc_macro2::Span;
 use quote::quote;
@@ -36,7 +38,7 @@ pub fn hir_node(args: TokenStream, input: TokenStream) -> TokenStream {
             type Id = <#struct_name as asena_hir_leaf::HirNode>::Id;
             type Visitor<'a, T> = <#struct_name as asena_hir_leaf::HirNode>::Visitor<'a, T>;
 
-            fn new(id: Self::Id) -> Self {
+            fn hash_id(&self) -> Self::Id {
                 todo!()
             }
 
@@ -55,18 +57,61 @@ pub fn hir_kind(args: TokenStream, input: TokenStream) -> TokenStream {
 
     let name = input.ident.clone();
 
+    let generate_patterns = input.variants.iter().cloned().fold(quote!(), |acc, next| {
+        let ident = next.ident;
+        let pattern = match next.fields {
+            Fields::Named(_) => {
+                ident.span().unwrap().error("Unsupported field variants");
+
+                quote!()
+            }
+            Fields::Unnamed(_) => {
+                quote!(#name::#ident(value) => {
+                    fxhash::hash(&(std::any::TypeId::of::<Self>(), std::any::TypeId::of::<#struct_name>(), value.hash_id()))
+                })
+            }
+            Fields::Unit => {
+                quote!(#name::#ident => fxhash::hash(&(std::any::TypeId::of::<Self>(), std::any::TypeId::of::<#struct_name>(), ())))
+            }
+        };
+
+        quote!(#acc #pattern,)
+    });
+
+    let accept_patterns = input.variants.iter().cloned().fold(quote!(), |acc, next| {
+        let ident = next.ident;
+        let pattern = match next.fields {
+            Fields::Named(_) => {
+                ident.span().unwrap().error("Unsupported field variants");
+
+                quote!()
+            }
+            Fields::Unnamed(_) => {
+                quote!(#name::#ident(value) => todo!())
+            }
+            Fields::Unit => {
+                quote!(#name::#ident => todo!())
+            }
+        };
+
+        quote!(#acc #pattern,)
+    });
+
     TokenStream::from(quote! {
         #input
 
         impl From<#struct_name> for #name {
             fn from(node: #struct_name) -> Self {
-                todo!()
+                node.kind
             }
         }
 
         impl From<#name> for #struct_name {
             fn from(node: #name) -> Self {
-                todo!()
+                #struct_name {
+                    kind: node,
+                    ..Default::default()
+                }
             }
         }
 
@@ -80,12 +125,16 @@ pub fn hir_kind(args: TokenStream, input: TokenStream) -> TokenStream {
             type Id = <#struct_name as asena_hir_leaf::HirNode>::Id;
             type Visitor<'a, T> = <#struct_name as asena_hir_leaf::HirNode>::Visitor<'a, T>;
 
-            fn new(id: Self::Id) -> Self {
-                todo!()
+            fn hash_id(&self) -> Self::Id {
+                <#struct_name as asena_hir_leaf::HirNode>::Id::of(match self {
+                    #generate_patterns
+                })
             }
 
             fn accept<O: Default>(&mut self, _visitor: &mut Self::Visitor<'_, O>) -> O {
-                todo!()
+                match self {
+                    #accept_patterns
+                }
             }
         }
     })
@@ -116,6 +165,11 @@ pub fn hir_struct(args: TokenStream, input: TokenStream) -> TokenStream {
         ty: parse_quote!(asena_hir_leaf::HirLoc),
     });
 
+    let instance_parameters = fields.named.clone().iter().fold(quote!(), |acc, next| {
+        let name = next.ident.clone();
+        quote!(#acc #name,)
+    });
+
     let parameters = fields.named.clone().iter().fold(quote!(), |acc, next| {
         let name = next.ident.clone();
         let ty = next.ty.clone();
@@ -133,11 +187,25 @@ pub fn hir_struct(args: TokenStream, input: TokenStream) -> TokenStream {
         ty: parse_quote!(#id_name),
     });
 
+    let intern_fn = camel_case_ident(&format!("intern{name}"));
+
     TokenStream::from(quote! {
         #input
 
-        #[derive(Hash, Copy, Clone, Debug)]
-        pub struct #id_name(usize);
+        #[derive(Default, Hash, Copy, Clone, Debug)]
+        pub enum #id_name {
+            Value(usize),
+
+            #[doc(hidden)]
+            #[default]
+            __InternalToCreate,
+        }
+
+        impl #id_name {
+            pub fn of(value: usize) -> Self {
+                Self::Value(value)
+            }
+        }
 
         impl asena_hir_leaf::HirId for #id_name {
             type Node = #name;
@@ -163,18 +231,21 @@ pub fn hir_struct(args: TokenStream, input: TokenStream) -> TokenStream {
             type Id = #id_name;
             type Visitor<'a, T> = dyn #visitor<T>;
 
-            fn new(id: Self::Id) -> Self {
-                todo!()
+            fn hash_id(&self) -> Self::Id {
+                self.kind.hash_id()
             }
 
-            fn accept<O: Default>(&mut self, _visitor: &mut Self::Visitor<'_, O>) -> O {
-                todo!()
+            fn accept<O: Default>(&mut self, visitor: &mut Self::Visitor<'_, O>) -> O {
+                self.kind.accept(visitor)
             }
         }
 
         impl #name {
-            pub fn new(db: &dyn asena_hir_leaf::HirBaseDatabase #parameters) -> <Self as asena_hir_leaf::HirNode>::Id {
-                todo!()
+            pub fn new(db: &dyn crate::database::HirBag #parameters) -> <Self as asena_hir_leaf::HirNode>::Id {
+                db.#intern_fn(Self {
+                    #instance_parameters
+                    id: #id_name::__InternalToCreate,
+                })
             }
         }
     })
@@ -182,7 +253,7 @@ pub fn hir_struct(args: TokenStream, input: TokenStream) -> TokenStream {
 
 #[allow(clippy::redundant_clone)]
 #[proc_macro_attribute]
-pub fn hir_debug(args: TokenStream, input: TokenStream) -> TokenStream {
+pub fn hir_debug(_args: TokenStream, input: TokenStream) -> TokenStream {
     let input = syn::parse_macro_input!(input as syn::DeriveInput);
 
     let name = input.ident.clone();
@@ -201,4 +272,21 @@ pub fn hir_debug(args: TokenStream, input: TokenStream) -> TokenStream {
 #[proc_macro_attribute]
 pub fn hir_id(_args: TokenStream, input: TokenStream) -> TokenStream {
     input
+}
+
+fn camel_case_ident(s: &str) -> Ident {
+    let name = s
+        .replace("Hir", "") // workaround
+        .chars()
+        .enumerate()
+        .flat_map(|(i, char)| {
+            if char.is_uppercase() && i > 0 {
+                vec!['_', char]
+            } else {
+                vec![char]
+            }
+        })
+        .collect::<String>()
+        .to_lowercase();
+    Ident::new(&name, Span::call_site())
 }

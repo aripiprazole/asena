@@ -71,26 +71,27 @@ pub struct HirExprArray {
     pub items: Vec<HirValueId>,
 }
 
-#[derive(Hash, Clone, Debug)]
+#[derive(Default, Hash, Clone, Debug)]
 #[hir_kind(HirExpr)]
 pub enum HirExprKind {
+    #[default]
     Error,
     Unit,
     This,
-    Group(HirExprGroup),
-    Literal(HirExprLiteral),
-    Reference(HirExprReference),
-    Call(HirExprCall),
-    Match(HirExprMatch),
-    Help(HirExprHelp),
-    Ann(HirExprAnn),
-    Lam(HirExprLam),
-    If(HirExprIf),
-    Array(HirExprArray),
+    HirExprGroup(HirExprGroup),
+    HirExprLiteral(HirExprLiteral),
+    HirExprReference(HirExprReference),
+    HirExprCall(HirExprCall),
+    HirExprMatch(HirExprMatch),
+    HirExprHelp(HirExprHelp),
+    HirExprAnn(HirExprAnn),
+    HirExprLam(HirExprLam),
+    HirExprIf(HirExprIf),
+    HirExprArray(HirExprArray),
 }
 
 #[hir_struct(HirVisitor)]
-#[derive(Hash, Clone, Debug)]
+#[derive(Default, Hash, Clone, Debug)]
 pub struct HirExpr {
     pub kind: HirExprKind,
 }

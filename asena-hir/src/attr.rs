@@ -2,15 +2,22 @@ use asena_hir_derive::*;
 
 use crate::HirVisitor;
 
-#[derive(Hash, Clone, Debug)]
+#[derive(Default, Hash, Clone, Debug)]
+#[hir_node(HirAttr)]
+pub struct HirAttrInline {
+    pub kind: data::HirInlineKind,
+}
+
+#[derive(Default, Hash, Clone, Debug)]
 #[hir_kind(HirAttr)]
 pub enum HirAttrKind {
+    #[default]
     Error,
-    Inline(data::HirInlineKind),
+    HirAttrInline(HirAttrInline),
 }
 
 #[hir_struct(HirVisitor)]
-#[derive(Hash, Clone, Debug)]
+#[derive(Default, Hash, Clone, Debug)]
 pub struct HirAttr {
     pub kind: HirAttrKind,
 }
@@ -18,10 +25,11 @@ pub struct HirAttr {
 pub mod data {
     use super::*;
 
-    #[derive(Hash, Clone, Copy, Debug)]
+    #[derive(Default, Hash, Clone, Copy, Debug)]
     #[hir_debug]
     pub enum HirInlineKind {
-        Always,
+        #[default]
         Never,
+        Always,
     }
 }

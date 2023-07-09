@@ -19,9 +19,10 @@ pub struct HirStmtReturn {
 #[hir_node(HirStmt)]
 pub struct HirStmtValue(pub HirValueId);
 
-#[derive(Hash, Clone, Debug)]
+#[derive(Default, Hash, Clone, Debug)]
 #[hir_kind(HirStmt)]
 pub enum HirStmtKind {
+    #[default]
     Error,
     Ask(HirStmtAsk),
     Return(HirStmtReturn),
@@ -29,7 +30,7 @@ pub enum HirStmtKind {
 }
 
 #[hir_struct(HirVisitor)]
-#[derive(Hash, Clone, Debug)]
+#[derive(Default, Hash, Clone, Debug)]
 pub struct HirStmt {
     pub kind: HirStmtKind,
 }
