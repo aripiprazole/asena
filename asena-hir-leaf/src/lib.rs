@@ -32,9 +32,4 @@ pub struct HirBorrow<'a, N: HirNode> {
     pub node: &'a N,
 }
 
-pub trait HirBaseDatabase {
-    /// Finds the node in the given database.
-    fn node<N: HirNode>(&self, id: N::Id) -> Option<HirBorrow<'_, N>>
-    where
-        Self: Sized;
-}
+pub trait HirBaseDatabase {}

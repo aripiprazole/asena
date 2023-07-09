@@ -14,11 +14,11 @@ pub mod stmt;
 pub mod top_level;
 pub mod value;
 
-#[derive(Hash, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Hash, Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ScopeId(usize);
 
-#[derive(Hash, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub struct NameId(usize);
+#[derive(Default, Hash, Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct NameId(pub usize);
 
 pub trait HirVisitor<T: Default> {
     fn visit_expr_group(&mut self, _expr: &mut expr::HirExprGroup) -> T {

@@ -99,3 +99,20 @@ impl<'a, D: HirBag> AstLowering<'a, D> {
         HirCallee::Value(value)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use asena_ast::Expr;
+    use asena_grammar::asena_expr;
+    use asena_leaf::ast::Node;
+
+    #[test]
+    fn it_works() {
+        let db = asena_hir_db::HirDatabase::default();
+        let ast_lowering = super::AstLowering::new(&db);
+
+        let expr = asena_expr! { 1 + 1 };
+
+        println!("{:#?}", ast_lowering.run_lower_value(Expr::new(expr)));
+    }
+}

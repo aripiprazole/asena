@@ -199,7 +199,7 @@ pub fn hir_struct(args: TokenStream, input: TokenStream) -> TokenStream {
     TokenStream::from(quote! {
         #input
 
-        #[derive(Default, Hash, Copy, Clone, Debug)]
+        #[derive(Default, Hash, Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
         pub enum #id_name {
             Value(usize),
 

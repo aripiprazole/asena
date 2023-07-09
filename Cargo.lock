@@ -130,9 +130,15 @@ name = "asena-ast-lowering"
 version = "0.1.0"
 dependencies = [
  "asena-ast",
+ "asena-grammar",
  "asena-hir",
+ "asena-hir-db",
  "asena-hir-leaf",
  "asena-leaf",
+ "asena-lexer",
+ "asena-parser",
+ "asena-prec",
+ "asena-report",
  "asena-span",
  "fxhash",
  "im",
@@ -232,6 +238,21 @@ dependencies = [
  "asena-leaf",
  "asena-span",
  "enum_dispatch",
+ "fxhash",
+ "im",
+ "itertools",
+ "paste",
+]
+
+[[package]]
+name = "asena-hir-db"
+version = "0.1.0"
+dependencies = [
+ "asena-ast",
+ "asena-hir",
+ "asena-hir-leaf",
+ "asena-leaf",
+ "asena-span",
  "fxhash",
  "im",
  "itertools",

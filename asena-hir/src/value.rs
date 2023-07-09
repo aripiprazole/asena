@@ -2,17 +2,17 @@ use asena_hir_derive::*;
 
 use crate::{expr::HirExprId, HirVisitor};
 
-#[derive(Hash, Clone, Debug)]
+#[derive(Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_node(HirValue)]
 pub struct HirValueBlock {
     pub instructions: Vec<HirValueId>,
 }
 
-#[derive(Hash, Clone, Debug)]
+#[derive(Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_node(HirValue)]
 pub struct HirValueExpr(pub HirExprId);
 
-#[derive(Default, Hash, Clone, Debug)]
+#[derive(Default, Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_kind(HirValue)]
 pub enum HirValueKind {
     #[default]
@@ -22,7 +22,7 @@ pub enum HirValueKind {
 }
 
 #[hir_struct(HirVisitor)]
-#[derive(Default, Hash, Clone, Debug)]
+#[derive(Default, Hash, Clone, Debug, PartialEq, Eq)]
 pub struct HirValue {
     pub kind: HirValueKind,
 }

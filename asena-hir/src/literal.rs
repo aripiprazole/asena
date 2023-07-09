@@ -1,6 +1,6 @@
 use crate::NameId;
 
-#[derive(Hash, Clone, Copy, Debug)]
+#[derive(Hash, Clone, Copy, Debug, PartialEq, Eq)]
 pub enum HirIntSize {
     U1,
     U8,
@@ -11,31 +11,31 @@ pub enum HirIntSize {
     USize,
 }
 
-#[derive(Hash, Clone, Copy, Debug)]
+#[derive(Hash, Clone, Copy, Debug, PartialEq, Eq)]
 pub enum HirFloatSize {
     F32,
     F64,
 }
 
-#[derive(Hash, Clone, Copy, Debug)]
+#[derive(Hash, Clone, Copy, Debug, PartialEq, Eq)]
 pub enum HirIntSign {
     Signed,
     Unsigned,
 }
 
-#[derive(Hash, Clone, Copy, Debug)]
+#[derive(Hash, Clone, Copy, Debug, PartialEq, Eq)]
 pub struct HirDecimal {
     pub divided: usize,
     pub divisor: usize,
 }
 
-#[derive(Hash, Clone, Debug)]
+#[derive(Hash, Clone, Debug, PartialEq, Eq)]
 pub struct HirString {
     pub value: String,
     pub name: Option<NameId>,
 }
 
-#[derive(Hash, Clone, Debug)]
+#[derive(Hash, Clone, Debug, PartialEq, Eq)]
 pub enum HirLiteral {
     Int(usize, HirIntSize, HirIntSign),
     Decimal(HirDecimal, HirFloatSize),

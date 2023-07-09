@@ -9,6 +9,7 @@ members = [
   "asena-ast-lowering",
   "asena-ast-resolver",
   "asena-hir",
+  "asena-hir-db",
   "asena-hir-lowering",
   "asena-hir-leaf",
   "asena-hir-derive",

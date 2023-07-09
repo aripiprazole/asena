@@ -2,7 +2,7 @@ use asena_hir_derive::*;
 
 use crate::{attr::HirAttrId, expr::HirExprId, hir_type::HirTypeId, pattern::HirPatternId, *};
 
-#[derive(Hash, Clone, Debug)]
+#[derive(Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_node(HirTopLevel)]
 pub struct HirTopLevelEnum {
     pub signature: data::HirSignature,
@@ -10,7 +10,7 @@ pub struct HirTopLevelEnum {
     pub groups: Vec<HirBindingGroup>,
 }
 
-#[derive(Hash, Clone, Debug)]
+#[derive(Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_node(HirTopLevel)]
 pub struct HirTopLevelStruct {
     pub signature: data::HirSignature,
@@ -18,21 +18,21 @@ pub struct HirTopLevelStruct {
     pub groups: Vec<HirBindingGroup>,
 }
 
-#[derive(Hash, Clone, Debug)]
+#[derive(Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_node(HirTopLevel)]
 pub struct HirTopLevelTrait {
     pub signature: data::HirSignature,
     pub groups: Vec<HirBindingGroup>,
 }
 
-#[derive(Hash, Clone, Debug)]
+#[derive(Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_node(HirTopLevel)]
 pub struct HirBindingGroup {
     pub signature: data::HirSignature,
     pub declarations: Vec<data::HirDeclaration>,
 }
 
-#[derive(Default, Hash, Clone, Debug)]
+#[derive(Default, Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_kind(HirTopLevel)]
 pub enum HirTopLevelKind {
     #[default]
@@ -44,7 +44,7 @@ pub enum HirTopLevelKind {
 }
 
 #[hir_struct(HirVisitor)]
-#[derive(Default, Hash, Clone, Debug)]
+#[derive(Default, Hash, Clone, Debug, PartialEq, Eq)]
 pub struct HirTopLevel {
     pub kind: HirTopLevelKind,
     pub attributes: Vec<HirAttrId>,
@@ -56,20 +56,20 @@ pub struct HirTopLevel {
 pub mod data {
     use super::*;
 
-    #[derive(Hash, Clone, Debug)]
+    #[derive(Hash, Clone, Debug, PartialEq, Eq)]
     #[hir_debug]
     pub struct HirDoc {
         pub text: String,
     }
 
-    #[derive(Hash, Clone, Debug)]
+    #[derive(Hash, Clone, Debug, PartialEq, Eq)]
     #[hir_debug]
     pub struct HirParameterData {
         pub name: NameId,
         pub parameter_type: Option<HirTypeId>,
     }
 
-    #[derive(Hash, Clone, Debug)]
+    #[derive(Hash, Clone, Debug, PartialEq, Eq)]
     #[hir_debug]
     pub enum HirParameterKind {
         This, // The self parameter
@@ -77,7 +77,7 @@ pub mod data {
         Implicit(HirParameterData),
     }
 
-    #[derive(Hash, Clone, Debug)]
+    #[derive(Hash, Clone, Debug, PartialEq, Eq)]
     #[hir_debug]
     pub struct HirSignature {
         pub name: NameId,
@@ -85,14 +85,14 @@ pub mod data {
         pub return_type: Option<HirTypeId>,
     }
 
-    #[derive(Hash, Clone, Debug)]
+    #[derive(Hash, Clone, Debug, PartialEq, Eq)]
     #[hir_debug]
     pub struct HirDeclaration {
         pub patterns: Vec<HirPatternId>,
         pub value: HirExprId,
     }
 
-    #[derive(Hash, Clone, Debug)]
+    #[derive(Hash, Clone, Debug, PartialEq, Eq)]
     #[hir_debug]
     pub struct HirVariant {
         pub name: NameId,

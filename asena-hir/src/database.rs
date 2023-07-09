@@ -1,16 +1,18 @@
+use std::sync::Arc;
+
 use asena_hir_leaf::HirBaseDatabase;
 
 use crate::*;
 
 pub trait HirBag: HirInterner {
-    fn name_data(&self, id: NameId) -> String;
-    fn expr_data(&self, id: expr::HirExprId) -> expr::HirExpr;
-    fn value_data(&self, id: value::HirValueId) -> value::HirValue;
-    fn pattern_data(&self, id: pattern::HirPatternId) -> pattern::HirPattern;
-    fn stmt_data(&self, id: stmt::HirStmtId) -> stmt::HirStmt;
-    fn top_level_data(&self, id: top_level::HirTopLevelId) -> top_level::HirTopLevel;
-    fn attr_data(&self, id: attr::HirAttrId) -> attr::HirAttr;
-    fn type_data(&self, id: hir_type::HirTypeId) -> hir_type::HirType;
+    fn name_data(&self, id: NameId) -> Arc<String>;
+    fn expr_data(&self, id: expr::HirExprId) -> Arc<expr::HirExpr>;
+    fn value_data(&self, id: value::HirValueId) -> Arc<value::HirValue>;
+    fn pattern_data(&self, id: pattern::HirPatternId) -> Arc<pattern::HirPattern>;
+    fn stmt_data(&self, id: stmt::HirStmtId) -> Arc<stmt::HirStmt>;
+    fn top_level_data(&self, id: top_level::HirTopLevelId) -> Arc<top_level::HirTopLevel>;
+    fn attr_data(&self, id: attr::HirAttrId) -> Arc<attr::HirAttr>;
+    fn type_data(&self, id: hir_type::HirTypeId) -> Arc<hir_type::HirType>;
 }
 
 pub trait HirInterner: HirBaseDatabase {
