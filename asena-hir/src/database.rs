@@ -3,6 +3,7 @@ use asena_hir_leaf::HirBaseDatabase;
 use crate::*;
 
 pub trait HirBag: HirInterner {
+    fn name_data(&self, id: NameId) -> String;
     fn expr_data(&self, id: expr::HirExprId) -> expr::HirExpr;
     fn value_data(&self, id: value::HirValueId) -> value::HirValue;
     fn pattern_data(&self, id: pattern::HirPatternId) -> pattern::HirPattern;
@@ -13,6 +14,7 @@ pub trait HirBag: HirInterner {
 }
 
 pub trait HirInterner: HirBaseDatabase {
+    fn intern_name(&self, data: String) -> NameId;
     fn intern_expr(&self, data: expr::HirExpr) -> expr::HirExprId;
     fn intern_value(&self, data: value::HirValue) -> value::HirValueId;
     fn intern_pattern(&self, data: pattern::HirPattern) -> pattern::HirPatternId;

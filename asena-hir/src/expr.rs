@@ -18,7 +18,7 @@ pub struct HirExprGroup {
 #[derive(Hash, Clone, Debug)]
 #[hir_node(HirExpr)]
 pub struct HirExprCall {
-    pub callee: HirValueId,
+    pub callee: data::HirCallee,
     pub arguments: Vec<HirValueId>,
     pub as_dsl: Option<data::HirDsl>,
 }
@@ -26,7 +26,6 @@ pub struct HirExprCall {
 #[derive(Hash, Clone, Debug)]
 #[hir_node(HirExpr)]
 pub struct HirExprReference {
-    pub scope: ScopeId,
     pub name: NameId,
 }
 
@@ -127,5 +126,22 @@ pub mod data {
     pub struct HirDsl {
         pub parameters: Vec<NameId>,
         pub stmts: Vec<HirStmtId>,
+    }
+
+    #[derive(Hash, Clone, Debug)]
+    #[hir_debug]
+    pub enum HirCallee {
+        Value(HirValueId),
+        // any operations
+        Add,
+        Sub,
+        Mul,
+        Div,
+
+        // int only operations
+        IAdd,
+        ISub,
+        IMul,
+        IDiv,
     }
 }

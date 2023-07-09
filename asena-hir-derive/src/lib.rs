@@ -12,6 +12,7 @@ pub fn hir_node(args: TokenStream, input: TokenStream) -> TokenStream {
     let input = syn::parse_macro_input!(input as syn::ItemStruct);
 
     let name = input.ident.clone();
+    let kind_name = Ident::new(&format!("{}Kind", struct_name), Span::call_site());
 
     TokenStream::from(quote! {
         #input
@@ -23,6 +24,12 @@ pub fn hir_node(args: TokenStream, input: TokenStream) -> TokenStream {
         }
 
         impl From<#name> for #struct_name {
+            fn from(node: #name) -> Self {
+                todo!()
+            }
+        }
+
+        impl From<#name> for #kind_name {
             fn from(node: #name) -> Self {
                 todo!()
             }
