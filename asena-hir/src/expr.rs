@@ -101,24 +101,28 @@ pub mod data {
     use super::*;
 
     #[derive(Hash, Clone, Debug)]
+    #[hir_debug]
     pub enum HirIfBranch {
         Expr(HirValueId),
         Block(Vec<HirStmtId>),
     }
 
     #[derive(Hash, Clone, Debug)]
+    #[hir_debug]
     pub enum HirMatchArm {
         Expr(HirValueId),
         Block(HirStmtId),
     }
 
     #[derive(Hash, Clone, Debug)]
+    #[hir_debug]
     pub struct HirMatchCase {
         pub pattern: HirPatternId,
         pub value: HirMatchArm,
     }
 
     #[derive(Hash, Clone, Debug)]
+    #[hir_debug]
     pub struct HirDsl {
         pub parameters: Vec<NameId>,
         pub stmts: Vec<HirStmtId>,

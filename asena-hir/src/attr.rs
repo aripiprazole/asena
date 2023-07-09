@@ -16,7 +16,10 @@ pub struct HirAttr {
 }
 
 pub mod data {
+    use super::*;
+
     #[derive(Hash, Clone, Copy, Debug)]
+    #[hir_debug]
     pub enum HirInlineKind {
         Always,
         Never,

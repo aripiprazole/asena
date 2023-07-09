@@ -55,12 +55,14 @@ pub mod data {
     use super::*;
 
     #[derive(Hash, Clone, Debug)]
+    #[hir_debug]
     pub struct HirParameterData {
         pub name: NameId,
         pub parameter_type: Option<HirTypeId>,
     }
 
     #[derive(Hash, Clone, Debug)]
+    #[hir_debug]
     pub enum HirParameterKind {
         This, // The self parameter
         Explicit(HirParameterData),
@@ -68,6 +70,7 @@ pub mod data {
     }
 
     #[derive(Hash, Clone, Debug)]
+    #[hir_debug]
     pub struct HirSignature {
         pub name: NameId,
         pub parameters: im::HashMap<NameId, HirParameterKind>,
@@ -75,12 +78,14 @@ pub mod data {
     }
 
     #[derive(Hash, Clone, Debug)]
+    #[hir_debug]
     pub struct HirDeclaration {
         pub patterns: Vec<HirPatternId>,
         pub value: HirExprId,
     }
 
     #[derive(Hash, Clone, Debug)]
+    #[hir_debug]
     pub struct HirVariant {
         pub name: NameId,
         pub variant_type: HirTypeId,

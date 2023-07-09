@@ -180,6 +180,24 @@ pub fn hir_struct(args: TokenStream, input: TokenStream) -> TokenStream {
     })
 }
 
+#[allow(clippy::redundant_clone)]
+#[proc_macro_attribute]
+pub fn hir_debug(args: TokenStream, input: TokenStream) -> TokenStream {
+    let input = syn::parse_macro_input!(input as syn::DeriveInput);
+
+    let name = input.ident.clone();
+
+    TokenStream::from(quote! {
+        #input
+
+        impl asena_hir_leaf::HirDebug for #name {
+            fn fmt(&self, db: &dyn asena_hir_leaf::HirBaseDatabase, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                todo!()
+            }
+        }
+    })
+}
+
 #[proc_macro_attribute]
 pub fn hir_id(_args: TokenStream, input: TokenStream) -> TokenStream {
     input
