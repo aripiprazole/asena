@@ -47,7 +47,9 @@ impl<DB: HirBag + 'static> AstLowering<DB> {
             match decl {
                 Decl::Error => {}
                 Decl::Use(_) => {}
-                Decl::Command(_) => todo!("lower command: transform into events"),
+                Decl::Command(_) => {
+                    // TODO: handle commands
+                }
                 Decl::Class(class_decl) => {
                     declarations.insert(self.lower_class(class_decl));
                 }
