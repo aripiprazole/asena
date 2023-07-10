@@ -24,6 +24,10 @@ It's all based on the articles:
 
 - [Resilient parsing](https://matklad.github.io/2023/05/21/resilient-ll-parsing-tutorial.html)
 - [Typing Haskell in Haskell](http://web.cecs.pdx.edu/~mpj/thih/thih.pdf)
+- [Sixty](https://github.com/ollef/sixty)
+- [Query-based compiler architetures](https://ollef.github.io/blog/posts/query-based-compilers.html)
+- [Rust](https://github.com/rust-lang/rust)
+- [Crafting Interpreters](https://craftinginterpreters.com)
 
 And have some great inspirations in [rust-analyzer](https://github.com/rust-lang/rust-analyzer) code-base..
 
