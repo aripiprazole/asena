@@ -87,7 +87,7 @@ pub mod data {
     #[hir_debug]
     pub struct HirSignature {
         pub name: NameId,
-        pub parameters: im::HashMap<NameId, HirParameterKind>,
+        pub parameters: Vec<HirParameterKind>,
         pub return_type: Option<HirTypeId>,
     }
 

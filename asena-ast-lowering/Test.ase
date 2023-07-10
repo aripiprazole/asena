@@ -1,11 +1,6 @@
-use IO
-use Nat
-
-enum Vec (a: Set) (n: Nat) {
-  Nil  : Vec a Zero,
-  Cons : (head: a) -> (tail: Vec a n) -> Vec a (Plus n One),
+enum Nat {
+  Zero,
+  Succ(Nat),
 }
 
-Main {
-  10
-}
+add : Nat -> Nat -> Nat

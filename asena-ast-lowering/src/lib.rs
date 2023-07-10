@@ -10,7 +10,7 @@ use asena_hir::value::*;
 use asena_hir::{literal::*, NameId};
 use asena_leaf::ast::Located;
 use expr::ExprLowering;
-use im::{hashmap, hashset, HashMap, HashSet};
+use im::{hashset, HashMap, HashSet};
 use itertools::Itertools;
 
 pub mod decl;
@@ -70,7 +70,7 @@ impl<DB: HirBag + 'static> AstLowering<DB> {
                         HirBindingGroup {
                             signature: HirSignature {
                                 name,
-                                parameters: hashmap![],
+                                parameters: vec![],
                                 return_type: None,
                             },
                             declarations: hashset![],

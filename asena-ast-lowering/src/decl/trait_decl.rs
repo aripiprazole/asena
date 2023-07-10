@@ -7,7 +7,7 @@ use asena_hir::top_level::{
 };
 use asena_hir::NameId;
 use asena_leaf::ast::Located;
-use im::{hashmap, hashset, HashMap};
+use im::{hashset, HashMap};
 
 use crate::AstLowering;
 
@@ -45,7 +45,7 @@ impl<DB: HirBag + 'static> AstLowering<DB> {
             let method = HirBindingGroup {
                 signature: HirSignature {
                     name,
-                    parameters: hashmap![],
+                    parameters: vec![],
                     return_type,
                 },
                 declarations: hashset![],

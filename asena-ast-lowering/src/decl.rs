@@ -7,7 +7,7 @@ use asena_hir::{
     },
     NameId,
 };
-use im::{hashset, HashMap};
+use im::hashset;
 
 use crate::AstLowering;
 
@@ -17,8 +17,8 @@ pub mod instance_decl;
 pub mod trait_decl;
 
 impl<DB: HirBag + 'static> AstLowering<DB> {
-    pub fn compute_parameters(&self, decl: &impl GlobalDecl) -> HashMap<NameId, HirParameterKind> {
-        let mut parameters = HashMap::new();
+    pub fn compute_parameters(&self, decl: &impl GlobalDecl) -> Vec<HirParameterKind> {
+        let mut parameters = Vec::new();
         for (name, parameter) in Parameter::compute_parameters(decl.parameters()) {
             let name = NameId::intern(self.jar.clone(), name.as_str());
             let data = HirParameterData {
@@ -31,7 +31,7 @@ impl<DB: HirBag + 'static> AstLowering<DB> {
 
             match true {
                 _ if parameter.is_self() && parameter.explicit() => {
-                    parameters.insert(name, HirParameterKind::This);
+                    parameters.push(HirParameterKind::This);
                 }
                 _ if parameter.is_self() && !parameter.explicit() => {
                     // TODO: handle error
@@ -40,10 +40,10 @@ impl<DB: HirBag + 'static> AstLowering<DB> {
                 // This is the inverse, for explicit being the default case, if the parameter is
                 // with some error and explicit is buggy, then it will be explicit.
                 _ if !parameter.explicit() => {
-                    parameters.insert(name, HirParameterKind::Implicit(data));
+                    parameters.push(HirParameterKind::Implicit(data));
                 }
                 _ => {
-                    parameters.insert(name, HirParameterKind::Explicit(data));
+                    parameters.push(HirParameterKind::Explicit(data));
                 }
             }
         }
