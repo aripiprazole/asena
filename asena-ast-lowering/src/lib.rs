@@ -4,16 +4,19 @@ use asena_ast::{AsenaFile, Binary, Decl, Expr, GlobalName, Infix, Literal, Signe
 use asena_hir::database::HirBag;
 use asena_hir::expr::{data::HirCallee, *};
 use asena_hir::hir_type::HirTypeId;
-use asena_hir::top_level::data::HirSignature;
+use asena_hir::top_level::data::{HirDeclaration, HirSignature};
 use asena_hir::top_level::{HirBindingGroup, HirTopLevel, HirTopLevelId, HirTopLevelKind};
 use asena_hir::value::*;
 use asena_hir::{literal::*, NameId};
 use asena_leaf::ast::Located;
 use expr::ExprLowering;
 use im::{hashmap, hashset, HashMap, HashSet};
+use itertools::Itertools;
 
 pub mod decl;
 pub mod expr;
+pub mod pattern;
+pub mod stmt;
 pub mod types;
 
 pub struct AstLowering<DB> {
@@ -55,6 +58,13 @@ impl<DB: HirBag + 'static> AstLowering<DB> {
                     let name = NameId::intern(self.jar.clone(), name.as_str());
                     let span = assign.location().into_owned();
 
+                    let patterns = assign
+                        .patterns()
+                        .iter()
+                        .cloned()
+                        .map(|next| self.lower_pattern(next))
+                        .collect_vec();
+
                     let (_, group) = signatures.entry(name).or_insert((
                         span,
                         HirBindingGroup {
@@ -67,7 +77,10 @@ impl<DB: HirBag + 'static> AstLowering<DB> {
                         },
                     ));
 
-                    group.declarations.insert(todo!("block"));
+                    group.declarations.insert(HirDeclaration {
+                        patterns,
+                        value: self.lower_value(assign.body()),
+                    });
                 }
                 Decl::Signature(signature) => {
                     let name = signature.name().to_fn_id();
@@ -120,15 +133,73 @@ impl<DB: HirBag + 'static> AstLowering<DB> {
 
         HirValue::new(self.jar.clone(), value.into(), location)
     }
+
+    pub fn make_literal(&self, literal: Literal) -> HirLiteral {
+        match literal {
+            Literal::Error => HirLiteral::Error,
+            Literal::True => HirLiteral::Int(1, HirISize::U1, HirIntSign::Unsigned),
+            Literal::False => HirLiteral::Int(0, HirISize::U1, HirIntSign::Unsigned),
+            Literal::String(value) => HirLiteral::String(HirString { value, name: None }),
+            Literal::Nat(_) => todo!("lowering nat literals is not yet implemented"),
+            Literal::Int8(value, Signed::Signed) => {
+                HirLiteral::Int(value as _, HirISize::U8, HirIntSign::Signed)
+            }
+            Literal::Int8(value, Signed::Unsigned) => {
+                HirLiteral::Int(value as _, HirISize::U8, HirIntSign::Unsigned)
+            }
+            Literal::Int16(value, Signed::Signed) => {
+                HirLiteral::Int(value as _, HirISize::U16, HirIntSign::Signed)
+            }
+            Literal::Int16(value, Signed::Unsigned) => {
+                HirLiteral::Int(value as _, HirISize::U16, HirIntSign::Unsigned)
+            }
+            Literal::Int32(value, Signed::Signed) => {
+                HirLiteral::Int(value as _, HirISize::U32, HirIntSign::Signed)
+            }
+            Literal::Int32(value, Signed::Unsigned) => {
+                HirLiteral::Int(value as _, HirISize::U32, HirIntSign::Unsigned)
+            }
+            Literal::Int64(value, Signed::Signed) => {
+                HirLiteral::Int(value as _, HirISize::U64, HirIntSign::Signed)
+            }
+            Literal::Int64(value, Signed::Unsigned) => {
+                HirLiteral::Int(value as _, HirISize::U64, HirIntSign::Unsigned)
+            }
+            Literal::Int128(value, Signed::Signed) => {
+                HirLiteral::Int(value as _, HirISize::U128, HirIntSign::Signed)
+            }
+            Literal::Int128(value, Signed::Unsigned) => {
+                HirLiteral::Int(value as _, HirISize::U128, HirIntSign::Unsigned)
+            }
+            Literal::Float32(value) => {
+                let s = value.clone().to_string();
+
+                let mut split = s.split('.');
+                let integer = split.next().unwrap().parse::<usize>().unwrap();
+                let decimal = split.next().unwrap_or("0").parse::<usize>().unwrap();
+
+                HirLiteral::Decimal(HirFSize::F64, HirDecimal { integer, decimal })
+            }
+            Literal::Float64(value) => {
+                let s = value.clone().to_string();
+
+                let mut split = s.split('.');
+                let integer = split.next().unwrap().parse::<usize>().unwrap();
+                let decimal = split.next().unwrap_or("0").parse::<usize>().unwrap();
+
+                HirLiteral::Decimal(HirFSize::F64, HirDecimal { integer, decimal })
+            }
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use std::sync::Arc;
 
-    use asena_ast::Expr;
-    use asena_grammar::asena_expr;
-    use asena_hir::{database::HirBag, hir_dbg, query::HirDatabase};
+    use asena_ast::AsenaFile;
+    use asena_grammar::parse_asena_file;
+    use asena_hir::{hir_dbg, query::HirDatabase};
     use asena_leaf::ast::Node;
 
     #[test]
@@ -136,10 +207,9 @@ mod tests {
         let db = Arc::new(HirDatabase::default());
         let ast_lowering = super::AstLowering::new(db.clone());
 
-        let expr = asena_expr! { 1 + 1 };
-        let id = ast_lowering.lower_value(Expr::new(expr));
-        let value = db.clone().value_data(id);
+        let tree = parse_asena_file!("../Test.ase");
+        let data = ast_lowering.lower_file(AsenaFile::new(tree));
 
-        println!("{:#?}", hir_dbg!(db, value));
+        println!("{:#?}", hir_dbg!(db, data));
     }
 }

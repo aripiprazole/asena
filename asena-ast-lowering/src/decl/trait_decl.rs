@@ -73,7 +73,7 @@ impl<DB: HirBag + 'static> AstLowering<DB> {
 
             group.declarations.insert(HirDeclaration {
                 patterns,
-                value: todo!("blocks"),
+                value: self.lower_block(method.body()),
             });
         }
 

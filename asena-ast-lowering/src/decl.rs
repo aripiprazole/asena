@@ -2,7 +2,7 @@ use asena_ast::{traits::global_decl::GlobalDecl, GlobalName, Method, Parameter, 
 use asena_hir::{
     database::HirBag,
     top_level::{
-        data::{HirParameterData, HirParameterKind, HirSignature},
+        data::{HirDeclaration, HirParameterData, HirParameterKind, HirSignature},
         HirBindingGroup,
     },
     NameId,
@@ -66,7 +66,10 @@ impl<DB: HirBag + 'static> AstLowering<DB> {
                     parameters,
                     return_type,
                 },
-                declarations: hashset![],
+                declarations: hashset![HirDeclaration {
+                    patterns: vec![],
+                    value: self.lower_block(method.body()),
+                }],
             };
             groups.insert(group);
         }

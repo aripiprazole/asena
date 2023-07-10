@@ -135,6 +135,8 @@ pub mod data {
     pub enum HirCallee {
         Value(HirValueId),
 
+        Do,
+
         // any operations
         Add,
         Sub,

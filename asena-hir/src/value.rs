@@ -2,12 +2,12 @@ use std::sync::Arc;
 
 use asena_hir_derive::*;
 
-use crate::{expr::HirExprId, hir_dbg, query::HirDebug, HirVisitor};
+use crate::{expr::HirExprId, hir_dbg, query::HirDebug, stmt::HirStmtId, HirVisitor};
 
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_node(HirValue)]
 pub struct HirValueBlock {
-    pub instructions: Vec<HirValueId>,
+    pub instructions: Vec<HirStmtId>,
     pub value: HirValueId,
 }
 
