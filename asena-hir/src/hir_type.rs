@@ -1,25 +1,74 @@
-use std::sync::Arc;
+use std::{fmt::Formatter, sync::Arc};
 
 use asena_hir_derive::*;
 
-use crate::{database::HirBag, query::leaf::HirLoc, HirVisitor, NameId};
+use crate::{
+    database::HirBag,
+    query::{leaf::HirLoc, HirDebug},
+    HirVisitor, NameId,
+};
 
 use self::data::HirTypeFunction;
 
 #[derive(Default, Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_node(HirType)]
-#[hir_debug]
 pub struct HirTypeName {
     pub name: NameId,
     pub is_constructor: bool,
 }
 
+impl HirDebug for HirTypeName {
+    type Database = dyn HirBag;
+
+    fn fmt(&self, db: Arc<Self::Database>, f: &mut Formatter<'_>) -> std::fmt::Result {
+        if !self.is_constructor {
+            write!(f, "'")?;
+        }
+
+        write!(f, "{}", db.name_data(self.name))
+    }
+}
+
 #[derive(Default, Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_node(HirType)]
-#[hir_debug]
 pub struct HirTypeApp {
     pub callee: HirTypeFunction,
     pub arguments: Vec<data::HirTypeArgument>,
+}
+
+impl HirDebug for HirTypeApp {
+    type Database = dyn HirBag;
+
+    fn fmt(&self, db: Arc<Self::Database>, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self.callee {
+            HirTypeFunction::Pi => {
+                if self.arguments.len() != 2 {
+                    return Err(std::fmt::Error);
+                }
+
+                self.arguments[0].fmt(db.clone(), f)?;
+                write!(f, " -> ")?;
+                self.arguments[1].fmt(db, f)
+            }
+            _ => {
+                self.callee.fmt(db.clone(), f)?;
+
+                if !self.arguments.is_empty() {
+                    write!(f, " ")?;
+                }
+
+                for (i, arg) in self.arguments.iter().enumerate() {
+                    if i != 0 {
+                        write!(f, " ")?;
+                    }
+
+                    arg.fmt(db.clone(), f)?;
+                }
+
+                Ok(())
+            }
+        }
+    }
 }
 
 #[derive(Default, Hash, Clone, Debug, PartialEq, Eq)]
