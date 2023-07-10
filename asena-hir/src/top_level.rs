@@ -1,6 +1,6 @@
 use asena_hir_derive::*;
 
-use crate::{attr::HirAttrId, expr::HirExprId, hir_type::HirTypeId, pattern::HirPatternId, *};
+use crate::{attr::HirAttrId, hir_type::HirTypeId, pattern::HirPatternId, *};
 
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_node(HirTopLevel)]

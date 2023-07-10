@@ -14,6 +14,7 @@ use im::{hashmap, hashset, HashMap, HashSet};
 
 pub mod decl;
 pub mod expr;
+pub mod types;
 
 pub struct AstLowering<DB> {
     jar: Arc<DB>,
@@ -102,10 +103,6 @@ impl<DB: HirBag + 'static> AstLowering<DB> {
         }
 
         declarations
-    }
-
-    pub fn lower_type(&self, type_expr: Expr) -> HirTypeId {
-        todo!()
     }
 
     pub fn lower_value(&self, value: Expr) -> HirValueId {
