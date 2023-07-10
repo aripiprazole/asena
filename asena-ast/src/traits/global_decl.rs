@@ -20,3 +20,6 @@ impl GlobalDecl for Class {}
 impl GlobalDecl for Enum {}
 impl GlobalDecl for Signature {}
 impl GlobalDecl for Trait {}
+impl GlobalDecl for Instance {}
+impl GlobalDecl for DefaultMethod {}
+impl GlobalDecl for Method {}

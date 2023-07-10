@@ -9,6 +9,7 @@
 
 use std::sync::Arc;
 
+use database::HirBag;
 use query::HirDebug;
 
 pub mod attr;
@@ -27,6 +28,12 @@ pub struct ScopeId(usize);
 
 #[derive(Default, Hash, Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct NameId(pub usize);
+
+impl NameId {
+    pub fn intern(db: Arc<dyn HirBag>, name: &str) -> Self {
+        db.clone().intern_name(name.into())
+    }
+}
 
 pub trait HirVisitor<T: Default> {
     fn visit_expr_group(&mut self, _expr: &mut expr::HirExprGroup) -> T {

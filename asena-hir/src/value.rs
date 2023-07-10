@@ -2,13 +2,32 @@ use std::sync::Arc;
 
 use asena_hir_derive::*;
 
-use crate::{expr::HirExprId, query::HirDebug, HirVisitor};
+use crate::{expr::HirExprId, hir_dbg, query::HirDebug, HirVisitor};
 
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_node(HirValue)]
-#[hir_debug]
 pub struct HirValueBlock {
     pub instructions: Vec<HirValueId>,
+    pub value: HirValueId,
+}
+
+impl HirDebug for HirValueBlock {
+    type Database = dyn crate::database::HirBag;
+
+    fn fmt(&self, db: Arc<Self::Database>, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.instructions.is_empty() {
+            self.value.fmt(db, f)
+        } else {
+            write!(f, "HirValueBlock(")?;
+            let mut s = f.debug_list();
+            for instruction in self.instructions.iter() {
+                s.entry(&hir_dbg!(db.clone(), instruction));
+            }
+            s.entry(&hir_dbg!(db.clone(), &self.value));
+            s.finish()?;
+            write!(f, ")")
+        }
+    }
 }
 
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]

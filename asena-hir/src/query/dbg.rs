@@ -58,6 +58,20 @@ where
     }
 }
 
+impl<A: HirDebug<Database = dyn HirBag>> HirDebug for HashSet<A> {
+    type Database = A::Database;
+
+    fn fmt(&self, db: Arc<Self::Database>, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let mut dbg = f.debug_list();
+
+        for value in self.iter() {
+            dbg.entry(&hir_dbg!(db.clone(), value));
+        }
+
+        dbg.finish()
+    }
+}
+
 impl<A: HirDebug<Database = dyn HirBag>> HirDebug for Vec<A> {
     type Database = A::Database;
 
@@ -112,5 +126,6 @@ macro_rules! impl_hir_dbg {
 }
 
 pub use hir_dbg;
+use im::HashSet;
 
 use crate::database::HirBag;

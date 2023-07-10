@@ -112,7 +112,7 @@ pub mod data {
     #[hir_debug]
     pub enum HirMatchArm {
         Expr(HirValueId),
-        Block(HirStmtId),
+        Block(Vec<HirStmtId>),
     }
 
     #[derive(Hash, Clone, Debug, PartialEq, Eq)]

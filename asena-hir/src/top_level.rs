@@ -8,7 +8,7 @@ use crate::{attr::HirAttrId, expr::HirExprId, hir_type::HirTypeId, pattern::HirP
 pub struct HirTopLevelEnum {
     pub signature: data::HirSignature,
     pub variants: im::HashMap<NameId, data::HirVariant>,
-    pub groups: Vec<HirBindingGroup>,
+    pub groups: im::HashSet<HirBindingGroup>,
 }
 
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]
@@ -17,7 +17,7 @@ pub struct HirTopLevelEnum {
 pub struct HirTopLevelStruct {
     pub signature: data::HirSignature,
     pub fields: im::HashMap<NameId, HirTypeId>,
-    pub groups: Vec<HirBindingGroup>,
+    pub groups: im::HashSet<HirBindingGroup>,
 }
 
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]
@@ -25,15 +25,15 @@ pub struct HirTopLevelStruct {
 #[hir_debug]
 pub struct HirTopLevelTrait {
     pub signature: data::HirSignature,
-    pub groups: Vec<HirBindingGroup>,
+    pub groups: im::HashMap<NameId, HirBindingGroup>,
 }
 
-#[derive(Hash, Clone, Debug, PartialEq, Eq)]
+#[derive(Default, Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_node(HirTopLevel)]
 #[hir_debug]
 pub struct HirBindingGroup {
     pub signature: data::HirSignature,
-    pub declarations: Vec<data::HirDeclaration>,
+    pub declarations: im::HashSet<data::HirDeclaration>,
 }
 
 #[derive(Default, Hash, Clone, Debug, PartialEq, Eq)]
@@ -58,6 +58,8 @@ pub struct HirTopLevel {
 /// Data structures module split into its own module to better disposition, as
 /// it is a bit large, and it's used as extension to [`HirTopLevel`].
 pub mod data {
+    use crate::value::HirValueId;
+
     use super::*;
 
     #[derive(Hash, Clone, Debug, PartialEq, Eq)]
@@ -81,7 +83,7 @@ pub mod data {
         Implicit(HirParameterData),
     }
 
-    #[derive(Hash, Clone, Debug, PartialEq, Eq)]
+    #[derive(Default, Hash, Clone, Debug, PartialEq, Eq)]
     #[hir_debug]
     pub struct HirSignature {
         pub name: NameId,
@@ -93,7 +95,7 @@ pub mod data {
     #[hir_debug]
     pub struct HirDeclaration {
         pub patterns: Vec<HirPatternId>,
-        pub value: HirExprId,
+        pub value: HirValueId,
     }
 
     #[derive(Hash, Clone, Debug, PartialEq, Eq)]
