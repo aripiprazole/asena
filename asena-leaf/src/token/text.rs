@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-#[derive(Debug, Clone, Hash, Default)]
+#[derive(Debug, Clone, Hash, Default, PartialEq, Eq)]
 pub struct Text {
     pub before_whitespace: String,
     pub code: String,

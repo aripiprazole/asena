@@ -15,6 +15,7 @@ use query::HirDebug;
 pub mod attr;
 pub mod database;
 pub mod expr;
+pub mod file;
 pub mod hir_type;
 pub mod literal;
 pub mod pattern;

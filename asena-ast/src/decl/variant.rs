@@ -54,7 +54,7 @@ impl ConstructorVariant {
 
     #[ast_leaf]
     pub fn parameters(&self) -> Vec<Typed> {
-        self.filter().first()
+        self.filter()
     }
 }
 

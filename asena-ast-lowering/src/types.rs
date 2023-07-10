@@ -74,6 +74,6 @@ impl<DB: HirBag + 'static> AstLowering<DB> {
             }
         };
 
-        HirType::new(self.jar.clone(), kind, expr.location().into_owned())
+        HirType::new(self.jar.clone(), kind, self.make_location(&expr))
     }
 }

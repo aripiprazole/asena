@@ -15,7 +15,7 @@ pub mod maybe;
 pub mod walkable;
 
 /// Represents a lexeme, a token with a value, represented in the Rust language.
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct Lexeme<T> {
     pub token: Spanned<Token>,
     pub value: maybe::Maybe<T>,

@@ -1,6 +1,33 @@
 use std::{fmt::Debug, hash::Hash, sync::Arc};
 
-pub type HirLoc = asena_span::Loc;
+use crate::file::InternalAsenaFile;
+
+#[derive(Default, Debug, Clone)]
+pub struct HirLoc {
+    pub file: Arc<InternalAsenaFile>,
+    pub location: asena_span::Loc,
+}
+
+impl HirLoc {
+    pub fn new(file: Arc<InternalAsenaFile>, location: asena_span::Loc) -> Self {
+        Self { file, location }
+    }
+}
+
+impl Hash for HirLoc {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.file.hash(state);
+        self.location.hash(state);
+    }
+}
+
+impl Eq for HirLoc {}
+
+impl PartialEq for HirLoc {
+    fn eq(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.file, &other.file) && self.location == other.location
+    }
+}
 
 pub trait HirId: Debug + Copy + Hash {
     type Node: HirNode;

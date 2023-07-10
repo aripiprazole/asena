@@ -49,6 +49,6 @@ impl<DB: HirBag + 'static> AstLowering<DB> {
             }
         };
 
-        HirPattern::new(self.jar.clone(), kind, pattern.location().into_owned())
+        HirPattern::new(self.jar.clone(), kind, self.make_location(&pattern))
     }
 }

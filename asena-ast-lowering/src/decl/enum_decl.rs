@@ -7,7 +7,6 @@ use asena_hir::top_level::{
 };
 use asena_hir::top_level::{HirTopLevel, HirTopLevelId};
 use asena_hir::NameId;
-use asena_leaf::ast::Located;
 use im::HashMap;
 use itertools::Itertools;
 
@@ -15,7 +14,7 @@ use crate::AstLowering;
 
 impl<DB: HirBag + 'static> AstLowering<DB> {
     pub fn lower_enum(&self, enum_decl: Enum) -> HirTopLevelId {
-        let location = enum_decl.location().into_owned();
+        let location = self.make_location(&enum_decl);
         let name = NameId::intern(self.jar.clone(), enum_decl.name().to_fn_id().as_str());
         let kind = HirTopLevelEnum {
             signature: HirSignature {

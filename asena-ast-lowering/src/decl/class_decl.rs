@@ -5,14 +5,13 @@ use asena_hir::{
     top_level::{data::HirSignature, HirTopLevel, HirTopLevelId, HirTopLevelStruct},
     NameId,
 };
-use asena_leaf::ast::Located;
 use im::HashMap;
 
 use crate::AstLowering;
 
 impl<DB: HirBag + 'static> AstLowering<DB> {
     pub fn lower_class(&self, class_decl: Class) -> HirTopLevelId {
-        let location = class_decl.location().into_owned();
+        let location = self.make_location(&class_decl);
         let name = NameId::intern(self.jar.clone(), class_decl.name().to_fn_id().as_str());
         let kind = HirTopLevelStruct {
             signature: HirSignature {

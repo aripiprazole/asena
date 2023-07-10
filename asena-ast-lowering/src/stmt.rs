@@ -15,13 +15,13 @@ impl<DB: HirBag + 'static> AstLowering<DB> {
                 let value = self.lower_value(stmt.value());
 
                 let kind = HirStmtKind::from(HirStmtValue(value));
-                let stmt = HirStmt::new(self.jar.clone(), kind, stmt.location().into_owned());
+                let stmt = HirStmt::new(self.jar.clone(), kind, self.make_location(stmt));
 
                 return (stmt, Some(value));
             }
         };
 
-        let stmt = HirStmt::new(self.jar.clone(), kind, stmt.location().into_owned());
+        let stmt = HirStmt::new(self.jar.clone(), kind, self.make_location(&stmt));
         (stmt, None)
     }
 
@@ -41,6 +41,6 @@ impl<DB: HirBag + 'static> AstLowering<DB> {
             value,
         });
 
-        HirValue::new(self.jar.clone(), kind, block.location().into_owned())
+        HirValue::new(self.jar.clone(), kind, self.make_location(&block))
     }
 }

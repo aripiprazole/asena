@@ -6,7 +6,6 @@ use asena_hir::top_level::{
     HirBindingGroup, HirTopLevel, HirTopLevelTrait,
 };
 use asena_hir::NameId;
-use asena_leaf::ast::Located;
 use im::{hashset, HashMap};
 
 use crate::AstLowering;
@@ -15,7 +14,7 @@ type Methods = HashMap<NameId, HirBindingGroup>;
 
 impl<DB: HirBag + 'static> AstLowering<DB> {
     pub fn lower_trait(&self, trait_decl: Trait) -> HirTopLevelId {
-        let location = trait_decl.location().into_owned();
+        let location = self.make_location(&trait_decl);
         let name = NameId::intern(self.jar.clone(), trait_decl.name().to_fn_id().as_str());
 
         let methods = self.compute_abstract_fields(trait_decl.fields());

@@ -82,11 +82,11 @@ impl<D: HirBag + 'static> ExprLowering<D> {
             }
         };
 
-        HirExpr::new(self.db.clone(), kind, expr.location().into_owned())
+        HirExpr::new(self.db.clone(), kind, self.lowerrer().make_location(&expr))
     }
 
     fn make_callee(&self, infix: &Infix, fn_id: &str) -> HirCallee {
-        let loc = infix.fn_id().location().into_owned();
+        let loc = self.lowerrer().make_location(infix);
         let name = self.db.clone().intern_name(fn_id.into());
         let reference = HirExprReference { name };
         let expr = HirExpr::new(self.db.clone(), reference.into(), loc.clone());

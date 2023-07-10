@@ -130,6 +130,8 @@ name = "asena-ast-lowering"
 version = "0.1.0"
 dependencies = [
  "asena-ast",
+ "asena-ast-db",
+ "asena-ast-resolver",
  "asena-grammar",
  "asena-hir",
  "asena-leaf",
@@ -232,6 +234,7 @@ name = "asena-hir"
 version = "0.1.0"
 dependencies = [
  "asena-ast",
+ "asena-ast-db",
  "asena-hir-derive",
  "asena-leaf",
  "asena-span",

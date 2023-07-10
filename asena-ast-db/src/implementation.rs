@@ -12,14 +12,14 @@ use crate::vfs::VfsFile;
 use crate::*;
 
 #[derive(Default)]
-pub struct NonResolvingAstDatabase {
+pub struct AstDatabaseImpl {
     scope: Rc<RefCell<ScopeData>>,
     internal_module_refs: RefCell<HashMap<String, ModuleRef>>,
     internal_packages: RefCell<HashMap<Package, Arc<PackageData>>>,
     internal_vfs_files: RefCell<HashMap<VfsPath, Arc<VfsFile>>>,
 }
 
-impl crate::database::AstDatabase for NonResolvingAstDatabase {
+impl crate::database::AstDatabase for AstDatabaseImpl {
     fn global_scope(&self) -> Rc<RefCell<ScopeData>> {
         self.scope.clone()
     }
@@ -150,7 +150,7 @@ impl crate::database::AstDatabase for NonResolvingAstDatabase {
     }
 }
 
-impl<'a> HasDB<'a> for &'a NonResolvingAstDatabase {
+impl<'a> HasDB<'a> for &'a AstDatabaseImpl {
     fn db(self) -> &'a dyn AstDatabase {
         self
     }

@@ -30,7 +30,7 @@ mod tests {
     fn it_works() {
         let mut prec_table = default_prec_table();
 
-        let db = Driver(Arc::new(NonResolvingAstDatabase::default()));
+        let db = Driver(Arc::new(AstDatabaseImpl::default()));
         let local_pkg = Package::new(&db, "Local", "0.0.0", Arc::new(Default::default()));
         let global_scope = db.global_scope();
 

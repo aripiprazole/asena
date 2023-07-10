@@ -8,7 +8,7 @@ pub mod kind;
 pub mod text;
 pub mod token_set;
 
-#[derive(Debug, Clone, Hash, Default)]
+#[derive(Debug, Clone, Hash, Default, PartialEq, Eq)]
 pub struct Token {
     pub name: Option<&'static str>,
     pub kind: TokenKind,

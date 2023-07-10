@@ -147,7 +147,7 @@ pub mod data {
 
         fn fmt(&self, db: Arc<Self::Database>, f: &mut Formatter<'_>) -> std::fmt::Result {
             match self {
-                HirTypeFunction::Error => write!(f, "HirTypeFunction::Error"),
+                HirTypeFunction::Error => write!(f, "Error"),
                 HirTypeFunction::Pi => write!(f, "->"),
                 HirTypeFunction::Type(type_value) => type_value.fmt(db, f),
             }
@@ -167,7 +167,7 @@ pub mod data {
 
         fn fmt(&self, db: Arc<Self::Database>, f: &mut Formatter<'_>) -> std::fmt::Result {
             match self {
-                Self::Error => write!(f, "HirTypeArgument::Error"),
+                Self::Error => write!(f, "Error"),
                 Self::Type(ty) => ty.fmt(db, f),
                 Self::Named(name, ty) => {
                     name.fmt(db.clone(), f)?;
