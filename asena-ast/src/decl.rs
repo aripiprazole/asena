@@ -323,6 +323,11 @@ impl Instance {
     }
 
     #[ast_leaf]
+    pub fn gadt_type(&self) -> Typed {
+        self.filter().first()
+    }
+
+    #[ast_leaf]
     pub fn where_clause(&self) -> Option<Where> {
         self.filter().try_as_nth(0)
     }

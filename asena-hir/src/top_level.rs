@@ -23,6 +23,15 @@ pub struct HirTopLevelStruct {
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_node(HirTopLevel)]
 #[hir_debug]
+pub struct HirTopLevelInstance {
+    pub parameters: Vec<data::HirParameterKind>,
+    pub signature: HirTypeId,
+    pub groups: im::HashSet<HirBindingGroup>,
+}
+
+#[derive(Hash, Clone, Debug, PartialEq, Eq)]
+#[hir_node(HirTopLevel)]
+#[hir_debug]
 pub struct HirTopLevelTrait {
     pub signature: data::HirSignature,
     pub groups: im::HashMap<NameId, HirBindingGroup>,
@@ -41,6 +50,7 @@ pub struct HirBindingGroup {
 pub enum HirTopLevelKind {
     #[default]
     Error,
+    HirTopLevelInstance(HirTopLevelInstance),
     HirTopLevelEnum(HirTopLevelEnum),
     HirTopLevelStruct(HirTopLevelStruct),
     HirTopLevelTrait(HirTopLevelTrait),
