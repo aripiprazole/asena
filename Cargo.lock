@@ -200,6 +200,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "asena-format"
+version = "0.1.0"
+dependencies = [
+ "asena-ast",
+ "asena-derive",
+ "asena-grammar",
+ "asena-leaf",
+ "asena-lexer",
+ "asena-parser",
+ "asena-report",
+ "asena-span",
+ "colored",
+ "fxhash",
+ "im",
+ "itertools",
+]
+
+[[package]]
 name = "asena-grammar"
 version = "0.1.0"
 dependencies = [
