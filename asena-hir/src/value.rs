@@ -4,12 +4,14 @@ use crate::{expr::HirExprId, HirVisitor};
 
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_node(HirValue)]
+#[hir_debug]
 pub struct HirValueBlock {
     pub instructions: Vec<HirValueId>,
 }
 
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_node(HirValue)]
+#[hir_debug]
 pub struct HirValueExpr(pub HirExprId);
 
 #[derive(Default, Hash, Clone, Debug, PartialEq, Eq)]

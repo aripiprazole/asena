@@ -4,6 +4,7 @@ use crate::{attr::HirAttrId, expr::HirExprId, hir_type::HirTypeId, pattern::HirP
 
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_node(HirTopLevel)]
+#[hir_debug]
 pub struct HirTopLevelEnum {
     pub signature: data::HirSignature,
     pub variants: im::HashMap<NameId, data::HirVariant>,
@@ -12,6 +13,7 @@ pub struct HirTopLevelEnum {
 
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_node(HirTopLevel)]
+#[hir_debug]
 pub struct HirTopLevelStruct {
     pub signature: data::HirSignature,
     pub fields: im::HashMap<NameId, HirTypeId>,
@@ -20,6 +22,7 @@ pub struct HirTopLevelStruct {
 
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_node(HirTopLevel)]
+#[hir_debug]
 pub struct HirTopLevelTrait {
     pub signature: data::HirSignature,
     pub groups: Vec<HirBindingGroup>,
@@ -27,6 +30,7 @@ pub struct HirTopLevelTrait {
 
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_node(HirTopLevel)]
+#[hir_debug]
 pub struct HirBindingGroup {
     pub signature: data::HirSignature,
     pub declarations: Vec<data::HirDeclaration>,

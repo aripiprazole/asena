@@ -14,35 +14,6 @@ pub fn hir_node(args: TokenStream, input: TokenStream) -> TokenStream {
     let name = input.ident.clone();
     let kind_name = Ident::new(&format!("{}Kind", struct_name), Span::call_site());
 
-    let dbg = match input.fields {
-        Fields::Named(ref fields) => {
-            let fields = fields.named.iter().cloned().map(|next| {
-                let name = next.ident.clone();
-                quote!(s.field(stringify!(#name), &crate::query::dbg::hir_dbg!(db.clone(), self.#name));)
-            });
-
-            quote! {
-                let mut s = f.debug_struct(stringify!(#name));
-                #(#fields);*
-                s.finish()
-            }
-        }
-        Fields::Unnamed(ref fields) => {
-            let fields = fields.unnamed.iter().cloned().enumerate().map(|(i, _)| {
-                let i = syn::Index::from(i);
-
-                quote!(s.field(&crate::query::dbg::hir_dbg!(db.clone(), self.#i));)
-            });
-
-            quote! {
-                let mut s = f.debug_tuple(stringify!(#name));
-                #(#fields);*
-                s.finish()
-            }
-        }
-        Fields::Unit => quote!(f.debug_struct(stringify!(#name)).finish()),
-    };
-
     TokenStream::from(quote! {
         #input
 
@@ -64,14 +35,6 @@ pub fn hir_node(args: TokenStream, input: TokenStream) -> TokenStream {
         impl From<#name> for #kind_name {
             fn from(node: #name) -> Self {
                 #kind_name::#name(node)
-            }
-        }
-
-        impl crate::query::dbg::HirDebug for #name {
-            type Database = dyn crate::database::HirBag;
-
-            fn fmt(&self, db: std::sync::Arc<Self::Database>, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                #dbg
             }
         }
 

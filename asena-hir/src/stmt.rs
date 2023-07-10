@@ -4,6 +4,7 @@ use crate::{pattern::HirPatternId, value::HirValueId, HirVisitor};
 
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_node(HirStmt)]
+#[hir_debug]
 pub struct HirStmtAsk {
     pub pattern: HirPatternId,
     pub value: HirValueId,
@@ -11,12 +12,14 @@ pub struct HirStmtAsk {
 
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_node(HirStmt)]
+#[hir_debug]
 pub struct HirStmtReturn {
     pub value: HirValueId,
 }
 
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_node(HirStmt)]
+#[hir_debug]
 pub struct HirStmtValue(pub HirValueId);
 
 #[derive(Default, Hash, Clone, Debug, PartialEq, Eq)]

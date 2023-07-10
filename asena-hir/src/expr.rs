@@ -7,16 +7,19 @@ use crate::{
 
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_node(HirExpr)]
+#[hir_debug]
 pub struct HirExprLiteral(pub HirLiteral);
 
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_node(HirExpr)]
+#[hir_debug]
 pub struct HirExprGroup {
     pub value: HirValueId,
 }
 
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_node(HirExpr)]
+#[hir_debug]
 pub struct HirExprCall {
     pub callee: data::HirCallee,
     pub arguments: Vec<HirValueId>,
@@ -25,12 +28,14 @@ pub struct HirExprCall {
 
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_node(HirExpr)]
+#[hir_debug]
 pub struct HirExprReference {
     pub name: NameId,
 }
 
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_node(HirExpr)]
+#[hir_debug]
 pub struct HirExprMatch {
     pub scrutinee: HirValueId,
     pub cases: Vec<data::HirMatchCase>,
@@ -38,12 +43,14 @@ pub struct HirExprMatch {
 
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_node(HirExpr)]
+#[hir_debug]
 pub struct HirExprHelp {
     pub value: HirValueId,
 }
 
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_node(HirExpr)]
+#[hir_debug]
 pub struct HirExprAnn {
     pub value: HirValueId,
     pub against: HirTypeId,
@@ -51,6 +58,7 @@ pub struct HirExprAnn {
 
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_node(HirExpr)]
+#[hir_debug]
 pub struct HirExprLam {
     pub parameters: Vec<NameId>,
     pub value: HirExprId,
@@ -58,6 +66,7 @@ pub struct HirExprLam {
 
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_node(HirExpr)]
+#[hir_debug]
 pub struct HirExprArray {
     pub items: Vec<HirValueId>,
 }

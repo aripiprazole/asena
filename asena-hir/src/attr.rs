@@ -4,6 +4,7 @@ use crate::HirVisitor;
 
 #[derive(Default, Hash, Clone, Copy, Debug, PartialEq, Eq)]
 #[hir_node(HirAttr)]
+#[hir_debug]
 pub struct HirAttrInline {
     pub kind: data::HirInlineKind,
 }
