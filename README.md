@@ -28,6 +28,8 @@ It's all based on the articles:
 - [Query-based compiler architetures](https://ollef.github.io/blog/posts/query-based-compilers.html)
 - [Rust](https://github.com/rust-lang/rust)
 - [Crafting Interpreters](https://craftinginterpreters.com)
+- [Semantic](https://github.com/github/semantic)
+- [Data types a la carté](https://www.cambridge.org/core/journals/journal-of-functional-programming/article/data-types-a-la-carte/14416CB20C4637164EA9F77097909409]
 
 And have some great inspirations in [rust-analyzer](https://github.com/rust-lang/rust-analyzer) code-base..
 
