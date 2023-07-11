@@ -170,9 +170,11 @@ pub mod data {
                 Self::Error => write!(f, "Error"),
                 Self::Type(ty) => ty.fmt(db, f),
                 Self::Named(name, ty) => {
-                    name.fmt(db.clone(), f)?;
+                    write!(f, "(")?;
+                    write!(f, "{}", db.clone().name_data(*name))?;
                     write!(f, ": ")?;
-                    ty.fmt(db, f)
+                    ty.fmt(db, f)?;
+                    write!(f, ")")
                 }
             }
         }

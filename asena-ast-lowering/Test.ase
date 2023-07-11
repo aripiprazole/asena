@@ -1,6 +1,18 @@
-enum Nat {
-  Zero,
-  Succ(Nat),
+use IO
+use Nat
+
+enum Vec (a: Set) (n: Nat) {
+  Nil  : Vec a 0,
+  Cons : (head: a) -> (tail: Vec a n) -> Vec a (Plus n One),
+
+  fun show (vec: Vec) {
+    match vec {
+      Test.Cons x xs => Cons x xs,
+      Test.Nil => Nil
+    }
+  }
 }
 
-add : Nat -> Nat -> Nat
+Main {
+  IO.println "hello, world"
+}

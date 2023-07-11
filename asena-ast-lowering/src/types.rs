@@ -26,9 +26,7 @@ impl<DB: HirBag + 'static> AstLowering<DB> {
             Expr::Help(_) => HirTypeKind::Error,
             Expr::LiteralExpr(_) => HirTypeKind::Error,
             //
-            Expr::Group(ref group) => {
-                return self.lower_type(group.value());
-            }
+            Expr::Group(ref group) => return self.lower_type(group.value()),
             Expr::Pi(ref pi) => {
                 let lhs = self.lower_type(pi.parameter_type());
                 let rhs = self.lower_type(pi.return_type());
