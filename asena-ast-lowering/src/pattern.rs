@@ -1,8 +1,5 @@
 use asena_ast::Pat;
-use asena_hir::pattern::{
-    HirPattern, HirPatternConstructor, HirPatternId, HirPatternKind, HirPatternList,
-    HirPatternLiteral, HirPatternName,
-};
+use asena_hir::{pattern::*, top_level::data::HirParameterKind};
 
 use super::*;
 
@@ -49,6 +46,19 @@ impl<DB: HirBag + 'static> AstLowering<DB> {
             }
         };
 
-        HirPattern::new(self.jar.clone(), kind, self.make_location(&pattern))
+        HirPattern::new(self.jar(), kind, self.make_location(&pattern))
+    }
+
+    pub fn build_patterns(&self, parameters: Vec<HirParameterKind>) -> Vec<HirPatternId> {
+        let mut patterns = Vec::new();
+        for parameter in parameters {
+            let kind = match parameter {
+                HirParameterKind::This => HirPattern::this(self.jar()),
+                HirParameterKind::Explicit(data) => HirPattern::name(self.jar(), data.name),
+                HirParameterKind::Implicit(data) => HirPattern::name(self.jar(), data.name),
+            };
+            patterns.push(kind)
+        }
+        patterns
     }
 }

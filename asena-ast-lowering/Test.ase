@@ -14,5 +14,8 @@ enum Vec (a: Set) (n: Nat) {
 }
 
 Main {
+  let x = 10
+  let y = 40
+  let z = x + y
   IO.println "hello, world"
 }

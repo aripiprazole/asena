@@ -43,6 +43,7 @@ pub enum HirPatternKind {
     Wildcard,
     Spread,
     Unit,
+    This,
     HirPatternConstructor(HirPatternConstructor),
     HirPatternList(HirPatternList),
     HirPatternName(HirPatternName),
@@ -58,6 +59,47 @@ pub struct HirPattern {
 impl HirPattern {
     pub fn create(db: Arc<dyn HirBag>, kind: HirPatternKind) -> HirPatternId {
         Self::new(db, kind, Default::default())
+    }
+
+    pub fn error(db: Arc<dyn HirBag>) -> HirPatternId {
+        Self::create(db, HirPatternKind::Error)
+    }
+
+    pub fn wildcard(db: Arc<dyn HirBag>) -> HirPatternId {
+        Self::create(db, HirPatternKind::Wildcard)
+    }
+
+    pub fn spread(db: Arc<dyn HirBag>) -> HirPatternId {
+        Self::create(db, HirPatternKind::Spread)
+    }
+
+    pub fn unit(db: Arc<dyn HirBag>) -> HirPatternId {
+        Self::create(db, HirPatternKind::Unit)
+    }
+
+    pub fn this(db: Arc<dyn HirBag>) -> HirPatternId {
+        Self::create(db, HirPatternKind::This)
+    }
+
+    pub fn constructor(db: Arc<dyn HirBag>, name: NameId, args: Vec<HirPatternId>) -> HirPatternId {
+        let kind = HirPatternKind::from(HirPatternConstructor {
+            constructor_name: name,
+            arguments: args,
+        });
+
+        Self::create(db, kind)
+    }
+
+    pub fn list(db: Arc<dyn HirBag>, items: Vec<HirPatternId>) -> HirPatternId {
+        Self::create(db, HirPatternKind::from(HirPatternList { items }))
+    }
+
+    pub fn name(db: Arc<dyn HirBag>, name: NameId) -> HirPatternId {
+        Self::create(db, HirPatternKind::from(HirPatternName { name }))
+    }
+
+    pub fn literal(db: Arc<dyn HirBag>, literal: HirLiteral) -> HirPatternId {
+        Self::create(db, HirPatternKind::from(HirPatternLiteral(literal)))
     }
 
     pub fn new_true(db: Arc<dyn HirBag>) -> HirPatternId {

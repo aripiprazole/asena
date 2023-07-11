@@ -58,20 +58,18 @@ impl<DB: HirBag + 'static> AstLowering<DB> {
     fn defaults(&self, mut methods: Methods, default_methods: Vec<DefaultMethod>) -> Methods {
         for method in default_methods {
             let name = NameId::intern(self.jar.clone(), method.name().to_fn_id().as_str());
+            let parameters = self.compute_parameters(&method);
             let group = methods.entry(name).or_insert(HirBindingGroup {
                 signature: HirSignature {
                     name,
-                    parameters: self.compute_parameters(&method),
+                    parameters: parameters.clone(),
                     return_type: None,
                 },
                 declarations: hashset![],
             });
 
-            // TODO: transforms the parameters into a list of patterns
-            let patterns = vec![];
-
             group.declarations.insert(HirDeclaration {
-                patterns,
+                patterns: self.build_patterns(parameters),
                 value: self.lower_block(method.body()),
             });
         }

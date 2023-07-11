@@ -101,16 +101,28 @@ impl<DB: HirBag + 'static> AstLowering<DB> {
                         // TODO: handle error
                     }
 
+                    let parameters = self.compute_parameters(&signature);
+
                     let group = HirBindingGroup {
                         signature: HirSignature {
                             name,
-                            parameters: self.compute_parameters(&signature),
+                            parameters: parameters.clone(),
                             return_type: match signature.return_type() {
                                 Typed::Infer => None,
                                 Typed::Explicit(type_expr) => Some(self.lower_type(type_expr)),
                             },
                         },
-                        declarations: hashset![],
+                        declarations: match signature.body() {
+                            Some(body) => {
+                                let patterns = self.build_patterns(parameters);
+
+                                hashset![HirDeclaration {
+                                    patterns,
+                                    value: self.lower_block(body),
+                                }]
+                            }
+                            None => hashset![],
+                        },
                     };
 
                     signatures.insert(name, (span, group));
