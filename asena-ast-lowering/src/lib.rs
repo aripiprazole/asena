@@ -1,6 +1,6 @@
 use std::sync::{Arc, Weak};
 
-use asena_ast::{AsenaFile, Binary, Branch, Decl, Expr, GlobalName, Infix, Literal, Signed, Typed};
+use asena_ast::*;
 use asena_hir::database::HirBag;
 use asena_hir::expr::data::HirBranch;
 use asena_hir::expr::{data::HirCallee, *};
@@ -22,6 +22,8 @@ pub mod literal;
 pub mod pattern;
 pub mod stmt;
 pub mod types;
+
+type Signatures = HashMap<NameId, (HirLoc, HirBindingGroup)>;
 
 pub struct AstLowering<DB> {
     jar: Arc<DB>,
@@ -51,6 +53,8 @@ impl<DB: HirBag + 'static> AstLowering<DB> {
                 Decl::Command(_) => {
                     // TODO: handle commands
                 }
+                Decl::Assign(ref decl) => self.make_assign(&mut signatures, decl),
+                Decl::Signature(ref decl) => self.make_signature(&mut signatures, decl),
                 Decl::Class(class_decl) => {
                     declarations.insert(self.lower_class(class_decl));
                 }
@@ -63,70 +67,6 @@ impl<DB: HirBag + 'static> AstLowering<DB> {
                 Decl::Enum(enum_decl) => {
                     declarations.insert(self.lower_enum(enum_decl));
                 }
-                Decl::Assign(assign) => {
-                    let name = assign.name().to_fn_id();
-                    let name = NameId::intern(self.jar.clone(), name.as_str());
-                    let span = self.make_location(&assign);
-
-                    let patterns = assign
-                        .patterns()
-                        .iter()
-                        .cloned()
-                        .map(|next| self.lower_pattern(next))
-                        .collect_vec();
-
-                    let (_, group) = signatures.entry(name).or_insert((
-                        span,
-                        HirBindingGroup {
-                            signature: HirSignature {
-                                name,
-                                parameters: vec![],
-                                return_type: None,
-                            },
-                            declarations: hashset![],
-                        },
-                    ));
-
-                    group.declarations.insert(HirDeclaration {
-                        patterns,
-                        value: self.lower_value(assign.body()),
-                    });
-                }
-                Decl::Signature(signature) => {
-                    let name = signature.name().to_fn_id();
-                    let name = NameId::intern(self.jar.clone(), name.as_str());
-                    let span = self.make_location(&signature);
-
-                    if let Some(_existing) = signatures.get(&name) {
-                        // TODO: handle error
-                    }
-
-                    let parameters = self.compute_parameters(&signature);
-
-                    let group = HirBindingGroup {
-                        signature: HirSignature {
-                            name,
-                            parameters: parameters.clone(),
-                            return_type: match signature.return_type() {
-                                Typed::Infer => None,
-                                Typed::Explicit(type_expr) => Some(self.lower_type(type_expr)),
-                            },
-                        },
-                        declarations: match signature.body() {
-                            Some(body) => {
-                                let patterns = self.build_patterns(parameters);
-
-                                hashset![HirDeclaration {
-                                    patterns,
-                                    value: self.lower_block(body),
-                                }]
-                            }
-                            None => hashset![],
-                        },
-                    };
-
-                    signatures.insert(name, (span, group));
-                }
             };
         }
 
@@ -138,6 +78,77 @@ impl<DB: HirBag + 'static> AstLowering<DB> {
         }
 
         *self.file.declarations.write().unwrap() = declarations;
+    }
+
+    fn make_signature(&self, signatures: &mut Signatures, decl: &Signature) {
+        let name = decl.name().to_fn_id();
+        let name = NameId::intern(self.jar(), name.as_str());
+        let span = self.make_location(decl);
+
+        if let Some(_existing) = signatures.get(&name) {
+            // TODO: handle error
+        }
+
+        let parameters = self.compute_parameters(decl);
+        let declarations = match decl.body() {
+            Some(body) => {
+                let patterns = self.build_patterns(parameters.clone());
+
+                hashset![HirDeclaration {
+                    patterns,
+                    value: self.lower_block(body),
+                }]
+            }
+            None => hashset![],
+        };
+        let return_type = match decl.return_type() {
+            Typed::Infer => None,
+            Typed::Explicit(type_expr) => Some(self.lower_type(type_expr)),
+        };
+
+        let group = HirBindingGroup {
+            signature: HirSignature {
+                name,
+                parameters,
+                return_type,
+            },
+            declarations,
+        };
+
+        signatures.insert(name, (span, group));
+    }
+
+    fn make_assign(&self, signatures: &mut Signatures, decl: &Assign) {
+        let name = decl.name().to_fn_id();
+        let name = NameId::intern(self.jar(), name.as_str());
+        let span = self.make_location(decl);
+
+        let patterns = decl
+            .patterns()
+            .iter()
+            .cloned()
+            .map(|next| self.lower_pattern(next))
+            .collect_vec();
+
+        let (_, group) = signatures
+            .entry(name)
+            .or_insert_with(|| (span, Self::new_default_group(name)));
+
+        group.declarations.insert(HirDeclaration {
+            patterns,
+            value: self.lower_value(decl.body()),
+        });
+    }
+
+    fn new_default_group(name: NameId) -> HirBindingGroup {
+        HirBindingGroup {
+            signature: HirSignature {
+                name,
+                parameters: vec![],
+                return_type: None,
+            },
+            declarations: hashset![],
+        }
     }
 
     pub fn make_location(&self, node: &impl Located) -> HirLoc {
