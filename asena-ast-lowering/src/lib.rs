@@ -163,6 +163,10 @@ impl<DB: HirBag + 'static> AstLowering<DB> {
             Branch::BlockBranch(ref branch) => HirBranch::Block(self.lower_block(branch.stmts())),
         }
     }
+
+    pub fn jar(&self) -> Arc<DB> {
+        self.jar.clone()
+    }
 }
 
 #[cfg(test)]

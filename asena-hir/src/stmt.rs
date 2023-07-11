@@ -13,6 +13,14 @@ pub struct HirStmtAsk {
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_node(HirStmt)]
 #[hir_debug]
+pub struct HirStmtLet {
+    pub pattern: HirPatternId,
+    pub value: HirValueId,
+}
+
+#[derive(Hash, Clone, Debug, PartialEq, Eq)]
+#[hir_node(HirStmt)]
+#[hir_debug]
 pub struct HirStmtReturn {
     pub value: HirValueId,
 }
@@ -28,6 +36,7 @@ pub enum HirStmtKind {
     #[default]
     Error,
     HirStmtAsk(HirStmtAsk),
+    HirStmtLet(HirStmtLet),
     HirStmtReturn(HirStmtReturn),
     HirStmtValue(HirStmtValue),
 }
