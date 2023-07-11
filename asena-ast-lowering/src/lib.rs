@@ -1,7 +1,8 @@
 use std::sync::{Arc, Weak};
 
-use asena_ast::{AsenaFile, Binary, Decl, Expr, GlobalName, Infix, Literal, Signed, Typed};
+use asena_ast::{AsenaFile, Binary, Branch, Decl, Expr, GlobalName, Infix, Literal, Signed, Typed};
 use asena_hir::database::HirBag;
+use asena_hir::expr::data::HirBranch;
 use asena_hir::expr::{data::HirCallee, *};
 use asena_hir::file::InternalAsenaFile;
 use asena_hir::hir_type::HirTypeId;
@@ -149,6 +150,18 @@ impl<DB: HirBag + 'static> AstLowering<DB> {
         };
 
         HirValue::new(self.jar.clone(), value.into(), location)
+    }
+
+    pub fn lower_branch(&self, branch: Branch) -> HirBranch {
+        match branch {
+            Branch::Error => HirBranch::Error,
+            Branch::ExprBranch(ref branch) => {
+                let value = self.lower_value(branch.value());
+
+                HirBranch::Expr(value)
+            }
+            Branch::BlockBranch(ref branch) => HirBranch::Block(self.lower_block(branch.stmts())),
+        }
     }
 }
 

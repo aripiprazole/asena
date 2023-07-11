@@ -1,8 +1,7 @@
 use asena_hir_derive::*;
 
 use crate::{
-    hir_type::HirTypeId, literal::HirLiteral, pattern::HirPatternId, stmt::HirStmtId,
-    value::HirValueId, *,
+    hir_type::HirTypeId, literal::HirLiteral, pattern::HirPatternId, value::HirValueId, *,
 };
 
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]
@@ -38,7 +37,8 @@ pub struct HirExprReference {
 #[hir_debug]
 pub struct HirExprMatch {
     pub scrutinee: HirValueId,
-    pub cases: Vec<data::HirMatchCase>,
+    pub cases: im::HashSet<data::HirMatchCase>,
+    pub kind: data::HirMatchKind,
 }
 
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]
@@ -61,7 +61,7 @@ pub struct HirExprAnn {
 #[hir_debug]
 pub struct HirExprLam {
     pub parameters: Vec<NameId>,
-    pub value: HirExprId,
+    pub value: HirValueId,
 }
 
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]
@@ -110,24 +110,24 @@ pub mod data {
 
     #[derive(Hash, Clone, Debug, PartialEq, Eq)]
     #[hir_debug]
-    pub enum HirMatchArm {
+    pub enum HirBranch {
+        Error,
         Expr(HirValueId),
-        Block(Vec<HirStmtId>),
+        Block(HirValueId),
     }
 
     #[derive(Hash, Clone, Debug, PartialEq, Eq)]
     #[hir_debug]
     pub struct HirMatchCase {
         pub pattern: HirPatternId,
-        pub value: HirMatchArm,
-        pub kind: HirMatchKind,
+        pub value: HirBranch,
     }
 
     #[derive(Hash, Clone, Debug, PartialEq, Eq)]
     #[hir_debug]
     pub struct HirDsl {
         pub parameters: Vec<NameId>,
-        pub stmts: Vec<HirStmtId>,
+        pub value: HirValueId,
     }
 
     #[derive(Hash, Clone, Debug, PartialEq, Eq)]

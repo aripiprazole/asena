@@ -25,7 +25,7 @@ pub enum HirFSize {
 
 #[derive(Hash, Clone, Copy, Debug, PartialEq, Eq)]
 #[hir_debug]
-pub enum HirIntSign {
+pub enum HirISign {
     Signed,
     Unsigned,
 }
@@ -61,7 +61,7 @@ pub struct HirString {
 pub enum HirLiteral {
     #[default]
     Error,
-    Int(usize, HirISize, HirIntSign),
+    Int(usize, HirISize, HirISign),
     Decimal(HirFSize, HirDecimal),
     String(HirString),
 }
