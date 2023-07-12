@@ -199,25 +199,45 @@ mod tests {
     use asena_ast_db::{
         driver::Driver, implementation::AstDatabaseImpl, package::Package, vfs::VfsFile,
     };
+    use asena_ast_resolver::decl::AstResolver;
     use asena_grammar::parse_asena_file;
     use asena_hir::{file::InternalAsenaFile, hir_dbg, query::HirDatabase};
+    use asena_prec::{default_prec_table, InfixHandler, PrecReorder};
 
     use super::AstLowering;
 
     #[test]
     fn it_works() {
-        let tree = parse_asena_file!("../Test.ase");
+        let mut prec_table = default_prec_table();
+        let mut tree = parse_asena_file!("../Test.ase");
 
         let db = Driver(Arc::new(AstDatabaseImpl::default()));
         let local_pkg = Package::new(&db, "Local", "0.0.0", Arc::new(Default::default()));
         let file = VfsFile::new(&db, "Test", "./Test.ase".into(), local_pkg);
 
+        let global_scope = db.global_scope();
+
         let internal_file = Arc::new(InternalAsenaFile {
             path: file.id.clone(),
             content: file.vfs().read_file(&file.id.path).unwrap(),
-            tree: tree.into(),
+            tree: tree.clone().into(),
             declarations: Default::default(),
         });
+
+        global_scope.borrow_mut().import(&db, file.clone(), None);
+
+        db.abstract_syntax_tree(file.clone())
+            .walk_on(InfixHandler {
+                prec_table: &mut prec_table,
+                reporter: &mut tree.reporter,
+            })
+            .walk_on(PrecReorder {
+                prec_table: &prec_table,
+                reporter: &mut tree.reporter,
+            })
+            .walk_on(AstResolver::new(db, file, &mut tree.reporter));
+
+        tree.reporter.dump();
 
         let jar = Arc::new(HirDatabase::default());
         let ast_lowering = AstLowering::new(internal_file.clone(), jar.clone());

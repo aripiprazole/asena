@@ -1,4 +1,5 @@
 use asena_ast::Pat;
+use asena_ast_resolver::{PatResolution, PatResolutionKey};
 use asena_hir::{pattern::*, top_level::data::HirParameterKind};
 
 use super::*;
@@ -37,7 +38,18 @@ impl<DB: HirBag + 'static> AstLowering<DB> {
                 let str = pat.name();
                 let name = NameId::intern(self.jar.clone(), str.to_fn_id().as_str());
 
-                HirPatternKind::from(HirPatternName { name })
+                match &*pat.key(PatResolutionKey) {
+                    PatResolution::Variant(variant) => {
+                        let fn_id = variant.name().to_fn_id();
+                        let name = fn_id.as_str();
+
+                        HirPatternKind::from(HirPatternConstructor {
+                            constructor_name: NameId::intern(self.jar(), name),
+                            arguments: vec![],
+                        })
+                    }
+                    _ => HirPatternKind::from(HirPatternName { name }),
+                }
             }
             Pat::LiteralPat(ref pat) => {
                 let literal = self.make_literal(pat.literal().data().clone());

@@ -120,16 +120,26 @@ impl AsenaListener for ScopeResolver<'_, '_> {
         let scope = scope.borrow();
         match self.level {
             Level::Type => match scope.find_type(&value) {
-                TypeValue::Decl(_) | TypeValue::Synthetic => {}
+                TypeValue::Synthetic => {
+                    let resolution = TypeResolution::Resolved(TypeValue::Synthetic);
+
+                    value.dynamic(TypeResolutionKey, resolution);
+                }
+                TypeValue::Decl(decl) => {
+                    let resolution = TypeResolution::Resolved(TypeValue::Decl(decl));
+
+                    value.dynamic(TypeResolutionKey, resolution);
+                }
                 TypeValue::None => {
-                    println!("Unresolved type: {:?}", scope.types);
                     self.resolver
                         .reporter
                         .report(&value.segments(), UnresolvedTypeNameError(value.to_fn_id()));
                 }
             },
-            Level::Value => match scope.functions.get(&value.to_fn_id()) {
-                Some(_) => {}
+            Level::Value => match scope.functions.get(&value.to_fn_id()).cloned() {
+                Some(resolved) => {
+                    value.dynamic(ExprResolutionKey, ExprResolution::Resolved(resolved));
+                }
                 None => {
                     self.resolver
                         .reporter
@@ -144,13 +154,18 @@ impl AsenaListener for ScopeResolver<'_, '_> {
         let file = self.resolver.file.clone();
 
         match self.db.constructor_data(value.name(), file) {
-            VariantResolution::Variant(_) => {}
+            VariantResolution::Variant(variant) => {
+                value.dynamic(PatResolutionKey, PatResolution::Variant(variant));
+            }
             VariantResolution::Binding(name) => {
+                value.dynamic(PatResolutionKey, PatResolution::LocalBinding(name.clone()));
+
                 let scope = self.last_scope();
                 let mut scope = scope.borrow_mut();
                 let name = name.to_fn_id();
-                let value = Arc::new(value.into());
-                scope.functions.insert(name, Value::Pat(value));
+                scope
+                    .functions
+                    .insert(name, Value::Pat(Arc::new(value.into())));
             }
             VariantResolution::None => {
                 let fn_id = name.to_fn_id();
@@ -166,14 +181,17 @@ impl AsenaListener for ScopeResolver<'_, '_> {
         let file = self.resolver.file.clone();
 
         match self.db.constructor_data(value.name(), file) {
-            VariantResolution::Binding(_) if !value.arguments().is_empty() => {
-                println!("  -> binding");
+            VariantResolution::Binding(name) => {
                 let fn_id = name.to_fn_id();
                 self.resolver
                     .reporter
                     .report(&name, UnresolvedNameError(fn_id));
+
+                value.dynamic(PatResolutionKey, PatResolution::LocalBinding(name));
             }
-            VariantResolution::Variant(_) | VariantResolution::Binding(_) => {}
+            VariantResolution::Variant(variant) => {
+                value.dynamic(PatResolutionKey, PatResolution::Variant(variant));
+            }
             VariantResolution::None => {
                 let fn_id = name.to_fn_id();
                 self.resolver

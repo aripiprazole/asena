@@ -1,9 +1,8 @@
-use IO
-use Nat
+enum Nat {}
 
 enum Vec (a: Set) (n: Nat) {
-  Nil  : Vec a 0,
-  Cons : (head: a) -> (tail: Vec a n) -> Vec a (Plus n One),
+  Nil  : Vec a n,
+  Cons : (head: a) -> (tail: Vec a n) -> Vec a n,
 
   fun show (vec: Vec) {
     match vec {
@@ -14,8 +13,5 @@ enum Vec (a: Set) (n: Nat) {
 }
 
 Main {
-  let x = 10
-  let y = 40
-  let z = x + y
-  IO.println "hello, world"
+  10
 }

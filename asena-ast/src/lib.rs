@@ -37,7 +37,7 @@ impl AsenaFile {
     }
 
     /// I hate my life
-    pub fn arc_walks<T: AsenaVisitor<()>>(self: Arc<Self>, mut visitor: T) -> Arc<Self> {
+    pub fn walk_on<T: AsenaVisitor<()>>(self: Arc<Self>, mut visitor: T) -> Arc<Self> {
         self.walk(&mut visitor::new_walker(&mut visitor));
         self
     }

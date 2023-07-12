@@ -5,7 +5,6 @@ mod enum_decl;
 mod instance_decl;
 mod trait_decl;
 
-#[non_exhaustive]
 pub struct AstResolver<'a> {
     pub db: Driver,
     pub file: Arc<VfsFile>,
@@ -18,6 +17,19 @@ pub struct AstResolver<'a> {
 }
 
 impl AstResolver<'_> {
+    pub fn new(db: Driver, file: Arc<VfsFile>, reporter: &mut Reporter) -> AstResolver<'_> {
+        AstResolver {
+            db,
+            file,
+            reporter,
+            binding_groups: Default::default(),
+            enum_declarations: Default::default(),
+            class_declarations: Default::default(),
+            trait_declarations: Default::default(),
+            instance_declarations: Default::default(),
+        }
+    }
+
     pub fn resolve_method(&mut self, method: Method) {
         let mut resolver = ScopeResolver::new(method.name(), Level::Value, self);
 

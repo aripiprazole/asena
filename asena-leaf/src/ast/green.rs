@@ -137,16 +137,14 @@ impl GreenTree {
 
     /// Inserts a key into the tree, and returns the value. It's not the same of [GreenTree::insert]
     /// because, [GreenTree::insert] sets in the `names` field
-    pub fn insert_key<T: Key>(&self, key: T, value: T::Value) -> Rc<T::Value> {
+    pub fn dynamic<T: Key>(&self, key: T, value: T::Value) -> Rc<T::Value> {
         let Self::Leaf(leaf) = self else {
             return Rc::new(value);
         };
 
-        leaf.keys_mut()
-            .insert(key.name(), Rc::new(value))
-            .unwrap()
-            .downcast::<T::Value>()
-            .unwrap()
+        let rc = Rc::new(value);
+        leaf.keys_mut().insert(key.name(), rc.clone());
+        rc as Rc<T::Value>
     }
 
     /// Returns the value of the key, if it exists, otherwise it will return the default value.
@@ -160,11 +158,9 @@ impl GreenTree {
             return value.clone().downcast::<T::Value>().unwrap();
         }
 
-        leaf.keys_mut()
-            .insert(key.name(), Rc::new(value))
-            .unwrap()
-            .downcast::<T::Value>()
-            .unwrap()
+        let rc = Rc::new(value);
+        leaf.keys_mut().insert(key.name(), rc.clone());
+        rc as Rc<T::Value>
     }
 
     pub fn insert<T: 'static>(&self, name: LeafKey, value: T)

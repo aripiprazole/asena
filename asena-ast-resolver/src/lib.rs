@@ -3,9 +3,11 @@ use std::{cell::RefCell, rc::Rc, sync::Arc};
 use asena_ast::{reporter::Reporter, *};
 
 use asena_ast_db::driver::Driver;
-use asena_ast_db::scope::{ScopeData, Value, VariantResolution};
+use asena_ast_db::scope::{ScopeData, TypeValue, Value, VariantResolution};
 use asena_ast_db::vfs::*;
 
+use asena_leaf::ast::Lexeme;
+use asena_leaf::ast_key;
 use asena_report::InternalError;
 
 use thiserror::Error;
@@ -15,6 +17,40 @@ use crate::error::ResolutionError::*;
 pub mod decl;
 pub mod error;
 pub mod scopes;
+
+#[derive(Default, Clone)]
+pub enum ExprResolution {
+    #[default]
+    Unresolved,
+    Resolved(Value),
+}
+
+#[derive(Default, Clone)]
+pub enum TypeResolution {
+    #[default]
+    Unresolved,
+    Resolved(TypeValue),
+}
+
+#[derive(Default, Clone)]
+pub enum PatResolution {
+    #[default]
+    Unresolved,
+    Variant(Arc<Variant>),
+    LocalBinding(Lexeme<Local>),
+}
+
+ast_key! {
+    pub struct ExprResolutionKey : ExprResolution;
+}
+
+ast_key! {
+    pub struct TypeResolutionKey : TypeResolution;
+}
+
+ast_key! {
+    pub struct PatResolutionKey : PatResolution;
+}
 
 #[cfg(test)]
 mod tests {
@@ -43,15 +79,15 @@ mod tests {
         global_scope.borrow_mut().import(&db, file.clone(), None);
 
         db.abstract_syntax_tree(file.clone())
-            .arc_walks(InfixHandler {
+            .walk_on(InfixHandler {
                 prec_table: &mut prec_table,
                 reporter: &mut asena_file.reporter,
             })
-            .arc_walks(PrecReorder {
+            .walk_on(PrecReorder {
                 prec_table: &prec_table,
                 reporter: &mut asena_file.reporter,
             })
-            .arc_walks(AstResolver {
+            .walk_on(AstResolver {
                 db,
                 file,
                 binding_groups: Default::default(),
