@@ -12,10 +12,10 @@ use crate::AstLowering;
 
 type Methods = HashMap<NameId, HirBindingGroup>;
 
-impl<DB: HirBag + 'static> AstLowering<DB> {
+impl<DB: HirBag + 'static> AstLowering<'_, DB> {
     pub fn lower_trait(&self, trait_decl: Trait) -> HirTopLevelId {
         let location = self.make_location(&trait_decl);
-        let name = NameId::intern(self.jar.clone(), trait_decl.name().to_fn_id().as_str());
+        let name = NameId::intern(self.jar(), trait_decl.name().to_fn_id().as_str());
 
         let methods = self.compute_abstract_fields(trait_decl.fields());
         let kind = HirTopLevelTrait {
@@ -27,13 +27,13 @@ impl<DB: HirBag + 'static> AstLowering<DB> {
             groups: self.defaults(methods, trait_decl.default_methods()),
         };
 
-        HirTopLevel::new(self.jar.clone(), kind.into(), vec![], vec![], location)
+        HirTopLevel::new(self.jar(), kind.into(), vec![], vec![], location)
     }
 
     fn compute_abstract_fields(&self, fields: Vec<Field>) -> Methods {
         let mut methods = HashMap::new();
         for field in fields {
-            let name = NameId::intern(self.jar.clone(), field.name().to_fn_id().as_str());
+            let name = NameId::intern(self.jar(), field.name().to_fn_id().as_str());
             if let Some(_existing) = methods.get(&name) {
                 // TODO: handle error
             }
@@ -57,7 +57,7 @@ impl<DB: HirBag + 'static> AstLowering<DB> {
 
     fn defaults(&self, mut methods: Methods, default_methods: Vec<DefaultMethod>) -> Methods {
         for method in default_methods {
-            let name = NameId::intern(self.jar.clone(), method.name().to_fn_id().as_str());
+            let name = NameId::intern(self.jar(), method.name().to_fn_id().as_str());
             let parameters = self.compute_parameters(&method);
             let group = methods.entry(name).or_insert(HirBindingGroup {
                 signature: HirSignature {

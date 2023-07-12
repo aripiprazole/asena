@@ -6,7 +6,7 @@ use if_chain::if_chain;
 
 use super::*;
 
-impl<DB: HirBag + 'static> AstLowering<DB> {
+impl<DB: HirBag + 'static> AstLowering<'_, DB> {
     pub fn lower_type(&self, expr: Expr) -> HirTypeId {
         let kind = match expr {
             Expr::SelfExpr(_) => HirTypeKind::This,

@@ -10,7 +10,7 @@ use super::*;
 
 type Instr = (HirStmtId, Option<HirValueId>);
 
-impl<DB: HirBag + 'static> AstLowering<DB> {
+impl<DB: HirBag + 'static> AstLowering<'_, DB> {
     pub fn lower_stmt(&self, stmt: Stmt) -> Instr {
         let kind = match stmt {
             Stmt::Error => HirStmtKind::Error,

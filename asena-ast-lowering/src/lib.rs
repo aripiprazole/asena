@@ -1,5 +1,6 @@
 use std::sync::{Arc, Weak};
 
+use asena_ast::reporter::Reporter;
 use asena_ast::*;
 use asena_hir::database::HirBag;
 use asena_hir::expr::data::HirBranch;
@@ -25,17 +26,25 @@ pub mod types;
 
 type Signatures = HashMap<NameId, (HirLoc, HirBindingGroup)>;
 
-pub struct AstLowering<DB> {
+pub struct AstLowering<'a, DB> {
     jar: Arc<DB>,
     file: Arc<InternalAsenaFile>,
-    me: Weak<AstLowering<DB>>,
+    me: Weak<AstLowering<'a, DB>>,
+
+    /// The reporter for this lowering.
+    pub reporter: &'a mut Reporter,
 }
 
-impl<DB: HirBag + 'static> AstLowering<DB> {
-    pub fn new(file: Arc<InternalAsenaFile>, jar: Arc<DB>) -> Arc<Self> {
+impl<'ctx, DB: HirBag + 'static> AstLowering<'ctx, DB> {
+    pub fn new(
+        reporter: &'ctx mut Reporter,
+        file: Arc<InternalAsenaFile>,
+        jar: Arc<DB>,
+    ) -> Arc<AstLowering<'ctx, DB>> {
         Arc::new_cyclic(|me| Self {
             jar,
             file,
+            reporter,
             me: me.clone(),
         })
     }
@@ -226,22 +235,23 @@ mod tests {
 
         global_scope.borrow_mut().import(&db, file.clone(), None);
 
-        db.abstract_syntax_tree(file.clone())
-            .walk_on(InfixHandler {
-                prec_table: &mut prec_table,
-                reporter: &mut tree.reporter,
-            })
-            .walk_on(PrecReorder {
-                prec_table: &prec_table,
-                reporter: &mut tree.reporter,
-            })
-            .walk_on(AstResolver::new(db, file, &mut tree.reporter));
-
-        tree.reporter.dump();
+        tree.reporting(|reporter| {
+            db.abstract_syntax_tree(file.clone())
+                .walk_on(InfixHandler {
+                    prec_table: &mut prec_table,
+                    reporter,
+                })
+                .walk_on(PrecReorder {
+                    prec_table: &prec_table,
+                    reporter,
+                })
+                .walk_on(AstResolver::new(db, file, reporter))
+        });
 
         let jar = Arc::new(HirDatabase::default());
-        let ast_lowering = AstLowering::new(internal_file.clone(), jar.clone());
+        let ast_lowering = AstLowering::new(&mut tree.reporter, internal_file.clone(), jar.clone());
         ast_lowering.run_lowering();
+        tree.reporter.dump();
 
         println!("{:#?}", hir_dbg!(jar, internal_file));
     }

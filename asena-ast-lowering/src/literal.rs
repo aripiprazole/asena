@@ -1,6 +1,6 @@
 use super::*;
 
-impl<DB: HirBag + 'static> AstLowering<DB> {
+impl<DB: HirBag + 'static> AstLowering<'_, DB> {
     pub fn make_literal(&self, literal: Literal) -> HirLiteral {
         match literal {
             Literal::Error => HirLiteral::Error,

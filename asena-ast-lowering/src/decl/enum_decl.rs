@@ -12,10 +12,10 @@ use itertools::Itertools;
 
 use crate::AstLowering;
 
-impl<DB: HirBag + 'static> AstLowering<DB> {
+impl<DB: HirBag + 'static> AstLowering<'_, DB> {
     pub fn lower_enum(&self, enum_decl: Enum) -> HirTopLevelId {
         let location = self.make_location(&enum_decl);
-        let name = NameId::intern(self.jar.clone(), enum_decl.name().to_fn_id().as_str());
+        let name = NameId::intern(self.jar(), enum_decl.name().to_fn_id().as_str());
         let kind = HirTopLevelEnum {
             signature: HirSignature {
                 name,
@@ -29,7 +29,7 @@ impl<DB: HirBag + 'static> AstLowering<DB> {
             groups: self.compute_methods(enum_decl.methods()),
         };
 
-        HirTopLevel::new(self.jar.clone(), kind.into(), vec![], vec![], location)
+        HirTopLevel::new(self.jar(), kind.into(), vec![], vec![], location)
     }
 
     fn lower_variants(&self, enum_decl: &Enum) -> HashMap<NameId, HirVariant> {
@@ -42,9 +42,9 @@ impl<DB: HirBag + 'static> AstLowering<DB> {
         for variant in variants {
             let name = NameId::intern(self.jar.clone(), variant.name().to_fn_id().as_str());
             let variant_type = match variant {
-                Variant::Error => HirType::error(self.jar.clone()),
+                Variant::Error => HirType::error(self.jar()),
                 Variant::TypeVariant(type_variant) => match type_variant.value() {
-                    Typed::Infer => HirType::constructor(self.jar.clone(), enum_name),
+                    Typed::Infer => HirType::constructor(self.jar(), enum_name),
                     Typed::Explicit(variant_type) => self.lower_type(variant_type),
                 },
                 Variant::ConstructorVariant(variant) => {
@@ -60,9 +60,9 @@ impl<DB: HirBag + 'static> AstLowering<DB> {
                             Typed::Explicit(type_expr) => Some(self.lower_type(type_expr)),
                         })
                         .collect_vec();
-                    let enum_value_type = HirType::constructor(self.jar.clone(), enum_name);
+                    let enum_value_type = HirType::constructor(self.jar(), enum_name);
 
-                    HirType::pi(self.jar.clone(), parameters.as_slice(), enum_value_type)
+                    HirType::pi(self.jar(), parameters.as_slice(), enum_value_type)
                 }
             };
 

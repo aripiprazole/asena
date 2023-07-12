@@ -16,7 +16,7 @@ pub mod enum_decl;
 pub mod instance_decl;
 pub mod trait_decl;
 
-impl<DB: HirBag + 'static> AstLowering<DB> {
+impl<DB: HirBag + 'static> AstLowering<'_, DB> {
     pub fn compute_parameters(&self, decl: &impl GlobalDecl) -> Vec<HirParameterKind> {
         let mut parameters = Vec::new();
         for (name, parameter) in Parameter::compute_parameters(decl.parameters()) {

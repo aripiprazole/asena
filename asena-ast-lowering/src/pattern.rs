@@ -4,7 +4,7 @@ use asena_hir::{pattern::*, top_level::data::HirParameterKind};
 
 use super::*;
 
-impl<DB: HirBag + 'static> AstLowering<DB> {
+impl<DB: HirBag + 'static> AstLowering<'_, DB> {
     pub fn lower_pattern(&self, pattern: Pat) -> HirPatternId {
         let kind = match pattern {
             Pat::Error => HirPatternKind::Error,

@@ -9,15 +9,15 @@ use super::*;
 
 use std::sync::{Arc, Weak};
 
-pub struct ExprLowering<D> {
+pub struct ExprLowering<'a, D> {
     pub db: Arc<D>,
     pub instructions: Vec<HirStmtId>,
-    pub lowerrer: Weak<AstLowering<D>>,
+    pub lowerrer: Weak<AstLowering<'a, D>>,
 }
 
-impl<DB: HirBag + 'static> ExprLowering<DB> {
-    pub fn new(lowerrer: Weak<AstLowering<DB>>, db: Arc<DB>) -> Self {
-        Self {
+impl<DB: HirBag + 'static> ExprLowering<'_, DB> {
+    pub fn new(lowerrer: Weak<AstLowering<'_, DB>>, db: Arc<DB>) -> ExprLowering<DB> {
+        ExprLowering {
             db,
             lowerrer,
             instructions: vec![],

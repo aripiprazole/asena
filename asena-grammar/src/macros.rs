@@ -104,6 +104,13 @@ impl Reportable {
             reporter,
         }
     }
+
+    #[inline(always)]
+    pub fn reporting<U>(&mut self, f: impl FnOnce(&mut Reporter) -> U) -> U {
+        f(&mut self.reporter)
+    }
+
+    #[inline(always)]
     pub fn unwrap(&self) -> Spanned<Tree> {
         self.data.clone()
     }

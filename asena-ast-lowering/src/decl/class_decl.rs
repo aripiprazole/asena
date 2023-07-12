@@ -9,10 +9,10 @@ use im::HashMap;
 
 use crate::AstLowering;
 
-impl<DB: HirBag + 'static> AstLowering<DB> {
+impl<DB: HirBag + 'static> AstLowering<'_, DB> {
     pub fn lower_class(&self, class_decl: Class) -> HirTopLevelId {
         let location = self.make_location(&class_decl);
-        let name = NameId::intern(self.jar.clone(), class_decl.name().to_fn_id().as_str());
+        let name = NameId::intern(self.jar(), class_decl.name().to_fn_id().as_str());
         let kind = HirTopLevelStruct {
             signature: HirSignature {
                 name,
@@ -23,13 +23,13 @@ impl<DB: HirBag + 'static> AstLowering<DB> {
             groups: self.compute_methods(class_decl.methods()),
         };
 
-        HirTopLevel::new(self.jar.clone(), kind.into(), vec![], vec![], location)
+        HirTopLevel::new(self.jar(), kind.into(), vec![], vec![], location)
     }
 
     fn lower_fields(&self, fields: Vec<Field>) -> HashMap<NameId, HirTypeId> {
         let mut map = HashMap::new();
         for field in fields {
-            let name = NameId::intern(self.jar.clone(), field.name().to_fn_id().as_str());
+            let name = NameId::intern(self.jar(), field.name().to_fn_id().as_str());
             match field.field_type() {
                 Typed::Infer => {
                     // TODO: handle error
