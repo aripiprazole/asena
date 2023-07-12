@@ -1,0 +1,26 @@
+
+[package]
+edition = "2021"
+name = "asena-hir-db"
+version = "0.1.0"
+
+[dependencies]
+asena-ast = {path = "../asena-ast"}
+asena-ast-db = {path = "../asena-ast-db"}
+asena-ast-lowering = {path = "../asena-ast-lowering"}
+asena-ast-resolver = {path = "../asena-ast-resolver"}
+asena-driver = {path = "../asena-driver"}
+asena-driver-derive = {path = "../asena-driver-derive"}
+asena-grammar = {path = "../asena-grammar"}
+asena-hir = {path = "../asena-hir"}
+asena-leaf = {path = "../asena-leaf"}
+asena-lexer = {path = "../asena-lexer"}
+asena-parser = {path = "../asena-parser"}
+asena-prec = {path = "../asena-prec"}
+asena-report = {path = "../asena-report"}
+asena-span = {path = "../asena-span"}
+fxhash = "0.2.1"
+if_chain = "1.0.2"
+im = "15.1.0"
+itertools = "0.10.5"
+thiserror = "1.0.40"

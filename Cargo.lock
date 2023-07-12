@@ -189,6 +189,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "asena-driver"
+version = "0.1.0"
+dependencies = [
+ "asena-driver-derive",
+ "colored",
+ "fxhash",
+ "im",
+ "itertools",
+]
+
+[[package]]
+name = "asena-driver-derive"
+version = "0.1.0"
+dependencies = [
+ "colored",
+ "fxhash",
+ "im",
+ "itertools",
+]
+
+[[package]]
 name = "asena-drop-bomb"
 version = "0.1.0"
 dependencies = [
@@ -262,6 +283,31 @@ dependencies = [
  "im",
  "itertools",
  "paste",
+]
+
+[[package]]
+name = "asena-hir-db"
+version = "0.1.0"
+dependencies = [
+ "asena-ast",
+ "asena-ast-db",
+ "asena-ast-lowering",
+ "asena-ast-resolver",
+ "asena-driver",
+ "asena-driver-derive",
+ "asena-grammar",
+ "asena-hir",
+ "asena-leaf",
+ "asena-lexer",
+ "asena-parser",
+ "asena-prec",
+ "asena-report",
+ "asena-span",
+ "fxhash",
+ "if_chain",
+ "im",
+ "itertools",
+ "thiserror",
 ]
 
 [[package]]
