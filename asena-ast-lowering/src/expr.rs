@@ -52,10 +52,14 @@ impl<DB: HirBag + 'static> ExprLowering<'_, DB> {
             Expr::Match(ref expr) => self.make_match(expr),
             Expr::Lam(ref expr) => self.make_lam(expr),
 
-            // TODO: handle dependent type syntax
-            Expr::Qual(_) => HirExprKind::Error,
-            Expr::Pi(_) => HirExprKind::Error,
-            Expr::Sigma(_) => HirExprKind::Error,
+            // dependent types unsupported syntax
+            ref expr @ Expr::Qual(_) | ref expr @ Expr::Pi(_) | ref expr @ Expr::Sigma(_) => {
+                self.lowerrer()
+                    .reporter()
+                    .report(expr, UnsupportedDependentTypesError);
+
+                HirExprKind::Error
+            }
         };
 
         HirExpr::new(self.db(), kind, self.lowerrer().make_location(&expr))

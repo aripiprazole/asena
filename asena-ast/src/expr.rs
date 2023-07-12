@@ -690,6 +690,7 @@ pub type PrimaryRef = Spanned<Expr>;
 #[derive(Default, Clone)]
 pub enum Typed {
     #[default]
+    /// TODO: Accept a token tree
     Infer, // _
     Explicit(Expr),
 }
@@ -700,6 +701,15 @@ impl Typed {
     pub fn walks<T: AsenaVisitor<()>>(self, mut visitor: T) -> Self {
         self.walk(&mut visitor::new_walker(&mut visitor));
         self
+    }
+}
+
+impl Located for Typed {
+    fn location(&self) -> std::borrow::Cow<'_, asena_span::Loc> {
+        match self {
+            Typed::Infer => std::borrow::Cow::Owned(asena_span::Loc::default()),
+            Typed::Explicit(expr) => expr.location(),
+        }
     }
 }
 

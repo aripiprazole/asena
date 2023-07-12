@@ -9,6 +9,7 @@ use asena_hir::{
 };
 use im::hashset;
 
+use crate::error::AstLoweringError::*;
 use crate::AstLowering;
 
 pub mod class_decl;
@@ -33,10 +34,10 @@ impl<DB: HirBag + 'static> AstLowering<'_, DB> {
                 _ if parameter.is_self() && parameter.explicit() => {
                     parameters.push(HirParameterKind::This);
                 }
-                _ if parameter.is_self() && !parameter.explicit() => {
-                    // TODO: handle error
-                    // a self parameter cannot be implicit
-                }
+                // a self parameter cannot be implicit
+                _ if parameter.is_self() && !parameter.explicit() => self
+                    .reporter()
+                    .report(&parameter, SelfParameterBayMeExplicitError),
                 // This is the inverse, for explicit being the default case, if the parameter is
                 // with some error and explicit is buggy, then it will be explicit.
                 _ if !parameter.explicit() => {

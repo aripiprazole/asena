@@ -1,4 +1,6 @@
-use std::{fmt::Debug, hash::Hash, sync::Arc};
+use std::{borrow::Cow, fmt::Debug, hash::Hash, sync::Arc};
+
+use asena_leaf::ast::Located;
 
 use crate::file::InternalAsenaFile;
 
@@ -11,6 +13,12 @@ pub struct HirLoc {
 impl HirLoc {
     pub fn new(file: Arc<InternalAsenaFile>, location: asena_span::Loc) -> Self {
         Self { file, location }
+    }
+}
+
+impl Located for HirLoc {
+    fn location(&self) -> Cow<'_, asena_span::Loc> {
+        Cow::Borrowed(&self.location)
     }
 }
 

@@ -123,6 +123,11 @@ pub enum DiagnosticKind {
     Info = 6,
     Tip = 7,
     Meta = 8,
+    SyntaxError = 9,
+    TypeError = 11,
+    ResolutionError = 12,
+    Lint = 13,
+    LoweringError = 14,
 }
 
 impl<E: InternalError> Report<E> {

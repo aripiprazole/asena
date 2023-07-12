@@ -1,7 +1,4 @@
-use asena_hir::hir_type::{
-    data::{HirTypeArgument, HirTypeFunction},
-    HirType, HirTypeApp, HirTypeKind, HirTypeName,
-};
+use asena_hir::hir_type::{data::*, *};
 use if_chain::if_chain;
 
 use super::*;
@@ -12,19 +9,21 @@ impl<DB: HirBag + 'static> AstLowering<'_, DB> {
             Expr::SelfExpr(_) => HirTypeKind::This,
             Expr::Unit(_) => HirTypeKind::Unit,
             Expr::Error => HirTypeKind::Error,
-            // TODO: handle dependent types
-            Expr::Infix(_) => HirTypeKind::Error,
-            Expr::Array(_) => HirTypeKind::Error,
-            Expr::Dsl(_) => HirTypeKind::Error,
-            Expr::Lam(_) => HirTypeKind::Error,
-            Expr::Let(_) => HirTypeKind::Error,
-            Expr::If(_) => HirTypeKind::Error,
-            Expr::Match(_) => HirTypeKind::Error,
-            Expr::Ann(_) => HirTypeKind::Error,
-            Expr::Qual(_) => HirTypeKind::Error,
-            Expr::Sigma(_) => HirTypeKind::Error,
-            Expr::Help(_) => HirTypeKind::Error,
-            Expr::LiteralExpr(_) => HirTypeKind::Error,
+
+            // unsupported types yet
+            Expr::Infix(_) => self.raise_type_expr_error(&expr),
+            Expr::Array(_) => self.raise_type_expr_error(&expr),
+            Expr::Dsl(_) => self.raise_type_expr_error(&expr),
+            Expr::Lam(_) => self.raise_type_expr_error(&expr),
+            Expr::Let(_) => self.raise_type_expr_error(&expr),
+            Expr::If(_) => self.raise_type_expr_error(&expr),
+            Expr::Match(_) => self.raise_type_expr_error(&expr),
+            Expr::Ann(_) => self.raise_type_expr_error(&expr),
+            Expr::Qual(_) => self.raise_type_expr_error(&expr),
+            Expr::Sigma(_) => self.raise_type_expr_error(&expr),
+            Expr::Help(_) => self.raise_type_expr_error(&expr),
+            Expr::LiteralExpr(_) => self.raise_type_literal_error(&expr),
+
             //
             Expr::Group(ref group) => return self.lower_type(group.value()),
             Expr::Pi(ref pi) => {
@@ -73,5 +72,17 @@ impl<DB: HirBag + 'static> AstLowering<'_, DB> {
         };
 
         HirType::new(self.jar.clone(), kind, self.make_location(&expr))
+    }
+
+    fn raise_type_literal_error(&self, expr: &Expr) -> HirTypeKind {
+        self.reporter().report(expr, UnsupportedTypeLiteralsError);
+
+        HirTypeKind::Error
+    }
+
+    fn raise_type_expr_error(&self, expr: &Expr) -> HirTypeKind {
+        self.reporter().report(expr, UnsupportedTypeExprsError);
+
+        HirTypeKind::Error
     }
 }

@@ -10,6 +10,7 @@ use asena_hir::NameId;
 use im::HashMap;
 use itertools::Itertools;
 
+use crate::error::AstLoweringError::*;
 use crate::AstLowering;
 
 impl<DB: HirBag + 'static> AstLowering<'_, DB> {
@@ -54,7 +55,9 @@ impl<DB: HirBag + 'static> AstLowering<'_, DB> {
                         .cloned()
                         .filter_map(|parameter| match parameter {
                             Typed::Infer => {
-                                // TODO: handle illegal declaration
+                                self.reporter()
+                                    .report(&parameter, VariantParameterCanNotBeInferError);
+
                                 None
                             }
                             Typed::Explicit(type_expr) => Some(self.lower_type(type_expr)),

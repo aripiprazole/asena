@@ -1,7 +1,7 @@
 enum Nat {}
 
 enum Vec (a: Set) (n: Nat) {
-  Nil  : Vec a n,
+  Nil  : Vec a 10,
   Cons : (head: a) -> (tail: Vec a n) -> Vec a n,
 
   fun show (vec: Vec) {

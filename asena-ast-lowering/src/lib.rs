@@ -1,4 +1,4 @@
-use std::sync::{Arc, Weak};
+use std::sync::{Arc, Mutex, MutexGuard, Weak};
 
 use asena_ast::reporter::Reporter;
 use asena_ast::*;
@@ -6,18 +6,19 @@ use asena_hir::database::HirBag;
 use asena_hir::expr::data::HirBranch;
 use asena_hir::expr::{data::HirCallee, *};
 use asena_hir::file::InternalAsenaFile;
-use asena_hir::hir_type::HirTypeId;
 use asena_hir::query::leaf::HirLoc;
 use asena_hir::top_level::data::{HirDeclaration, HirSignature};
 use asena_hir::top_level::{HirBindingGroup, HirTopLevel, HirTopLevelKind};
 use asena_hir::value::*;
 use asena_hir::{literal::*, NameId};
 use asena_leaf::ast::{Located, Node};
+use error::AstLoweringError::*;
 use expr::ExprLowering;
 use im::{hashset, HashMap, HashSet};
 use itertools::Itertools;
 
 pub mod decl;
+pub mod error;
 pub mod expr;
 pub mod literal;
 pub mod pattern;
@@ -32,24 +33,26 @@ pub struct AstLowering<'a, DB> {
     me: Weak<AstLowering<'a, DB>>,
 
     /// The reporter for this lowering.
-    pub reporter: &'a mut Reporter,
+    pub reporter: Arc<Mutex<Reporter>>,
+    pub phantom: std::marker::PhantomData<&'a ()>,
 }
 
 impl<'ctx, DB: HirBag + 'static> AstLowering<'ctx, DB> {
     pub fn new(
-        reporter: &'ctx mut Reporter,
+        reporter: Arc<Mutex<Reporter>>,
         file: Arc<InternalAsenaFile>,
         jar: Arc<DB>,
-    ) -> Arc<AstLowering<'ctx, DB>> {
+    ) -> Arc<Self> {
         Arc::new_cyclic(|me| Self {
             jar,
             file,
             reporter,
             me: me.clone(),
+            phantom: std::marker::PhantomData,
         })
     }
 
-    pub fn run_lowering(&self) {
+    pub fn make_hir(&self) {
         let file = AsenaFile::new(self.file.tree.clone());
 
         let mut declarations = HashSet::new();
@@ -81,7 +84,7 @@ impl<'ctx, DB: HirBag + 'static> AstLowering<'ctx, DB> {
 
         for (span, group) in signatures.values().cloned() {
             let kind = HirTopLevelKind::from(group);
-            let top_level = HirTopLevel::new(self.jar.clone(), kind, vec![], vec![], span);
+            let top_level = HirTopLevel::new(self.jar(), kind, vec![], vec![], span);
 
             declarations.insert(top_level);
         }
@@ -94,8 +97,9 @@ impl<'ctx, DB: HirBag + 'static> AstLowering<'ctx, DB> {
         let name = NameId::intern(self.jar(), name.as_str());
         let span = self.make_location(decl);
 
-        if let Some(_existing) = signatures.get(&name) {
-            // TODO: handle error
+        if let Some((loc, _)) = signatures.get(&name) {
+            self.reporter()
+                .report(loc, DuplicatedSignatureDefinitionError);
         }
 
         let parameters = self.compute_parameters(decl);
@@ -169,19 +173,19 @@ impl<'ctx, DB: HirBag + 'static> AstLowering<'ctx, DB> {
 
     pub fn lower_value(&self, value: Expr) -> HirValueId {
         let location = self.make_location(&value);
-        let mut lowering = ExprLowering::new(self.me.clone(), self.jar.clone());
+        let mut lowering = ExprLowering::new(self.me.clone(), self.jar());
         let value = HirValueBlock {
             value: {
                 let location = self.make_location(&value);
                 let id = lowering.make(value);
                 let kind = HirValueExpr(id);
 
-                HirValue::new(self.jar.clone(), kind.into(), location)
+                HirValue::new(self.jar(), kind.into(), location)
             },
             instructions: lowering.instructions,
         };
 
-        HirValue::new(self.jar.clone(), value.into(), location)
+        HirValue::new(self.jar(), value.into(), location)
     }
 
     pub fn lower_branch(&self, branch: Branch) -> HirBranch {
@@ -196,6 +200,10 @@ impl<'ctx, DB: HirBag + 'static> AstLowering<'ctx, DB> {
         }
     }
 
+    pub fn reporter(&self) -> MutexGuard<Reporter> {
+        self.reporter.lock().unwrap()
+    }
+
     pub fn jar(&self) -> Arc<DB> {
         self.jar.clone()
     }
@@ -203,7 +211,7 @@ impl<'ctx, DB: HirBag + 'static> AstLowering<'ctx, DB> {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::Arc;
+    use std::sync::{Arc, Mutex};
 
     use asena_ast_db::{
         driver::Driver, implementation::AstDatabaseImpl, package::Package, vfs::VfsFile,
@@ -248,10 +256,11 @@ mod tests {
                 .walk_on(AstResolver::new(db, file, reporter))
         });
 
+        let reporter = Arc::new(Mutex::new(tree.reporter));
         let jar = Arc::new(HirDatabase::default());
-        let ast_lowering = AstLowering::new(&mut tree.reporter, internal_file.clone(), jar.clone());
-        ast_lowering.run_lowering();
-        tree.reporter.dump();
+        let lowerrer = AstLowering::new(reporter.clone(), internal_file.clone(), jar.clone());
+        lowerrer.make_hir();
+        reporter.lock().unwrap().dump();
 
         println!("{:#?}", hir_dbg!(jar, internal_file));
     }

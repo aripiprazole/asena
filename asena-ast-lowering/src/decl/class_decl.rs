@@ -7,6 +7,7 @@ use asena_hir::{
 };
 use im::HashMap;
 
+use crate::error::AstLoweringError::*;
 use crate::AstLowering;
 
 impl<DB: HirBag + 'static> AstLowering<'_, DB> {
@@ -31,10 +32,8 @@ impl<DB: HirBag + 'static> AstLowering<'_, DB> {
         for field in fields {
             let name = NameId::intern(self.jar(), field.name().to_fn_id().as_str());
             match field.field_type() {
-                Typed::Infer => {
-                    // TODO: handle error
-                    // a field cannot be infer
-                }
+                // a field cannot be infer
+                Typed::Infer => self.reporter().report(&field, FieldTypeCanNotBeInferError),
                 Typed::Explicit(type_expr) => {
                     let type_id = self.lower_type(type_expr);
                     map.insert(name, type_id);

@@ -8,6 +8,7 @@ use asena_hir::top_level::{
 use asena_hir::NameId;
 use im::{hashset, HashMap};
 
+use crate::error::AstLoweringError::*;
 use crate::AstLowering;
 
 type Methods = HashMap<NameId, HirBindingGroup>;
@@ -34,8 +35,9 @@ impl<DB: HirBag + 'static> AstLowering<'_, DB> {
         let mut methods = HashMap::new();
         for field in fields {
             let name = NameId::intern(self.jar(), field.name().to_fn_id().as_str());
-            if let Some(_existing) = methods.get(&name) {
-                // TODO: handle error
+            if methods.get(&name).is_some() {
+                self.reporter()
+                    .report(&field, DuplicatedAbstractFieldDefinitionError)
             }
             let return_type = match field.field_type() {
                 Typed::Infer => None,
