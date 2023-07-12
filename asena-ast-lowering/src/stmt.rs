@@ -3,7 +3,7 @@ use asena_hir::{
     expr::data::{HirMatchCase, HirMatchKind},
     pattern::HirPattern,
     stmt::{HirStmt, HirStmtAsk, HirStmtId, HirStmtKind, HirStmtLet, HirStmtValue},
-    value::runtime::HirValueInstrBlock,
+    value::instr::{Block, HirInstr},
 };
 
 use super::*;
@@ -36,7 +36,7 @@ impl<DB: HirBag + 'static> AstLowering<DB> {
             last = value;
         }
 
-        let value = last.unwrap();
+        let value = last.unwrap_or_else(|| HirValue::pure_unit(self.jar()));
         let stmts = {
             let kind = HirValueKind::from(HirValueBlock {
                 instructions: stmts,
@@ -46,10 +46,10 @@ impl<DB: HirBag + 'static> AstLowering<DB> {
             HirValue::new(self.jar(), kind, self.make_location(&block))
         };
 
-        let kind = HirValueKind::from(HirValueInstrBlock {
+        let kind = HirValueKind::from(HirInstr::Block(Block {
             instructions: vec![],
             value: stmts,
-        });
+        }));
 
         HirValue::new(self.jar(), kind, self.make_location(&block))
     }

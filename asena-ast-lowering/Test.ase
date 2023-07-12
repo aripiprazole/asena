@@ -7,11 +7,10 @@ enum Vec (a: Set) (n: Nat) {
   fun show (vec: Vec) {
     match vec {
       Test.Cons x xs => Cons x xs,
-      Test.Nil => Nil
+      Test.Nil       => Nil
     }
   }
 }
 
 Main {
-  10
 }

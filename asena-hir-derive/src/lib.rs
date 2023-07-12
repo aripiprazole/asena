@@ -9,7 +9,7 @@ use syn::{parse_quote, token::Pub, Field, FieldMutability, Fields, Ident, Token,
 #[allow(clippy::redundant_clone)]
 pub fn hir_node(args: TokenStream, input: TokenStream) -> TokenStream {
     let struct_name: proc_macro2::TokenStream = args.into();
-    let input = syn::parse_macro_input!(input as syn::ItemStruct);
+    let input = syn::parse_macro_input!(input as syn::DeriveInput);
 
     let name = input.ident.clone();
     let kind_name = Ident::new(&format!("{}Kind", struct_name), Span::call_site());
