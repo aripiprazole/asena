@@ -1,4 +1,4 @@
-use crate::NameId;
+use crate::Name;
 
 use super::*;
 
@@ -7,5 +7,5 @@ use super::*;
 pub enum HirMonad {
     PureUnit,
     Pure(HirValue),
-    Bind(NameId, HirValue, HirValue),
+    Bind(Name, HirValue, HirValue),
 }

@@ -1,4 +1,4 @@
-use crate::NameId;
+use crate::Name;
 
 use super::*;
 
@@ -6,8 +6,8 @@ use super::*;
 #[hir_node(HirValue)]
 pub enum HirInstr {
     Null,
-    Let(NameId, HirValue),
-    Variable(NameId),
+    Let(Name, HirValue),
+    Variable(Name),
     Block(Block),
     ObjectClone(HirValue), // Object.clone
     ObjectDrop(HirValue),  // Object.drop

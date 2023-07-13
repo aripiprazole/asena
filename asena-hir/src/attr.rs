@@ -1,6 +1,6 @@
 use asena_hir_derive::*;
 
-use crate::NameId;
+use crate::Name;
 
 #[derive(Default, Hash, Clone, Copy, Debug, PartialEq, Eq)]
 #[hir_node(HirAttr)]
@@ -8,10 +8,10 @@ pub struct HirAttrInline {
     pub kind: data::HirInlineKind,
 }
 
-#[derive(Default, Hash, Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Hash, Clone, Copy, Debug, PartialEq, Eq)]
 #[hir_node(HirAttr)]
 pub struct HirAttrExternal {
-    pub ffi_name: NameId,
+    pub ffi_name: Name,
 }
 
 #[derive(Default, Hash, Clone, Debug, PartialEq, Eq)]

@@ -6,7 +6,7 @@ use crate::{attr::HirAttr, hir_type::HirType, *};
 #[hir_node(HirTopLevel)]
 pub struct HirTopLevelEnum {
     pub signature: data::HirSignature,
-    pub variants: im::HashMap<NameId, data::HirVariant>,
+    pub variants: im::HashMap<Name, data::HirVariant>,
     pub groups: im::HashSet<HirBindingGroup>,
 }
 
@@ -14,7 +14,7 @@ pub struct HirTopLevelEnum {
 #[hir_node(HirTopLevel)]
 pub struct HirTopLevelStruct {
     pub signature: data::HirSignature,
-    pub fields: im::HashMap<NameId, HirType>,
+    pub fields: im::HashMap<Name, HirType>,
     pub groups: im::HashSet<HirBindingGroup>,
 }
 
@@ -30,10 +30,10 @@ pub struct HirTopLevelInstance {
 #[hir_node(HirTopLevel)]
 pub struct HirTopLevelTrait {
     pub signature: data::HirSignature,
-    pub groups: im::HashMap<NameId, HirBindingGroup>,
+    pub groups: im::HashMap<Name, HirBindingGroup>,
 }
 
-#[derive(Default, Hash, Clone, Debug, PartialEq, Eq)]
+#[derive(Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_node(HirTopLevel)]
 pub struct HirBindingGroup {
     pub signature: data::HirSignature,
@@ -71,9 +71,9 @@ pub mod data {
         pub text: String,
     }
 
-    #[derive(Default, Hash, Clone, Debug, PartialEq, Eq)]
+    #[derive(Hash, Clone, Debug, PartialEq, Eq)]
     pub struct HirParameterData {
-        pub name: NameId,
+        pub name: Name,
         pub parameter_type: Option<HirType>,
     }
 
@@ -86,9 +86,9 @@ pub mod data {
         Implicit(HirParameterData),
     }
 
-    #[derive(Default, Hash, Clone, Debug, PartialEq, Eq)]
+    #[derive(Hash, Clone, Debug, PartialEq, Eq)]
     pub struct HirSignature {
-        pub name: NameId,
+        pub name: Name,
         pub parameters: Vec<HirParameterKind>,
         pub return_type: Option<HirType>,
     }
@@ -101,7 +101,7 @@ pub mod data {
 
     #[derive(Hash, Clone, Debug, PartialEq, Eq)]
     pub struct HirVariant {
-        pub name: NameId,
+        pub name: Name,
         pub variant_type: HirType,
     }
 }

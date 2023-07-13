@@ -1,88 +1,92 @@
 use asena_hir::hir_type::{data::*, *};
 use if_chain::if_chain;
 
+use crate::db::AstLowerrer;
+
 use super::*;
 
-impl<DB: HirBag + 'static> AstLowering<'_, DB> {
-    pub fn lower_type(&self, expr: Expr) -> HirTypeId {
-        let kind = match expr {
-            Expr::SelfExpr(_) => HirTypeKind::This,
-            Expr::Unit(_) => HirTypeKind::Unit,
-            Expr::Error => HirTypeKind::Error,
+pub fn lower_type(db: &dyn AstLowerrer, expr: Expr) -> HirType {
+    let kind = match expr {
+        Expr::SelfExpr(_) => HirTypeKind::This,
+        Expr::Unit(_) => HirTypeKind::Unit,
+        Expr::Error => HirTypeKind::Error,
 
-            // unsupported types yet
-            Expr::Infix(_) => self.raise_type_expr_error(&expr),
-            Expr::Array(_) => self.raise_type_expr_error(&expr),
-            Expr::Dsl(_) => self.raise_type_expr_error(&expr),
-            Expr::Lam(_) => self.raise_type_expr_error(&expr),
-            Expr::Let(_) => self.raise_type_expr_error(&expr),
-            Expr::If(_) => self.raise_type_expr_error(&expr),
-            Expr::Match(_) => self.raise_type_expr_error(&expr),
-            Expr::Ann(_) => self.raise_type_expr_error(&expr),
-            Expr::Qual(_) => self.raise_type_expr_error(&expr),
-            Expr::Sigma(_) => self.raise_type_expr_error(&expr),
-            Expr::Help(_) => self.raise_type_expr_error(&expr),
-            Expr::LiteralExpr(_) => self.raise_type_literal_error(&expr),
+        // unsupported types yet
+        Expr::Infix(_) => raise_type_expr_error(db, &expr),
+        Expr::Array(_) => raise_type_expr_error(db, &expr),
+        Expr::Dsl(_) => raise_type_expr_error(db, &expr),
+        Expr::Lam(_) => raise_type_expr_error(db, &expr),
+        Expr::Let(_) => raise_type_expr_error(db, &expr),
+        Expr::If(_) => raise_type_expr_error(db, &expr),
+        Expr::Match(_) => raise_type_expr_error(db, &expr),
+        Expr::Ann(_) => raise_type_expr_error(db, &expr),
+        Expr::Qual(_) => raise_type_expr_error(db, &expr),
+        Expr::Sigma(_) => raise_type_expr_error(db, &expr),
+        Expr::Help(_) => raise_type_expr_error(db, &expr),
+        Expr::LiteralExpr(_) => raise_type_literal_error(db, &expr),
 
-            //
-            Expr::Group(ref group) => return self.lower_type(group.value()),
-            Expr::Pi(ref pi) => {
-                let lhs = self.lower_type(pi.parameter_type());
-                let rhs = self.lower_type(pi.return_type());
-                let parameter = match pi.parameter_name() {
-                    Some(name) => {
-                        let name = NameId::intern(self.jar.clone(), name.as_str());
-                        HirTypeArgument::Named(name, lhs)
-                    }
-                    None => HirTypeArgument::Type(lhs),
-                };
+        //
+        Expr::Group(ref group) => return db.lower_type(group.value()),
+        Expr::Pi(ref pi) => {
+            let lhs = db.lower_type(pi.parameter_type());
+            let rhs = db.lower_type(pi.return_type());
+            let parameter = match pi.parameter_name() {
+                Some(name) => {
+                    let name = db.intern_name(name.to_fn_id().to_string());
 
-                HirTypeKind::from(HirTypeApp {
-                    callee: HirTypeFunction::Pi,
-                    arguments: vec![parameter, HirTypeArgument::Type(rhs)],
-                })
-            }
-            Expr::App(ref app) => {
-                let callee = self.lower_type(app.callee());
-                let argument = self.lower_type(app.argument());
-
-                HirTypeKind::from(HirTypeApp {
-                    callee: HirTypeFunction::Type(callee),
-                    arguments: vec![HirTypeArgument::Type(argument)],
-                })
-            }
-            Expr::LocalExpr(ref local) => {
-                let str = local.clone().to_fn_id();
-                let name = NameId::intern(self.jar.clone(), str.as_str());
-                let mut is_constructor = false;
-
-                if_chain! {
-                    if let Some(c) = str.as_str().chars().next();
-                    if c.is_uppercase();
-                    then {
-                        is_constructor = true;
-                    }
+                    HirTypeArgument::Named(name, lhs)
                 }
+                None => HirTypeArgument::Type(lhs),
+            };
 
-                HirTypeKind::from(HirTypeName {
-                    is_constructor,
-                    name,
-                })
+            HirTypeKind::from(HirTypeApp {
+                callee: HirTypeFunction::Pi,
+                arguments: vec![parameter, HirTypeArgument::Type(rhs)],
+            })
+        }
+        Expr::App(ref app) => {
+            let callee = db.lower_type(app.callee());
+            let argument = db.lower_type(app.argument());
+
+            HirTypeKind::from(HirTypeApp {
+                callee: HirTypeFunction::Type(callee),
+                arguments: vec![HirTypeArgument::Type(argument)],
+            })
+        }
+        Expr::LocalExpr(ref local) => {
+            let str = local.clone().to_fn_id().to_string();
+            let name = db.intern_name(str);
+            let mut is_constructor = false;
+
+            if_chain! {
+                if let Some(c) = str.as_str().chars().next();
+                if c.is_uppercase();
+                then {
+                    is_constructor = true;
+                }
             }
-        };
 
-        HirType::new(self.jar.clone(), kind, self.make_location(&expr))
-    }
+            HirTypeKind::from(HirTypeName {
+                is_constructor,
+                name,
+            })
+        }
+    };
 
-    fn raise_type_literal_error(&self, expr: &Expr) -> HirTypeKind {
-        self.reporter().report(expr, UnsupportedTypeLiteralsError);
+    db.intern_type(HirTypeData {
+        kind,
+        span: make_location(db, &expr),
+    })
+}
 
-        HirTypeKind::Error
-    }
+fn raise_type_literal_error(db: &dyn AstLowerrer, expr: &Expr) -> HirTypeKind {
+    db.reporter().report(expr, UnsupportedTypeLiteralsError);
 
-    fn raise_type_expr_error(&self, expr: &Expr) -> HirTypeKind {
-        self.reporter().report(expr, UnsupportedTypeExprsError);
+    HirTypeKind::Error
+}
 
-        HirTypeKind::Error
-    }
+fn raise_type_expr_error(db: &dyn AstLowerrer, expr: &Expr) -> HirTypeKind {
+    db.reporter().report(expr, UnsupportedTypeExprsError);
+
+    HirTypeKind::Error
 }

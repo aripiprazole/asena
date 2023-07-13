@@ -5,9 +5,13 @@ use crate::pattern::*;
 use crate::stmt::*;
 use crate::top_level::*;
 use crate::value::*;
+use crate::Name;
 
 #[salsa::query_group(InternerDb)]
-pub trait Interner {
+pub trait HirInterner {
+    #[salsa::input]
+    fn intern_name(&self, data: String) -> Name;
+
     #[salsa::input]
     fn intern_attr(&self, data: HirAttrData) -> HirAttr;
 

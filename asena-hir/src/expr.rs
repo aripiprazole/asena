@@ -23,7 +23,7 @@ pub struct HirExprCall {
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_node(HirExpr)]
 pub struct HirExprReference {
-    pub name: NameId,
+    pub name: Name,
 }
 
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]
@@ -50,7 +50,7 @@ pub struct HirExprAnn {
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_node(HirExpr)]
 pub struct HirExprLam {
-    pub parameters: Vec<NameId>,
+    pub parameters: Vec<Name>,
     pub value: HirValue,
 }
 
@@ -110,7 +110,7 @@ pub mod data {
 
     #[derive(Hash, Clone, Debug, PartialEq, Eq)]
     pub struct HirDsl {
-        pub parameters: Vec<NameId>,
+        pub parameters: Vec<Name>,
         pub value: HirValue,
     }
 

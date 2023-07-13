@@ -1,22 +1,27 @@
+#![feature(trait_upcasting)]
+
 use std::sync::{Arc, Mutex, MutexGuard, Weak};
 
 use asena_ast::reporter::Reporter;
 use asena_ast::*;
-use asena_hir::database::HirBag;
 use asena_hir::expr::data::HirBranch;
 use asena_hir::expr::{data::HirCallee, *};
 use asena_hir::file::InternalAsenaFile;
-use asena_hir::query::leaf::HirLoc;
 use asena_hir::top_level::data::{HirDeclaration, HirSignature};
-use asena_hir::top_level::{HirBindingGroup, HirTopLevel, HirTopLevelKind};
-use asena_hir::value::*;
-use asena_hir::{literal::*, NameId};
+use asena_hir::top_level::{HirBindingGroup, HirTopLevel, HirTopLevelData, HirTopLevelKind};
+use asena_hir::{literal::*, Name};
+use asena_hir::{value::*, HirLoc};
 use asena_leaf::ast::{Located, Node};
+use db::AstLowerrer;
+use decl::compute_parameters;
 use error::AstLoweringError::*;
 use expr::ExprLowering;
 use im::{hashset, HashMap, HashSet};
 use itertools::Itertools;
 
+use crate::pattern::build_patterns;
+
+pub mod db;
 pub mod decl;
 pub mod error;
 pub mod expr;
@@ -25,243 +30,160 @@ pub mod pattern;
 pub mod stmt;
 pub mod types;
 
-type Signatures = HashMap<NameId, (HirLoc, HirBindingGroup)>;
+type Signatures = HashMap<Name, (HirLoc, HirBindingGroup)>;
 
-pub struct AstLowering<'a, DB> {
-    jar: Arc<DB>,
-    file: Arc<InternalAsenaFile>,
-    me: Weak<AstLowering<'a, DB>>,
+pub fn make_hir(db: &dyn AstLowerrer) {
+    let file = AsenaFile::default();
 
-    /// The reporter for this lowering.
-    pub reporter: Arc<Mutex<Reporter>>,
-    pub phantom: std::marker::PhantomData<&'a ()>,
-}
+    let mut declarations = HashSet::new();
+    let mut signatures = HashMap::new();
 
-impl<'ctx, DB: HirBag + 'static> AstLowering<'ctx, DB> {
-    pub fn new(
-        reporter: Arc<Mutex<Reporter>>,
-        file: Arc<InternalAsenaFile>,
-        jar: Arc<DB>,
-    ) -> Arc<Self> {
-        Arc::new_cyclic(|me| Self {
-            jar,
-            file,
-            reporter,
-            me: me.clone(),
-            phantom: std::marker::PhantomData,
-        })
-    }
-
-    pub fn make_hir(&self) {
-        let file = AsenaFile::new(self.file.tree.clone());
-
-        let mut declarations = HashSet::new();
-        let mut signatures = HashMap::new();
-
-        for decl in file.declarations() {
-            match decl {
-                Decl::Error => {}
-                Decl::Use(_) => {}
-                Decl::Command(_) => {
-                    // TODO: handle commands
-                }
-                Decl::Assign(ref decl) => self.make_assign(&mut signatures, decl),
-                Decl::Signature(ref decl) => self.make_signature(&mut signatures, decl),
-                Decl::Class(class_decl) => {
-                    declarations.insert(self.lower_class(class_decl));
-                }
-                Decl::Instance(instance_decl) => {
-                    declarations.insert(self.lower_instance(instance_decl));
-                }
-                Decl::Trait(trait_decl) => {
-                    declarations.insert(self.lower_trait(trait_decl));
-                }
-                Decl::Enum(enum_decl) => {
-                    declarations.insert(self.lower_enum(enum_decl));
-                }
-            };
-        }
-
-        for (span, group) in signatures.values().cloned() {
-            let kind = HirTopLevelKind::from(group);
-            let top_level = HirTopLevel::new(self.jar(), kind, vec![], vec![], span);
-
-            declarations.insert(top_level);
-        }
-
-        *self.file.declarations.write().unwrap() = declarations;
-    }
-
-    fn make_signature(&self, signatures: &mut Signatures, decl: &Signature) {
-        let name = decl.name().to_fn_id();
-        let name = NameId::intern(self.jar(), name.as_str());
-        let span = self.make_location(decl);
-
-        if let Some((loc, _)) = signatures.get(&name) {
-            self.reporter()
-                .report(loc, DuplicatedSignatureDefinitionError);
-        }
-
-        let parameters = self.compute_parameters(decl);
-        let declarations = match decl.body() {
-            Some(body) => {
-                let patterns = self.build_patterns(parameters.clone());
-
-                hashset![HirDeclaration {
-                    patterns,
-                    value: self.lower_block(body),
-                }]
+    for decl in file.declarations() {
+        match decl {
+            Decl::Error => {}
+            Decl::Use(_) => {}
+            Decl::Command(_) => {
+                // TODO: handle commands
             }
-            None => hashset![],
+            Decl::Assign(ref decl) => make_assign(db, &mut signatures, decl),
+            Decl::Signature(ref decl) => make_signature(db, &mut signatures, decl),
+            Decl::Class(class_decl) => {
+                declarations.insert(db.lower_class(class_decl));
+            }
+            Decl::Instance(instance_decl) => {
+                declarations.insert(db.lower_instance(instance_decl));
+            }
+            Decl::Trait(trait_decl) => {
+                declarations.insert(db.lower_trait(trait_decl));
+            }
+            Decl::Enum(enum_decl) => {
+                declarations.insert(db.lower_enum(enum_decl));
+            }
         };
-        let return_type = match decl.return_type() {
-            Typed::Infer => None,
-            Typed::Explicit(type_expr) => Some(self.lower_type(type_expr)),
-        };
-
-        let group = HirBindingGroup {
-            signature: HirSignature {
-                name,
-                parameters,
-                return_type,
-            },
-            declarations,
-        };
-
-        signatures.insert(name, (span, group));
     }
 
-    fn make_assign(&self, signatures: &mut Signatures, decl: &Assign) {
-        let name = decl.name().to_fn_id();
-        let name = NameId::intern(self.jar(), name.as_str());
-        let span = self.make_location(decl);
-
-        let patterns = decl
-            .patterns()
-            .iter()
-            .cloned()
-            .map(|next| self.lower_pattern(next))
-            .collect_vec();
-
-        let (_, group) = signatures
-            .entry(name)
-            .or_insert_with(|| (span, Self::new_default_group(name)));
-
-        group.declarations.insert(HirDeclaration {
-            patterns,
-            value: self.lower_value(decl.body()),
+    for (span, group) in signatures.values().cloned() {
+        let top_level = db.intern_top_level(HirTopLevelData {
+            kind: HirTopLevelKind::from(group),
+            attributes: vec![],
+            docs: vec![],
+            span,
         });
+
+        declarations.insert(top_level);
     }
 
-    fn new_default_group(name: NameId) -> HirBindingGroup {
-        HirBindingGroup {
-            signature: HirSignature {
-                name,
-                parameters: vec![],
-                return_type: None,
-            },
-            declarations: hashset![],
-        }
-    }
-
-    pub fn make_location(&self, node: &impl Located) -> HirLoc {
-        let span = node.location().into_owned();
-        let file = self.file.clone();
-
-        HirLoc::new(file, span)
-    }
-
-    pub fn lower_value(&self, value: Expr) -> HirValueId {
-        let location = self.make_location(&value);
-        let mut lowering = ExprLowering::new(self.me.clone(), self.jar());
-        let value = HirValueBlock {
-            value: {
-                let location = self.make_location(&value);
-                let id = lowering.make(value);
-                let kind = HirValueExpr(id);
-
-                HirValue::new(self.jar(), kind.into(), location)
-            },
-            instructions: lowering.instructions,
-        };
-
-        HirValue::new(self.jar(), value.into(), location)
-    }
-
-    pub fn lower_branch(&self, branch: Branch) -> HirBranch {
-        match branch {
-            Branch::Error => HirBranch::Error,
-            Branch::ExprBranch(ref branch) => {
-                let value = self.lower_value(branch.value());
-
-                HirBranch::Expr(value)
-            }
-            Branch::BlockBranch(ref branch) => HirBranch::Block(self.lower_block(branch.stmts())),
-        }
-    }
-
-    pub fn reporter(&self) -> MutexGuard<Reporter> {
-        self.reporter.lock().unwrap()
-    }
-
-    pub fn jar(&self) -> Arc<DB> {
-        self.jar.clone()
-    }
+    // *self.file.declarations.write().unwrap() = declarations;
 }
 
-#[cfg(test)]
-mod tests {
-    use std::sync::{Arc, Mutex};
+fn make_signature(db: &dyn AstLowerrer, signatures: &mut Signatures, decl: &Signature) {
+    let name = db.intern_name(decl.name().to_fn_id().to_string());
+    let span = make_location(db, decl);
 
-    use asena_ast_db::{
-        driver::Driver, implementation::AstDatabaseImpl, package::Package, vfs::VfsFile,
+    if let Some((loc, _)) = signatures.get(&name) {
+        db.reporter()
+            .report(loc, DuplicatedSignatureDefinitionError);
+    }
+
+    let parameters = compute_parameters(db, decl);
+    let declarations = match decl.body() {
+        Some(body) => {
+            let patterns = build_patterns(db, parameters.clone());
+
+            hashset![HirDeclaration {
+                patterns,
+                value: db.lower_block(body),
+            }]
+        }
+        None => hashset![],
     };
-    use asena_ast_resolver::decl::AstResolver;
-    use asena_grammar::parse_asena_file;
-    use asena_hir::{file::InternalAsenaFile, hir_dbg, query::HirDatabase};
-    use asena_prec::{default_prec_table, InfixHandler, PrecReorder};
+    let return_type = match decl.return_type() {
+        Typed::Infer => None,
+        Typed::Explicit(type_expr) => Some(db.lower_type(type_expr)),
+    };
 
-    use super::AstLowering;
+    let group = HirBindingGroup {
+        signature: HirSignature {
+            name,
+            parameters,
+            return_type,
+        },
+        declarations,
+    };
 
-    #[test]
-    fn it_works() {
-        let mut prec_table = default_prec_table();
-        let mut tree = parse_asena_file!("../Test.ase");
+    signatures.insert(name, (span, group));
+}
 
-        let db = Driver(Arc::new(AstDatabaseImpl::default()));
-        let local_pkg = Package::new(&db, "Local", "0.0.0", Arc::new(Default::default()));
-        let file = VfsFile::new(&db, "Test", "./Test.ase".into(), local_pkg);
+fn make_assign(db: &dyn AstLowerrer, signatures: &mut Signatures, decl: &Assign) {
+    let name = db.intern_name(decl.name().to_fn_id().to_string());
+    let span = make_location(db, decl);
 
-        let global_scope = db.global_scope();
+    let patterns = decl
+        .patterns()
+        .iter()
+        .cloned()
+        .map(|next| db.lower_pattern(next))
+        .collect_vec();
 
-        let internal_file = Arc::new(InternalAsenaFile {
-            path: file.id.clone(),
-            content: file.vfs().read_file(&file.id.path).unwrap(),
-            tree: tree.clone().into(),
-            declarations: Default::default(),
-        });
+    let (_, group) = signatures
+        .entry(name)
+        .or_insert_with(|| (span, new_default_group(name)));
 
-        global_scope.borrow_mut().import(&db, file.clone(), None);
+    group.declarations.insert(HirDeclaration {
+        patterns,
+        value: db.lower_value(decl.body()),
+    });
+}
 
-        tree.reporting(|reporter| {
-            db.abstract_syntax_tree(file.clone())
-                .walk_on(InfixHandler {
-                    prec_table: &mut prec_table,
-                    reporter,
-                })
-                .walk_on(PrecReorder {
-                    prec_table: &prec_table,
-                    reporter,
-                })
-                .walk_on(AstResolver::new(db, file, reporter))
-        });
+fn new_default_group(name: Name) -> HirBindingGroup {
+    HirBindingGroup {
+        signature: HirSignature {
+            name,
+            parameters: vec![],
+            return_type: None,
+        },
+        declarations: hashset![],
+    }
+}
 
-        let reporter = Arc::new(Mutex::new(tree.reporter));
-        let jar = Arc::new(HirDatabase::default());
-        let lowerrer = AstLowering::new(reporter.clone(), internal_file.clone(), jar.clone());
-        lowerrer.make_hir();
-        reporter.lock().unwrap().dump();
+pub fn make_location(db: &dyn AstLowerrer, node: &impl Located) -> HirLoc {
+    let span = node.location().into_owned();
+    // let file = self.file.clone();
 
-        println!("{:#?}", hir_dbg!(jar, internal_file));
+    todo!()
+}
+
+pub fn lower_value(db: &dyn AstLowerrer, value: Expr) -> HirValue {
+    let span = make_location(db, &value);
+    let mut lowering = ExprLowering::new(db);
+    let value = HirValueBlock {
+        value: {
+            let span = make_location(db, &value);
+            let id = lowering.make(value);
+            let kind = HirValueExpr(id);
+
+            db.intern_value(HirValueData {
+                kind: kind.into(),
+                span,
+            })
+        },
+        instructions: lowering.instructions,
+    };
+
+    db.intern_value(HirValueData {
+        kind: value.into(),
+        span,
+    })
+}
+
+pub fn lower_branch(db: &dyn AstLowerrer, branch: Branch) -> HirBranch {
+    match branch {
+        Branch::Error => HirBranch::Error,
+        Branch::ExprBranch(ref branch) => {
+            let value = db.lower_value(branch.value());
+
+            HirBranch::Expr(value)
+        }
+        Branch::BlockBranch(ref branch) => HirBranch::Block(db.lower_block(branch.stmts())),
     }
 }

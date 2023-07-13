@@ -2,116 +2,129 @@ use asena_ast::{Ask, ExprStmt, IfStmt, LetStmt, Return, Stmt};
 use asena_hir::{
     expr::data::{HirMatchCase, HirMatchKind},
     pattern::HirPattern,
-    stmt::{HirStmt, HirStmtAsk, HirStmtId, HirStmtKind, HirStmtLet, HirStmtValue},
+    stmt::{HirStmt, HirStmtAsk, HirStmtData, HirStmtKind, HirStmtLet, HirStmtValue},
     value::instr::{Block, HirInstr},
 };
 
+use crate::db::AstLowerrer;
+
 use super::*;
 
-type Instr = (HirStmtId, Option<HirValueId>);
+pub type Instr = (HirStmt, Option<HirValue>);
 
-impl<DB: HirBag + 'static> AstLowering<'_, DB> {
-    pub fn lower_stmt(&self, stmt: Stmt) -> Instr {
-        let kind = match stmt {
-            Stmt::Error => HirStmtKind::Error,
-            Stmt::Ask(ref stmt) => self.make_ask(stmt),
-            Stmt::Return(ref stmt) => return self.make_return(stmt),
-            Stmt::IfStmt(ref stmt) => self.make_if(stmt),
-            Stmt::LetStmt(ref stmt) => self.make_let(stmt),
-            Stmt::ExprStmt(ref stmt) => return self.make_value(stmt),
-        };
+pub fn lower_stmt(db: &dyn AstLowerrer, stmt: Stmt) -> Instr {
+    let kind = match stmt {
+        Stmt::Error => HirStmtKind::Error,
+        Stmt::Ask(ref stmt) => make_ask(db, stmt),
+        Stmt::IfStmt(ref stmt) => make_if(db, stmt),
+        Stmt::LetStmt(ref stmt) => make_let(db, stmt),
+        Stmt::Return(ref stmt) => return make_return(db, stmt),
+        Stmt::ExprStmt(ref stmt) => return make_value(db, stmt),
+    };
 
-        let stmt = HirStmt::new(self.jar(), kind, self.make_location(&stmt));
+    let stmt = db.intern_stmt(HirStmtData {
+        kind: kind.into(),
+        span: make_location(db, &stmt),
+    });
 
-        (stmt, None)
+    (stmt, None)
+}
+
+pub fn lower_block(db: &dyn AstLowerrer, block: Vec<Stmt>) -> HirValue {
+    let mut stmts = vec![];
+    let mut last = None;
+
+    for stmt in block.iter() {
+        let (stmt, value) = db.lower_stmt(stmt.clone());
+        stmts.push(stmt);
+        last = value;
     }
 
-    pub fn lower_block(&self, block: Vec<Stmt>) -> HirValueId {
-        let mut stmts = vec![];
-        let mut last = None;
+    let value = last.unwrap_or_else(|| HirValue::pure_unit(db));
+    let stmts = {
+        let kind = HirValueKind::from(HirValueBlock {
+            instructions: stmts,
+            value,
+        });
 
-        for stmt in block.iter() {
-            let (stmt, value) = self.lower_stmt(stmt.clone());
-            stmts.push(stmt);
-            last = value;
-        }
+        db.intern_value(HirValueData {
+            kind,
+            span: make_location(db, &block),
+        })
+    };
 
-        let value = last.unwrap_or_else(|| HirValue::pure_unit(self.jar()));
-        let stmts = {
-            let kind = HirValueKind::from(HirValueBlock {
-                instructions: stmts,
-                value,
-            });
+    let kind = HirValueKind::from(HirInstr::Block(Block {
+        instructions: vec![],
+        value: stmts,
+    }));
 
-            HirValue::new(self.jar(), kind, self.make_location(&block))
-        };
+    db.intern_value(HirValueData {
+        kind,
+        span: make_location(db, &block),
+    })
+}
 
-        let kind = HirValueKind::from(HirInstr::Block(Block {
-            instructions: vec![],
-            value: stmts,
-        }));
+fn make_value(db: &dyn AstLowerrer, stmt: &ExprStmt) -> Instr {
+    let value = db.lower_value(stmt.value());
 
-        HirValue::new(self.jar(), kind, self.make_location(&block))
-    }
+    let kind = HirStmtKind::from(HirStmtValue(value));
+    let stmt = db.intern_stmt(HirStmtData {
+        kind,
+        span: make_location(db, stmt),
+    });
 
-    fn make_value(&self, stmt: &ExprStmt) -> Instr {
-        let value = self.lower_value(stmt.value());
+    (stmt, Some(value))
+}
 
-        let kind = HirStmtKind::from(HirStmtValue(value));
-        let stmt = HirStmt::new(self.jar(), kind, self.make_location(stmt));
+fn make_let(db: &dyn AstLowerrer, stmt: &LetStmt) -> HirStmtKind {
+    let pattern = db.lower_pattern(stmt.pattern());
+    let value = db.lower_value(stmt.value());
 
-        (stmt, Some(value))
-    }
+    HirStmtKind::from(HirStmtLet { value, pattern })
+}
 
-    fn make_let(&self, stmt: &LetStmt) -> HirStmtKind {
-        let pattern = self.lower_pattern(stmt.pattern());
-        let value = self.lower_value(stmt.value());
+fn make_ask(db: &dyn AstLowerrer, stmt: &Ask) -> HirStmtKind {
+    let pattern = db.lower_pattern(stmt.pattern());
+    let value = db.lower_value(stmt.value());
 
-        HirStmtKind::from(HirStmtLet { value, pattern })
-    }
+    HirStmtKind::from(HirStmtAsk { value, pattern })
+}
 
-    fn make_ask(&self, stmt: &Ask) -> HirStmtKind {
-        let pattern = self.lower_pattern(stmt.pattern());
-        let value = self.lower_value(stmt.value());
+fn make_return(db: &dyn AstLowerrer, stmt: &Return) -> Instr {
+    let value = match stmt.value() {
+        Some(value) => db.lower_value(value),
+        None => HirValue::pure_unit(db),
+    };
 
-        HirStmtKind::from(HirStmtAsk { value, pattern })
-    }
+    let kind = HirStmtKind::from(HirStmtValue(value));
+    let stmt = db.intern_stmt(HirStmtData {
+        kind,
+        span: make_location(db, stmt),
+    });
 
-    fn make_return(&self, stmt: &Return) -> Instr {
-        let value = match stmt.value() {
-            Some(value) => self.lower_value(value),
-            None => HirValue::pure_unit(self.jar()),
-        };
+    (stmt, Some(value))
+}
 
-        let kind = HirStmtKind::from(HirStmtValue(value));
-        let stmt = HirStmt::new(self.jar(), kind, self.make_location(stmt));
+fn make_if(db: &dyn AstLowerrer, stmt: &IfStmt) -> HirStmtKind {
+    let expr = db.intern_expr(HirExprData::from(HirExprKind::from(HirExprMatch {
+        scrutinee: db.lower_value(stmt.cond()),
+        cases: hashset![
+            HirMatchCase {
+                pattern: HirPattern::new_true(db),
+                value: db.lower_branch(stmt.then_branch()),
+            },
+            HirMatchCase {
+                pattern: HirPattern::new_false(db),
+                value: match stmt.else_branch() {
+                    Some(else_branch) => db.lower_branch(else_branch),
+                    None => HirBranch::Expr(HirValue::pure_unit(db)),
+                },
+            }
+        ],
+        kind: HirMatchKind::If,
+    })));
 
-        (stmt, Some(value))
-    }
+    let value = HirValue::value(db, expr);
 
-    fn make_if(&self, stmt: &IfStmt) -> HirStmtKind {
-        let expr = self
-            .jar()
-            .intern_expr(HirExpr::from(HirExprKind::from(HirExprMatch {
-                scrutinee: self.lower_value(stmt.cond()),
-                cases: hashset![
-                    HirMatchCase {
-                        pattern: HirPattern::new_true(self.jar()),
-                        value: self.lower_branch(stmt.then_branch()),
-                    },
-                    HirMatchCase {
-                        pattern: HirPattern::new_false(self.jar()),
-                        value: match stmt.else_branch() {
-                            Some(else_branch) => self.lower_branch(else_branch),
-                            None => HirBranch::Expr(HirValue::pure_unit(self.jar())),
-                        },
-                    }
-                ],
-                kind: HirMatchKind::If,
-            })));
-
-        let value = HirValue::value(self.jar(), expr);
-
-        HirStmtKind::from(HirStmtValue(value))
-    }
+    HirStmtKind::from(HirStmtValue(value))
 }
