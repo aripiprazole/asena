@@ -1,13 +1,13 @@
 use asena_hir_derive::*;
 
-use crate::NameId;
+use crate::{interner::HirInterner, Name};
 
 use self::data::HirTypeFunction;
 
-#[derive(Default, Hash, Clone, Debug, PartialEq, Eq)]
+#[derive(Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_node(HirType)]
 pub struct HirTypeName {
-    pub name: NameId,
+    pub name: Name,
     pub is_constructor: bool,
 }
 
@@ -34,6 +34,15 @@ pub struct HirType {
     pub kind: HirTypeKind,
 }
 
+impl HirType {
+    pub fn error(db: &dyn HirInterner) -> HirType {
+        db.intern_type(HirTypeData {
+            kind: HirTypeKind::Error,
+            span: Default::default(),
+        })
+    }
+}
+
 pub mod data {
     use super::*;
 
@@ -50,6 +59,6 @@ pub mod data {
         #[default]
         Error,
         Type(HirType),
-        Named(NameId, HirType),
+        Named(Name, HirType),
     }
 }

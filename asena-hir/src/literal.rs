@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use crate::NameId;
+use crate::Name;
 
 #[derive(Hash, Clone, Copy, Debug, PartialEq, Eq)]
 pub enum HirISize {
@@ -40,7 +40,7 @@ impl Debug for HirDecimal {
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]
 pub struct HirString {
     pub value: String,
-    pub name: Option<NameId>,
+    pub name: Option<Name>,
 }
 
 #[derive(Default, Hash, Clone, Debug, PartialEq, Eq)]

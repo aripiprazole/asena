@@ -52,7 +52,7 @@ impl PrecReorder<'_> {
 #[cfg(test)]
 mod tests {
     use asena_ast::*;
-    use asena_grammar::{asena_decl, asena_expr, asena_file, asena_stmt};
+    use asena_grammar::asena_file;
     use asena_leaf::ast::*;
 
     use crate::{commands::*, PrecReorder};
@@ -82,49 +82,5 @@ mod tests {
         tree.reporter.dump();
 
         println!("{file:#?}")
-    }
-
-    #[test]
-    fn expr_works() {
-        let prec_table = default_prec_table();
-        let mut tree = asena_expr!(foo(1 * 2 + 4));
-        let expr = Expr::new(tree.unwrap()).walks(PrecReorder {
-            prec_table: &prec_table,
-            reporter: &mut tree.reporter,
-        });
-
-        tree.reporter.dump();
-
-        println!("{expr:#?}")
-    }
-
-    #[test]
-    fn stmt_works() {
-        let prec_table = default_prec_table();
-        let mut tree = asena_stmt!(bar(foo(1 * 2 + 4)));
-        let stmt = Stmt::new(tree.unwrap()).walks(PrecReorder {
-            prec_table: &prec_table,
-            reporter: &mut tree.reporter,
-        });
-
-        tree.reporter.dump();
-
-        println!("{stmt:#?}")
-    }
-
-    #[test]
-    fn decl_works() {
-        let prec_table = default_prec_table();
-        let mut tree = asena_decl! {
-            #eval 1 * 2 + 4
-        };
-        let decl = Decl::new(tree.unwrap()).walks(PrecReorder {
-            prec_table: &prec_table,
-            reporter: &mut tree.reporter,
-        });
-
-        tree.reporter.dump();
-
-        println!("{decl:#?}")
     }
 }

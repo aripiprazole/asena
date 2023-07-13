@@ -2,75 +2,72 @@ use asena_ast::Pat;
 use asena_ast_resolver::{PatResolution, PatResolutionKey};
 use asena_hir::{pattern::*, top_level::data::HirParameterKind};
 
+use crate::{db::AstLowerrer, literal::make_literal};
+
 use super::*;
 
-impl<DB: HirBag + 'static> AstLowering<'_, DB> {
-    pub fn lower_pattern(&self, pattern: Pat) -> HirPatternId {
-        let kind = match pattern {
-            Pat::Error => HirPatternKind::Error,
-            Pat::WildcardPat(_) => HirPatternKind::Wildcard,
-            Pat::SpreadPat(_) => HirPatternKind::Spread,
-            Pat::UnitPat(_) => HirPatternKind::Unit,
-            Pat::ConstructorPat(ref constructor) => {
-                let str = constructor.name();
-                let constructor_name = NameId::intern(self.jar.clone(), str.to_fn_id().as_str());
-                let arguments = constructor
-                    .arguments()
-                    .iter()
-                    .map(|arg| self.lower_pattern(arg.clone()))
-                    .collect();
+pub fn lower_pattern(db: &dyn AstLowerrer, pattern: Pat) -> HirPattern {
+    let kind = match pattern {
+        Pat::Error => HirPatternKind::Error,
+        Pat::WildcardPat(_) => HirPatternKind::Wildcard,
+        Pat::SpreadPat(_) => HirPatternKind::Spread,
+        Pat::UnitPat(_) => HirPatternKind::Unit,
+        Pat::ConstructorPat(ref constructor) => {
+            let constructor_name = db.intern_name(constructor.name().to_fn_id().to_string());
+            let arguments = constructor
+                .arguments()
+                .iter()
+                .map(|arg| db.lower_pattern(arg.clone()))
+                .collect();
 
-                HirPatternKind::from(HirPatternConstructor {
-                    constructor_name,
-                    arguments,
-                })
-            }
-            Pat::ListPat(ref list) => {
-                let items = list
-                    .items()
-                    .iter()
-                    .map(|item| self.lower_pattern(item.clone()))
-                    .collect();
-
-                HirPatternKind::from(HirPatternList { items })
-            }
-            Pat::GlobalPat(ref pat) => {
-                let str = pat.name();
-                let name = NameId::intern(self.jar.clone(), str.to_fn_id().as_str());
-
-                match &*pat.key(PatResolutionKey) {
-                    PatResolution::Variant(variant) => {
-                        let fn_id = variant.name().to_fn_id();
-                        let name = fn_id.as_str();
-
-                        HirPatternKind::from(HirPatternConstructor {
-                            constructor_name: NameId::intern(self.jar(), name),
-                            arguments: vec![],
-                        })
-                    }
-                    _ => HirPatternKind::from(HirPatternName { name }),
-                }
-            }
-            Pat::LiteralPat(ref pat) => {
-                let literal = self.make_literal(pat.literal().data().clone());
-
-                HirPatternKind::from(HirPatternLiteral(literal))
-            }
-        };
-
-        HirPattern::new(self.jar(), kind, self.make_location(&pattern))
-    }
-
-    pub fn build_patterns(&self, parameters: Vec<HirParameterKind>) -> Vec<HirPatternId> {
-        let mut patterns = Vec::new();
-        for parameter in parameters {
-            let kind = match parameter {
-                HirParameterKind::This => HirPattern::this(self.jar()),
-                HirParameterKind::Explicit(data) => HirPattern::name(self.jar(), data.name),
-                HirParameterKind::Implicit(data) => HirPattern::name(self.jar(), data.name),
-            };
-            patterns.push(kind)
+            HirPatternKind::from(HirPatternConstructor {
+                constructor_name,
+                arguments,
+            })
         }
-        patterns
+        Pat::ListPat(ref list) => {
+            let items = list
+                .items()
+                .iter()
+                .map(|item| db.lower_pattern(item.clone()))
+                .collect();
+
+            HirPatternKind::from(HirPatternList { items })
+        }
+        Pat::GlobalPat(ref pat) => {
+            let name = db.intern_name(pat.name().to_fn_id().to_string());
+
+            match &*pat.key(PatResolutionKey) {
+                PatResolution::Variant(variant) => HirPatternKind::from(HirPatternConstructor {
+                    constructor_name: db.intern_name(variant.name().to_fn_id().to_string()),
+                    arguments: vec![],
+                }),
+                _ => HirPatternKind::from(HirPatternName { name }),
+            }
+        }
+        Pat::LiteralPat(ref pat) => {
+            let literal = make_literal(pat.literal().data().clone());
+
+            HirPatternKind::from(HirPatternLiteral(literal))
+        }
+    };
+
+    db.intern_pattern(HirPatternData {
+        kind: kind.into(),
+        span: make_location(db, &pattern),
+    })
+}
+
+pub fn build_patterns(db: &dyn AstLowerrer, parameters: Vec<HirParameterKind>) -> Vec<HirPattern> {
+    let mut patterns = Vec::new();
+    for parameter in parameters {
+        let kind = match parameter {
+            HirParameterKind::Error => HirPattern::error(db),
+            HirParameterKind::This => HirPattern::this(db),
+            HirParameterKind::Explicit(data) => HirPattern::name(db, data.name),
+            HirParameterKind::Implicit(data) => HirPattern::name(db, data.name),
+        };
+        patterns.push(kind)
     }
+    patterns
 }

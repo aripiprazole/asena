@@ -2,38 +2,36 @@ use asena_ast::{Ann, App, Array, Dsl, If, Lam, Let, LocalExpr, Match};
 use asena_hir::{
     expr::data::{HirDsl, HirMatchCase, HirMatchKind},
     pattern::HirPattern,
-    stmt::HirStmtId,
+    stmt::HirStmt,
 };
+
+use crate::{db::AstLowerrer, literal::make_literal};
 
 use super::*;
 
-use std::sync::{Arc, Weak};
-
-pub struct ExprLowering<'a, D> {
-    pub db: Arc<D>,
-    pub instructions: Vec<HirStmtId>,
-    pub lowerrer: Weak<AstLowering<'a, D>>,
+pub struct ExprLowering<'a> {
+    pub db: &'a dyn AstLowerrer,
+    pub instructions: Vec<HirStmt>,
 }
 
-impl<DB: HirBag + 'static> ExprLowering<'_, DB> {
-    pub fn new(lowerrer: Weak<AstLowering<'_, DB>>, db: Arc<DB>) -> ExprLowering<DB> {
+impl<'a> ExprLowering<'a> {
+    pub fn new(db: &'_ dyn AstLowerrer) -> Self {
         ExprLowering {
             db,
-            lowerrer,
             instructions: vec![],
         }
     }
 
-    pub fn make(&mut self, expr: Expr) -> HirExprId {
+    pub fn make(&mut self, expr: Expr) -> HirExpr {
         let kind = match expr {
             Expr::Group(ref group) => HirExprKind::from(HirExprGroup {
-                value: self.lowerrer().lower_value(group.value()),
+                value: self.db.lower_value(group.value()),
             }),
             Expr::Help(ref expr) => HirExprKind::from(HirExprHelp {
-                value: self.lowerrer().lower_value(expr.value()),
+                value: self.db.lower_value(expr.value()),
             }),
             Expr::LiteralExpr(ref expr) => {
-                let literal = self.lowerrer().make_literal(expr.literal().data().clone());
+                let literal = make_literal(expr.literal().data().clone());
 
                 HirExprKind::from(HirExprLiteral(literal))
             }
@@ -54,7 +52,7 @@ impl<DB: HirBag + 'static> ExprLowering<'_, DB> {
 
             // dependent types unsupported syntax
             ref expr @ Expr::Qual(_) | ref expr @ Expr::Pi(_) | ref expr @ Expr::Sigma(_) => {
-                self.lowerrer()
+                self.db
                     .reporter()
                     .report(expr, UnsupportedDependentTypesError);
 
@@ -62,7 +60,10 @@ impl<DB: HirBag + 'static> ExprLowering<'_, DB> {
             }
         };
 
-        HirExpr::new(self.db(), kind, self.lowerrer().make_location(&expr))
+        self.db.intern_expr(HirExprData {
+            kind,
+            span: make_location(self.db, &expr),
+        })
     }
 
     fn make_let(&self, _expr: &Let) -> HirExprKind {
@@ -77,7 +78,7 @@ impl<DB: HirBag + 'static> ExprLowering<'_, DB> {
             },
             _ => HirExprCall {
                 // TODO: handle Do, etc
-                callee: HirCallee::Value(self.lowerrer().lower_value(expr.callee())),
+                callee: HirCallee::Value(self.db.lower_value(expr.callee())),
                 arguments: vec![],
                 as_dsl: None,
             },
@@ -85,21 +86,21 @@ impl<DB: HirBag + 'static> ExprLowering<'_, DB> {
 
         hir_call.as_dsl = Some(HirDsl {
             parameters: vec![], // TODO
-            value: self.lowerrer().lower_block(expr.block()),
+            value: self.db.lower_block(expr.block()),
         });
 
         HirExprKind::from(hir_call)
     }
 
     fn make_local(&self, expr: &LocalExpr) -> HirExprKind {
-        let name = NameId::intern(self.db(), expr.to_fn_id().as_str());
+        let name = self.db.intern_name(expr.to_fn_id().to_string());
 
         HirExprKind::from(HirExprReference { name })
     }
 
     fn make_ann(&self, expr: &Ann) -> HirExprKind {
-        let value = self.lowerrer().lower_value(expr.value());
-        let against = self.lowerrer().lower_type(expr.against());
+        let value = self.db.lower_value(expr.value());
+        let against = self.db.lower_type(expr.against());
 
         HirExprKind::from(HirExprAnn { value, against })
     }
@@ -108,15 +109,15 @@ impl<DB: HirBag + 'static> ExprLowering<'_, DB> {
         let items = array
             .items()
             .into_iter()
-            .map(|e| self.lowerrer().lower_value(e))
+            .map(|e| self.db.lower_value(e))
             .collect();
 
         HirExprKind::from(HirExprArray { items })
     }
 
     fn make_app(&self, app: &App) -> HirExprKind {
-        let callee = self.lowerrer().lower_value(app.callee());
-        let argument = self.lowerrer().lower_value(app.argument());
+        let callee = self.db.lower_value(app.callee());
+        let argument = self.db.lower_value(app.argument());
 
         HirExprKind::from(HirExprCall {
             callee: HirCallee::Value(callee),
@@ -126,8 +127,8 @@ impl<DB: HirBag + 'static> ExprLowering<'_, DB> {
     }
 
     fn make_infix(&self, infix: &Infix) -> HirExprKind {
-        let lhs = self.lowerrer().lower_value(infix.lhs());
-        let rhs = self.lowerrer().lower_value(infix.rhs());
+        let lhs = self.db.lower_value(infix.lhs());
+        let rhs = self.db.lower_value(infix.rhs());
 
         let callee = match infix.fn_id().as_str() {
             "+" => HirCallee::Add,
@@ -146,15 +147,15 @@ impl<DB: HirBag + 'static> ExprLowering<'_, DB> {
 
     fn make_if(&self, expr: &If) -> HirExprKind {
         HirExprKind::from(HirExprMatch {
-            scrutinee: self.lowerrer().lower_value(expr.cond()),
+            scrutinee: self.db.lower_value(expr.cond()),
             cases: hashset![
                 HirMatchCase {
                     pattern: HirPattern::new_true(self.db()),
-                    value: self.lowerrer().lower_branch(expr.then_branch()),
+                    value: self.db.lower_branch(expr.then_branch()),
                 },
                 HirMatchCase {
                     pattern: HirPattern::new_false(self.db()),
-                    value: self.lowerrer().lower_branch(expr.else_branch()),
+                    value: self.db.lower_branch(expr.else_branch()),
                 }
             ],
             kind: HirMatchKind::If,
@@ -162,7 +163,7 @@ impl<DB: HirBag + 'static> ExprLowering<'_, DB> {
     }
 
     fn make_match(&self, expr: &Match) -> HirExprKind {
-        let scrutinee = self.lowerrer().lower_value(expr.scrutinee());
+        let scrutinee = self.db.lower_value(expr.scrutinee());
         let cases = expr
             .cases()
             .into_iter()
@@ -177,42 +178,37 @@ impl<DB: HirBag + 'static> ExprLowering<'_, DB> {
     }
 
     fn make_lam(&self, expr: &Lam) -> HirExprKind {
-        let value = self.lowerrer().lower_value(expr.value());
+        let value = self.db.lower_value(expr.value());
         let parameters = expr
             .parameters()
             .iter()
-            .map(|parameter| NameId::intern(self.db(), parameter.name().to_fn_id().as_str()))
+            .map(|parameter| self.db.intern_name(parameter.name().to_fn_id().to_string()))
             .collect_vec();
 
         HirExprKind::from(HirExprLam { parameters, value })
     }
 
     fn make_callee(&self, infix: &Infix, fn_id: &str) -> HirCallee {
-        let loc = self.lowerrer().make_location(infix);
+        let span = make_location(self.db, infix);
+        let name = self.db.intern_name(fn_id.into());
 
-        let name = self.db().intern_name(fn_id.into());
-        let reference = HirExprReference { name };
+        let expr = self.db.intern_expr(HirExprData {
+            kind: HirExprKind::from(HirExprReference { name }),
+            span,
+        });
 
-        let expr = HirExpr::new(self.db(), reference.into(), loc.clone());
-
-        let value = HirValueExpr(expr);
-        let value = HirValue::new(self.db(), value.into(), loc);
+        let value = self.db.intern_value(HirValueData {
+            kind: HirValueKind::from(HirValueExpr(expr)),
+            span,
+        });
 
         HirCallee::Value(value)
     }
 
     fn lower_case(&self, case: asena_ast::Case) -> HirMatchCase {
-        let pattern = self.lowerrer().lower_pattern(case.pat());
-        let value = self.lowerrer().lower_branch(case.value());
+        let pattern = self.db.lower_pattern(case.pat());
+        let value = self.db.lower_branch(case.value());
 
         HirMatchCase { pattern, value }
-    }
-
-    fn db(&self) -> Arc<DB> {
-        self.db.clone()
-    }
-
-    fn lowerrer(&self) -> Arc<AstLowering<DB>> {
-        self.lowerrer.upgrade().unwrap()
     }
 }

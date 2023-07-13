@@ -144,6 +144,7 @@ dependencies = [
  "if_chain",
  "im",
  "itertools",
+ "salsa",
  "thiserror",
 ]
 

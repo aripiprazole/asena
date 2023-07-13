@@ -5,7 +5,7 @@ use asena_report::{BoxInternalError, Diagnostic, InternalError, Report};
 use asena_span::Spanned;
 use im::HashSet;
 
-#[derive(Default, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct Reporter {
     pub src: String,
     pub tree: Spanned<Tree>,

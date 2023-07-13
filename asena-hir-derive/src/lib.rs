@@ -7,20 +7,40 @@ use syn::{parse_quote, token::Pub, Field, FieldMutability, Fields, Ident, Token,
 
 #[proc_macro_attribute]
 #[allow(clippy::redundant_clone)]
-pub fn hir_node(_args: TokenStream, input: TokenStream) -> TokenStream {
+pub fn hir_node(args: TokenStream, input: TokenStream) -> TokenStream {
+    let args = proc_macro2::TokenStream::from(args);
     let input = syn::parse_macro_input!(input as syn::DeriveInput);
 
+    let name = input.ident.clone();
+    let kind = Ident::new(&format!("{}Kind", args), Span::call_site());
+
     TokenStream::from(quote! {
+        impl From<#name> for #kind {
+            fn from(node: #name) -> Self {
+                todo!()
+            }
+        }
+
         #input
     })
 }
 
 #[allow(clippy::redundant_clone)]
 #[proc_macro_attribute]
-pub fn hir_kind(_args: TokenStream, input: TokenStream) -> TokenStream {
+pub fn hir_kind(args: TokenStream, input: TokenStream) -> TokenStream {
+    let args = proc_macro2::TokenStream::from(args);
     let input = syn::parse_macro_input!(input as syn::ItemEnum);
 
+    let name = input.ident.clone();
+    let kind = Ident::new(&format!("{}Data", args), Span::call_site());
+
     TokenStream::from(quote! {
+        impl From<#name> for #kind {
+            fn from(node: #name) -> Self {
+                todo!()
+            }
+        }
+
         #input
     })
 }
