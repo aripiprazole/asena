@@ -1,74 +1,63 @@
 use asena_hir_derive::*;
 
-use crate::{
-    hir_type::HirTypeId, literal::HirLiteral, pattern::HirPatternId, value::HirValueId, *,
-};
+use crate::{hir_type::HirType, literal::HirLiteral, pattern::HirPattern, value::HirValue, *};
 
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_node(HirExpr)]
-#[hir_debug]
 pub struct HirExprLiteral(pub HirLiteral);
 
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_node(HirExpr)]
-#[hir_debug]
 pub struct HirExprGroup {
-    pub value: HirValueId,
+    pub value: HirValue,
 }
 
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_node(HirExpr)]
-#[hir_debug]
 pub struct HirExprCall {
     pub callee: data::HirCallee,
-    pub arguments: Vec<HirValueId>,
+    pub arguments: Vec<HirValue>,
     pub as_dsl: Option<data::HirDsl>,
 }
 
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_node(HirExpr)]
-#[hir_debug]
 pub struct HirExprReference {
     pub name: NameId,
 }
 
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_node(HirExpr)]
-#[hir_debug]
 pub struct HirExprMatch {
-    pub scrutinee: HirValueId,
+    pub scrutinee: HirValue,
     pub cases: im::HashSet<data::HirMatchCase>,
     pub kind: data::HirMatchKind,
 }
 
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_node(HirExpr)]
-#[hir_debug]
 pub struct HirExprHelp {
-    pub value: HirValueId,
+    pub value: HirValue,
 }
 
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_node(HirExpr)]
-#[hir_debug]
 pub struct HirExprAnn {
-    pub value: HirValueId,
-    pub against: HirTypeId,
+    pub value: HirValue,
+    pub against: HirType,
 }
 
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_node(HirExpr)]
-#[hir_debug]
 pub struct HirExprLam {
     pub parameters: Vec<NameId>,
-    pub value: HirValueId,
+    pub value: HirValue,
 }
 
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_node(HirExpr)]
-#[hir_debug]
 pub struct HirExprArray {
-    pub items: Vec<HirValueId>,
+    pub items: Vec<HirValue>,
 }
 
 #[derive(Default, Hash, Clone, Debug, PartialEq, Eq)]
@@ -89,8 +78,7 @@ pub enum HirExprKind {
     HirExprArray(HirExprArray),
 }
 
-#[hir_struct(HirVisitor)]
-#[derive(Default, Hash, Clone, Debug, PartialEq, Eq)]
+#[hir_struct]
 pub struct HirExpr {
     pub kind: HirExprKind,
 }
@@ -101,7 +89,6 @@ pub mod data {
     use super::*;
 
     #[derive(Hash, Clone, Debug, PartialEq, Eq)]
-    #[hir_debug]
     pub enum HirMatchKind {
         If,
         Match,
@@ -109,31 +96,27 @@ pub mod data {
     }
 
     #[derive(Hash, Clone, Debug, PartialEq, Eq)]
-    #[hir_debug]
     pub enum HirBranch {
         Error,
-        Expr(HirValueId),
-        Block(HirValueId),
+        Expr(HirValue),
+        Block(HirValue),
     }
 
     #[derive(Hash, Clone, Debug, PartialEq, Eq)]
-    #[hir_debug]
     pub struct HirMatchCase {
-        pub pattern: HirPatternId,
+        pub pattern: HirPattern,
         pub value: HirBranch,
     }
 
     #[derive(Hash, Clone, Debug, PartialEq, Eq)]
-    #[hir_debug]
     pub struct HirDsl {
         pub parameters: Vec<NameId>,
-        pub value: HirValueId,
+        pub value: HirValue,
     }
 
     #[derive(Hash, Clone, Debug, PartialEq, Eq)]
-    #[hir_debug]
     pub enum HirCallee {
-        Value(HirValueId),
+        Value(HirValue),
 
         Do,
 
