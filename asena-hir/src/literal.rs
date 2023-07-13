@@ -51,3 +51,8 @@ pub enum HirLiteral {
     Decimal(HirFSize, HirDecimal),
     String(HirString),
 }
+
+impl HirLiteral {
+    pub const TRUE: HirLiteral = HirLiteral::Int(1, HirISize::U1, HirISign::Unsigned);
+    pub const FALSE: HirLiteral = HirLiteral::Int(0, HirISize::U1, HirISign::Unsigned);
+}

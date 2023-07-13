@@ -1,17 +1,13 @@
 #![feature(trait_upcasting)]
 
-use std::sync::{Arc, Mutex, MutexGuard, Weak};
-
-use asena_ast::reporter::Reporter;
 use asena_ast::*;
 use asena_hir::expr::data::HirBranch;
 use asena_hir::expr::{data::HirCallee, *};
-use asena_hir::file::InternalAsenaFile;
 use asena_hir::top_level::data::{HirDeclaration, HirSignature};
-use asena_hir::top_level::{HirBindingGroup, HirTopLevel, HirTopLevelData, HirTopLevelKind};
+use asena_hir::top_level::{HirBindingGroup, HirTopLevelData, HirTopLevelKind};
 use asena_hir::{literal::*, Name};
 use asena_hir::{value::*, HirLoc};
-use asena_leaf::ast::{Located, Node};
+use asena_leaf::ast::Located;
 use db::AstLowerrer;
 use decl::compute_parameters;
 use error::AstLoweringError::*;

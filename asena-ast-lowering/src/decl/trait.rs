@@ -1,12 +1,9 @@
 use asena_ast::{DefaultMethod, Field, GlobalName, Trait, Typed};
-use asena_hir::Name;
-use asena_hir::{
-    interner::HirInterner,
-    top_level::{
-        data::{HirDeclaration, HirSignature},
-        HirBindingGroup, HirTopLevel, HirTopLevelData, HirTopLevelTrait,
-    },
+use asena_hir::top_level::{
+    data::{HirDeclaration, HirSignature},
+    HirBindingGroup, HirTopLevel, HirTopLevelData, HirTopLevelTrait,
 };
+use asena_hir::Name;
 use im::{hashset, HashMap};
 
 use crate::make_location;

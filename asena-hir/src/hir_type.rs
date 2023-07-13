@@ -41,6 +41,47 @@ impl HirType {
             span: Default::default(),
         })
     }
+
+    pub fn constructor(db: &dyn HirInterner, name: Name) -> HirType {
+        let kind = HirTypeKind::from(HirTypeName {
+            name,
+            is_constructor: true,
+        });
+
+        db.intern_type(HirTypeData {
+            kind,
+            span: Default::default(),
+        })
+    }
+
+    pub fn variable(db: &dyn HirInterner, name: Name) -> HirType {
+        let kind = HirTypeKind::from(HirTypeName {
+            name,
+            is_constructor: false,
+        });
+
+        db.intern_type(HirTypeData {
+            kind,
+            span: Default::default(),
+        })
+    }
+
+    pub fn pi(db: &dyn HirInterner, parameters: &[HirType], value: HirType) -> HirType {
+        parameters.iter().fold(value, |acc, next| {
+            let kind = HirTypeKind::from(HirTypeApp {
+                callee: HirTypeFunction::Pi,
+                arguments: vec![
+                    data::HirTypeArgument::Type(acc),
+                    data::HirTypeArgument::Type(*next),
+                ],
+            });
+
+            db.intern_type(HirTypeData {
+                kind,
+                span: Default::default(),
+            })
+        })
+    }
 }
 
 pub mod data {
