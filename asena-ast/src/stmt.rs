@@ -14,7 +14,7 @@ use crate::*;
 /// ```asena
 /// x <- foo
 /// ```
-#[derive(Default, Node, Located, Clone)]
+#[derive(Default, Node, Located, Clone, Hash, PartialEq, Eq)]
 pub struct Ask(GreenTree);
 
 #[ast_of]
@@ -43,7 +43,7 @@ impl Ask {
 ///   return 10;
 /// }
 /// ```
-#[derive(Default, Node, Located, Clone)]
+#[derive(Default, Node, Located, Clone, Hash, PartialEq, Eq)]
 pub struct IfStmt(GreenTree);
 
 #[ast_of]
@@ -75,7 +75,7 @@ impl IfStmt {
 /// ```asena
 /// let x = 10
 /// ```
-#[derive(Default, Node, Located, Clone)]
+#[derive(Default, Node, Located, Clone, Hash, PartialEq, Eq)]
 pub struct LetStmt(GreenTree);
 
 #[ast_of]
@@ -101,7 +101,7 @@ impl LetStmt {
 /// ```asena
 /// return
 /// ```
-#[derive(Default, Node, Located, Clone)]
+#[derive(Default, Node, Located, Clone, Hash, PartialEq, Eq)]
 pub struct Return(GreenTree);
 
 #[ast_of]
@@ -119,7 +119,7 @@ impl Return {
 
 /// An expression statement, it does evaluate an expression and discard the result, but if it's the
 /// last statement, it will return the value.
-#[derive(Default, Node, Located, Clone)]
+#[derive(Default, Node, Located, Clone, Hash, PartialEq, Eq)]
 pub struct ExprStmt(GreenTree);
 
 #[ast_of]

@@ -10,14 +10,14 @@ use asena_leaf::ast::Walkable;
 
 /// Represents a true-false value, just like an wrapper to [bool], this represents if an integer
 /// value is signed, or unsigned.
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub enum Signed {
     Signed,
     Unsigned,
 }
 
 /// Represents the root of the asena source code file, it contains a set of declarations.
-#[derive(Default, Node, Clone)]
+#[derive(Default, Node, Clone, Hash, PartialEq, Eq)]
 pub struct AsenaFile(GreenTree);
 
 #[ast_of]

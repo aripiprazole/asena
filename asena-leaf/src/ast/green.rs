@@ -17,7 +17,7 @@ pub use ast_leaf::*;
 ///
 /// It is used to traverse the tree, and to modify it, and can be an [GreenTree::Empty] node,
 /// that is used to mark the tree as invalid, and not fail the compiler.
-#[derive(Clone)]
+#[derive(Clone, Hash, PartialEq, Eq)]
 pub enum GreenTree {
     Leaf(AstLeaf),
     Vec(Vec<GreenTree>),

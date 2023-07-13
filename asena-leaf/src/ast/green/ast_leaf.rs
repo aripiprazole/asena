@@ -1,4 +1,7 @@
-use std::sync::{RwLockReadGuard, RwLockWriteGuard};
+use std::{
+    hash::Hash,
+    sync::{RwLockReadGuard, RwLockWriteGuard},
+};
 
 use super::*;
 
@@ -43,5 +46,26 @@ impl AstLeaf {
 
     pub(crate) fn keys_mut(&self) -> RwLockWriteGuard<'_, HashMap<&'static str, Rc<dyn Any>>> {
         self.keys.write().unwrap()
+    }
+}
+
+impl Eq for AstLeaf {}
+
+impl PartialEq for AstLeaf {
+    fn eq(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.data, &other.data)
+            && Arc::ptr_eq(&self.names, &other.names)
+            && Arc::ptr_eq(&self.keys, &other.keys)
+            && self.synthetic == other.synthetic
+    }
+}
+
+impl Hash for AstLeaf {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.data.hash(state);
+        self.synthetic.hash(state);
+        self.children.iter().collect::<Vec<_>>().hash(state);
+        self.children.iter().collect::<Vec<_>>().hash(state);
+        self.children.iter().collect::<Vec<_>>().hash(state);
     }
 }

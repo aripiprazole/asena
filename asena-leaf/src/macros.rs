@@ -12,7 +12,7 @@ macro_rules! ast_enum {
         }
     ) => {
         $(#[$outer])*
-        #[derive(asena_derive::Leaf, Default, Clone)]
+        #[derive(asena_derive::Leaf, Default, Clone, Hash, PartialEq, Eq)]
         ///
         /// Generates node for the AST, it can be used to build a tree node using the trait
         /// leaf [Leaf].

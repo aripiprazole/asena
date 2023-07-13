@@ -1,3 +1,5 @@
+use std::hash::Hash;
+
 use asena_span::Spanned;
 
 use crate::token::token_set::HasTokens;
@@ -15,7 +17,7 @@ pub mod maybe;
 pub mod walkable;
 
 /// Represents a lexeme, a token with a value, represented in the Rust language.
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone)]
 pub struct Lexeme<T> {
     pub token: Spanned<Token>,
     pub value: maybe::Maybe<T>,
@@ -59,5 +61,19 @@ impl<T> Lexeme<T> {
             token: self.token,
             value: maybe::Maybe::Just(value),
         }
+    }
+}
+
+impl<T> Hash for Lexeme<T> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.token.hash(state);
+    }
+}
+
+impl<T> Eq for Lexeme<T> {}
+
+impl<T> PartialEq for Lexeme<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.token == other.token
     }
 }

@@ -11,7 +11,7 @@ use crate::*;
 /// ```
 ///
 /// The constraint node can be used on `where` clauses.
-#[derive(Default, Node, Located, Clone)]
+#[derive(Default, Node, Located, Clone, Hash, PartialEq, Eq)]
 pub struct Constraint(GreenTree);
 
 #[ast_of]

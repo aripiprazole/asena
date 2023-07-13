@@ -11,7 +11,7 @@ use crate::*;
 //    printf "Hello, I'm {}" self.name
 //  }
 /// ```
-#[derive(Default, Node, Located, Clone)]
+#[derive(Default, Node, Located, Clone, Hash, PartialEq, Eq)]
 pub struct DefaultMethod(GreenTree);
 
 #[ast_of]

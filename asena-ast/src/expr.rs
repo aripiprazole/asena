@@ -40,7 +40,7 @@ pub use branch::*;
 pub use case::*;
 pub use lam_parameter::*;
 
-#[derive(Default, Node, Located, Clone)]
+#[derive(Default, Node, Located, Clone, Hash, PartialEq, Eq)]
 pub struct SelfExpr(GreenTree);
 
 #[ast_of]
@@ -56,7 +56,7 @@ impl SelfExpr {
 
 impl GlobalName for SelfExpr {}
 
-#[derive(Default, Node, Located, Clone)]
+#[derive(Default, Node, Located, Clone, Hash, PartialEq, Eq)]
 pub struct LocalExpr(GreenTree);
 
 #[ast_of]
@@ -72,7 +72,7 @@ impl LocalExpr {
 
 impl GlobalName for LocalExpr {}
 
-#[derive(Default, Node, Located, Clone)]
+#[derive(Default, Node, Located, Clone, Hash, PartialEq, Eq)]
 pub struct LiteralExpr(GreenTree);
 
 #[ast_of]
@@ -94,7 +94,7 @@ impl LiteralExpr {
 /// ```haskell
 /// ()
 /// ```
-#[derive(Default, Node, Located, Clone)]
+#[derive(Default, Node, Located, Clone, Hash, PartialEq, Eq)]
 pub struct Unit(GreenTree);
 
 #[ast_of]
@@ -112,7 +112,7 @@ impl Unit {}
 /// ```haskell
 /// (a)
 /// ```
-#[derive(Default, Node, Located, Clone)]
+#[derive(Default, Node, Located, Clone, Hash, PartialEq, Eq)]
 pub struct Group(GreenTree);
 
 #[ast_of]
@@ -149,7 +149,7 @@ impl Group {
 ///   - `*`, `/`
 ///   - `+`, `-`
 ///   Being the most important the first items.
-#[derive(Default, Node, Clone)]
+#[derive(Default, Node, Clone, Hash, PartialEq, Eq)]
 pub struct Infix(GreenTree);
 
 impl Debug for Infix {
@@ -200,7 +200,7 @@ impl Located for Infix {
 ///
 /// The application expression is right associative, and can hold primary terms on the argument,
 /// this can be recursed until the infinite, like `something a b c ...`
-#[derive(Default, Node, Located, Clone)]
+#[derive(Default, Node, Located, Clone, Hash, PartialEq, Eq)]
 pub struct App(GreenTree);
 
 #[ast_of]
@@ -234,7 +234,7 @@ impl App {
 ///
 /// The application expression is right associative, and can hold primary terms on the argument,
 /// this can be recursed until the infinite, like `something a b c ...`
-#[derive(Default, Node, Located, Clone)]
+#[derive(Default, Node, Located, Clone, Hash, PartialEq, Eq)]
 pub struct Dsl(GreenTree);
 
 #[ast_of]
@@ -268,7 +268,7 @@ impl Dsl {
 /// ```haskell
 /// [a, b, c]
 /// ```
-#[derive(Default, Node, Located, Clone)]
+#[derive(Default, Node, Located, Clone, Hash, PartialEq, Eq)]
 pub struct Array(GreenTree);
 
 #[ast_of]
@@ -300,7 +300,7 @@ impl Array {
 /// ```haskell
 /// λa b. c
 /// ```
-#[derive(Default, Node, Located, Clone)]
+#[derive(Default, Node, Located, Clone, Hash, PartialEq, Eq)]
 pub struct Lam(GreenTree);
 
 #[ast_of]
@@ -329,7 +329,7 @@ impl Lam {
 /// let a = 10 in
 /// b + a...
 /// ```
-#[derive(Default, Node, Located, Clone)]
+#[derive(Default, Node, Located, Clone, Hash, PartialEq, Eq)]
 pub struct Let(GreenTree);
 
 #[ast_of]
@@ -362,7 +362,7 @@ impl Let {
 /// ```haskell
 /// if a then b else c
 /// ```
-#[derive(Default, Node, Located, Clone)]
+#[derive(Default, Node, Located, Clone, Hash, PartialEq, Eq)]
 pub struct If(GreenTree);
 
 #[ast_of]
@@ -398,7 +398,7 @@ impl If {
 ///    Nothing -> panic()
 /// }
 /// ```
-#[derive(Default, Node, Located, Clone)]
+#[derive(Default, Node, Located, Clone, Hash, PartialEq, Eq)]
 pub struct Match(GreenTree);
 
 #[ast_of]
@@ -426,7 +426,7 @@ impl Match {
 /// ```haskell
 /// 10 : Int
 /// ```
-#[derive(Default, Node, Clone)]
+#[derive(Default, Node, Clone, Hash, PartialEq, Eq)]
 pub struct Ann(GreenTree);
 
 #[ast_of]
@@ -465,7 +465,7 @@ impl Located for Ann {
 /// ```haskell
 /// ∀ (MonadIO m) -> Π (a: t) -> m b
 /// ```
-#[derive(Default, Node, Clone)]
+#[derive(Default, Node, Clone, Hash, PartialEq, Eq)]
 pub struct Qual(GreenTree);
 
 impl Debug for Qual {
@@ -515,7 +515,7 @@ impl Located for Qual {
 /// ```haskell
 /// Π (a: t) -> b
 /// ```
-#[derive(Default, Node, Located, Clone)]
+#[derive(Default, Node, Located, Clone, Hash, PartialEq, Eq)]
 pub struct Pi(GreenTree);
 
 #[ast_of]
@@ -594,7 +594,7 @@ impl Pi {
 /// ```haskell
 /// Σ (a: t) -> b
 /// ```
-#[derive(Default, Node, Located, Clone)]
+#[derive(Default, Node, Located, Clone, Hash, PartialEq, Eq)]
 pub struct Sigma(GreenTree);
 
 #[ast_of]
@@ -624,7 +624,7 @@ impl Sigma {
 }
 
 /// Help syntax sugar to the debugger.
-#[derive(Default, Node, Located, Clone)]
+#[derive(Default, Node, Located, Clone, Hash, PartialEq, Eq)]
 pub struct Help(GreenTree);
 
 #[ast_of]

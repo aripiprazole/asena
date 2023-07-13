@@ -6,7 +6,7 @@ use asena_leaf::kind::TreeKind::*;
 use crate::*;
 
 /// A lambda expression parameter, is a parameter of a lambda expression.
-#[derive(Default, Node, Located, Clone)]
+#[derive(Default, Node, Located, Clone, Hash, PartialEq, Eq)]
 pub struct LamParameter(GreenTree);
 
 #[ast_of]

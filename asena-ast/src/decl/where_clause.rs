@@ -12,7 +12,7 @@ use crate::*;
 /// ```asena
 /// where Monad m
 /// ```
-#[derive(Default, Node, Located, Clone)]
+#[derive(Default, Node, Located, Clone, Hash, PartialEq, Eq)]
 pub struct Where(GreenTree);
 
 #[ast_of]

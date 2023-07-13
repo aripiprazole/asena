@@ -27,7 +27,7 @@ pub use super::token::*;
 ///        '1' @ 8..9
 ///      @ 0..9
 /// ```
-#[derive(Default, Clone, Hash)]
+#[derive(Default, Clone, Hash, PartialEq, Eq)]
 pub struct Tree {
     pub name: Option<&'static str>,
     pub kind: TreeKind,
@@ -35,7 +35,7 @@ pub struct Tree {
 }
 
 /// Polymorphic variants of [Token] and [Tree], it can and must be used as an abstract to them.
-#[derive(Debug, Clone, Hash)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub enum Child {
     Tree(Tree),
     Token(Token),

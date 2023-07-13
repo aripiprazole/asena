@@ -16,7 +16,7 @@ use crate::*;
 /// ```asena
 /// foo (a : Int) (b : Int) : Int
 /// ```
-#[derive(Default, Node, Located, Clone)]
+#[derive(Default, Node, Located, Clone, Hash, PartialEq, Eq)]
 pub struct Parameter(GreenTree);
 
 #[ast_of]

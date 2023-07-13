@@ -13,7 +13,7 @@ use crate::*;
 /// ```asena
 /// Just : a -> Maybe a
 /// ```
-#[derive(Default, Node, Located, Clone)]
+#[derive(Default, Node, Located, Clone, Hash, PartialEq, Eq)]
 pub struct TypeVariant(GreenTree);
 
 #[ast_of]
@@ -39,7 +39,7 @@ impl TypeVariant {
 /// ```asena
 /// Just(a)
 /// ```
-#[derive(Default, Node, Located, Clone)]
+#[derive(Default, Node, Located, Clone, Hash, PartialEq, Eq)]
 pub struct ConstructorVariant(GreenTree);
 
 #[ast_of]
