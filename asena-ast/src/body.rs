@@ -6,7 +6,7 @@ use asena_leaf::node::TreeKind::*;
 use crate::*;
 
 /// Value body node, is a value body that is an `=`.
-#[derive(Default, Node, Located, Clone)]
+#[derive(Default, Node, Located, Clone, Hash, PartialEq, Eq)]
 pub struct Value(GreenTree);
 
 #[ast_of]
@@ -21,7 +21,7 @@ impl Value {
 }
 
 /// Do body node, is a value body that is an do-notation.
-#[derive(Default, Node, Located, Clone)]
+#[derive(Default, Node, Located, Clone, Hash, PartialEq, Eq)]
 pub struct Do(GreenTree);
 
 #[ast_of]

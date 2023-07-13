@@ -8,7 +8,7 @@ use asena_span::Spanned;
 
 use crate::*;
 
-#[derive(Default, Node, Located, Clone)]
+#[derive(Default, Node, Located, Clone, Hash, PartialEq, Eq)]
 pub struct LiteralPat(GreenTree);
 
 #[ast_of]
@@ -28,7 +28,7 @@ impl LiteralPat {
 /// ```haskell
 /// Some
 /// ```
-#[derive(Default, Node, Located, Clone)]
+#[derive(Default, Node, Located, Clone, Hash, PartialEq, Eq)]
 pub struct GlobalPat(GreenTree);
 
 #[ast_of]
@@ -48,7 +48,7 @@ impl GlobalPat {
 /// ```haskell
 /// Some x
 /// ```
-#[derive(Default, Node, Located, Clone)]
+#[derive(Default, Node, Located, Clone, Hash, PartialEq, Eq)]
 pub struct ConstructorPat(GreenTree);
 
 #[ast_of]
@@ -73,7 +73,7 @@ impl ConstructorPat {
 /// ```haskell
 /// [x, ..]
 /// ```
-#[derive(Default, Node, Located, Clone)]
+#[derive(Default, Node, Located, Clone, Hash, PartialEq, Eq)]
 pub struct ListPat(GreenTree);
 
 #[ast_of]
@@ -94,7 +94,7 @@ impl ListPat {
 /// ```haskell
 /// [x, ..]
 /// ```
-#[derive(Default, Node, Located, Clone)]
+#[derive(Default, Node, Located, Clone, Hash, PartialEq, Eq)]
 pub struct SpreadPat(GreenTree);
 
 #[ast_of]
@@ -104,7 +104,7 @@ pub struct SpreadPat(GreenTree);
 impl SpreadPat {}
 
 /// Wildcard pattern, is the same as `_` pattern [Pat::Local]
-#[derive(Default, Node, Located, Clone)]
+#[derive(Default, Node, Located, Clone, Hash, PartialEq, Eq)]
 pub struct WildcardPat(GreenTree);
 
 #[ast_of]
@@ -119,7 +119,7 @@ impl WildcardPat {}
 /// ```haskell
 /// ()
 /// ```
-#[derive(Default, Node, Located, Clone)]
+#[derive(Default, Node, Located, Clone, Hash, PartialEq, Eq)]
 pub struct UnitPat(GreenTree);
 
 #[ast_of]

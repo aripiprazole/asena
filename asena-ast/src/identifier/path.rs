@@ -3,7 +3,7 @@ use super::*;
 /// Identifier's key to a global identifier, that's not declared locally, almost everything with
 /// Pascal Case, as a language pattern. This can contain symbols like: `Person.new`, as it can
 /// contain `.`.
-#[derive(Default, Node, Clone)]
+#[derive(Default, Node, Clone, Hash, PartialEq, Eq)]
 pub struct QualifiedPath(GreenTree);
 
 impl GlobalName for QualifiedPath {}

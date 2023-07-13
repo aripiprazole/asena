@@ -11,7 +11,7 @@ use crate::*;
 /// ```
 ///
 /// The constraint node should be wrote in a class context.
-#[derive(Default, Node, Located, Clone)]
+#[derive(Default, Node, Located, Clone, Hash, PartialEq, Eq)]
 pub struct Field(GreenTree);
 
 #[ast_of]

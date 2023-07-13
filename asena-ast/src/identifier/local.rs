@@ -2,7 +2,7 @@ use super::*;
 
 /// Identifier's key to local identifier, that's not declared globally, almost everything with
 /// snake case, as a language pattern.
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Hash, PartialEq, Eq)]
 pub struct Local(pub String, pub Loc);
 
 impl Local {

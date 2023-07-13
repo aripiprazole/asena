@@ -33,7 +33,7 @@ pub use where_clause::*;
 /// ```haskell
 /// use IO;
 /// ```
-#[derive(Default, Node, Located, Clone)]
+#[derive(Default, Node, Located, Clone, Hash, PartialEq, Eq)]
 pub struct Use(GreenTree);
 
 #[ast_of]
@@ -70,7 +70,7 @@ impl Use {
 /// ```haskell
 /// Print : Person -> IO ()
 /// ```
-#[derive(Default, Node, Located, Clone)]
+#[derive(Default, Node, Located, Clone, Hash, PartialEq, Eq)]
 pub struct Signature(GreenTree);
 
 #[ast_of]
@@ -113,7 +113,7 @@ impl Signature {
 /// ```haskell
 /// Print person = pure ()
 /// ```
-#[derive(Default, Node, Located, Clone)]
+#[derive(Default, Node, Located, Clone, Hash, PartialEq, Eq)]
 pub struct Assign(GreenTree);
 
 #[ast_of]
@@ -146,7 +146,7 @@ impl Assign {
 /// ```haskell
 /// #eval 1 + 1 -- 2
 /// ```
-#[derive(Default, Node, Located, Clone)]
+#[derive(Default, Node, Located, Clone, Hash, PartialEq, Eq)]
 pub struct Command(GreenTree);
 
 #[ast_of]
@@ -178,7 +178,7 @@ impl Command {
 ///   }
 /// }
 /// ```
-#[derive(Default, Node, Located, Clone)]
+#[derive(Default, Node, Located, Clone, Hash, PartialEq, Eq)]
 pub struct Class(GreenTree);
 
 #[ast_of]
@@ -218,7 +218,7 @@ impl Class {
 ///     Cons : a -> Vec n a -> Vec (n + 1) a
 /// }
 /// ```
-#[derive(Default, Node, Located, Clone)]
+#[derive(Default, Node, Located, Clone, Hash, PartialEq, Eq)]
 pub struct Enum(GreenTree);
 
 #[ast_of]
@@ -271,7 +271,7 @@ impl Enum {
 ///   bind : m a -> (a -> m b) -> m b,
 /// }
 /// ```
-#[derive(Default, Node, Located, Clone)]
+#[derive(Default, Node, Located, Clone, Hash, PartialEq, Eq)]
 pub struct Trait(GreenTree);
 
 #[ast_of]
@@ -309,7 +309,7 @@ impl Trait {
 ///   pure (a) { ... }
 /// }
 /// ```
-#[derive(Default, Node, Located, Clone)]
+#[derive(Default, Node, Located, Clone, Hash, PartialEq, Eq)]
 pub struct Instance(GreenTree);
 
 #[ast_of]

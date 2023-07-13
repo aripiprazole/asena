@@ -12,7 +12,7 @@ use crate::*;
 /// ```asena
 /// if x == 0 then ()
 /// ```
-#[derive(Default, Node, Located, Clone)]
+#[derive(Default, Node, Located, Clone, Hash, PartialEq, Eq)]
 pub struct ExprBranch(GreenTree);
 
 #[ast_of]
@@ -34,7 +34,7 @@ impl ExprBranch {
 /// if x == 0 {
 /// }
 /// ```
-#[derive(Default, Node, Located, Clone)]
+#[derive(Default, Node, Located, Clone, Hash, PartialEq, Eq)]
 pub struct BlockBranch(GreenTree);
 
 #[ast_of]

@@ -12,7 +12,7 @@ use crate::*;
 /// ```asena
 /// Just x -> println x
 /// ```
-#[derive(Default, Node, Located, Clone)]
+#[derive(Default, Node, Located, Clone, Hash, PartialEq, Eq)]
 pub struct Case(GreenTree);
 
 #[ast_of]
