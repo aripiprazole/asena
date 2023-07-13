@@ -1,10 +1,9 @@
 use asena_hir_derive::*;
 
-use crate::{attr::HirAttrId, hir_type::HirTypeId, pattern::HirPatternId, *};
+use crate::{attr::HirAttr, hir_type::HirType, *};
 
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_node(HirTopLevel)]
-#[hir_debug]
 pub struct HirTopLevelEnum {
     pub signature: data::HirSignature,
     pub variants: im::HashMap<NameId, data::HirVariant>,
@@ -13,25 +12,22 @@ pub struct HirTopLevelEnum {
 
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_node(HirTopLevel)]
-#[hir_debug]
 pub struct HirTopLevelStruct {
     pub signature: data::HirSignature,
-    pub fields: im::HashMap<NameId, HirTypeId>,
+    pub fields: im::HashMap<NameId, HirType>,
     pub groups: im::HashSet<HirBindingGroup>,
 }
 
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_node(HirTopLevel)]
-#[hir_debug]
 pub struct HirTopLevelInstance {
     pub parameters: Vec<data::HirParameterKind>,
-    pub signature: HirTypeId,
+    pub signature: HirType,
     pub groups: im::HashSet<HirBindingGroup>,
 }
 
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_node(HirTopLevel)]
-#[hir_debug]
 pub struct HirTopLevelTrait {
     pub signature: data::HirSignature,
     pub groups: im::HashMap<NameId, HirBindingGroup>,
@@ -39,7 +35,6 @@ pub struct HirTopLevelTrait {
 
 #[derive(Default, Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_node(HirTopLevel)]
-#[hir_debug]
 pub struct HirBindingGroup {
     pub signature: data::HirSignature,
     pub declarations: im::HashSet<data::HirDeclaration>,
@@ -57,61 +52,56 @@ pub enum HirTopLevelKind {
     HirBindingGroup(HirBindingGroup),
 }
 
-#[hir_struct(HirVisitor)]
-#[derive(Default, Hash, Clone, Debug, PartialEq, Eq)]
+#[hir_struct]
 pub struct HirTopLevel {
     pub kind: HirTopLevelKind,
-    pub attributes: Vec<HirAttrId>,
+    pub attributes: Vec<HirAttr>,
     pub docs: Vec<data::HirDoc>,
 }
 
 /// Data structures module split into its own module to better disposition, as
 /// it is a bit large, and it's used as extension to [`HirTopLevel`].
 pub mod data {
-    use crate::value::HirValueId;
+    use crate::{hir_type::HirType, pattern::HirPattern, value::HirValue};
 
     use super::*;
 
-    #[derive(Hash, Clone, Debug, PartialEq, Eq)]
-    #[hir_debug]
+    #[derive(Default, Hash, Clone, Debug, PartialEq, Eq)]
     pub struct HirDoc {
         pub text: String,
     }
 
-    #[derive(Hash, Clone, Debug, PartialEq, Eq)]
-    #[hir_debug]
+    #[derive(Default, Hash, Clone, Debug, PartialEq, Eq)]
     pub struct HirParameterData {
         pub name: NameId,
-        pub parameter_type: Option<HirTypeId>,
+        pub parameter_type: Option<HirType>,
     }
 
-    #[derive(Hash, Clone, Debug, PartialEq, Eq)]
-    #[hir_debug]
+    #[derive(Default, Hash, Clone, Debug, PartialEq, Eq)]
     pub enum HirParameterKind {
+        #[default]
+        Error,
         This, // The self parameter
         Explicit(HirParameterData),
         Implicit(HirParameterData),
     }
 
     #[derive(Default, Hash, Clone, Debug, PartialEq, Eq)]
-    #[hir_debug]
     pub struct HirSignature {
         pub name: NameId,
         pub parameters: Vec<HirParameterKind>,
-        pub return_type: Option<HirTypeId>,
+        pub return_type: Option<HirType>,
     }
 
     #[derive(Hash, Clone, Debug, PartialEq, Eq)]
-    #[hir_debug]
     pub struct HirDeclaration {
-        pub patterns: Vec<HirPatternId>,
-        pub value: HirValueId,
+        pub patterns: Vec<HirPattern>,
+        pub value: HirValue,
     }
 
     #[derive(Hash, Clone, Debug, PartialEq, Eq)]
-    #[hir_debug]
     pub struct HirVariant {
         pub name: NameId,
-        pub variant_type: HirTypeId,
+        pub variant_type: HirType,
     }
 }

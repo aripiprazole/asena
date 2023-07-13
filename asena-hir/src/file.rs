@@ -1,21 +1,17 @@
-use std::{
-    fmt::Formatter,
-    hash::Hash,
-    sync::{Arc, RwLock},
-};
+use std::{hash::Hash, sync::RwLock};
 
 use asena_ast_db::vfs::VfsPath;
 use asena_leaf::ast::GreenTree;
 use im::HashSet;
 
-use crate::{query::HirDebug, top_level::HirTopLevelId};
+use crate::top_level::HirTopLevel;
 
 #[derive(Default, Debug)]
 pub struct InternalAsenaFile {
     pub path: VfsPath,
     pub content: String,
     pub tree: GreenTree,
-    pub declarations: RwLock<HashSet<HirTopLevelId>>,
+    pub declarations: RwLock<HashSet<HirTopLevel>>,
 }
 
 impl Hash for InternalAsenaFile {
@@ -34,13 +30,5 @@ impl Clone for InternalAsenaFile {
             tree: self.tree.clone(),
             declarations: RwLock::new(self.declarations.read().unwrap().clone()),
         }
-    }
-}
-
-impl HirDebug for InternalAsenaFile {
-    type Database = dyn crate::database::HirBag;
-
-    fn fmt(&self, db: Arc<Self::Database>, f: &mut Formatter<'_>) -> std::fmt::Result {
-        self.declarations.read().unwrap().fmt(db, f)
     }
 }

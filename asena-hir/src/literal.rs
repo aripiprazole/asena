@@ -1,11 +1,8 @@
-use std::{fmt::Debug, sync::Arc};
+use std::fmt::Debug;
 
-use asena_hir_derive::hir_debug;
-
-use crate::{query::HirDebug, NameId};
+use crate::NameId;
 
 #[derive(Hash, Clone, Copy, Debug, PartialEq, Eq)]
-#[hir_debug]
 pub enum HirISize {
     U1,
     U8,
@@ -17,14 +14,12 @@ pub enum HirISize {
 }
 
 #[derive(Hash, Clone, Copy, Debug, PartialEq, Eq)]
-#[hir_debug]
 pub enum HirFSize {
     F32,
     F64,
 }
 
 #[derive(Hash, Clone, Copy, Debug, PartialEq, Eq)]
-#[hir_debug]
 pub enum HirISign {
     Signed,
     Unsigned,
@@ -42,16 +37,7 @@ impl Debug for HirDecimal {
     }
 }
 
-impl HirDebug for HirDecimal {
-    type Database = dyn crate::database::HirBag;
-
-    fn fmt(&self, _: Arc<Self::Database>, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}.{}", self.integer, self.decimal)
-    }
-}
-
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]
-#[hir_debug]
 pub struct HirString {
     pub value: String,
     pub name: Option<NameId>,
@@ -64,17 +50,4 @@ pub enum HirLiteral {
     Int(usize, HirISize, HirISign),
     Decimal(HirFSize, HirDecimal),
     String(HirString),
-}
-
-impl HirDebug for HirLiteral {
-    type Database = dyn crate::database::HirBag;
-
-    fn fmt(&self, _: Arc<Self::Database>, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            HirLiteral::Error => write!(f, "Error"),
-            HirLiteral::Int(value, size, sign) => write!(f, "Int({value}, {size:?}, {sign:?})"),
-            HirLiteral::Decimal(size, decimal) => write!(f, "Decimal({size:?}, {decimal:?})"),
-            HirLiteral::String(string) => write!(f, "String({})", string.value),
-        }
-    }
 }

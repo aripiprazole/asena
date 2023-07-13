@@ -1,34 +1,30 @@
 use asena_hir_derive::*;
 
-use crate::{pattern::HirPatternId, value::HirValueId, HirVisitor};
+use crate::{pattern::HirPattern, value::HirValue};
 
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_node(HirStmt)]
-#[hir_debug]
 pub struct HirStmtAsk {
-    pub pattern: HirPatternId,
-    pub value: HirValueId,
+    pub pattern: HirPattern,
+    pub value: HirValue,
 }
 
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_node(HirStmt)]
-#[hir_debug]
 pub struct HirStmtLet {
-    pub pattern: HirPatternId,
-    pub value: HirValueId,
+    pub pattern: HirPattern,
+    pub value: HirValue,
 }
 
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_node(HirStmt)]
-#[hir_debug]
 pub struct HirStmtReturn {
-    pub value: HirValueId,
+    pub value: HirValue,
 }
 
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_node(HirStmt)]
-#[hir_debug]
-pub struct HirStmtValue(pub HirValueId);
+pub struct HirStmtValue(pub HirValue);
 
 #[derive(Default, Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_kind(HirStmt)]
@@ -41,8 +37,7 @@ pub enum HirStmtKind {
     HirStmtValue(HirStmtValue),
 }
 
-#[hir_struct(HirVisitor)]
-#[derive(Default, Hash, Clone, Debug, PartialEq, Eq)]
+#[hir_struct]
 pub struct HirStmt {
     pub kind: HirStmtKind,
 }
