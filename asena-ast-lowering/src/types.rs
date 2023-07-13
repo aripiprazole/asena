@@ -55,11 +55,11 @@ pub fn lower_type(db: &dyn AstLowerrer, expr: Expr) -> HirType {
         }
         Expr::LocalExpr(ref local) => {
             let str = local.clone().to_fn_id().to_string();
-            let name = db.intern_name(str);
+            let name = db.intern_name(str.clone());
             let mut is_constructor = false;
 
             if_chain! {
-                if let Some(c) = str.as_str().chars().next();
+                if let Some(c) = str.chars().next();
                 if c.is_uppercase();
                 then {
                     is_constructor = true;

@@ -53,7 +53,7 @@ pub fn lower_pattern(db: &dyn AstLowerrer, pattern: Pat) -> HirPattern {
     };
 
     db.intern_pattern(HirPatternData {
-        kind: kind.into(),
+        kind,
         span: make_location(db, &pattern),
     })
 }

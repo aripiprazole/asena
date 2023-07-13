@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
-use asena_ast::{reporter::Reporter, traits::global_decl::GlobalDecl, *};
+use asena_ast::{reporter::Reporter, *};
 use asena_hir::{
     expr::data::HirBranch, hir_type::HirType, interner::HirInterner, pattern::HirPattern,
-    stmt::HirStmt, top_level::HirTopLevel, value::HirValue,
+    top_level::HirTopLevel, value::HirValue,
 };
 
 use crate::stmt::Instr;

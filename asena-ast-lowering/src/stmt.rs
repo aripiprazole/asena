@@ -23,7 +23,7 @@ pub fn lower_stmt(db: &dyn AstLowerrer, stmt: Stmt) -> Instr {
     };
 
     let stmt = db.intern_stmt(HirStmtData {
-        kind: kind.into(),
+        kind,
         span: make_location(db, &stmt),
     });
 
@@ -40,7 +40,7 @@ pub fn lower_block(db: &dyn AstLowerrer, block: Vec<Stmt>) -> HirValue {
         last = value;
     }
 
-    let value = last.unwrap_or_else(|| HirValue::pure_unit(db));
+    let value = last.unwrap_or_else(|| HirValue::unit(db));
     let stmts = {
         let kind = HirValueKind::from(HirValueBlock {
             instructions: stmts,
@@ -93,7 +93,7 @@ fn make_ask(db: &dyn AstLowerrer, stmt: &Ask) -> HirStmtKind {
 fn make_return(db: &dyn AstLowerrer, stmt: &Return) -> Instr {
     let value = match stmt.value() {
         Some(value) => db.lower_value(value),
-        None => HirValue::pure_unit(db),
+        None => HirValue::unit(db),
     };
 
     let kind = HirStmtKind::from(HirStmtValue(value));
@@ -117,14 +117,14 @@ fn make_if(db: &dyn AstLowerrer, stmt: &IfStmt) -> HirStmtKind {
                 pattern: HirPattern::new_false(db),
                 value: match stmt.else_branch() {
                     Some(else_branch) => db.lower_branch(else_branch),
-                    None => HirBranch::Expr(HirValue::pure_unit(db)),
+                    None => HirBranch::Expr(HirValue::unit(db)),
                 },
             }
         ],
         kind: HirMatchKind::If,
     })));
 
-    let value = HirValue::value(db, expr);
+    let value = HirValue::of_expr(db, expr);
 
     HirStmtKind::from(HirStmtValue(value))
 }

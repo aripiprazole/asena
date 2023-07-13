@@ -72,7 +72,7 @@ pub fn hir_struct(_args: TokenStream, input: TokenStream) -> TokenStream {
     input.ident = data_name.clone();
 
     TokenStream::from(quote! {
-        #[derive(Clone, Debug, Hash, PartialEq, Eq)]
+        #[derive(Default, Clone, Debug, Hash, PartialEq, Eq)]
         #input
 
         #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq)]

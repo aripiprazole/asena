@@ -1,6 +1,6 @@
 use asena_hir_derive::*;
 
-use crate::{literal::HirLiteral, Name};
+use crate::{interner::HirInterner, literal::HirLiteral, Name};
 
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]
 #[hir_node(HirPattern)]
@@ -43,4 +43,58 @@ pub enum HirPatternKind {
 #[hir_struct]
 pub struct HirPattern {
     pub kind: HirPatternKind,
+}
+
+impl HirPattern {
+    pub fn error(db: &dyn HirInterner) -> HirPattern {
+        db.intern_pattern(HirPatternData::default())
+    }
+
+    pub fn wildcard(db: &dyn HirInterner) -> HirPattern {
+        db.intern_pattern(HirPatternData {
+            kind: HirPatternKind::Wildcard,
+            span: Default::default(),
+        })
+    }
+
+    pub fn this(db: &dyn HirInterner) -> HirPattern {
+        db.intern_pattern(HirPatternData {
+            kind: HirPatternKind::This,
+            span: Default::default(),
+        })
+    }
+
+    pub fn spread(db: &dyn HirInterner) -> HirPattern {
+        db.intern_pattern(HirPatternData {
+            kind: HirPatternKind::Spread,
+            span: Default::default(),
+        })
+    }
+
+    pub fn name(db: &dyn HirInterner, name: Name) -> HirPattern {
+        let kind = HirPatternKind::from(HirPatternName { name });
+
+        db.intern_pattern(HirPatternData {
+            kind,
+            span: Default::default(),
+        })
+    }
+
+    pub fn new_true(db: &dyn HirInterner) -> HirPattern {
+        let kind = HirPatternKind::from(HirPatternLiteral(HirLiteral::TRUE));
+
+        db.intern_pattern(HirPatternData {
+            kind,
+            span: Default::default(),
+        })
+    }
+
+    pub fn new_false(db: &dyn HirInterner) -> HirPattern {
+        let kind = HirPatternKind::from(HirPatternLiteral(HirLiteral::TRUE));
+
+        db.intern_pattern(HirPatternData {
+            kind,
+            span: Default::default(),
+        })
+    }
 }

@@ -15,7 +15,7 @@ pub struct ExprLowering<'a> {
 }
 
 impl<'a> ExprLowering<'a> {
-    pub fn new(db: &'_ dyn AstLowerrer) -> Self {
+    pub fn new(db: &'a dyn AstLowerrer) -> Self {
         ExprLowering {
             db,
             instructions: vec![],
@@ -150,11 +150,11 @@ impl<'a> ExprLowering<'a> {
             scrutinee: self.db.lower_value(expr.cond()),
             cases: hashset![
                 HirMatchCase {
-                    pattern: HirPattern::new_true(self.db()),
+                    pattern: HirPattern::new_true(self.db),
                     value: self.db.lower_branch(expr.then_branch()),
                 },
                 HirMatchCase {
-                    pattern: HirPattern::new_false(self.db()),
+                    pattern: HirPattern::new_false(self.db),
                     value: self.db.lower_branch(expr.else_branch()),
                 }
             ],
