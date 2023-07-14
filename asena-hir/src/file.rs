@@ -1,34 +1,30 @@
-use std::{hash::Hash, sync::RwLock};
+use std::{hash::Hash, sync::Arc};
 
-use asena_ast_db::vfs::VfsPath;
+use asena_ast_db::ModuleRef;
 use asena_leaf::ast::GreenTree;
 use im::HashSet;
 
 use crate::top_level::HirTopLevel;
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct InternalAsenaFile {
-    pub path: VfsPath,
-    pub content: String,
+    pub path: ModuleRef,
+    pub content: Arc<String>,
     pub tree: GreenTree,
-    pub declarations: RwLock<HashSet<HirTopLevel>>,
+    pub declarations: HashSet<HirTopLevel>,
+}
+
+impl Eq for InternalAsenaFile {}
+
+impl PartialEq for InternalAsenaFile {
+    fn eq(&self, other: &Self) -> bool {
+        self.path == other.path
+    }
 }
 
 impl Hash for InternalAsenaFile {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.path.hash(state);
         self.content.hash(state);
-        self.declarations.read().unwrap().hash(state);
-    }
-}
-
-impl Clone for InternalAsenaFile {
-    fn clone(&self) -> Self {
-        Self {
-            path: self.path.clone(),
-            content: self.content.clone(),
-            tree: self.tree.clone(),
-            declarations: RwLock::new(self.declarations.read().unwrap().clone()),
-        }
     }
 }

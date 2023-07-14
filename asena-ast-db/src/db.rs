@@ -3,9 +3,10 @@ use std::path::PathBuf;
 use std::rc::Rc;
 
 use asena_ast::{AsenaFile, BindingId, GlobalName, QualifiedPath, Variant};
-use asena_leaf::ast::Node;
+use asena_leaf::ast::{GreenTree, Node};
 use asena_lexer::Lexer;
 use asena_parser::Parser;
+use asena_span::Loc;
 
 use crate::package::{Package, PackageData};
 use crate::scope::{ScopeData, TypeValue, Value, VariantResolution};
@@ -18,13 +19,16 @@ type Constructors = HashMap<FunctionId, Arc<Variant>>;
 pub trait AstDatabase {
     fn items(&self, module: VfsFile) -> Arc<HashMap<FunctionId, Arc<Decl>>>;
     fn constructors(&self, module: VfsFile) -> Arc<HashMap<FunctionId, Arc<Variant>>>;
+    fn source(&self, module: VfsFile) -> Arc<String>;
     fn ast(&self, vfs_file: VfsFile) -> asena_ast::AsenaFile;
+    fn cst(&self, vfs_file: VfsFile) -> GreenTree;
     fn package_of(&self, module: ModuleRef) -> Package;
     fn vfs_file(&self, module: ModuleRef) -> VfsFile;
 
     fn module_ref(&self, module: FunctionId) -> ModuleRef;
     fn function_data(&self, name: QualifiedPath, vfs_file: VfsFile) -> Value;
     fn constructor_data(&self, name: BindingId, vfs_file: VfsFile) -> VariantResolution;
+    fn location_file(&self, loc: Loc) -> ModuleRef;
 
     fn add_path_dep(&self, vfs_file: VfsFile, module: ModuleRef) -> ();
     fn mk_global_name(&self, module: FunctionId, decl: Decl) -> Arc<Decl>;
@@ -42,6 +46,15 @@ pub trait AstDatabase {
 
 fn package_of(_db: &dyn AstDatabase, _module: ModuleRef) -> Package {
     todo!()
+}
+
+fn location_file(db: &dyn AstDatabase, loc: Loc) -> ModuleRef {
+    let path: String = loc.file.unwrap().to_str().unwrap().into();
+
+    let global_scope = db.global_scope();
+    let global_scope = global_scope.borrow();
+
+    global_scope.modules.get(&path).unwrap().clone()
 }
 
 fn constructor_data(db: &dyn AstDatabase, name: BindingId, file: VfsFile) -> VariantResolution {
@@ -76,7 +89,7 @@ fn items(db: &dyn AstDatabase, vfs_file: VfsFile) -> Arc<HashMap<FunctionId, Arc
     Arc::new(decls)
 }
 
-fn ast(db: &dyn AstDatabase, vfs_file: VfsFile) -> asena_ast::AsenaFile {
+fn source(db: &dyn AstDatabase, vfs_file: VfsFile) -> Arc<String> {
     let vfs_file = db.lookup_intern_vfs_file(vfs_file);
 
     let file = vfs_file
@@ -84,11 +97,24 @@ fn ast(db: &dyn AstDatabase, vfs_file: VfsFile) -> asena_ast::AsenaFile {
         .read_file(&vfs_file.name)
         .expect("Internal error: VFS file not found");
 
-    let lexer = Lexer::new(PathBuf::from(vfs_file.id.path), &file);
+    Arc::new(file)
+}
+
+fn cst(db: &dyn AstDatabase, vfs_file: VfsFile) -> GreenTree {
+    let source = db.source(vfs_file);
+    let data = db.lookup_intern_vfs_file(vfs_file);
+
+    let lexer = Lexer::new(PathBuf::from(data.id.path), &source);
     let parser = Parser::from(lexer).run(asena_grammar::file);
     let tree = parser.build_tree();
 
-    AsenaFile::new(tree.data)
+    tree.data.into()
+}
+
+fn ast(db: &dyn AstDatabase, vfs_file: VfsFile) -> asena_ast::AsenaFile {
+    let tree = db.cst(vfs_file);
+
+    AsenaFile::new(tree)
 }
 
 fn constructors(db: &dyn AstDatabase, f: VfsFile) -> Arc<Constructors> {

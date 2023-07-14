@@ -7,7 +7,8 @@ use asena_parser::Parser;
 #[test]
 fn it_works() {
     let code = "53 + 75 + 42";
-    let parser = Parser::from(Lexer::new(code)).run(|p| asena_grammar::expr(p, Linebreak::Cont));
+    let parser =
+        Parser::from(Lexer::new(None, code)).run(|p| asena_grammar::expr(p, Linebreak::Cont));
     let infix = Infix::new(parser.build_tree().unwrap());
 
     let lhs = infix.lhs();
