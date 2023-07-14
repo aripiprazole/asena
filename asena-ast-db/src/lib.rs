@@ -2,7 +2,7 @@ use std::{fmt::Debug, ops::Deref, sync::Arc};
 
 use asena_ast::{Decl, FunctionId};
 use im::HashMap;
-use vfs::VfsPath;
+use vfs::VfsFile;
 
 #[derive(Default, Clone, Copy, Hash, Eq, PartialEq, PartialOrd, Ord)]
 pub struct DeclId(usize);
@@ -11,7 +11,7 @@ pub struct DeclId(usize);
 pub enum ModuleRef {
     #[default]
     NotFound,
-    Found(VfsPath),
+    Found(VfsFile),
 }
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq, PartialOrd, Ord)]

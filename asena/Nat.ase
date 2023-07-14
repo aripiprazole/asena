@@ -1,0 +1,6 @@
+enum Nat {
+  Zero,
+  Succ : (prev: Nat) -> Nat,
+}
+
+add : Nat -> Nat -> Nat

@@ -3,13 +3,17 @@ use std::{borrow::Borrow, cell::RefCell, rc::Rc, sync::Arc};
 use asena_ast::*;
 use asena_leaf::ast::Lexeme;
 
-use crate::{db::AstDatabase, vfs::VfsFile};
+use crate::{
+    db::AstDatabase,
+    vfs::{VfsFile, VfsFileData},
+    ModuleRef,
+};
 
 #[derive(Default, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ScopeKind {
     #[default]
     Global,
-    File(Arc<VfsFile>),
+    File(Arc<VfsFileData>),
 }
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
@@ -38,12 +42,28 @@ pub struct ScopeData {
     pub constructors: im::HashMap<FunctionId, Arc<Variant>>,
     pub functions: im::HashMap<FunctionId, Value>,
     pub variables: im::HashMap<FunctionId, usize>,
+    pub modules: im::HashMap<String, ModuleRef>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub struct DeclWithId {
+    pub id: salsa::InternId,
+}
+
+impl salsa::InternKey for DeclWithId {
+    fn from_intern_id(id: salsa::InternId) -> Self {
+        Self { id }
+    }
+
+    fn as_intern_id(&self) -> salsa::InternId {
+        self.id
+    }
 }
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq)]
 pub enum VariantResolution {
     None,
-    Binding(Lexeme<Local>),
+    Binding(Box<Lexeme<Local>>),
     Variant(Arc<Variant>),
 }
 
@@ -120,7 +140,7 @@ impl ScopeData {
             // if it is not a constructor, it is a variable binding: Vec.cons x xs
             //                                                                ^ ^^
             None if name.is_ident().is_some() => {
-                VariantResolution::Binding(name.is_ident().unwrap())
+                VariantResolution::Binding(Box::new(name.is_ident().unwrap()))
             }
 
             // if it is a constructor and it is not found, report an error
@@ -128,7 +148,7 @@ impl ScopeData {
         }
     }
 
-    pub fn import<'a, P>(&mut self, db: &dyn AstDatabase, file: Arc<VfsFile>, prefix: P)
+    pub fn import<'a, P>(&mut self, db: &dyn AstDatabase, file: VfsFile, prefix: P)
     where
         P: Into<Option<FunctionId>> + Clone + 'a,
     {

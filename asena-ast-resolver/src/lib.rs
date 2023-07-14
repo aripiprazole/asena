@@ -36,7 +36,7 @@ pub enum PatResolution {
     #[default]
     Unresolved,
     Variant(Arc<Variant>),
-    LocalBinding(Lexeme<Local>),
+    LocalBinding(Box<Lexeme<Local>>),
 }
 
 ast_key! {
