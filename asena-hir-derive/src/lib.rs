@@ -13,11 +13,16 @@ pub fn hir_node(args: TokenStream, input: TokenStream) -> TokenStream {
 
     let name = input.ident.clone();
     let kind = Ident::new(&format!("{}Kind", args), Span::call_site());
+    let node_name = format!("{args}").replace("Hir", "");
+    let simplified_name = Ident::new(
+        &name.to_string().replace(&node_name, "").replace("Hir", ""),
+        Span::call_site(),
+    );
 
     TokenStream::from(quote! {
         impl From<#name> for #kind {
             fn from(node: #name) -> Self {
-                todo!()
+                #kind::#simplified_name(node)
             }
         }
 
@@ -32,12 +37,15 @@ pub fn hir_kind(args: TokenStream, input: TokenStream) -> TokenStream {
     let input = syn::parse_macro_input!(input as syn::ItemEnum);
 
     let name = input.ident.clone();
-    let kind = Ident::new(&format!("{}Data", args), Span::call_site());
+    let data = Ident::new(&format!("{}Data", args), Span::call_site());
 
     TokenStream::from(quote! {
-        impl From<#name> for #kind {
-            fn from(node: #name) -> Self {
-                todo!()
+        impl From<#name> for #data {
+            fn from(kind: #name) -> Self {
+                Self {
+                    kind,
+                    ..Self::default()
+                }
             }
         }
 

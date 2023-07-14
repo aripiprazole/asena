@@ -19,8 +19,8 @@ pub struct HirAttrExternal {
 pub enum HirAttrKind {
     #[default]
     Error,
-    HirAttrInline(HirAttrInline),
-    HirAttrExternal(HirAttrExternal),
+    Inline(HirAttrInline),
+    External(HirAttrExternal),
 }
 
 #[hir_struct]

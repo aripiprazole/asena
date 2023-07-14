@@ -25,11 +25,11 @@ pub struct HirValueExpr(pub HirExpr);
 pub enum HirValueKind {
     #[default]
     Error,
-    HirValueUnit,
-    HirValueBlock(HirValueBlock),
-    HirValueExpr(HirValueExpr),
-    HirMonad(HirMonad),
-    HirInstr(HirInstr),
+    Unit,
+    Block(HirValueBlock),
+    Expr(HirValueExpr),
+    Monad(HirMonad),
+    Instr(HirInstr),
 }
 
 #[hir_struct]
@@ -47,7 +47,7 @@ impl HirValue {
 
     pub fn unit(db: &dyn HirInterner) -> HirValue {
         db.intern_value(HirValueData {
-            kind: HirValueKind::HirValueUnit,
+            kind: HirValueKind::Unit,
             span: Default::default(),
         })
     }

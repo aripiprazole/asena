@@ -25,8 +25,8 @@ pub enum HirTypeKind {
     Error,
     Unit,
     This,
-    HirTypeName(HirTypeName),
-    HirTypeApp(HirTypeApp),
+    Name(HirTypeName),
+    App(HirTypeApp),
 }
 
 #[hir_struct]

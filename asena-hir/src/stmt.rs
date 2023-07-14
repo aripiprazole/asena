@@ -31,10 +31,10 @@ pub struct HirStmtValue(pub HirValue);
 pub enum HirStmtKind {
     #[default]
     Error,
-    HirStmtAsk(HirStmtAsk),
-    HirStmtLet(HirStmtLet),
-    HirStmtReturn(HirStmtReturn),
-    HirStmtValue(HirStmtValue),
+    Ask(HirStmtAsk),
+    Let(HirStmtLet),
+    Return(HirStmtReturn),
+    Value(HirStmtValue),
 }
 
 #[hir_struct]
