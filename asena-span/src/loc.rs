@@ -18,7 +18,7 @@ impl Loc {
         Self {
             file: None,
             range: TextRange::new(start, end),
-            expanded: Expanded::NotExpanded,
+            expanded: Expanded::Unexpanded,
         }
     }
 
@@ -26,7 +26,7 @@ impl Loc {
         Self {
             file: file.into(),
             range: TextRange::new(start, end),
-            expanded: Expanded::NotExpanded,
+            expanded: Expanded::Unexpanded,
         }
     }
 
@@ -39,7 +39,7 @@ impl Loc {
 pub enum Expanded {
     Expanded,
     #[default]
-    NotExpanded,
+    Unexpanded,
 }
 
 #[derive(Default, Clone, PartialEq, Eq, Hash)]
@@ -117,11 +117,20 @@ impl Debug for TextRange {
 
 impl Debug for Loc {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Loc")
-            .field("file", &self.file)
-            .field("range", &self.range)
-            .field("expanded", &self.expanded)
-            .finish()
+        match self.expanded {
+            Expanded::Expanded => match self.file {
+                Some(ref file) => write!(f, "{:?}:{}", self.range, file.to_str().unwrap()),
+                None => write!(f, "{:?}", self.range),
+            },
+            Expanded::Unexpanded => match self.file {
+                Some(ref file) => {
+                    let file = file.to_str().unwrap();
+
+                    write!(f, "[ {:?} : {file} ]", self.range)
+                }
+                None => write!(f, "[ {:?} ]", self.range),
+            },
+        }
     }
 }
 
