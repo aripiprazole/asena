@@ -1,6 +1,7 @@
 use std::{
     fmt::Debug,
     hash::Hash,
+    path::PathBuf,
     sync::{Arc, RwLock},
 };
 
@@ -58,7 +59,7 @@ impl Clone for VfsFileData {
 
 #[derive(Debug, Default, Clone, Hash, Eq, PartialEq, PartialOrd, Ord)]
 pub struct VfsPath {
-    pub path: String,
+    pub path: PathBuf,
 }
 
 impl FileSystem {
@@ -106,8 +107,6 @@ impl Debug for VfsFileData {
 
 impl From<&str> for VfsPath {
     fn from(value: &str) -> Self {
-        Self {
-            path: value.to_string(),
-        }
+        Self { path: value.into() }
     }
 }

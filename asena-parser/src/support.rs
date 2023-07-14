@@ -5,7 +5,7 @@ use crate::error::ParseError;
 
 use asena_leaf::node::{kind::TokenKind, Token, TreeKind};
 use asena_report::{Diagnostic, DiagnosticKind, Quickfix};
-use asena_span::Spanned;
+use asena_span::{Span, Spanned};
 
 use super::event::{Event, MarkClosed, MarkOpened};
 use super::Parser;
@@ -42,11 +42,10 @@ impl<'a> Parser<'a> {
         // Build tree position with the initial state, and the current
         let initial = mark.span();
         let current = self.peek().into_owned();
-        let position = initial.into_ranged().unwrap_or_default().start
-            ..current.span.into_ranged().unwrap_or_default().end;
+        let position = initial.on(current.span);
 
         // Replace the state in the tree builder
-        self.events[mark.index()] = Event::Open(Spanned::new(position.into(), kind));
+        self.events[mark.index()] = Event::Open(Spanned::new(position, kind));
         self.events.push(Event::Close);
 
         mark.0.defuse();

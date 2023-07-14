@@ -159,14 +159,19 @@ impl<'a> Lexer<'a> {
     pub fn new<I: Into<Option<PathBuf>>>(path: I, code: &'a str) -> Self {
         let (tokens, errs) = lexer().parse(code).into_output_errors();
         let tokens = map_full_text(code, tokens.unwrap_or_default());
+        let path: Option<PathBuf> = path.into();
 
         Self {
             index: 0,
-            path: path.into(),
+            path: path.clone(),
             source: code,
             tokens: tokens
                 .into_iter()
-                .map(|(value, span)| Spanned::new(span.into_range().into(), value))
+                .map(|(value, span)| {
+                    let range = span.into_range();
+                    let loc = Loc::new(path.clone(), range.start, range.end - 1);
+                    Spanned::new(loc, value)
+                })
                 .collect(),
             errors: errs,
         }

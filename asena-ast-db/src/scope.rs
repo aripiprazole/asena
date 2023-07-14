@@ -1,4 +1,4 @@
-use std::{borrow::Borrow, cell::RefCell, rc::Rc, sync::Arc};
+use std::{borrow::Borrow, cell::RefCell, path::PathBuf, rc::Rc, sync::Arc};
 
 use asena_ast::*;
 use asena_leaf::ast::Lexeme;
@@ -42,7 +42,9 @@ pub struct ScopeData {
     pub constructors: im::HashMap<FunctionId, Arc<Variant>>,
     pub functions: im::HashMap<FunctionId, Value>,
     pub variables: im::HashMap<FunctionId, usize>,
+
     pub modules: im::HashMap<String, ModuleRef>,
+    pub paths: im::HashMap<PathBuf, ModuleRef>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
