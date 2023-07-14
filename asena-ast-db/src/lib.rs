@@ -7,8 +7,9 @@ use vfs::VfsPath;
 #[derive(Default, Clone, Copy, Hash, Eq, PartialEq, PartialOrd, Ord)]
 pub struct DeclId(usize);
 
-#[derive(Debug, Hash, Clone)]
+#[derive(Default, Debug, Hash, Clone, PartialEq, Eq)]
 pub enum ModuleRef {
+    #[default]
     NotFound,
     Found(VfsPath),
 }
@@ -54,9 +55,7 @@ impl<T> Deref for Interned<T> {
     }
 }
 
-pub mod database;
-pub mod driver;
-pub mod implementation;
+pub mod db;
 pub mod package;
 pub mod scope;
 pub mod vfs;

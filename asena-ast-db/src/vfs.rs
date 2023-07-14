@@ -1,9 +1,10 @@
 use std::{
     fmt::Debug,
+    hash::Hash,
     sync::{Arc, RwLock},
 };
 
-use crate::{driver::Driver, package::Package, scope::ScopeData};
+use crate::{db::AstDatabase, package::Package, scope::ScopeData};
 
 #[derive(Debug, Default)]
 pub struct FileSystem {}
@@ -14,6 +15,32 @@ pub struct VfsFile {
     pub pkg: Package,
     pub vfs: Arc<FileSystem>,
     pub scope: RwLock<ScopeData>,
+}
+
+impl Eq for VfsFile {}
+
+impl PartialEq for VfsFile {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
+    }
+}
+
+impl Hash for VfsFile {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.id.hash(state);
+    }
+}
+
+impl Clone for VfsFile {
+    fn clone(&self) -> Self {
+        Self {
+            id: self.id.clone(),
+            name: self.name.clone(),
+            pkg: self.pkg.clone(),
+            vfs: self.vfs.clone(),
+            scope: RwLock::new(self.scope.read().unwrap().clone()),
+        }
+    }
 }
 
 #[derive(Debug, Default, Clone, Hash, Eq, PartialEq, PartialOrd, Ord)]
@@ -28,7 +55,7 @@ impl FileSystem {
 }
 
 impl VfsFile {
-    pub fn new(db: &Driver, name: &str, path: VfsPath, pkg: Package) -> Arc<Self> {
+    pub fn new(db: &dyn AstDatabase, name: &str, path: VfsPath, pkg: Package) -> Arc<Self> {
         let data = db.package_data(pkg);
 
         db.intern_vfs_file(Self {

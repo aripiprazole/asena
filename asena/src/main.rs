@@ -4,7 +4,13 @@
 #![feature(lazy_cell)]
 #![feature(downcast_unchecked)]
 
-use asena_highlight::VirtualFile;
+use std::path::PathBuf;
+
+use asena_ast_db::db::AstDatabaseStorage;
+use asena_ast_lowering::db::AstLowerrerStorage;
+use asena_grammar::Linebreak;
+use asena_highlight::{Annotator, VirtualFile};
+use asena_lexer::Lexer;
 use clap::{Args, Parser, Subcommand};
 
 #[derive(Parser, Debug)]
@@ -58,25 +64,26 @@ pub enum Command {
 pub fn run_cli() {
     let cli = Cli::parse();
 
+    use asena_parser::Parser;
     match cli.command {
         Command::Rename(..) => todo!(),
         Command::Search(..) => todo!(),
         Command::Highlight(args) if !args.semantic => {
             let path = args.file;
-            let file = std::fs::read_to_string(path).unwrap();
-            let lexer = asena_lexer::Lexer::new(&file);
-            let parser = asena_parser::Parser::from(lexer).run(asena_grammar::file);
+            let file = std::fs::read_to_string(path.clone()).unwrap();
+            let lexer = Lexer::new(PathBuf::from(path), &file);
+            let parser = Parser::from(lexer).run(asena_grammar::file);
             let tree = parser.build_tree();
             let file = VirtualFile::from(tree.data);
             println!("{file}")
         }
         Command::Highlight(args) => {
             let path = args.file;
-            let file = std::fs::read_to_string(path).unwrap();
-            let lexer = asena_lexer::Lexer::new(&file);
-            let parser = asena_parser::Parser::from(lexer).run(asena_grammar::file);
+            let file = std::fs::read_to_string(path.clone()).unwrap();
+            let lexer = Lexer::new(PathBuf::from(path), &file);
+            let parser = Parser::from(lexer).run(asena_grammar::file);
             let tree = parser.build_tree();
-            let annotator = asena_highlight::Annotator::new(asena_highlight::VirtualFile {
+            let annotator = Annotator::new(asena_highlight::VirtualFile {
                 contents: tree.data,
             });
             println!("{}", annotator.run_highlight());
@@ -84,9 +91,10 @@ pub fn run_cli() {
         Command::Eval(args) => {
             let path = args.file;
             let file = std::fs::read_to_string(path).unwrap();
-            let lexer = asena_lexer::Lexer::new(&file);
-            let mut parser = asena_parser::Parser::from(lexer);
-            asena_grammar::expr(&mut parser, asena_grammar::Linebreak::Cont);
+            let lexer = Lexer::new(PathBuf::from(path), &file);
+            let mut parser = Parser::from(lexer).run(|p| {
+                asena_grammar::expr(p, Linebreak::Cont);
+            });
             let tree = parser.build_tree();
             println!("{:#?}", tree.data());
         }
@@ -95,4 +103,65 @@ pub fn run_cli() {
 
 fn main() {
     run_cli();
+}
+
+#[salsa::database(AstDatabaseStorage, AstLowerrerStorage)]
+#[derive(Default)]
+pub struct DatabaseImpl {
+    pub runtime: salsa::Storage<DatabaseImpl>,
+}
+
+impl salsa::Database for DatabaseImpl {}
+
+#[cfg(test)]
+mod tests {
+    use std::{cell::RefCell, rc::Rc, sync::Arc};
+
+    use asena_ast_db::{db::AstDatabase, driver::Driver, implementation::*, package::*, vfs::*};
+    use asena_grammar::parse_asena_file;
+    use asena_prec::{default_prec_table, InfixHandler, PrecReorder};
+
+    use asena_ast_resolver::decl::AstResolver;
+
+    use crate::DatabaseImpl;
+
+    #[test]
+    fn pipeline_works() {
+        let mut prec_table = default_prec_table();
+
+        let mut db = DatabaseImpl::default();
+        let local_pkg = Package::new(&db, "Local", "0.0.0", Arc::new(Default::default()));
+
+        db.set_global_scope(Rc::new(RefCell::new(Default::default())));
+
+        let file = VfsFile::new(&db, "Test", "./Test.ase".into(), local_pkg);
+        VfsFile::new(&db, "Nat", "./Nat.ase".into(), local_pkg);
+        VfsFile::new(&db, "IO", "./IO.ase".into(), local_pkg);
+
+        let mut asena_file = parse_asena_file!("../Test.ase");
+
+        global_scope.borrow_mut().import(&db, file.clone(), None);
+
+        db.abstract_syntax_tree(file.clone())
+            .walk_on(InfixHandler {
+                prec_table: &mut prec_table,
+                reporter: &mut asena_file.reporter,
+            })
+            .walk_on(PrecReorder {
+                prec_table: &prec_table,
+                reporter: &mut asena_file.reporter,
+            })
+            .walk_on(AstResolver {
+                db,
+                file,
+                binding_groups: Default::default(),
+                enum_declarations: Default::default(),
+                class_declarations: Default::default(),
+                trait_declarations: Default::default(),
+                instance_declarations: Default::default(),
+                reporter: &mut asena_file.reporter,
+            });
+
+        asena_file.reporter.dump();
+    }
 }

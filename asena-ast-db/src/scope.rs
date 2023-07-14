@@ -3,16 +3,16 @@ use std::{borrow::Borrow, cell::RefCell, rc::Rc, sync::Arc};
 use asena_ast::*;
 use asena_leaf::ast::Lexeme;
 
-use crate::{database::AstDatabase, driver::HasDB, vfs::VfsFile};
+use crate::{db::AstDatabase, vfs::VfsFile};
 
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ScopeKind {
     #[default]
     Global,
     File(Arc<VfsFile>),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub enum Value {
     None,
     Synthetic,
@@ -24,14 +24,14 @@ pub enum Value {
     Expr(Arc<Expr>),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub enum TypeValue {
     Decl(Arc<Decl>),
     Synthetic,
     None,
 }
 
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Debug, Clone, Eq, PartialEq, Hash)]
 pub struct ScopeData {
     pub kind: ScopeKind,
     pub types: im::HashMap<FunctionId, TypeValue>,
@@ -40,7 +40,7 @@ pub struct ScopeData {
     pub variables: im::HashMap<FunctionId, usize>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug, Hash, PartialEq, Eq)]
 pub enum VariantResolution {
     None,
     Binding(Lexeme<Local>),
@@ -128,12 +128,11 @@ impl ScopeData {
         }
     }
 
-    pub fn import<'a, B: HasDB<'a>, P>(&mut self, db: B, file: Arc<VfsFile>, prefix: P)
+    pub fn import<'a, P>(&mut self, db: &dyn AstDatabase, file: Arc<VfsFile>, prefix: P)
     where
-        P: Into<Option<FunctionId>>,
+        P: Into<Option<FunctionId>> + Clone + 'a,
     {
         let prefix: Option<_> = prefix.into();
-        let db: &dyn AstDatabase = db.db();
         for (name, decl) in db.items(file).iter() {
             let name = FunctionId::optional_path(prefix.clone(), name.clone());
 
@@ -142,13 +141,13 @@ impl ScopeData {
                     let function = Value::Sign(Arc::new(signature.clone()));
                     self.functions.insert(name.clone(), function);
                 }
-                Decl::Enum(enum_decl) => {
+                Decl::Enum(ref enum_decl) => {
                     self.create_enum(enum_decl, prefix.clone());
                 }
-                Decl::Class(class_decl) => {
+                Decl::Class(ref class_decl) => {
                     self.create_class(class_decl, prefix.clone());
                 }
-                Decl::Trait(trait_decl) => {
+                Decl::Trait(ref trait_decl) => {
                     self.create_trait(trait_decl, prefix.clone());
                 }
                 Decl::Assign(_) | Decl::Instance(_) => {
