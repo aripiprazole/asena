@@ -4,7 +4,7 @@ use asena_ast::*;
 use asena_hir::expr::data::HirBranch;
 use asena_hir::expr::{data::HirCallee, *};
 use asena_hir::top_level::data::{HirDeclaration, HirSignature};
-use asena_hir::top_level::{HirBindingGroup, HirTopLevelData, HirTopLevelKind};
+use asena_hir::top_level::HirBindingGroup;
 use asena_hir::{literal::*, Name};
 use asena_hir::{value::*, HirLoc};
 use asena_leaf::ast::Located;
@@ -12,7 +12,7 @@ use db::AstLowerrer;
 use decl::compute_parameters;
 use error::AstLoweringError::*;
 use expr::ExprLowering;
-use im::{hashset, HashMap, HashSet};
+use im::{hashset, HashMap};
 use itertools::Itertools;
 
 use crate::pattern::build_patterns;
@@ -28,51 +28,7 @@ pub mod types;
 
 type Signatures = HashMap<Name, (HirLoc, HirBindingGroup)>;
 
-pub fn make_hir(db: &dyn AstLowerrer) {
-    let file = AsenaFile::default();
-
-    let mut declarations = HashSet::new();
-    let mut signatures = HashMap::new();
-
-    for decl in file.declarations() {
-        match decl {
-            Decl::Error => {}
-            Decl::Use(_) => {}
-            Decl::Command(_) => {
-                // TODO: handle commands
-            }
-            Decl::Assign(ref decl) => make_assign(db, &mut signatures, decl),
-            Decl::Signature(ref decl) => make_signature(db, &mut signatures, decl),
-            Decl::Class(class_decl) => {
-                declarations.insert(db.lower_class(class_decl));
-            }
-            Decl::Instance(instance_decl) => {
-                declarations.insert(db.lower_instance(instance_decl));
-            }
-            Decl::Trait(trait_decl) => {
-                declarations.insert(db.lower_trait(trait_decl));
-            }
-            Decl::Enum(enum_decl) => {
-                declarations.insert(db.lower_enum(enum_decl));
-            }
-        };
-    }
-
-    for (span, group) in signatures.values().cloned() {
-        let top_level = db.intern_top_level(HirTopLevelData {
-            kind: HirTopLevelKind::from(group),
-            attributes: vec![],
-            docs: vec![],
-            span,
-        });
-
-        declarations.insert(top_level);
-    }
-
-    // *self.file.declarations.write().unwrap() = declarations;
-}
-
-fn make_signature(db: &dyn AstLowerrer, signatures: &mut Signatures, decl: &Signature) {
+pub(crate) fn make_signature(db: &dyn AstLowerrer, signatures: &mut Signatures, decl: &Signature) {
     let name = db.intern_name(decl.name().to_fn_id().to_string());
     let span = make_location(db, decl);
 
@@ -110,7 +66,7 @@ fn make_signature(db: &dyn AstLowerrer, signatures: &mut Signatures, decl: &Sign
     signatures.insert(name, (span, group));
 }
 
-fn make_assign(db: &dyn AstLowerrer, signatures: &mut Signatures, decl: &Assign) {
+pub(crate) fn make_assign(db: &dyn AstLowerrer, signatures: &mut Signatures, decl: &Assign) {
     let name = db.intern_name(decl.name().to_fn_id().to_string());
     let span = make_location(db, decl);
 
@@ -131,7 +87,7 @@ fn make_assign(db: &dyn AstLowerrer, signatures: &mut Signatures, decl: &Assign)
     });
 }
 
-fn new_default_group(name: Name) -> HirBindingGroup {
+pub(crate) fn new_default_group(name: Name) -> HirBindingGroup {
     HirBindingGroup {
         signature: HirSignature {
             name,
@@ -142,11 +98,11 @@ fn new_default_group(name: Name) -> HirBindingGroup {
     }
 }
 
-pub fn make_location(db: &dyn AstLowerrer, node: &impl Located) -> HirLoc {
-    let span = node.location().into_owned();
+pub fn make_location(_db: &dyn AstLowerrer, node: &impl Located) -> HirLoc {
+    let _span = node.location().into_owned();
     // let file = self.file.clone();
 
-    todo!()
+    HirLoc
 }
 
 pub fn lower_value(db: &dyn AstLowerrer, value: Expr) -> HirValue {

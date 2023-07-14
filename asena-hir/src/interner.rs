@@ -9,27 +9,27 @@ use crate::Name;
 
 #[salsa::query_group(HirStorage)]
 pub trait HirInterner {
-    #[salsa::input]
+    #[salsa::interned]
     fn intern_name(&self, data: String) -> Name;
 
-    #[salsa::input]
+    #[salsa::interned]
     fn intern_attr(&self, data: HirAttrData) -> HirAttr;
 
-    #[salsa::input]
+    #[salsa::interned]
     fn intern_expr(&self, data: HirExprData) -> HirExpr;
 
-    #[salsa::input]
+    #[salsa::interned]
     fn intern_pattern(&self, data: HirPatternData) -> HirPattern;
 
-    #[salsa::input]
+    #[salsa::interned]
     fn intern_stmt(&self, data: HirStmtData) -> HirStmt;
 
-    #[salsa::input]
+    #[salsa::interned]
     fn intern_type(&self, data: HirTypeData) -> HirType;
 
-    #[salsa::input]
+    #[salsa::interned]
     fn intern_value(&self, data: HirValueData) -> HirValue;
 
-    #[salsa::input]
+    #[salsa::interned]
     fn intern_top_level(&self, data: HirTopLevelData) -> HirTopLevel;
 }

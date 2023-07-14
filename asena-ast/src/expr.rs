@@ -310,7 +310,7 @@ pub struct Lam(GreenTree);
 impl Lam {
     #[ast_leaf]
     pub fn parameters(&self) -> Vec<LamParameter> {
-        self.filter()
+        self.0.filter()
     }
 
     #[ast_leaf]

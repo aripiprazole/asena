@@ -137,6 +137,7 @@ mod tests {
 
     use asena_ast::db::ReporterDatabase;
     use asena_ast_db::{db::AstDatabase, package::*, vfs::*};
+    use asena_ast_lowering::db::AstLowerrer;
     use asena_grammar::parse_asena_file;
     use asena_prec::{default_prec_table, PrecDatabase};
 
@@ -161,8 +162,9 @@ mod tests {
         let file = db.ast(file);
         let file = db.infix_commands(file);
         let file = db.ordered_prec(file);
-        let _ = file;
+        let hir = db.hir_file(file);
 
         db.reporter().dump();
+        println!("{hir:?}");
     }
 }
