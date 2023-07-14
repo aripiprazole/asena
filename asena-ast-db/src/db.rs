@@ -18,7 +18,7 @@ type Constructors = HashMap<FunctionId, Arc<Variant>>;
 pub trait AstDatabase {
     fn items(&self, module: VfsFile) -> Arc<HashMap<FunctionId, Arc<Decl>>>;
     fn constructors(&self, module: VfsFile) -> Arc<HashMap<FunctionId, Arc<Variant>>>;
-    fn ast(&self, vfs_file: VfsFile) -> Arc<asena_ast::AsenaFile>;
+    fn ast(&self, vfs_file: VfsFile) -> asena_ast::AsenaFile;
     fn package_of(&self, module: ModuleRef) -> Package;
     fn vfs_file(&self, module: ModuleRef) -> VfsFile;
 
@@ -76,7 +76,7 @@ fn items(db: &dyn AstDatabase, vfs_file: VfsFile) -> Arc<HashMap<FunctionId, Arc
     Arc::new(decls)
 }
 
-fn ast(db: &dyn AstDatabase, vfs_file: VfsFile) -> Arc<asena_ast::AsenaFile> {
+fn ast(db: &dyn AstDatabase, vfs_file: VfsFile) -> asena_ast::AsenaFile {
     let vfs_file = db.lookup_intern_vfs_file(vfs_file);
 
     let file = vfs_file
@@ -88,7 +88,7 @@ fn ast(db: &dyn AstDatabase, vfs_file: VfsFile) -> Arc<asena_ast::AsenaFile> {
     let parser = Parser::from(lexer).run(asena_grammar::file);
     let tree = parser.build_tree();
 
-    Arc::new(AsenaFile::new(tree.data))
+    AsenaFile::new(tree.data)
 }
 
 fn constructors(db: &dyn AstDatabase, f: VfsFile) -> Arc<Constructors> {
@@ -133,7 +133,6 @@ fn mk_vfs_file(db: &dyn AstDatabase, vfs_file: VfsFileData) -> VfsFile {
     let module = ModuleRef::Found(id);
 
     global_scope.modules.insert(name.to_string(), module);
-
     global_scope.import(db, id, Some(name));
 
     id

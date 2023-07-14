@@ -4,16 +4,18 @@ use asena_ast::*;
 use im::HashMap;
 
 pub mod commands;
+pub mod db;
 
 pub use commands::*;
+pub use db::*;
 
 pub struct PrecReorder<'a> {
     pub prec_table: &'a HashMap<FunctionId, Entry>,
-    pub reporter: &'a mut Reporter,
+    pub reporter: &'a Reporter,
 }
 
 impl Reports for PrecReorder<'_> {
-    fn reports(&mut self) -> &mut Reporter {
+    fn reports(&mut self) -> &Reporter {
         self.reporter
     }
 }

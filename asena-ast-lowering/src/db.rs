@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use asena_ast::{reporter::Reporter, *};
+use asena_ast::{db::ReporterDatabase, reporter::Reporter, *};
 use asena_hir::{
     expr::data::HirBranch, hir_type::HirType, interner::HirInterner, pattern::HirPattern,
     top_level::HirTopLevel, value::HirValue,
@@ -9,10 +9,7 @@ use asena_hir::{
 use crate::stmt::Instr;
 
 #[salsa::query_group(AstLowerrerStorage)]
-pub trait AstLowerrer: HirInterner {
-    #[salsa::input]
-    fn reporter(&self) -> Arc<Reporter>;
-
+pub trait AstLowerrer: HirInterner + ReporterDatabase {
     #[salsa::invoke(crate::decl::r#trait::lower_trait)]
     fn lower_trait(&self, decl: Trait) -> HirTopLevel;
 

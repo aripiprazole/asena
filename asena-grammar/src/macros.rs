@@ -54,7 +54,7 @@ macro_rules! asena_stmt {
 macro_rules! asena_file {
     ($($s:tt)*) => {{
         let string = stringify!($($s)*);
-        let file = std::path::PathBuf::from($file);
+        let file = std::path::PathBuf::from("None");
 
         $crate::Reportable::new(string, asena_parser::Parser::from(asena_lexer::Lexer::new(file, string))
             .run($crate::file)
