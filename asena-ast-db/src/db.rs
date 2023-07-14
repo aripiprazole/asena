@@ -1,5 +1,4 @@
 use std::cell::RefCell;
-use std::path::PathBuf;
 use std::rc::Rc;
 
 use asena_ast::{AsenaFile, BindingId, GlobalName, QualifiedPath, Variant};
@@ -108,7 +107,7 @@ fn cst(db: &dyn AstDatabase, vfs_file: VfsFile) -> GreenTree {
     let source = db.source(vfs_file);
     let data = db.lookup_intern_vfs_file(vfs_file);
 
-    let lexer = Lexer::new(PathBuf::from(data.id.path), &source);
+    let lexer = Lexer::new(data.id.path, &source);
     let parser = Parser::from(lexer).run(asena_grammar::file);
     let tree = parser.build_tree();
 
@@ -127,8 +126,8 @@ fn constructors(db: &dyn AstDatabase, f: VfsFile) -> Arc<Constructors> {
     let ast = db.ast(f);
     for decl in ast.declarations() {
         let Decl::Enum(enum_decl) = decl else {
-                continue;
-            };
+            continue;
+        };
 
         variants.extend(enum_decl.constructors());
     }
