@@ -65,9 +65,7 @@ impl FileSystem {
     pub fn read_file(&self, path: &str) -> Option<String> {
         std::fs::read_to_string(format!("{path}.ase"))
             .unwrap_or_else(|_| {
-                println!("Failed to read file: {}", path);
-
-                Default::default()
+                panic!("Failed to read file: {}", path);
             })
             .into()
     }
@@ -78,7 +76,7 @@ impl VfsFileData {
     pub fn new(db: &dyn AstDatabase, name: &str, path: VfsPath, pkg: Package) -> VfsFile {
         let data = db.lookup_intern_package(pkg);
 
-        db.intern_vfs_file(Self {
+        db.mk_vfs_file(Self {
             id: path,
             vfs: data.vfs,
             pkg,

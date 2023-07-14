@@ -13,7 +13,7 @@ pub struct Reporter {
 }
 
 pub trait Reports {
-    fn reports(&mut self) -> &mut Reporter;
+    fn reports(&mut self) -> &Reporter;
 }
 
 impl Clone for Reporter {
@@ -45,7 +45,7 @@ impl Reporter {
         ));
     }
 
-    pub fn dump(&mut self) {
+    pub fn dump(&self) {
         if self.errors.lock().unwrap().is_empty() {
             return;
         }

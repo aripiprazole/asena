@@ -36,7 +36,6 @@ impl AsenaFile {
         self
     }
 
-    /// I hate my life
     pub fn walk_on<T: AsenaVisitor<()>>(self: Arc<Self>, mut visitor: T) -> Arc<Self> {
         self.walk(&mut visitor::new_walker(&mut visitor));
         self
@@ -56,6 +55,7 @@ pub use traits::function::*;
 pub use visitor::*;
 
 pub mod body;
+pub mod db;
 pub mod decl;
 pub mod expr;
 pub mod identifier;

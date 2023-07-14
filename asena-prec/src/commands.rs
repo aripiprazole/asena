@@ -8,11 +8,11 @@ use im::HashMap;
 
 pub struct InfixHandler<'a> {
     pub prec_table: &'a mut HashMap<FunctionId, Entry>,
-    pub reporter: &'a mut Reporter,
+    pub reporter: &'a Reporter,
 }
 
 impl Reports for InfixHandler<'_> {
-    fn reports(&mut self) -> &mut Reporter {
+    fn reports(&mut self) -> &Reporter {
         self.reporter
     }
 }

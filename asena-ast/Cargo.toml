@@ -11,4 +11,5 @@ asena-report = {path = "../asena-report"}
 asena-span = {path = "../asena-span"}
 if_chain = "1.0.2"
 im = "15.1.0"
+salsa = "0.17.0-pre.2"
 thiserror = "1.0.40"

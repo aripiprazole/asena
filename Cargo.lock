@@ -102,6 +102,7 @@ dependencies = [
  "asena-span",
  "if_chain",
  "im",
+ "salsa",
  "thiserror",
 ]
 
@@ -386,6 +387,7 @@ dependencies = [
  "fxhash",
  "im",
  "itertools",
+ "salsa",
 ]
 
 [[package]]

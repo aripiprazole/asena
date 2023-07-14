@@ -6,12 +6,14 @@
 
 use std::{path::PathBuf, sync::Mutex};
 
+use asena_ast::db::ReporterStorage;
 use asena_ast_db::db::AstDatabaseStorage;
 use asena_ast_lowering::db::AstLowerrerStorage;
 use asena_grammar::Linebreak;
 use asena_highlight::{Annotator, VirtualFile};
 use asena_hir::interner::HirStorage;
 use asena_lexer::Lexer;
+use asena_prec::db::PrecStorage;
 use clap::{Args, Parser, Subcommand};
 
 #[derive(Parser, Debug)]
@@ -106,7 +108,13 @@ fn main() {
     run_cli();
 }
 
-#[salsa::database(AstDatabaseStorage, AstLowerrerStorage, HirStorage)]
+#[salsa::database(
+    ReporterStorage,
+    PrecStorage,
+    AstDatabaseStorage,
+    AstLowerrerStorage,
+    HirStorage
+)]
 #[derive(Default)]
 pub struct DatabaseImpl {
     pub storage: salsa::Storage<DatabaseImpl>,
@@ -121,21 +129,26 @@ impl salsa::Database for DatabaseImpl {
 
 #[cfg(test)]
 mod tests {
-    use std::{cell::RefCell, rc::Rc, sync::Arc};
+    use std::{
+        cell::RefCell,
+        rc::Rc,
+        sync::{Arc, RwLock},
+    };
 
+    use asena_ast::db::ReporterDatabase;
     use asena_ast_db::{db::AstDatabase, package::*, vfs::*};
     use asena_grammar::parse_asena_file;
-    use asena_prec::{default_prec_table, InfixHandler, PrecReorder};
-
-    use asena_ast_resolver::decl::AstResolver;
+    use asena_prec::{default_prec_table, PrecDatabase};
 
     use crate::DatabaseImpl;
 
     #[test]
     fn pipeline_works() {
-        let mut prec_table = default_prec_table();
+        let asena_file = parse_asena_file!("../Test.ase");
 
         let mut db = DatabaseImpl::default();
+        db.set_reporter(Arc::new(asena_file.reporter));
+        db.set_prec_table(Arc::new(RwLock::new(default_prec_table())));
         db.set_global_scope(Rc::new(RefCell::new(Default::default())));
 
         let local_pkg = Package::new(&db, "Local", "0.0.0", Arc::new(Default::default()));
@@ -143,32 +156,13 @@ mod tests {
         VfsFileData::new(&db, "Nat", "./Nat.ase".into(), local_pkg);
         VfsFileData::new(&db, "IO", "./IO.ase".into(), local_pkg);
 
-        let mut asena_file = parse_asena_file!("../Test.ase");
+        db.global_scope().borrow_mut().import(&db, file, None);
 
-        db.global_scope()
-            .borrow_mut()
-            .import(&db, file.clone(), None);
+        let file = db.ast(file);
+        let file = db.infix_commands(file);
+        let file = db.ordered_prec(file);
+        let _ = file;
 
-        db.ast(file.clone())
-            .walk_on(InfixHandler {
-                prec_table: &mut prec_table,
-                reporter: &mut asena_file.reporter,
-            })
-            .walk_on(PrecReorder {
-                prec_table: &prec_table,
-                reporter: &mut asena_file.reporter,
-            })
-            .walk_on(AstResolver {
-                db: &db,
-                file,
-                binding_groups: Default::default(),
-                enum_declarations: Default::default(),
-                class_declarations: Default::default(),
-                trait_declarations: Default::default(),
-                instance_declarations: Default::default(),
-                reporter: &mut asena_file.reporter,
-            });
-
-        asena_file.reporter.dump();
+        db.reporter().dump();
     }
 }
