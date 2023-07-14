@@ -74,8 +74,8 @@ impl Literal {
 }
 
 impl Located for Literal {
-    fn location(&self) -> std::borrow::Cow<'_, asena_span::Loc> {
-        Cow::Owned(Loc::Synthetic)
+    fn location(&self) -> Cow<'_, asena_span::Loc> {
+        Cow::Owned(Loc::default())
     }
 }
 

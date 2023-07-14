@@ -247,7 +247,7 @@ impl Located for GreenTree {
         match self {
             Self::Leaf(leaf) => Cow::Borrowed(&leaf.data.span),
             Self::Token(ref lexeme) => Cow::Borrowed(&lexeme.token.span),
-            _ => Cow::Owned(Loc::Synthetic),
+            _ => Cow::Owned(Loc::default()),
         }
     }
 }

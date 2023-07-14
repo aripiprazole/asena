@@ -1,8 +1,11 @@
 use std::cell::RefCell;
+use std::path::PathBuf;
 use std::rc::Rc;
 
 use asena_ast::{AsenaFile, BindingId, GlobalName, QualifiedPath, Variant};
 use asena_leaf::ast::Node;
+use asena_lexer::Lexer;
+use asena_parser::Parser;
 
 use crate::database::AstDatabase;
 use crate::driver::HasDB;
@@ -89,8 +92,8 @@ impl crate::database::AstDatabase for AstDatabaseImpl {
             .read_file(&vfs_file.id.path)
             .expect("Internal error: VFS file not found");
 
-        let lexer = asena_lexer::Lexer::new(&file);
-        let parser = asena_parser::Parser::from(lexer).run(asena_grammar::file);
+        let lexer = Lexer::new(PathBuf::from(vfs_file.id.path.clone()), &file);
+        let parser = Parser::from(lexer).run(asena_grammar::file);
         let tree = parser.build_tree();
         Arc::new(AsenaFile::new(tree.data))
     }

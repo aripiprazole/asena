@@ -1,4 +1,5 @@
 use std::fmt::Debug;
+use std::path::PathBuf;
 
 use chumsky::prelude::*;
 
@@ -22,6 +23,7 @@ pub type LexError<'a> = extra::Err<Rich<'a, char, Span>>;
 #[derive(Debug, Clone)]
 pub struct Lexer<'a> {
     index: usize,
+    pub path: Option<PathBuf>,
     pub source: &'a str,
     pub tokens: Vec<Spanned<Token>>,
     pub errors: Vec<Rich<'a, char>>,
@@ -154,12 +156,13 @@ fn map_full_text(code: &str, mut token_set: TokenSet) -> Vec<(Token, SimpleSpan)
 
 impl<'a> Lexer<'a> {
     /// Creates a new [Lexer] based in a source code
-    pub fn new(code: &'a str) -> Self {
+    pub fn new<I: Into<Option<PathBuf>>>(path: I, code: &'a str) -> Self {
         let (tokens, errs) = lexer().parse(code).into_output_errors();
         let tokens = map_full_text(code, tokens.unwrap_or_default());
 
         Self {
             index: 0,
+            path: path.into(),
             source: code,
             tokens: tokens
                 .into_iter()
@@ -182,13 +185,16 @@ impl<'a> Iterator for Lexer<'a> {
             }
 
             // eof case
-            None if self.source.is_empty() => {
-                Some(Spanned::new(Loc::Concrete(0..0), Token::new(Eof, "")))
-            }
+            None if self.source.is_empty() => Some(Spanned::new(
+                Loc::new(self.path.clone(), 0, 0),
+                Token::new(Eof, ""),
+            )),
             None => {
                 let start = self.source.len() - 1;
                 let end = self.source.len();
-                Some(Spanned::new(Loc::Concrete(start..end), Token::new(Eof, "")))
+                let loc = Loc::new(self.path.clone(), start, end);
+
+                Some(Spanned::new(loc, Token::new(Eof, "")))
             }
         }
     }
