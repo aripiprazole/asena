@@ -38,10 +38,14 @@ pub fn lower_pattern(db: &dyn AstLowerrer, pattern: Pat) -> HirPattern {
             let name = db.intern_name(pat.name().to_fn_id().to_string());
 
             match &*pat.key(PatResolutionKey) {
-                PatResolution::Variant(variant) => HirPatternKind::from(HirPatternConstructor {
-                    constructor_name: db.intern_name(variant.name().to_fn_id().to_string()),
-                    arguments: vec![],
-                }),
+                PatResolution::Variant(variant) => {
+                    let data = db.lookup_intern_def(*variant);
+
+                    HirPatternKind::from(HirPatternConstructor {
+                        constructor_name: db.intern_name(data.name.to_string()),
+                        arguments: vec![],
+                    })
+                }
                 _ => HirPatternKind::from(HirPatternName { name }),
             }
         }

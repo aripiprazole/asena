@@ -1,4 +1,5 @@
 use asena_ast_db::db::AstDatabase;
+use asena_leaf::ast::Located;
 
 use crate::{scopes::*, *};
 
@@ -37,8 +38,13 @@ impl<'db, 'a> AstResolver<'db, 'a> {
 
         for (name, parameter) in Parameter::compute_parameters(method.parameters()) {
             let mut scope = resolver.local_scope.borrow_mut();
-            let value = Arc::new(parameter);
-            scope.functions.insert(name, Value::Param(value));
+            let def = DefWithId::new(
+                resolver.owner.db,
+                parameter.name(),
+                parameter.location().into_owned(),
+            );
+
+            scope.functions.insert(name, def);
         }
 
         resolver.listens(method.return_type());
@@ -50,8 +56,13 @@ impl<'db, 'a> AstResolver<'db, 'a> {
 
         for (name, parameter) in Parameter::compute_parameters(method.parameters()) {
             let mut scope = resolver.local_scope.borrow_mut();
-            let value = Arc::new(parameter);
-            scope.functions.insert(name, Value::Param(value));
+            let def = DefWithId::new(
+                resolver.owner.db,
+                parameter.name(),
+                parameter.location().into_owned(),
+            );
+
+            scope.functions.insert(name, def);
         }
 
         resolver.listens(method.return_type());
@@ -78,8 +89,13 @@ impl<'ctx, 'a> AsenaVisitor<()> for AstResolver<'ctx, 'a> {
 
         for (name, parameter) in Parameter::compute_parameters(signature.parameters()) {
             let mut scope = resolver.local_scope.borrow_mut();
-            let value = Arc::new(parameter);
-            scope.functions.insert(name, Value::Param(value));
+            let def = DefWithId::new(
+                resolver.owner.db,
+                parameter.name(),
+                parameter.location().into_owned(),
+            );
+
+            scope.functions.insert(name, def);
         }
 
         resolver.listens(signature.return_type());

@@ -2,7 +2,7 @@ use std::{cell::RefCell, rc::Rc, sync::Arc};
 
 use asena_ast::{reporter::Reporter, *};
 
-use asena_ast_db::scope::{ScopeData, TypeValue, Value, VariantResolution};
+use asena_ast_db::scope::{ScopeData, VariantResolution};
 use asena_ast_db::vfs::*;
 
 use asena_leaf::ast::Lexeme;
@@ -10,6 +10,7 @@ use asena_leaf::ast_key;
 use asena_report::InternalError;
 
 use thiserror::Error;
+use asena_ast_db::def::DefWithId;
 
 use crate::error::ResolutionError::*;
 
@@ -21,21 +22,21 @@ pub mod scopes;
 pub enum ExprResolution {
     #[default]
     Unresolved,
-    Resolved(Value),
+    Resolved(DefWithId),
 }
 
 #[derive(Default, Clone)]
 pub enum TypeResolution {
     #[default]
     Unresolved,
-    Resolved(TypeValue),
+    Resolved(DefWithId),
 }
 
 #[derive(Default, Clone)]
 pub enum PatResolution {
     #[default]
     Unresolved,
-    Variant(Arc<Variant>),
+    Variant(DefWithId),
     LocalBinding(Box<Lexeme<Local>>),
 }
 

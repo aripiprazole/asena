@@ -187,8 +187,8 @@ fn highlight_local<T>(buf: &mut crate::Annotator, local: FunctionId, lexeme: &Le
 
 fn highlight_parameter(buf: &mut crate::Annotator, parameter: &Parameter) {
     let name = parameter.name();
-    match name.as_str() {
+    match name.to_fn_id().as_str() {
         "self" => buf.annotate(&name, HardKeyword),
-        _ => highlight_local(buf, name.to_fn_id(), &name),
+        _ => {},
     }
 }

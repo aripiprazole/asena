@@ -14,6 +14,12 @@ impl Located for BindingId {
     }
 }
 
+impl AstName for BindingId {
+    fn into_spanned(self) -> Spanned<FunctionId> {
+        Spanned::new(self.location().into_owned(), self.to_fn_id())
+    }
+}
+
 impl Debug for BindingId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "QualifiedBindingId")?;
