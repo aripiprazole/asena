@@ -4,7 +4,7 @@ use crate::{scopes::*, *};
 
 use super::AstResolver;
 
-impl AstResolver<'_> {
+impl AstResolver<'_, '_> {
     pub fn resolve_trait_decl(&mut self, trait_decl: Trait) {
         self.trait_declarations
             .insert(trait_decl.name().to_fn_id(), trait_decl.clone());

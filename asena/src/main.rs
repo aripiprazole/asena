@@ -4,12 +4,13 @@
 #![feature(lazy_cell)]
 #![feature(downcast_unchecked)]
 
-use std::path::PathBuf;
+use std::{path::PathBuf, sync::Mutex};
 
 use asena_ast_db::db::AstDatabaseStorage;
 use asena_ast_lowering::db::AstLowerrerStorage;
 use asena_grammar::Linebreak;
 use asena_highlight::{Annotator, VirtualFile};
+use asena_hir::interner::HirStorage;
 use asena_lexer::Lexer;
 use clap::{Args, Parser, Subcommand};
 
@@ -90,7 +91,7 @@ pub fn run_cli() {
         }
         Command::Eval(args) => {
             let path = args.file;
-            let file = std::fs::read_to_string(path).unwrap();
+            let file = std::fs::read_to_string(path.clone()).unwrap();
             let lexer = Lexer::new(PathBuf::from(path), &file);
             let mut parser = Parser::from(lexer).run(|p| {
                 asena_grammar::expr(p, Linebreak::Cont);
@@ -105,19 +106,24 @@ fn main() {
     run_cli();
 }
 
-#[salsa::database(AstDatabaseStorage, AstLowerrerStorage)]
+#[salsa::database(AstDatabaseStorage, AstLowerrerStorage, HirStorage)]
 #[derive(Default)]
 pub struct DatabaseImpl {
-    pub runtime: salsa::Storage<DatabaseImpl>,
+    pub storage: salsa::Storage<DatabaseImpl>,
+    pub logs: Mutex<Vec<salsa::Event>>,
 }
 
-impl salsa::Database for DatabaseImpl {}
+impl salsa::Database for DatabaseImpl {
+    fn salsa_event(&self, event_fn: salsa::Event) {
+        self.logs.lock().unwrap().push(event_fn);
+    }
+}
 
 #[cfg(test)]
 mod tests {
     use std::{cell::RefCell, rc::Rc, sync::Arc};
 
-    use asena_ast_db::{db::AstDatabase, driver::Driver, implementation::*, package::*, vfs::*};
+    use asena_ast_db::{db::AstDatabase, package::*, vfs::*};
     use asena_grammar::parse_asena_file;
     use asena_prec::{default_prec_table, InfixHandler, PrecReorder};
 
@@ -130,17 +136,18 @@ mod tests {
         let mut prec_table = default_prec_table();
 
         let mut db = DatabaseImpl::default();
-        let local_pkg = Package::new(&db, "Local", "0.0.0", Arc::new(Default::default()));
-
         db.set_global_scope(Rc::new(RefCell::new(Default::default())));
 
+        let local_pkg = Package::new(&db, "Local", "0.0.0", Arc::new(Default::default()));
         let file = VfsFile::new(&db, "Test", "./Test.ase".into(), local_pkg);
         VfsFile::new(&db, "Nat", "./Nat.ase".into(), local_pkg);
         VfsFile::new(&db, "IO", "./IO.ase".into(), local_pkg);
 
         let mut asena_file = parse_asena_file!("../Test.ase");
 
-        global_scope.borrow_mut().import(&db, file.clone(), None);
+        db.global_scope()
+            .borrow_mut()
+            .import(&db, file.clone(), None);
 
         db.abstract_syntax_tree(file.clone())
             .walk_on(InfixHandler {
@@ -152,7 +159,7 @@ mod tests {
                 reporter: &mut asena_file.reporter,
             })
             .walk_on(AstResolver {
-                db,
+                db: &db,
                 file,
                 binding_groups: Default::default(),
                 enum_declarations: Default::default(),

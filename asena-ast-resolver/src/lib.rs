@@ -2,7 +2,6 @@ use std::{cell::RefCell, rc::Rc, sync::Arc};
 
 use asena_ast::{reporter::Reporter, *};
 
-use asena_ast_db::driver::Driver;
 use asena_ast_db::scope::{ScopeData, TypeValue, Value, VariantResolution};
 use asena_ast_db::vfs::*;
 

@@ -4,7 +4,7 @@ use crate::{scopes::*, *};
 
 use super::AstResolver;
 
-impl AstResolver<'_> {
+impl AstResolver<'_, '_> {
     pub fn resolve_enum_decl(&mut self, enum_decl: Enum) {
         self.enum_declarations
             .insert(enum_decl.name().to_fn_id(), enum_decl.clone());

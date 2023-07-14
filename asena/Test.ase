@@ -1,0 +1,16 @@
+enum Nat {}
+
+enum Vec (a: Set) (n: Nat) {
+  Nil  : Vec a 10,
+  Cons : (head: a) -> (tail: Vec a n) -> Vec a n,
+
+  fun show (vec: Vec) {
+    match vec {
+      Test.Cons x xs => Cons x xs,
+      Test.Nil       => Nil
+    }
+  }
+}
+
+Main {
+}
