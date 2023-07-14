@@ -49,13 +49,14 @@ fn package_of(_db: &dyn AstDatabase, _module: ModuleRef) -> Package {
 }
 
 fn location_file(db: &dyn AstDatabase, loc: Loc) -> ModuleRef {
-    let path: String = loc.file.unwrap_or_default().to_str().unwrap().into();
+    let path = loc.file.unwrap_or_default();
 
     let global_scope = db.global_scope();
     let global_scope = global_scope.borrow();
 
-    global_scope.modules.get(&path).cloned().unwrap_or_else(|| {
+    global_scope.paths.get(&path).cloned().unwrap_or_else(|| {
         println!("Not found: {:#?}", path); // TODO: remove me
+
         ModuleRef::NotFound
     })
 }
@@ -157,11 +158,15 @@ fn mk_vfs_file(db: &dyn AstDatabase, vfs_file: VfsFileData) -> VfsFile {
     let global_scope = db.global_scope();
     let mut global_scope = global_scope.borrow_mut();
 
+    let path = vfs_file.id.path.clone();
     let name = FunctionId::new(&vfs_file.name);
     let id = db.intern_vfs_file(vfs_file);
     let module = ModuleRef::Found(id);
 
-    global_scope.modules.insert(name.to_string(), module);
+    global_scope
+        .modules
+        .insert(name.to_string(), module.clone());
+    global_scope.paths.insert(path, module);
     global_scope.import(db, id, Some(name));
 
     id
