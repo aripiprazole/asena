@@ -76,11 +76,19 @@ dependencies = [
 name = "asena"
 version = "0.1.0"
 dependencies = [
+ "asena-ast",
+ "asena-ast-db",
+ "asena-ast-lowering",
+ "asena-ast-resolver",
  "asena-grammar",
  "asena-highlight",
+ "asena-hir",
+ "asena-leaf",
  "asena-lexer",
  "asena-parser",
+ "asena-prec",
  "clap",
+ "salsa",
 ]
 
 [[package]]
@@ -111,6 +119,8 @@ dependencies = [
  "if_chain",
  "im",
  "itertools",
+ "salsa",
+ "salsa-macros",
 ]
 
 [[package]]
@@ -145,6 +155,7 @@ dependencies = [
  "im",
  "itertools",
  "salsa",
+ "salsa-macros",
  "thiserror",
 ]
 

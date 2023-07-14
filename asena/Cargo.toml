@@ -5,8 +5,16 @@ name = "asena"
 version = "0.1.0"
 
 [dependencies]
+asena-ast = {path = "../asena-ast"}
+asena-ast-db = {path = "../asena-ast-db"}
+asena-ast-lowering = {path = "../asena-ast-lowering"}
+asena-ast-resolver = {path = "../asena-ast-resolver"}
 asena-grammar = {path = "../asena-grammar"}
 asena-highlight = {path = "../asena-highlight"}
+asena-hir = {path = "../asena-hir"}
+asena-leaf = {path = "../asena-leaf"}
 asena-lexer = {path = "../asena-lexer"}
 asena-parser = {path = "../asena-parser"}
+asena-prec = {path = "../asena-prec"}
 clap = {version = "4.2.7", features = ["derive"]}
+salsa = "0.17.0-pre.2"

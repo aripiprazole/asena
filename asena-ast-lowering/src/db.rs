@@ -8,7 +8,7 @@ use asena_hir::{
 
 use crate::stmt::Instr;
 
-#[salsa::query_group(AstLowerrerDb)]
+#[salsa::query_group(AstLowerrerStorage)]
 pub trait AstLowerrer: HirInterner {
     #[salsa::input]
     fn reporter(&self) -> Arc<Reporter>;
