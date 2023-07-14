@@ -1,6 +1,6 @@
 use super::*;
 
-impl GreenTree {
+impl GreenTreeKind {
     /// Checks if the tree matches the given kind.
     pub fn matches(&self, nth: usize, kind: TokenKind) -> bool {
         match self {
@@ -31,8 +31,8 @@ impl GreenTree {
     /// value.
     pub fn spanned(&self) -> Spanned<()> {
         match self {
-            GreenTree::Leaf(leaf) => leaf.data.replace(()),
-            GreenTree::Token(lexeme) => lexeme.token.replace(()),
+            Self::Leaf(leaf) => leaf.data.replace(()),
+            Self::Token(lexeme) => lexeme.token.replace(()),
             _ => Spanned::default(),
         }
     }

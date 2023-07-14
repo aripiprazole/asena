@@ -29,8 +29,13 @@ macro_rules! ast_enum {
             )*
         }
 
-        #[doc(hidden)]
         impl $name {
+            pub fn parent(&self) -> std::sync::Arc<Option<$crate::ast::GreenTree>> {
+                use $crate::ast::Node;
+
+                self.clone().unwrap().parent()
+            }
+
             #[allow(dead_code)]
             #[allow(path_statements)]
             #[allow(clippy::no_effect)]
@@ -61,17 +66,17 @@ macro_rules! ast_enum {
         impl $crate::ast::Node for $name {
             fn new<I: Into<$crate::ast::GreenTree>>(value: I) -> Self {
                 let tree: $crate::ast::GreenTree = value.into();
-                match tree {
-                    $crate::ast::GreenTree::Token(_) => Self::default(),
-                    $crate::ast::GreenTree::Empty => Self::default(),
-                    $crate::ast::GreenTree::None => Self::default(),
+                match tree.data() {
+                    $crate::ast::GreenTreeKind::Token(_) => Self::default(),
+                    $crate::ast::GreenTreeKind::Empty => Self::default(),
+                    $crate::ast::GreenTreeKind::None => Self::default(),
                     _ => <Self as $crate::ast::Leaf>::make(tree).unwrap_or_default(),
                 }
             }
 
             fn unwrap(self) -> $crate::ast::GreenTree {
                 match self {
-                    Self::Error => $crate::ast::GreenTree::Empty,
+                    Self::Error => $crate::ast::GreenTree::from($crate::ast::GreenTreeKind::Empty),
                     $(Self::$variant(value) => $crate::ast::Node::unwrap(value),)*
                 }
             }

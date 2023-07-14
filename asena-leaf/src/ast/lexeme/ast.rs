@@ -16,16 +16,21 @@ impl<T: Terminal + 'static> Leaf for Lexeme<T> {
 
 impl<T: Leaf + 'static> Node for Lexeme<T> {
     fn new<I: Into<GreenTree>>(tree: I) -> Self {
-        match tree.into() {
-            GreenTree::Leaf(ref leaf) => Self {
-                token: get_single_token(leaf),
-                value: Maybe::Just(T::make(GreenTree::Leaf(leaf.clone())).unwrap_or_default()),
-            },
-            GreenTree::None => Self {
+        let tree: GreenTree = tree.into();
+        match tree.into_data() {
+            GreenTreeKind::Leaf(ref leaf) => {
+                let leaf_data = GreenTree::new_raw(GreenTreeKind::Leaf(leaf.clone()));
+
+                Self {
+                    token: get_single_token(leaf),
+                    value: Maybe::Just(T::make(leaf_data).unwrap_or_default()),
+                }
+            }
+            GreenTreeKind::None => Self {
                 token: Default::default(),
                 value: Maybe::Default(T::default()),
             },
-            GreenTree::Token(lexeme) => {
+            GreenTreeKind::Token(lexeme) => {
                 let value = match lexeme.value.downcast_ref::<T>() {
                     Some(value) => value.clone(),
                     None => return Default::default(),
@@ -41,10 +46,12 @@ impl<T: Leaf + 'static> Node for Lexeme<T> {
     }
 
     fn unwrap(self) -> GreenTree {
-        GreenTree::Token(Lexeme {
+        let tree = GreenTreeKind::Token(Lexeme {
             token: self.token,
             value: self.value.map(|value| Rc::new(value) as Rc<dyn Any>),
-        })
+        });
+
+        GreenTree::new_raw(tree)
     }
 }
 
@@ -52,9 +59,9 @@ impl<T: Node> Node for Option<T> {
     fn new<I: Into<GreenTree>>(tree: I) -> Self {
         let tree: GreenTree = tree.into();
 
-        match tree {
-            GreenTree::None => None,
-            GreenTree::Empty => None,
+        match tree.data() {
+            GreenTreeKind::None => None,
+            GreenTreeKind::Empty => None,
             _ => Some(T::new(tree)),
         }
     }
@@ -62,7 +69,7 @@ impl<T: Node> Node for Option<T> {
     fn unwrap(self) -> GreenTree {
         match self {
             Some(vale) => vale.unwrap(),
-            None => GreenTree::None,
+            None => GreenTree::new_raw(GreenTreeKind::None),
         }
     }
 }
