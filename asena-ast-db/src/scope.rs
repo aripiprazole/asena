@@ -54,7 +54,7 @@ impl ScopeData {
             let name = FunctionId::optional_path(prefix.clone(), name.clone());
             let variant = DefWithId::new(db, variant.name(), variant.location().into_owned());
 
-            self.constructors.insert(name.clone(), variant.clone());
+            self.constructors.insert(name.clone(), variant);
             self.functions.insert(name.clone(), variant);
         }
     }
@@ -133,7 +133,7 @@ impl ScopeData {
 
     pub fn find_type_constructor(&self, name: &impl GlobalName) -> VariantResolution {
         match self.constructors.get(&name.to_fn_id()) {
-            Some(variant) => VariantResolution::Variant(variant.clone()),
+            Some(variant) => VariantResolution::Variant(*variant),
 
             // if it is not a constructor, it is a variable binding: Vec.cons x xs
             //                                                                ^ ^^

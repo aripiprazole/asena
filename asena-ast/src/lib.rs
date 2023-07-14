@@ -58,6 +58,7 @@ pub mod body;
 pub mod db;
 pub mod decl;
 pub mod expr;
+pub mod ide_context;
 pub mod identifier;
 pub mod literal;
 pub mod parameter;
