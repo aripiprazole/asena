@@ -73,7 +73,7 @@ impl<'a> ExprLowering<'a> {
     fn make_dsl(&self, expr: &Dsl) -> HirExprKind {
         let mut hir_call = match expr.callee() {
             Expr::App(ref app) => match self.make_app(app) {
-                HirExprKind::HirExprCall(call) => call,
+                HirExprKind::Call(call) => call,
                 _ => unreachable!(),
             },
             _ => HirExprCall {

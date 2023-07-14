@@ -34,10 +34,10 @@ pub enum HirPatternKind {
     Spread,
     Unit,
     This,
-    HirPatternConstructor(HirPatternConstructor),
-    HirPatternList(HirPatternList),
-    HirPatternName(HirPatternName),
-    HirPatternLiteral(HirPatternLiteral),
+    Constructor(HirPatternConstructor),
+    List(HirPatternList),
+    Name(HirPatternName),
+    Literal(HirPatternLiteral),
 }
 
 #[hir_struct]

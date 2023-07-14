@@ -49,12 +49,15 @@ fn package_of(_db: &dyn AstDatabase, _module: ModuleRef) -> Package {
 }
 
 fn location_file(db: &dyn AstDatabase, loc: Loc) -> ModuleRef {
-    let path: String = loc.file.unwrap().to_str().unwrap().into();
+    let path: String = loc.file.unwrap_or_default().to_str().unwrap().into();
 
     let global_scope = db.global_scope();
     let global_scope = global_scope.borrow();
 
-    global_scope.modules.get(&path).unwrap().clone()
+    global_scope.modules.get(&path).cloned().unwrap_or_else(|| {
+        println!("Not found: {:#?}", path); // TODO: remove me
+        ModuleRef::NotFound
+    })
 }
 
 fn constructor_data(db: &dyn AstDatabase, name: BindingId, file: VfsFile) -> VariantResolution {
@@ -73,7 +76,7 @@ fn function_data(db: &dyn AstDatabase, name: QualifiedPath, file: VfsFile) -> Va
 
 fn vfs_file(_db: &dyn AstDatabase, path: ModuleRef) -> VfsFile {
     match path {
-        ModuleRef::NotFound => todo!("Handle unresolved declarations"),
+        ModuleRef::NotFound => todo!("Not handling unresolved declarations: {path:?}"),
         ModuleRef::Found(path) => path,
     }
 }
