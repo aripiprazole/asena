@@ -34,7 +34,7 @@ impl<T: Leaf> Cursor<T> {
     /// Deeply duplicates the current cursor and returns a new [Cursor] instance.
     pub fn as_new_node(&self) -> Self {
         let new_node = self.read().as_new_node();
-        Self::new_raw(Self::new_inner(new_node))
+        Self::new_raw(Self::new_inner(new_node.into()))
     }
 }
 
@@ -49,28 +49,28 @@ impl<T: Node + Leaf> Cursor<T> {
     where
         T: Located + 'static,
     {
-        match &*self.read() {
-            GreenTree::Token(lexeme) => {
+        match self.read().data() {
+            GreenTreeKind::Token(lexeme) => {
                 let Some(value) = lexeme.value.downcast_ref::<T>() else {
                     return Default::default();
                 };
 
                 lexeme.token.clone().swap(value.clone())
             }
-            tree @ GreenTree::Leaf(leaf) => leaf.data.replace(T::new(tree.clone())),
+            tree @ GreenTreeKind::Leaf(leaf) => leaf.data.replace(T::new(tree.clone())),
             _ => Spanned::default(),
         }
     }
 
     pub fn is_none(&self) -> bool {
-        matches!(&*self.read(), GreenTree::None)
+        matches!(self.read().data(), GreenTreeKind::None)
     }
 
     /// Returns the current cursor if it's not empty, otherwise returns false.
     pub fn is_empty(&self) -> bool {
-        match &*self.read() {
-            GreenTree::Leaf(leaf) => !leaf.data.children.is_empty(),
-            GreenTree::Vec(children) => !children.is_empty(),
+        match self.read().data() {
+            GreenTreeKind::Leaf(leaf) => !leaf.data.children.is_empty(),
+            GreenTreeKind::Vec(children) => !children.is_empty(),
             _ => false,
         }
     }
@@ -133,12 +133,12 @@ impl<T: Node + Leaf> Node for Vec<T> {
     fn new<I: Into<GreenTree>>(tree: I) -> Self {
         let tree: GreenTree = tree.into();
 
-        match tree {
-            GreenTree::Vec(values) => values
+        match tree.into_data() {
+            GreenTreeKind::Vec(values) => values
                 .into_iter()
                 .map(|value| T::new(value))
                 .collect::<Vec<_>>(),
-            GreenTree::Leaf(leaf) => leaf
+            GreenTreeKind::Leaf(leaf) => leaf
                 .data
                 .children
                 .iter()
@@ -154,7 +154,8 @@ impl<T: Node + Leaf> Node for Vec<T> {
     }
 
     fn unwrap(self) -> GreenTree {
-        GreenTree::Vec(self.into_iter().map(|x| x.unwrap()).collect::<Vec<_>>())
+        let kind = GreenTreeKind::Vec(self.into_iter().map(|x| x.unwrap()).collect::<Vec<_>>());
+        GreenTree::new_raw(kind)
     }
 }
 
@@ -162,7 +163,7 @@ impl<T: Node + Leaf> From<Option<T>> for Cursor<T> {
     fn from(value: Option<T>) -> Self {
         match value {
             Some(value) => Self::new(value.unwrap()),
-            None => Self::new_raw(Self::new_inner(GreenTree::None)),
+            None => Self::new_raw(Self::new_inner(GreenTree::new_raw(GreenTreeKind::None))),
         }
     }
 }
@@ -211,13 +212,13 @@ impl<T: Default + Leaf + Node + 'static> Try for Cursor<T> {
 
     fn branch(self) -> ControlFlow<Self::Residual, Self::Output> {
         let tree = self.read();
-        match &*tree {
-            GreenTree::Token(lexeme) => match lexeme.value.downcast_ref::<T>() {
+        match tree.data() {
+            GreenTreeKind::Token(lexeme) => match lexeme.value.downcast_ref::<T>() {
                 Some(value) => ControlFlow::Continue(value.clone()),
                 None => ControlFlow::Break(None),
             },
-            GreenTree::Empty => ControlFlow::Break(None),
-            GreenTree::None => ControlFlow::Break(None),
+            GreenTreeKind::Empty => ControlFlow::Break(None),
+            GreenTreeKind::None => ControlFlow::Break(None),
             _ => ControlFlow::Continue(T::new(tree.clone())),
         }
     }
@@ -226,7 +227,7 @@ impl<T: Default + Leaf + Node + 'static> Try for Cursor<T> {
 /// Internal util functions
 impl<T> Cursor<T> {
     #[inline]
-    fn new_raw(value: Arc<RwLock<GreenTree>>) -> Self {
+    pub(crate) fn new_raw(value: Arc<RwLock<GreenTree>>) -> Self {
         Self {
             value,
             _marker: PhantomData,
@@ -234,17 +235,17 @@ impl<T> Cursor<T> {
     }
 
     #[inline]
-    fn new_inner(value: GreenTree) -> Arc<RwLock<GreenTree>> {
+    pub(crate) fn new_inner(value: GreenTree) -> Arc<RwLock<GreenTree>> {
         Arc::new(RwLock::new(value))
     }
 
     #[inline]
-    fn write(&self) -> RwLockWriteGuard<GreenTree> {
+    pub(crate) fn write(&self) -> RwLockWriteGuard<GreenTree> {
         self.value.write().expect("Poisoned cursor value")
     }
 
     #[inline]
-    fn read(&self) -> RwLockReadGuard<GreenTree> {
+    pub(crate) fn read(&self) -> RwLockReadGuard<GreenTree> {
         self.value.read().expect("Poisoned cursor value")
     }
 }

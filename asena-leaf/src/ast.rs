@@ -96,6 +96,18 @@ pub trait Node: Sized + Debug + Clone {
     fn as_new_ast<T: Node>(&self) -> T {
         T::new(self.clone().unwrap().as_new_node())
     }
+
+    fn downcast<T: Leaf>(self) -> Option<T> {
+        if self.is::<T>() {
+            T::make(self.unwrap())
+        } else {
+            None
+        }
+    }
+
+    fn is<U: Leaf>(&self) -> bool {
+        U::make(self.clone().unwrap()).is_some()
+    }
 }
 
 impl<T: Located> Located for Vec<T> {
@@ -113,15 +125,15 @@ impl<T: Located> Located for Vec<T> {
 
 impl<T: Terminal + 'static> Leaf for T {
     fn make(tree: GreenTree) -> Option<Self> {
-        match tree {
-            GreenTree::Leaf(leaf) => {
+        match tree.into_data() {
+            GreenTreeKind::Leaf(leaf) => {
                 if leaf.data.children.is_empty() {
                     return None;
                 }
 
                 Leaf::terminal(leaf.data.replace(leaf.data.single().clone()))
             }
-            GreenTree::Token(lexeme) => Leaf::terminal(lexeme.token),
+            GreenTreeKind::Token(lexeme) => Leaf::terminal(lexeme.token),
             _ => None,
         }
     }
@@ -140,8 +152,8 @@ impl<T: Leaf> Leaf for Option<T> {
 
 impl<T: Leaf> Leaf for Vec<T> {
     fn make(tree: GreenTree) -> Option<Self> {
-        match tree {
-            GreenTree::Leaf(leaf) => {
+        match tree.into_data() {
+            GreenTreeKind::Leaf(leaf) => {
                 let mut items = vec![];
                 for child in &leaf.data.children {
                     match &child.value {
@@ -161,14 +173,14 @@ impl<T: Leaf> Leaf for Vec<T> {
                 }
                 Some(items)
             }
-            GreenTree::Vec(children) => children
+            GreenTreeKind::Vec(children) => children
                 .into_iter()
                 .filter_map(|child| T::make(child))
                 .collect::<Vec<_>>()
                 .into(),
-            GreenTree::Token(_) => None,
-            GreenTree::None => None,
-            GreenTree::Empty => None,
+            GreenTreeKind::Token(_) => None,
+            GreenTreeKind::None => None,
+            GreenTreeKind::Empty => None,
         }
     }
 }

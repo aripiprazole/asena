@@ -1,3 +1,4 @@
+use std::hash::Hash;
 use std::sync::{Arc, RwLock};
 use std::{any::Any, borrow::Cow, collections::HashMap, rc::Rc};
 
@@ -18,7 +19,7 @@ pub use ast_leaf::*;
 /// It is used to traverse the tree, and to modify it, and can be an [GreenTree::Empty] node,
 /// that is used to mark the tree as invalid, and not fail the compiler.
 #[derive(Clone, Hash, PartialEq, Eq)]
-pub enum GreenTree {
+pub enum GreenTreeKind {
     Leaf(AstLeaf),
     Vec(Vec<GreenTree>),
     Token(Lexeme<Rc<dyn Any>>),
@@ -30,17 +31,36 @@ pub enum GreenTree {
     Empty,
 }
 
+#[derive(Clone)]
+#[allow(dead_code)]
+pub struct GreenTree {
+    parent: Arc<Option<GreenTree>>,
+    next: Arc<Option<GreenTree>>,
+    prev: Arc<Option<GreenTree>>,
+    data: GreenTreeKind,
+}
+
+impl<T> Cursor<T> {
+    pub fn parent(&self) -> Arc<Option<GreenTree>> {
+        self.read().parent.clone()
+    }
+
+    pub fn set_parent(&self, value: Option<GreenTree>) {
+        self.write().parent = Arc::new(value);
+    }
+}
+
 impl GreenTree {
     pub fn new<I: Into<Arc<Spanned<Tree>>>>(data: I) -> Self {
         let data = data.into();
 
-        Self::Leaf(AstLeaf {
+        Self::new_raw(GreenTreeKind::Leaf(AstLeaf {
             children: compute_named_children(&data),
             names: AstLeaf::new_ref(HashMap::new()),
             keys: AstLeaf::new_ref(HashMap::new()),
             synthetic: false,
             data,
-        })
+        }))
     }
 
     /// Creates a new node virtual node, that is not a part of the original tree, with the given
@@ -49,13 +69,13 @@ impl GreenTree {
         let mut data: Spanned<Tree> = Spanned::default();
         data.value.kind = kind;
 
-        Self::Leaf(AstLeaf {
+        Self::new_raw(GreenTreeKind::Leaf(AstLeaf {
             children: HashMap::default(),
             names: AstLeaf::new_ref(HashMap::new()),
             keys: AstLeaf::new_ref(HashMap::new()),
             data: Arc::new(data),
             synthetic: true,
-        })
+        }))
     }
 
     /// Creates a new node, based on the this green tree.
@@ -63,9 +83,66 @@ impl GreenTree {
     where
         T: Leaf,
     {
-        Leaf::make(self.clone()).unwrap_or_default()
+        T::make(self.clone()).unwrap_or_default()
     }
 
+    pub fn parent(&self) -> Arc<Option<GreenTree>> {
+        self.parent.clone()
+    }
+
+    pub(crate) fn new_raw(data: GreenTreeKind) -> Self {
+        Self {
+            parent: Default::default(),
+            next: Default::default(),
+            prev: Default::default(),
+            data,
+        }
+    }
+
+    pub fn data(&self) -> &GreenTreeKind {
+        &self.data
+    }
+
+    pub fn into_data(self) -> GreenTreeKind {
+        self.data
+    }
+}
+
+impl DerefMut for GreenTree {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.data
+    }
+}
+
+impl Deref for GreenTree {
+    type Target = GreenTreeKind;
+
+    fn deref(&self) -> &Self::Target {
+        &self.data
+    }
+}
+
+impl Hash for GreenTree {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.data.hash(state);
+    }
+}
+
+impl PartialEq for GreenTree {
+    fn eq(&self, other: &Self) -> bool {
+        self.data == other.data
+    }
+}
+
+impl Eq for GreenTree {}
+
+impl From<GreenTreeKind> for GreenTree {
+    fn from(data: GreenTreeKind) -> Self {
+        Self::new_raw(data)
+    }
+}
+
+impl GreenTreeKind {
     /// Returns a cursor to the named child, if it's not an error node.
     pub fn named_at<A: Leaf + Node + 'static>(&self, name: LeafKey) -> Cursor<A> {
         let Self::Leaf(leaf) = self else {
@@ -198,28 +275,28 @@ impl GreenTree {
 
 impl Default for GreenTree {
     fn default() -> Self {
-        Self::Leaf(AstLeaf {
+        Self::new_raw(GreenTreeKind::Leaf(AstLeaf {
             data: Default::default(),
             children: HashMap::new(),
             synthetic: false,
             keys: AstLeaf::new_ref(HashMap::new()),
             names: AstLeaf::new_ref(HashMap::new()),
-        })
+        }))
     }
 }
 
 impl Debug for GreenTree {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Token(lexeme) => f
+        match self.data {
+            GreenTreeKind::Token(ref lexeme) => f
                 .debug_struct("Token")
                 .field("kind", &lexeme.token.kind.name())
                 .field("value", lexeme)
                 .finish(),
-            Self::Vec(children) => f.debug_tuple("Vec").field(children).finish(),
-            Self::Leaf(leaf) => write!(f, "Leaf({:#?})", leaf.data),
-            Self::Empty => write!(f, "Empty"),
-            Self::None => write!(f, "None"),
+            GreenTreeKind::Vec(ref children) => f.debug_tuple("Vec").field(children).finish(),
+            GreenTreeKind::Leaf(ref leaf) => write!(f, "Leaf({:#?})", leaf.data),
+            GreenTreeKind::Empty => write!(f, "Empty"),
+            GreenTreeKind::None => write!(f, "None"),
         }
     }
 }
@@ -232,21 +309,21 @@ impl From<Spanned<Tree>> for GreenTree {
 
 impl HasTokens for GreenTree {
     fn tokens(&self) -> Vec<Spanned<Token>> {
-        match self {
-            Self::Leaf(leaf) => leaf.data.tokens(),
-            Self::Vec(vec) => vec.iter().flat_map(|tree| tree.tokens()).collect(),
-            Self::Token(lexeme) => vec![lexeme.token.clone()],
-            Self::None => vec![],
-            Self::Empty => vec![],
+        match self.data {
+            GreenTreeKind::Leaf(ref leaf) => leaf.data.tokens(),
+            GreenTreeKind::Vec(ref vec) => vec.iter().flat_map(|tree| tree.tokens()).collect(),
+            GreenTreeKind::Token(ref lexeme) => vec![lexeme.token.clone()],
+            GreenTreeKind::None => vec![],
+            GreenTreeKind::Empty => vec![],
         }
     }
 }
 
 impl Located for GreenTree {
     fn location(&self) -> Cow<'_, Loc> {
-        match self {
-            Self::Leaf(leaf) => Cow::Borrowed(&leaf.data.span),
-            Self::Token(ref lexeme) => Cow::Borrowed(&lexeme.token.span),
+        match self.data {
+            GreenTreeKind::Leaf(ref leaf) => Cow::Borrowed(&leaf.data.span),
+            GreenTreeKind::Token(ref lexeme) => Cow::Borrowed(&lexeme.token.span),
             _ => Cow::Owned(Loc::default()),
         }
     }

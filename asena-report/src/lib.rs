@@ -102,10 +102,10 @@ impl<E: InternalError> Report<E> {
     where
         E: Clone,
     {
-        println!("  -> Recovered `Concrete Syntax Tree`:");
-        println!();
-        println!("{:#?}", self.tree);
-        println!();
+        // println!("  -> Recovered `Concrete Syntax Tree`:");
+        // println!();
+        // println!("{:#?}", self.tree);
+        // println!();
         for diagnostic in self.diagnostics.iter() {
             diagnostic.dump(&self.source);
         }

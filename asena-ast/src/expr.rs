@@ -24,7 +24,7 @@ use std::fmt::Debug;
 
 use asena_derive::*;
 
-use asena_leaf::ast::{Cursor, Leaf, Lexeme, Listenable, Located, Node, Walkable};
+use asena_leaf::ast::{Cursor, GreenTreeKind, Leaf, Lexeme, Listenable, Located, Node, Walkable};
 use asena_leaf::ast_enum;
 use asena_leaf::node::TreeKind::*;
 
@@ -724,7 +724,7 @@ impl Node for Typed {
 
     fn unwrap(self) -> GreenTree {
         match self {
-            Typed::Infer => GreenTree::Empty,
+            Typed::Infer => GreenTree::from(GreenTreeKind::Empty),
             Typed::Explicit(explicit) => explicit.unwrap(),
         }
     }
