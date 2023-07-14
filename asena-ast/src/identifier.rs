@@ -11,6 +11,10 @@ use asena_span::{Loc, Spanned};
 
 use crate::{AsenaListener, AsenaVisitor};
 
+pub trait AstName {
+    fn into_spanned(self) -> Spanned<FunctionId>;
+}
+
 pub use binding::*;
 pub use function::*;
 pub use global::*;

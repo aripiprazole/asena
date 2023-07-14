@@ -8,6 +8,12 @@ pub struct QualifiedPath(GreenTree);
 
 impl GlobalName for QualifiedPath {}
 
+impl AstName for QualifiedPath {
+    fn into_spanned(self) -> Spanned<FunctionId> {
+        Spanned::new(self.location().into_owned(), self.to_fn_id())
+    }
+}
+
 impl Located for QualifiedPath {
     fn location(&self) -> Cow<'_, Loc> {
         Cow::Owned(self.segments().location().into_owned())

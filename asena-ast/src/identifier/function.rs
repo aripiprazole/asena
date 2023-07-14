@@ -33,6 +33,12 @@ impl FunctionId {
     }
 }
 
+impl AstName for Lexeme<FunctionId> {
+    fn into_spanned(self) -> Spanned<FunctionId> {
+        Spanned::new(self.location().into_owned(), self.data().clone())
+    }
+}
+
 impl From<&str> for FunctionId {
     fn from(value: &str) -> Self {
         FunctionId::new(value)

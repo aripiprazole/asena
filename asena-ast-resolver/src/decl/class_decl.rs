@@ -1,6 +1,6 @@
-use asena_ast_db::scope::TypeValue;
-
 use crate::{scopes::*, *};
+use asena_ast_db::def::DefWithId;
+use asena_leaf::ast::Located;
 
 use super::AstResolver;
 
@@ -12,13 +12,21 @@ impl AstResolver<'_, '_> {
         self.db
             .global_scope()
             .borrow_mut()
-            .create_class(&class, None);
+            .create_class(self.db, &class, None);
 
         let mut resolver = ScopeResolver::new(class.name(), Level::Value, self);
 
-        for name in Parameter::compute_parameters(class.parameters()).keys() {
+        for (name, parameter) in Parameter::compute_parameters(class.parameters()) {
+            let binding_id = parameter.find_name().as_new_leaf::<BindingId>();
+            let def = DefWithId::new(
+                resolver.owner.db,
+                binding_id,
+                parameter.location().into_owned(),
+            );
+
             let mut scope = resolver.local_scope.borrow_mut();
-            scope.types.insert(name.clone(), TypeValue::Synthetic);
+
+            scope.types.insert(name.clone(), def);
         }
 
         resolver.listens(class.fields());

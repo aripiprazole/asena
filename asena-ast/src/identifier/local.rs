@@ -61,6 +61,12 @@ impl Terminal for Local {
     }
 }
 
+impl AstName for Lexeme<Local> {
+    fn into_spanned(self) -> Spanned<FunctionId> {
+        Spanned::new(self.location().into_owned(), self.to_fn_id())
+    }
+}
+
 impl Debug for Local {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Local {:#?}", self.0)

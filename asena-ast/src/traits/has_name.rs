@@ -29,6 +29,12 @@ impl HasName for Trait {
 }
 
 impl Decl {
+    pub fn name(&self) -> Option<BindingId> {
+        let decl = Self::downcast_has_name(self)?;
+        
+        Some(decl.name())
+    }
+    
     pub fn downcast_has_name(decl: &Decl) -> Option<&dyn HasName> {
         match decl {
             Decl::Error => None,

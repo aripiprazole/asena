@@ -59,3 +59,4 @@ pub mod db;
 pub mod package;
 pub mod scope;
 pub mod vfs;
+pub mod def;

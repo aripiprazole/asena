@@ -2,15 +2,16 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use asena_ast::{AsenaFile, BindingId, GlobalName, QualifiedPath, Variant};
-use asena_leaf::ast::{GreenTree, Node};
+use asena_leaf::ast::{GreenTree, Located, Node};
 use asena_lexer::Lexer;
 use asena_parser::Parser;
 use asena_span::Loc;
 
 use crate::package::{Package, PackageData};
-use crate::scope::{ScopeData, TypeValue, Value, VariantResolution};
+use crate::scope::{ScopeData,  VariantResolution};
 use crate::vfs::{VfsFile, VfsFileData};
 use crate::*;
+use crate::def::{Def, DefData, DefWithId};
 
 type Constructors = HashMap<FunctionId, Arc<Variant>>;
 
@@ -25,12 +26,12 @@ pub trait AstDatabase {
     fn vfs_file(&self, module: ModuleRef) -> VfsFile;
 
     fn module_ref(&self, module: FunctionId) -> ModuleRef;
-    fn function_data(&self, name: QualifiedPath, vfs_file: VfsFile) -> Value;
+    fn function_data(&self, name: QualifiedPath, vfs_file: VfsFile) -> Def;
     fn constructor_data(&self, name: BindingId, vfs_file: VfsFile) -> VariantResolution;
     fn location_file(&self, loc: Loc) -> ModuleRef;
 
     fn add_path_dep(&self, vfs_file: VfsFile, module: ModuleRef) -> ();
-    fn mk_global_name(&self, module: FunctionId, decl: Decl) -> Arc<Decl>;
+    fn mk_global_name(&self, module: FunctionId, decl: Decl) -> DefWithId;
     fn mk_vfs_file(&self, vfs_file: VfsFileData) -> VfsFile;
 
     #[salsa::input]
@@ -41,6 +42,9 @@ pub trait AstDatabase {
 
     #[salsa::interned]
     fn intern_vfs_file(&self, vfs_file: VfsFileData) -> VfsFile;
+
+    #[salsa::interned]
+    fn intern_def(&self, data: DefData) -> DefWithId;
 }
 
 fn package_of(_db: &dyn AstDatabase, _module: ModuleRef) -> Package {
@@ -67,7 +71,7 @@ fn constructor_data(db: &dyn AstDatabase, name: BindingId, file: VfsFile) -> Var
         .or_else(|| db.global_scope().borrow().find_type_constructor(&name))
 }
 
-fn function_data(db: &dyn AstDatabase, name: QualifiedPath, file: VfsFile) -> Value {
+fn function_data(db: &dyn AstDatabase, name: QualifiedPath, file: VfsFile) -> Def {
     db.lookup_intern_vfs_file(file)
         .read_scope()
         .find_value(&name)
@@ -141,16 +145,16 @@ fn add_path_dep(db: &dyn AstDatabase, vfs_file: VfsFile, module: ModuleRef) {
     scope_data.import(db, db.vfs_file(module), None);
 }
 
-fn mk_global_name(db: &dyn AstDatabase, module: FunctionId, decl: Decl) -> Arc<Decl> {
+fn mk_global_name(db: &dyn AstDatabase, module: FunctionId, decl: Decl) -> DefWithId {
     let global_scope = db.global_scope();
     let mut global_scope = global_scope.borrow_mut();
 
-    let decl = Arc::new(decl);
-    let type_value = TypeValue::Decl(decl.clone());
+    let name = decl.name().unwrap(); // TODO: handle
+    let def_with_id = DefWithId::new(db, name, decl.location().into_owned());
 
-    global_scope.types.insert(module, type_value);
+    global_scope.types.insert(module, def_with_id);
 
-    decl
+    def_with_id
 }
 
 fn mk_vfs_file(db: &dyn AstDatabase, vfs_file: VfsFileData) -> VfsFile {

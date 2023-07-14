@@ -85,6 +85,10 @@ impl<T: Node + Leaf> Cursor<T> {
         T::new(self.read().clone())
     }
 
+    pub fn as_new_leaf<U: Node + Leaf>(&self) -> U {
+        U::new(self.read().clone())
+    }
+
     pub fn make_as_leaf(&self) -> Option<T> {
         T::make(self.read().clone())
     }
