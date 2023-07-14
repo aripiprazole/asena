@@ -19,7 +19,7 @@ use asena_span::Spanned;
 macro_rules! asena_expr {
     ($($s:tt)*) => {{
         let string = stringify!($($s)*);
-        $crate::Reportable::new(string, asena_parser::Parser::from(asena_lexer::Lexer::new(string))
+        $crate::Reportable::new(string, asena_parser::Parser::from(asena_lexer::Lexer::new(None, string))
             .run(|p| $crate::expr(p, $crate::Linebreak::Cont))
             .build_tree()
             .unwrap())
@@ -31,7 +31,7 @@ macro_rules! asena_decl {
     ($($s:tt)*) => {{
         let string = stringify!($($s)*);
 
-        $crate::Reportable::new(string, asena_parser::Parser::from(asena_lexer::Lexer::new(string))
+        $crate::Reportable::new(string, asena_parser::Parser::from(asena_lexer::Lexer::new(None, string))
             .run($crate::decl)
             .build_tree()
             .unwrap())
@@ -43,7 +43,7 @@ macro_rules! asena_stmt {
     ($($s:tt)*) => {{
         let string = stringify!($($s)*);
 
-        $crate::Reportable::new(string, asena_parser::Parser::from(asena_lexer::Lexer::new(string))
+        $crate::Reportable::new(string, asena_parser::Parser::from(asena_lexer::Lexer::new(None, string))
             .run($crate::stmt)
             .build_tree()
             .unwrap())
@@ -54,8 +54,9 @@ macro_rules! asena_stmt {
 macro_rules! asena_file {
     ($($s:tt)*) => {{
         let string = stringify!($($s)*);
+        let file = std::path::PathBuf::from($file);
 
-        $crate::Reportable::new(string, asena_parser::Parser::from(asena_lexer::Lexer::new(string))
+        $crate::Reportable::new(string, asena_parser::Parser::from(asena_lexer::Lexer::new(file, string))
             .run($crate::file)
             .build_tree()
             .unwrap())
@@ -66,10 +67,11 @@ macro_rules! asena_file {
 macro_rules! parse_asena_file {
     ($file:expr) => {{
         let string = include_str!($file);
+        let file = std::path::PathBuf::from($file);
 
         $crate::Reportable::new(
             string,
-            asena_parser::Parser::from(asena_lexer::Lexer::new(string))
+            asena_parser::Parser::from(asena_lexer::Lexer::new(file, string))
                 .run($crate::file)
                 .build_tree()
                 .unwrap(),

@@ -3,33 +3,11 @@ use std::{
     ops::{Deref, DerefMut, Range},
 };
 
-#[derive(Default, Clone, PartialEq, Eq, Hash)]
-pub enum Loc {
-    #[default]
-    Synthetic,
-    Concrete(Range<usize>),
-}
-
-impl Loc {
-    pub fn new(start: usize, end: usize) -> Self {
-        Self::Concrete(start..end)
-    }
-}
-
-impl Display for Loc {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Loc::Synthetic => write!(f, "*synthetic*"),
-            Loc::Concrete(range) => write!(f, "{}", range.start),
-        }
-    }
-}
-
-pub trait Span {
-    fn on(&self, end: Loc) -> Self;
-}
-
 pub type Localized<T> = Spanned<Box<T>>;
+
+mod loc;
+
+pub use loc::*;
 
 /// Localized reference in the heap, using [Box], and [Loc], to localize stuff in the source code
 #[derive(Default, Clone, PartialEq, Eq, Hash)]
@@ -92,43 +70,10 @@ impl<T> Deref for Spanned<T> {
     }
 }
 
-impl Loc {
-    pub fn into_ranged(self) -> Option<Range<usize>> {
-        match self {
-            Self::Concrete(range) => Some(range),
-            _ => None,
-        }
-    }
-}
-
-impl From<Range<usize>> for Loc {
-    fn from(value: Range<usize>) -> Self {
-        Loc::Concrete(value)
-    }
-}
-
-impl Debug for Loc {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Synthetic => write!(f, "Synthetic"),
-            Self::Concrete(range) => write!(f, "{:?}", range),
-        }
-    }
-}
-
 impl<T: Debug> Debug for Spanned<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:#?}", self.value())?;
         write!(f, " @ ")?;
         write!(f, "{:?}", self.span())
-    }
-}
-
-impl Span for Loc {
-    fn on(&self, end: Loc) -> Self {
-        match (self, end) {
-            (Loc::Concrete(a), Loc::Concrete(b)) => Loc::Concrete(a.start..b.end),
-            (_, _) => Loc::Synthetic,
-        }
     }
 }
