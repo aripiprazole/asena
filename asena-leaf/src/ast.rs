@@ -96,6 +96,18 @@ pub trait Node: Sized + Debug + Clone {
     fn as_new_ast<T: Node>(&self) -> T {
         T::new(self.clone().unwrap().as_new_node())
     }
+
+    fn downcast<T: Leaf>(self) -> Option<T> {
+        if self.is::<T>() {
+            T::make(self.unwrap())
+        } else {
+            None
+        }
+    }
+
+    fn is<U: Leaf>(&self) -> bool {
+        U::make(self.clone().unwrap()).is_some()
+    }
 }
 
 impl<T: Located> Located for Vec<T> {

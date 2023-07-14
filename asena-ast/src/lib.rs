@@ -44,6 +44,7 @@ impl AsenaFile {
 
 pub use body::*;
 pub use decl::*;
+pub use declaration_site::*;
 pub use expr::*;
 pub use identifier::*;
 pub use literal::*;
@@ -57,6 +58,7 @@ pub use visitor::*;
 pub mod body;
 pub mod db;
 pub mod decl;
+pub mod declaration_site;
 pub mod expr;
 pub mod ide_context;
 pub mod identifier;
