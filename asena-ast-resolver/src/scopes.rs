@@ -7,16 +7,15 @@ pub enum Level {
     Value,
 }
 
-pub struct ScopeResolver<'ctx, 'a> {
-    pub db: Driver,
+pub struct ScopeResolver<'db, 'ctx, 'a> {
     pub local_scope: Rc<RefCell<ScopeData>>,
     pub frames: Vec<Rc<RefCell<ScopeData>>>,
     pub level: Level,
-    pub resolver: &'ctx mut AstResolver<'a>,
+    pub resolver: &'ctx mut AstResolver<'db, 'a>,
 }
 
-impl<'ctx, 'a> ScopeResolver<'ctx, 'a> {
-    pub fn new(name: BindingId, level: Level, resolver: &'ctx mut AstResolver<'a>) -> Self {
+impl<'db, 'ctx, 'a> ScopeResolver<'db, 'ctx, 'a> {
+    pub fn new(name: BindingId, level: Level, resolver: &'ctx mut AstResolver<'db, 'a>) -> Self {
         let global_scope = resolver.db.global_scope();
         let local_scope = {
             let named_scope = global_scope.borrow().fork();
@@ -26,7 +25,6 @@ impl<'ctx, 'a> ScopeResolver<'ctx, 'a> {
         };
 
         Self {
-            db: resolver.db.clone(),
             local_scope: local_scope.clone(),
             frames: vec![local_scope],
             level,
@@ -34,12 +32,11 @@ impl<'ctx, 'a> ScopeResolver<'ctx, 'a> {
         }
     }
 
-    pub fn empty(level: Level, resolver: &'ctx mut AstResolver<'a>) -> Self {
+    pub fn empty(level: Level, resolver: &'ctx mut AstResolver<'db, 'a>) -> Self {
         let global_scope = resolver.db.global_scope();
         let local_scope = global_scope.borrow().fork();
 
         Self {
-            db: resolver.db.clone(),
             local_scope: local_scope.clone(),
             frames: vec![local_scope],
             level,
@@ -51,11 +48,11 @@ impl<'ctx, 'a> ScopeResolver<'ctx, 'a> {
         self.frames
             .last()
             .cloned()
-            .unwrap_or_else(|| self.db.global_scope())
+            .unwrap_or_else(|| self.resolver.db.global_scope())
     }
 }
 
-impl AsenaListener for ScopeResolver<'_, '_> {
+impl AsenaListener for ScopeResolver<'_, '_, '_> {
     // >>> Enter/Exit scope abstractions
     fn enter_pi(&mut self, pi: asena_ast::Pi) {
         let scope = self.last_scope().borrow().fork();
@@ -153,7 +150,7 @@ impl AsenaListener for ScopeResolver<'_, '_> {
         let name = value.name();
         let file = self.resolver.file.clone();
 
-        match self.db.constructor_data(value.name(), file) {
+        match self.resolver.db.constructor_data(value.name(), file) {
             VariantResolution::Variant(variant) => {
                 value.dynamic(PatResolutionKey, PatResolution::Variant(variant));
             }
@@ -180,7 +177,7 @@ impl AsenaListener for ScopeResolver<'_, '_> {
         let name = value.name();
         let file = self.resolver.file.clone();
 
-        match self.db.constructor_data(value.name(), file) {
+        match self.resolver.db.constructor_data(value.name(), file) {
             VariantResolution::Binding(name) => {
                 let fn_id = name.to_fn_id();
                 self.resolver

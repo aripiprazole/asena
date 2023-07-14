@@ -1,3 +1,5 @@
+use asena_ast_db::db::AstDatabase;
+
 use crate::{scopes::*, *};
 
 mod class_decl;
@@ -5,8 +7,8 @@ mod enum_decl;
 mod instance_decl;
 mod trait_decl;
 
-pub struct AstResolver<'a> {
-    pub db: Driver,
+pub struct AstResolver<'db, 'a> {
+    pub db: &'db dyn AstDatabase,
     pub file: Arc<VfsFile>,
     pub reporter: &'a mut Reporter,
     pub binding_groups: im::HashMap<FunctionId, Vec<Arc<Decl>>>,
@@ -16,8 +18,8 @@ pub struct AstResolver<'a> {
     pub instance_declarations: Vec<Instance>, // TODO: change to hashset
 }
 
-impl AstResolver<'_> {
-    pub fn new(db: Driver, file: Arc<VfsFile>, reporter: &mut Reporter) -> AstResolver<'_> {
+impl<'db, 'a> AstResolver<'db, 'a> {
+    pub fn new(db: &'db dyn AstDatabase, file: Arc<VfsFile>, reporter: &'a mut Reporter) -> Self {
         AstResolver {
             db,
             file,
@@ -57,9 +59,9 @@ impl AstResolver<'_> {
     }
 }
 
-impl<'a> AsenaVisitor<()> for AstResolver<'a> {
+impl<'ctx, 'a> AsenaVisitor<()> for AstResolver<'ctx, 'a> {
     fn visit_use(&mut self, value: asena_ast::Use) {
-        let module_ref = self.db.module_ref(value.to_fn_id().as_str());
+        let module_ref = self.db.module_ref(value.to_fn_id().to_string());
 
         self.db.add_path_dep(self.file.clone(), module_ref);
     }

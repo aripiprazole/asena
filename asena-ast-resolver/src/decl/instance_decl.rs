@@ -4,7 +4,7 @@ use crate::{scopes::*, *};
 
 use super::AstResolver;
 
-impl AstResolver<'_> {
+impl AstResolver<'_, '_> {
     pub fn resolve_instance_decl(&mut self, instance_decl: Instance) {
         self.instance_declarations.push(instance_decl.clone());
 

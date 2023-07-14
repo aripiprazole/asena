@@ -7,7 +7,7 @@ use crate::top_level::*;
 use crate::value::*;
 use crate::Name;
 
-#[salsa::query_group(InternerDb)]
+#[salsa::query_group(HirStorage)]
 pub trait HirInterner {
     #[salsa::input]
     fn intern_name(&self, data: String) -> Name;

@@ -4,7 +4,7 @@ use crate::{scopes::*, *};
 
 use super::AstResolver;
 
-impl AstResolver<'_> {
+impl AstResolver<'_, '_> {
     pub fn resolve_class_decl(&mut self, class: Class) {
         self.class_declarations
             .insert(class.name().to_fn_id(), class.clone());
