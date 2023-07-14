@@ -93,7 +93,7 @@ pub fn run_cli() {
             let path = args.file;
             let file = std::fs::read_to_string(path.clone()).unwrap();
             let lexer = Lexer::new(PathBuf::from(path), &file);
-            let mut parser = Parser::from(lexer).run(|p| {
+            let parser = Parser::from(lexer).run(|p| {
                 asena_grammar::expr(p, Linebreak::Cont);
             });
             let tree = parser.build_tree();
@@ -139,9 +139,9 @@ mod tests {
         db.set_global_scope(Rc::new(RefCell::new(Default::default())));
 
         let local_pkg = Package::new(&db, "Local", "0.0.0", Arc::new(Default::default()));
-        let file = VfsFile::new(&db, "Test", "./Test.ase".into(), local_pkg);
-        VfsFile::new(&db, "Nat", "./Nat.ase".into(), local_pkg);
-        VfsFile::new(&db, "IO", "./IO.ase".into(), local_pkg);
+        let file = VfsFileData::new(&db, "Test", "./Test.ase".into(), local_pkg);
+        VfsFileData::new(&db, "Nat", "./Nat.ase".into(), local_pkg);
+        VfsFileData::new(&db, "IO", "./IO.ase".into(), local_pkg);
 
         let mut asena_file = parse_asena_file!("../Test.ase");
 
@@ -149,7 +149,7 @@ mod tests {
             .borrow_mut()
             .import(&db, file.clone(), None);
 
-        db.abstract_syntax_tree(file.clone())
+        db.ast(file.clone())
             .walk_on(InfixHandler {
                 prec_table: &mut prec_table,
                 reporter: &mut asena_file.reporter,

@@ -9,7 +9,7 @@ mod trait_decl;
 
 pub struct AstResolver<'db, 'a> {
     pub db: &'db dyn AstDatabase,
-    pub file: Arc<VfsFile>,
+    pub file: VfsFile,
     pub reporter: &'a mut Reporter,
     pub binding_groups: im::HashMap<FunctionId, Vec<Arc<Decl>>>,
     pub enum_declarations: im::HashMap<FunctionId, Enum>,
@@ -19,7 +19,7 @@ pub struct AstResolver<'db, 'a> {
 }
 
 impl<'db, 'a> AstResolver<'db, 'a> {
-    pub fn new(db: &'db dyn AstDatabase, file: Arc<VfsFile>, reporter: &'a mut Reporter) -> Self {
+    pub fn new(db: &'db dyn AstDatabase, file: VfsFile, reporter: &'a mut Reporter) -> Self {
         AstResolver {
             db,
             file,
@@ -61,9 +61,9 @@ impl<'db, 'a> AstResolver<'db, 'a> {
 
 impl<'ctx, 'a> AsenaVisitor<()> for AstResolver<'ctx, 'a> {
     fn visit_use(&mut self, value: asena_ast::Use) {
-        let module_ref = self.db.module_ref(value.to_fn_id().to_string());
+        let module_ref = self.db.module_ref(value.to_fn_id());
 
-        self.db.add_path_dep(self.file.clone(), module_ref);
+        self.db.add_path_dep(self.file, module_ref);
     }
 
     fn visit_signature(&mut self, signature: Signature) {

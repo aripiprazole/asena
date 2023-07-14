@@ -4,8 +4,18 @@ use std::sync::Arc;
 use crate::db::AstDatabase;
 use crate::vfs::FileSystem;
 
-#[derive(Debug, Default, Clone, Copy, Hash, Eq, PartialEq, PartialOrd, Ord)]
-pub struct Package(pub(crate) usize);
+#[derive(Debug, Clone, Copy, Hash, Eq, PartialEq, PartialOrd, Ord)]
+pub struct Package(salsa::InternId);
+
+impl salsa::InternKey for Package {
+    fn from_intern_id(v: salsa::InternId) -> Self {
+        Self(v)
+    }
+
+    fn as_intern_id(&self) -> salsa::InternId {
+        self.0
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct PackageData {

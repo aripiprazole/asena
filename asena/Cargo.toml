@@ -17,4 +17,5 @@ asena-lexer = {path = "../asena-lexer"}
 asena-parser = {path = "../asena-parser"}
 asena-prec = {path = "../asena-prec"}
 clap = {version = "4.2.7", features = ["derive"]}
+eyre = "0.6.8"
 salsa = "0.17.0-pre.2"
