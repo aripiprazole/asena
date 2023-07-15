@@ -1,4 +1,7 @@
-use std::{borrow::Borrow, cell::RefCell, path::PathBuf, rc::Rc, sync::Arc};
+use std::hash::Hash;
+use std::ops::Deref;
+use std::sync::RwLock;
+use std::{borrow::Borrow, path::PathBuf, sync::Arc};
 
 use asena_ast::*;
 use asena_leaf::ast::{Lexeme, Located};
@@ -16,6 +19,31 @@ pub enum ScopeKind {
     Global,
     File(Arc<VfsFileData>),
 }
+
+#[derive(Default, Debug, Clone)]
+pub struct ScopeRef(Arc<RwLock<ScopeData>>);
+
+impl Hash for ScopeRef {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.0.read().unwrap().hash(state)
+    }
+}
+
+impl Deref for ScopeRef {
+    type Target = Arc<RwLock<ScopeData>>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl PartialEq for ScopeRef {
+    fn eq(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.0, &other.0)
+    }
+}
+
+impl Eq for ScopeRef {}
 
 #[derive(Default, Debug, Clone, Eq, PartialEq, Hash)]
 pub struct ScopeData {
@@ -37,8 +65,8 @@ pub enum VariantResolution {
 }
 
 impl ScopeData {
-    pub fn fork(&self) -> Rc<RefCell<ScopeData>> {
-        Rc::new(RefCell::new(self.clone()))
+    pub fn fork(&self) -> ScopeRef {
+        ScopeRef(Arc::new(RwLock::new(self.clone())))
     }
 
     pub fn create_enum<P>(&mut self, db: &dyn AstDatabase, decl: &Enum, prefix: P)

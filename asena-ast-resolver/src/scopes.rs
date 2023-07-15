@@ -1,5 +1,5 @@
 use crate::{decl::AstResolver, *};
-use asena_ast_db::{def::Def, package::HasDiagnostic};
+use asena_ast_db::{def::Def, package::HasDiagnostic, scope::ScopeRef};
 use asena_leaf::ast::Located;
 use asena_report::WithError;
 
@@ -9,8 +9,8 @@ pub enum Level {
 }
 
 pub struct ScopeResolver<'db, 'ctx> {
-    pub local_scope: Rc<RefCell<ScopeData>>,
-    pub frames: Vec<Rc<RefCell<ScopeData>>>,
+    pub local_scope: ScopeRef,
+    pub frames: Vec<ScopeRef>,
     pub level: Level,
     pub owner: &'ctx mut AstResolver<'db>,
 }
@@ -19,8 +19,8 @@ impl<'db, 'ctx> ScopeResolver<'db, 'ctx> {
     pub fn new(name: BindingId, level: Level, resolver: &'ctx mut AstResolver<'db>) -> Self {
         let global_scope = resolver.db.global_scope();
         let local_scope = {
-            let named_scope = global_scope.borrow().fork();
-            let mut scope = named_scope.borrow_mut();
+            let named_scope = global_scope.read().unwrap().fork();
+            let mut scope = named_scope.write().unwrap();
             scope.variables.insert(name.to_fn_id(), 0);
             named_scope.clone()
         };
@@ -35,7 +35,7 @@ impl<'db, 'ctx> ScopeResolver<'db, 'ctx> {
 
     pub fn empty(level: Level, resolver: &'ctx mut AstResolver<'db>) -> Self {
         let global_scope = resolver.db.global_scope();
-        let local_scope = global_scope.borrow().fork();
+        let local_scope = global_scope.read().unwrap().fork();
 
         Self {
             local_scope: local_scope.clone(),
@@ -45,7 +45,7 @@ impl<'db, 'ctx> ScopeResolver<'db, 'ctx> {
         }
     }
 
-    pub fn last_scope(&mut self) -> Rc<RefCell<ScopeData>> {
+    pub fn last_scope(&mut self) -> ScopeRef {
         self.frames
             .last()
             .cloned()
@@ -56,12 +56,12 @@ impl<'db, 'ctx> ScopeResolver<'db, 'ctx> {
 impl AsenaListener for ScopeResolver<'_, '_> {
     // >>> Enter/Exit scope abstractions
     fn enter_pi(&mut self, pi: asena_ast::Pi) {
-        let scope = self.last_scope().borrow().fork();
+        let scope = self.last_scope().read().unwrap().fork();
         if let Some(name) = pi.parameter_name() {
             let value = pi.parameter_type();
             let local = name.to_fn_id();
             let def = DefWithId::new(self.owner.db, name, value.location().into_owned());
-            let mut scope = scope.borrow_mut();
+            let mut scope = scope.write().unwrap();
 
             scope.functions.insert(local, def);
         }
@@ -74,7 +74,7 @@ impl AsenaListener for ScopeResolver<'_, '_> {
     }
 
     fn enter_case(&mut self, _: Case) {
-        let scope = self.last_scope().borrow().fork();
+        let scope = self.last_scope().read().unwrap().fork();
         self.frames.push(scope);
     }
 
@@ -83,7 +83,7 @@ impl AsenaListener for ScopeResolver<'_, '_> {
     }
 
     fn enter_lam(&mut self, _: Lam) {
-        let scope = self.last_scope().borrow().fork();
+        let scope = self.last_scope().read().unwrap().fork();
         self.frames.push(scope);
     }
 
@@ -107,7 +107,7 @@ impl AsenaListener for ScopeResolver<'_, '_> {
 
     fn enter_lam_parameter(&mut self, value: LamParameter) {
         let scope = self.last_scope();
-        let mut scope = scope.borrow_mut();
+        let mut scope = scope.write().unwrap();
 
         let def = DefWithId::new(self.owner.db, value.name(), value.location().into_owned());
 
@@ -116,7 +116,7 @@ impl AsenaListener for ScopeResolver<'_, '_> {
 
     fn enter_local_expr(&mut self, value: LocalExpr) {
         let scope = self.last_scope();
-        let scope = scope.borrow();
+        let scope = scope.read().unwrap();
         match self.level {
             Level::Type => match scope.find_type(&value) {
                 Def::WithId(id) => {
@@ -157,7 +157,7 @@ impl AsenaListener for ScopeResolver<'_, '_> {
                 value.dynamic(PatResolutionKey, PatResolution::LocalBinding(name.clone()));
 
                 let scope = self.last_scope();
-                let mut scope = scope.borrow_mut();
+                let mut scope = scope.write().unwrap();
 
                 let location = name.location().into_owned();
                 let local = name.to_fn_id();

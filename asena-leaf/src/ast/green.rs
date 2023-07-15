@@ -1,6 +1,6 @@
 use std::hash::Hash;
 use std::sync::{Arc, RwLock};
-use std::{any::Any, borrow::Cow, collections::HashMap, rc::Rc};
+use std::{any::Any, borrow::Cow, collections::HashMap};
 
 use asena_span::Spanned;
 
@@ -22,7 +22,7 @@ pub use ast_leaf::*;
 pub enum GreenTreeKind {
     Leaf(AstLeaf),
     Vec(Vec<GreenTree>),
-    Token(Lexeme<Rc<dyn Any>>),
+    Token(Lexeme<Arc<dyn Any + Send + Sync>>),
 
     /// A node that is supposed to be None.
     None,
@@ -169,7 +169,10 @@ impl GreenTreeKind {
     }
 
     /// Returns a cursor to the named terminal, if it's not an error node.
-    pub fn named_terminal<A: Terminal + 'static>(&self, name: LeafKey) -> Cursor<Lexeme<A>> {
+    pub fn named_terminal<A: Terminal + 'static>(&self, name: LeafKey) -> Cursor<Lexeme<A>>
+    where
+        A: Send + Sync,
+    {
         let Self::Leaf(leaf) = self else {
             return Cursor::empty();
         };
@@ -214,33 +217,33 @@ impl GreenTreeKind {
 
     /// Inserts a key into the tree, and returns the value. It's not the same of [GreenTree::insert]
     /// because, [GreenTree::insert] sets in the `names` field
-    pub fn dynamic<T: Key>(&self, key: T, value: T::Value) -> Rc<T::Value> {
+    pub fn dynamic<T: Key + Send + Sync>(&self, key: T, value: T::Value) -> Arc<T::Value> {
         let Self::Leaf(leaf) = self else {
-            return Rc::new(value);
+            return Arc::new(value);
         };
 
-        let rc = Rc::new(value);
+        let rc = Arc::new(value);
         leaf.keys_mut().insert(key.name(), rc.clone());
-        rc as Rc<T::Value>
+        rc as Arc<T::Value>
     }
 
     /// Returns the value of the key, if it exists, otherwise it will return the default value.
-    pub fn key<T: Key>(&self, key: T) -> Rc<T::Value> {
+    pub fn key<T: Key + Send + Sync>(&self, key: T) -> Arc<T::Value> {
         let value = T::Value::default();
         let Self::Leaf(leaf) = self else {
-            return Rc::new(value);
+            return Arc::new(value);
         };
 
         if let Some(value) = leaf.keys().get(key.name()) {
             return value.clone().downcast::<T::Value>().unwrap();
         }
 
-        let rc = Rc::new(value);
+        let rc = Arc::new(value);
         leaf.keys_mut().insert(key.name(), rc.clone());
-        rc as Rc<T::Value>
+        rc as Arc<T::Value>
     }
 
-    pub fn insert<T: 'static>(&self, name: LeafKey, value: T)
+    pub fn insert<T: Send + Sync + 'static>(&self, name: LeafKey, value: T)
     where
         T: Node + Leaf,
     {
@@ -257,7 +260,7 @@ impl GreenTreeKind {
     pub fn memoize<F, T: Leaf + Clone + 'static>(&self, name: &'static str, f: F) -> Cursor<T>
     where
         F: Fn(&Self) -> Cursor<T>,
-        T: Node,
+        T: Node + Sync + Send,
     {
         let tree @ Self::Leaf(leaf) = self else {
             return Cursor::empty();

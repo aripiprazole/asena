@@ -128,7 +128,7 @@ mod tests {
         VfsFileData::new(&db, "Nat", "./Nat.ase".into(), local_pkg);
         VfsFileData::new(&db, "IO", "./IO.ase".into(), local_pkg);
 
-        db.global_scope().borrow_mut().import(&db, file, None);
+        db.global_scope().write().unwrap().import(&db, file, None);
 
         let file = db.ast(file);
         let file = db.infix_commands(file);

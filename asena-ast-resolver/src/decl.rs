@@ -36,7 +36,7 @@ impl<'db> AstResolver<'db> {
         let mut resolver = ScopeResolver::new(method.name(), Level::Value, self);
 
         for (name, parameter) in Parameter::compute_parameters(method.parameters()) {
-            let mut scope = resolver.local_scope.borrow_mut();
+            let mut scope = resolver.local_scope.write().unwrap();
             let def = DefWithId::new(
                 resolver.owner.db,
                 parameter.name(),
@@ -54,7 +54,7 @@ impl<'db> AstResolver<'db> {
         let mut resolver = ScopeResolver::new(method.name(), Level::Value, self);
 
         for (name, parameter) in Parameter::compute_parameters(method.parameters()) {
-            let mut scope = resolver.local_scope.borrow_mut();
+            let mut scope = resolver.local_scope.write().unwrap();
             let def = DefWithId::new(
                 resolver.owner.db,
                 parameter.name(),
@@ -88,7 +88,7 @@ impl<'ctx> AsenaVisitor<()> for AstResolver<'ctx> {
         let mut resolver = ScopeResolver::new(name, Level::Value, self);
 
         for (name, parameter) in Parameter::compute_parameters(signature.parameters()) {
-            let mut scope = resolver.local_scope.borrow_mut();
+            let mut scope = resolver.local_scope.write().unwrap();
             let def = DefWithId::new(
                 resolver.owner.db,
                 parameter.name(),

@@ -12,13 +12,14 @@ impl AstResolver<'_> {
 
         self.db
             .global_scope()
-            .borrow_mut()
+            .write()
+            .unwrap()
             .create_trait(self.db, &trait_decl, None);
 
         let mut resolver = ScopeResolver::new(trait_decl.name(), Level::Value, self);
 
         for (name, parameter) in Parameter::compute_parameters(trait_decl.parameters()) {
-            let mut scope = resolver.local_scope.borrow_mut();
+            let mut scope = resolver.local_scope.write().unwrap();
             let binding_id = parameter.name();
             let def = DefWithId::new(
                 resolver.owner.db,

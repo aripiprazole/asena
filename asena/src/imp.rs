@@ -23,3 +23,12 @@ impl salsa::Database for DatabaseImpl {
         self.logs.lock().unwrap().push(event_fn);
     }
 }
+
+impl salsa::ParallelDatabase for DatabaseImpl {
+    fn snapshot(&self) -> salsa::Snapshot<Self> {
+        salsa::Snapshot::new(DatabaseImpl {
+            storage: self.storage.snapshot(),
+            logs: Mutex::new(Vec::new()),
+        })
+    }
+}

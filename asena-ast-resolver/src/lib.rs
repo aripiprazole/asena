@@ -1,8 +1,8 @@
-use std::{cell::RefCell, rc::Rc, sync::Arc};
+use std::sync::Arc;
 
 use asena_ast::*;
 
-use asena_ast_db::scope::{ScopeData, VariantResolution};
+use asena_ast_db::scope::VariantResolution;
 use asena_ast_db::vfs::*;
 
 use asena_leaf::ast::Lexeme;

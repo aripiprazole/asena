@@ -1,5 +1,5 @@
 pub trait Key {
-    type Value: Default + Clone + 'static;
+    type Value: Default + Clone + Send + Sync + 'static;
 
     fn name(&self) -> &'static str;
 }

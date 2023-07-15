@@ -78,7 +78,10 @@ impl GreenTreeKind {
     }
 
     /// Returns a terminal node, if it's not an error node.
-    pub fn terminal<T: Terminal + 'static>(&self, nth: usize) -> Cursor<Lexeme<T>> {
+    pub fn terminal<T: Terminal + 'static>(&self, nth: usize) -> Cursor<Lexeme<T>>
+    where
+        T: Send + Sync,
+    {
         match self {
             Self::Leaf(leaf) => leaf.data.terminal(nth),
             _ => Cursor::empty(),
@@ -86,7 +89,10 @@ impl GreenTreeKind {
     }
 
     /// Returns terminal filtered cursor to the children, if it's not an error node.
-    pub fn filter_terminal<T: Terminal + 'static>(&self) -> Cursor<Vec<Lexeme<T>>> {
+    pub fn filter_terminal<T: Terminal + 'static>(&self) -> Cursor<Vec<Lexeme<T>>>
+    where
+        T: Send + Sync,
+    {
         match self {
             Self::Leaf(leaf) => leaf.data.filter_terminal(),
             _ => Cursor::empty(),

@@ -12,7 +12,7 @@ impl AstResolver<'_> {
         let resolver = ScopeResolver::empty(Level::Value, self);
 
         for (name, parameter) in Parameter::compute_parameters(instance_decl.parameters()) {
-            let mut scope = resolver.local_scope.borrow_mut();
+            let mut scope = resolver.local_scope.write().unwrap();
             let binding_id = parameter.find_name().as_new_leaf::<BindingId>();
             let def = DefWithId::new(
                 resolver.owner.db,

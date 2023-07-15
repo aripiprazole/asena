@@ -9,11 +9,11 @@ pub trait InternalError: Error {
 }
 
 #[derive(Clone)]
-pub struct BoxInternalError(pub Rc<dyn InternalError>);
+pub struct BoxInternalError(pub Arc<dyn InternalError + Send + Sync>);
 
 impl BoxInternalError {
-    pub fn new<E: InternalError + 'static>(error: E) -> Self {
-        Self(Rc::new(error))
+    pub fn new<E: InternalError + Send + Sync + 'static>(error: E) -> Self {
+        Self(Arc::new(error))
     }
 }
 

@@ -1,6 +1,4 @@
-use std::cell::RefCell;
 use std::path::PathBuf;
-use std::rc::Rc;
 
 use asena_ast::{AsenaFile, BindingId, GlobalName, QualifiedPath, Variant};
 use asena_leaf::ast::{GreenTree, Located, Node};
@@ -12,7 +10,7 @@ use asena_span::{Loc, Spanned};
 use crate::build_system::BuildSystem;
 use crate::def::{Def, DefData, DefWithId};
 use crate::package::{HasDiagnostic, Package, PackageData};
-use crate::scope::{ScopeData, VariantResolution};
+use crate::scope::{ScopeRef, VariantResolution};
 use crate::vfs::{VfsFile, VfsFileData};
 use crate::*;
 
@@ -40,7 +38,7 @@ pub trait AstDatabase {
     fn mk_global_name(&self, module: FunctionId, decl: Decl) -> DefWithId;
     fn mk_vfs_file(&self, vfs_file: VfsFileData) -> VfsFile;
 
-    fn global_scope(&self) -> Rc<RefCell<ScopeData>>;
+    fn global_scope(&self) -> ScopeRef;
 
     #[salsa::interned]
     fn intern_package(&self, package: PackageData) -> Package;
@@ -54,7 +52,7 @@ pub trait AstDatabase {
 
 fn path_module(db: &dyn AstDatabase, path: PathBuf) -> ModuleRef {
     let global_scope = db.global_scope();
-    let global_scope = global_scope.borrow();
+    let global_scope = global_scope.read().unwrap();
 
     global_scope.paths.get(&path).cloned().unwrap_or_else(|| {
         Diagnostic::of(Loc::new(path.clone(), 0, 0), FileNotFoundError(path)).push(db);
@@ -63,8 +61,8 @@ fn path_module(db: &dyn AstDatabase, path: PathBuf) -> ModuleRef {
     })
 }
 
-fn global_scope(_: &dyn AstDatabase) -> Rc<RefCell<ScopeData>> {
-    Rc::new(RefCell::new(Default::default()))
+fn global_scope(_: &dyn AstDatabase) -> ScopeRef {
+    ScopeRef::default()
 }
 
 fn build_system(_: &dyn AstDatabase) -> Arc<BuildSystem> {
@@ -82,7 +80,7 @@ fn location_file(db: &dyn AstDatabase, loc: Loc) -> ModuleRef {
     let path = loc.file.clone().unwrap_or_default();
 
     let global_scope = db.global_scope();
-    let global_scope = global_scope.borrow();
+    let global_scope = global_scope.read().unwrap();
 
     global_scope.paths.get(&path).cloned().unwrap_or_else(|| {
         Diagnostic::of(loc, FileNotFoundError(path)).push(db);
@@ -95,14 +93,19 @@ fn constructor_data(db: &dyn AstDatabase, name: BindingId, file: VfsFile) -> Var
     db.lookup_intern_vfs_file(file)
         .read_scope()
         .find_type_constructor(&name)
-        .or_else(|| db.global_scope().borrow().find_type_constructor(&name))
+        .or_else(|| {
+            db.global_scope()
+                .read()
+                .unwrap()
+                .find_type_constructor(&name)
+        })
 }
 
 fn function_data(db: &dyn AstDatabase, name: QualifiedPath, file: VfsFile) -> Def {
     db.lookup_intern_vfs_file(file)
         .read_scope()
         .find_value(&name)
-        .or_else(|| db.global_scope().borrow().find_value(&name))
+        .or_else(|| db.global_scope().read().unwrap().find_value(&name))
 }
 
 fn vfs_file(_db: &dyn AstDatabase, path: ModuleRef) -> VfsFile {
@@ -174,7 +177,7 @@ fn add_path_dep(db: &dyn AstDatabase, vfs_file: VfsFile, module: ModuleRef) {
 
 fn mk_global_name(db: &dyn AstDatabase, module: FunctionId, decl: Decl) -> DefWithId {
     let global_scope = db.global_scope();
-    let mut global_scope = global_scope.borrow_mut();
+    let mut global_scope = global_scope.write().unwrap();
 
     let name = decl.name().unwrap(); // TODO: handle
     let def_with_id = DefWithId::new(db, name, decl.location().into_owned());
@@ -186,7 +189,7 @@ fn mk_global_name(db: &dyn AstDatabase, module: FunctionId, decl: Decl) -> DefWi
 
 fn mk_vfs_file(db: &dyn AstDatabase, vfs_file: VfsFileData) -> VfsFile {
     let global_scope = db.global_scope();
-    let mut global_scope = global_scope.borrow_mut();
+    let mut global_scope = global_scope.write().unwrap();
 
     let path = vfs_file.id.path.clone();
     let name = FunctionId::new(&vfs_file.name);
@@ -207,7 +210,7 @@ fn mk_vfs_file(db: &dyn AstDatabase, vfs_file: VfsFileData) -> VfsFile {
 
 fn module_ref(db: &dyn AstDatabase, module: Spanned<FunctionId>) -> ModuleRef {
     let global_scope = db.global_scope();
-    let global_scope = global_scope.borrow();
+    let global_scope = global_scope.read().unwrap();
 
     global_scope
         .modules

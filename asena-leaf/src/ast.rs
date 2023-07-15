@@ -1,7 +1,6 @@
 use std::borrow::Cow;
 use std::fmt::{Debug, Display};
 use std::ops::{ControlFlow, Deref, DerefMut, FromResidual, Try};
-use std::rc::Rc;
 
 use asena_span::{Loc, Span, Spanned};
 

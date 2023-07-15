@@ -11,7 +11,8 @@ impl AstResolver<'_> {
 
         self.db
             .global_scope()
-            .borrow_mut()
+            .write()
+            .unwrap()
             .create_class(self.db, &class, None);
 
         let mut resolver = ScopeResolver::new(class.name(), Level::Value, self);
@@ -24,7 +25,7 @@ impl AstResolver<'_> {
                 parameter.location().into_owned(),
             );
 
-            let mut scope = resolver.local_scope.borrow_mut();
+            let mut scope = resolver.local_scope.write().unwrap();
 
             scope.types.insert(name.clone(), def);
         }

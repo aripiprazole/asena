@@ -2,7 +2,6 @@
 use std::fmt::Debug;
 use std::hash::Hash;
 use std::path::PathBuf;
-use std::rc::Rc;
 use std::sync::{Arc, RwLock};
 use std::{error::Error, fmt::Display};
 
@@ -27,7 +26,7 @@ pub trait Reports {
     #[track_caller]
     fn diagnostic<E>(&self, diagnostic: Diagnostic<E>)
     where
-        E: Clone + InternalError + 'static,
+        E: Clone + Send + Sync + InternalError + 'static,
     {
         let errors = self.errors();
         let mut errors = errors.try_write().unwrap();

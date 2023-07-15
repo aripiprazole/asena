@@ -15,7 +15,7 @@ pub struct AstLeaf {
     pub(crate) children: HashMap<LeafKey, Arc<Spanned<Child>>>,
 
     /// A hash map of the named children.
-    pub(crate) keys: Arc<RwLock<HashMap<&'static str, Rc<dyn Any>>>>,
+    pub(crate) keys: Arc<RwLock<HashMap<&'static str, Arc<dyn Any + Send + Sync>>>>,
 
     /// Lazy names' hash map, they have to exist, to make the tree mutable.
     ///
@@ -24,7 +24,7 @@ pub struct AstLeaf {
     /// ```rs
     /// binary.lhs()
     /// ```
-    pub(crate) names: Arc<RwLock<HashMap<LeafKey, Arc<dyn Any>>>>,
+    pub(crate) names: Arc<RwLock<HashMap<LeafKey, Arc<dyn Any + Send + Sync>>>>,
 }
 
 impl AstLeaf {
@@ -32,19 +32,23 @@ impl AstLeaf {
         Arc::new(RwLock::new(value))
     }
 
-    pub(crate) fn names(&self) -> RwLockReadGuard<'_, HashMap<&str, Arc<dyn Any>>> {
+    pub(crate) fn names(&self) -> RwLockReadGuard<'_, HashMap<&str, Arc<dyn Any + Send + Sync>>> {
         self.names.read().unwrap()
     }
 
-    pub(crate) fn names_mut(&self) -> RwLockWriteGuard<'_, HashMap<&'static str, Arc<dyn Any>>> {
+    pub(crate) fn names_mut(
+        &self,
+    ) -> RwLockWriteGuard<'_, HashMap<&'static str, Arc<dyn Any + Send + Sync>>> {
         self.names.write().unwrap()
     }
 
-    pub(crate) fn keys(&self) -> RwLockReadGuard<'_, HashMap<&str, Rc<dyn Any>>> {
+    pub(crate) fn keys(&self) -> RwLockReadGuard<'_, HashMap<&str, Arc<dyn Any + Send + Sync>>> {
         self.keys.read().unwrap()
     }
 
-    pub(crate) fn keys_mut(&self) -> RwLockWriteGuard<'_, HashMap<&'static str, Rc<dyn Any>>> {
+    pub(crate) fn keys_mut(
+        &self,
+    ) -> RwLockWriteGuard<'_, HashMap<&'static str, Arc<dyn Any + Send + Sync>>> {
         self.keys.write().unwrap()
     }
 }

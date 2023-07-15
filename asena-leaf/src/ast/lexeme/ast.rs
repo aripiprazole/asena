@@ -1,4 +1,4 @@
-use std::any::Any;
+use std::{any::Any, sync::Arc};
 
 use super::{maybe::Maybe, *};
 
@@ -14,7 +14,7 @@ impl<T: Terminal + 'static> Leaf for Lexeme<T> {
     }
 }
 
-impl<T: Leaf + 'static> Node for Lexeme<T> {
+impl<T: Leaf + Send + Sync + 'static> Node for Lexeme<T> {
     fn new<I: Into<GreenTree>>(tree: I) -> Self {
         let tree: GreenTree = tree.into();
         match tree.into_data() {
@@ -48,7 +48,9 @@ impl<T: Leaf + 'static> Node for Lexeme<T> {
     fn unwrap(self) -> GreenTree {
         let tree = GreenTreeKind::Token(Lexeme {
             token: self.token,
-            value: self.value.map(|value| Rc::new(value) as Rc<dyn Any>),
+            value: self
+                .value
+                .map(|value| Arc::new(value) as Arc<dyn Any + Send + Sync>),
         });
 
         GreenTree::new_raw(tree)

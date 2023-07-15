@@ -42,7 +42,7 @@ impl Package {
 
     pub fn diagnostic<E>(&self, db: &dyn AstDatabase, diagnostic: Diagnostic<E>)
     where
-        E: Clone + InternalError + 'static,
+        E: Clone + Send + Sync + InternalError + 'static,
     {
         db.lookup_intern_package(*self).diagnostic(diagnostic);
     }
@@ -52,7 +52,7 @@ pub trait HasDiagnostic {
     fn push(self, db: &dyn AstDatabase);
 }
 
-impl<E: Clone + InternalError + 'static> HasDiagnostic for Diagnostic<E> {
+impl<E: Clone + Send + Sync + InternalError + 'static> HasDiagnostic for Diagnostic<E> {
     fn push(self, db: &dyn AstDatabase) {
         let package = db.package_of(self.message.span.clone());
         let data = db.lookup_intern_package(package);
