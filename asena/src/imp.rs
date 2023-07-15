@@ -5,7 +5,7 @@ use asena_ast_db::{
 use asena_ast_lowering::db::{AstLowerrer, AstLowerrerStorage};
 use asena_ast_resolver::db::{AstResolverDatabase, AstResolverStorage};
 use asena_hir::interner::HirStorage;
-use asena_hir_db::db::HirDatabaseStorage;
+use asena_hir_db::db::{HirDatabase, HirDatabaseStorage};
 use asena_prec::{db::PrecStorage, PrecDatabase};
 use std::{panic::AssertUnwindSafe, sync::Mutex};
 
@@ -31,7 +31,11 @@ impl DatabaseImpl {
             let file = db.infix_commands(file);
             let file = db.ordered_prec(file);
             let file = db.ast_resolved_file(file);
-            let _hir = db.hir_file(file);
+            let fhir = db.hir_file(file);
+            let file = db.vfs_file(fhir.path);
+            let file = db.hir_mbind(file);
+            let file = db.hir_rc(file);
+            db.hir_loceval(file);
         });
 
         match result {
