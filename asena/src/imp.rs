@@ -54,8 +54,9 @@ impl DatabaseImpl {
     pub fn dump_and_write_logs(&self) {
         use salsa::EventKind::*;
 
-        let logs: Vec<salsa::Event> = self.logs.lock().unwrap().drain(..).collect();
-        for event in logs {
+        let mut i = 0;
+        let vec = self.logs.lock().unwrap();
+        while let Some(event) = vec.get(i) {
             match event.kind {
                 WillBlockOn {
                     other_runtime_id,
@@ -67,7 +68,31 @@ impl DatabaseImpl {
                     log::debug!("will block on {:?} (runtime id: {:?})", key, runtime_id);
                 }
                 WillExecute { database_key } => {
-                    println!("  -> {:?}", database_key.debug(self));
+                    let debug = database_key.debug(self);
+                    let mut count = 0;
+                    loop {
+                        i += 1;
+                        let next = vec.get(i).map(|a| &a.kind);
+                        match next {
+                            Some(WillExecute { database_key }) => {
+                                let next = database_key.debug(self);
+                                if format!("{next:?}") == format!("{debug:?}") {
+                                    count += 1;
+                                    continue;
+                                } else {
+                                    break;
+                                }
+                            }
+                            Some(_) => {}
+                            None => break,
+                        }
+                    }
+
+                    if let 0 = count {
+                        println!("  -> {debug:?}");
+                    } else {
+                        println!("  -> {debug:?} x{count}");
+                    }
                 }
                 WillCheckCancellation => {
                     log::debug!("will check cancellation");
@@ -76,6 +101,8 @@ impl DatabaseImpl {
                     log::debug!("did validate memoized value {:?}", database_key.debug(self));
                 }
             }
+
+            i += 1;
         }
     }
 }
