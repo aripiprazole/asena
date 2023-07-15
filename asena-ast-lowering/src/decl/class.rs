@@ -41,7 +41,7 @@ pub fn lower_fields(db: &dyn AstLowerrer, fields: Vec<Field>) -> HashMap<Name, H
             // a field cannot be infer
             Typed::Infer => field.fail(FieldTypeCanNotBeInferError).push(db),
             Typed::Explicit(type_expr) => {
-                let type_id = db.lower_type(type_expr);
+                let type_id = db.hir_type(type_expr);
                 map.insert(name, type_id);
             }
         };

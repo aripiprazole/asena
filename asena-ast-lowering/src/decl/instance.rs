@@ -14,7 +14,7 @@ pub fn lower_instance(db: &dyn AstLowerrer, decl: Instance) -> HirTopLevel {
         parameters: compute_parameters(db, &decl),
         signature: match decl.gadt_type() {
             Typed::Infer => HirType::error(db),
-            Typed::Explicit(type_expr) => db.lower_type(type_expr),
+            Typed::Explicit(type_expr) => db.hir_type(type_expr),
         },
         groups: compute_methods(db, decl.methods()),
     };

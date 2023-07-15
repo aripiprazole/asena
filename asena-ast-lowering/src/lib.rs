@@ -45,14 +45,14 @@ pub(crate) fn make_signature(db: &dyn AstLowerrer, signatures: &mut Signatures, 
 
             hashset![HirDeclaration {
                 patterns,
-                value: db.lower_block(body),
+                value: db.hir_block(body),
             }]
         }
         None => hashset![],
     };
     let return_type = match decl.return_type() {
         Typed::Infer => None,
-        Typed::Explicit(type_expr) => Some(db.lower_type(type_expr)),
+        Typed::Explicit(type_expr) => Some(db.hir_type(type_expr)),
     };
 
     let group = HirBindingGroup {
@@ -75,7 +75,7 @@ pub(crate) fn make_assign(db: &dyn AstLowerrer, signatures: &mut Signatures, dec
         .patterns()
         .iter()
         .cloned()
-        .map(|next| db.lower_pattern(next))
+        .map(|next| db.hir_pattern(next))
         .collect_vec();
 
     let (_, group) = signatures
@@ -84,7 +84,7 @@ pub(crate) fn make_assign(db: &dyn AstLowerrer, signatures: &mut Signatures, dec
 
     group.declarations.insert(HirDeclaration {
         patterns,
-        value: db.lower_value(decl.body()),
+        value: db.hir_value(decl.body()),
     });
 }
 
@@ -133,10 +133,10 @@ pub fn lower_branch(db: &dyn AstLowerrer, branch: Branch) -> HirBranch {
     match branch {
         Branch::Error => HirBranch::Error,
         Branch::ExprBranch(ref branch) => {
-            let value = db.lower_value(branch.value());
+            let value = db.hir_value(branch.value());
 
             HirBranch::Expr(value)
         }
-        Branch::BlockBranch(ref branch) => HirBranch::Block(db.lower_block(branch.stmts())),
+        Branch::BlockBranch(ref branch) => HirBranch::Block(db.hir_block(branch.stmts())),
     }
 }

@@ -19,34 +19,34 @@ pub trait AstLowerrer: AstDatabase + HirInterner {
     fn hir_file(&self, file: AsenaFile) -> InternalAsenaFile;
 
     #[salsa::invoke(crate::decl::r#trait::lower_trait)]
-    fn lower_trait(&self, decl: Trait) -> HirTopLevel;
+    fn hir_trait(&self, decl: Trait) -> HirTopLevel;
 
     #[salsa::invoke(crate::decl::class::lower_class)]
-    fn lower_class(&self, decl: Class) -> HirTopLevel;
+    fn hir_class(&self, decl: Class) -> HirTopLevel;
 
     #[salsa::invoke(crate::decl::instance::lower_instance)]
-    fn lower_instance(&self, decl: Instance) -> HirTopLevel;
+    fn hir_instance(&self, decl: Instance) -> HirTopLevel;
 
     #[salsa::invoke(crate::decl::r#enum::lower_enum)]
-    fn lower_enum(&self, decl: Enum) -> HirTopLevel;
+    fn hir_enum(&self, decl: Enum) -> HirTopLevel;
 
     #[salsa::invoke(crate::types::lower_type)]
-    fn lower_type(&self, expr: Expr) -> HirType;
+    fn hir_type(&self, expr: Expr) -> HirType;
 
     #[salsa::invoke(crate::stmt::lower_stmt)]
-    fn lower_stmt(&self, stmt: Stmt) -> Instr;
+    fn hir_stmt(&self, stmt: Stmt) -> Instr;
 
     #[salsa::invoke(crate::stmt::lower_block)]
-    fn lower_block(&self, stmts: Vec<Stmt>) -> HirValue;
+    fn hir_block(&self, stmts: Vec<Stmt>) -> HirValue;
 
     #[salsa::invoke(crate::pattern::lower_pattern)]
-    fn lower_pattern(&self, pattern: Pat) -> HirPattern;
+    fn hir_pattern(&self, pattern: Pat) -> HirPattern;
 
     #[salsa::invoke(crate::lower_value)]
-    fn lower_value(&self, expr: Expr) -> HirValue;
+    fn hir_value(&self, expr: Expr) -> HirValue;
 
     #[salsa::invoke(crate::lower_branch)]
-    fn lower_branch(&self, branch: Branch) -> HirBranch;
+    fn hir_branch(&self, branch: Branch) -> HirBranch;
 }
 
 fn hir_file(db: &dyn AstLowerrer, file: AsenaFile) -> InternalAsenaFile {
@@ -63,16 +63,16 @@ fn hir_file(db: &dyn AstLowerrer, file: AsenaFile) -> InternalAsenaFile {
             Decl::Assign(ref decl) => crate::make_assign(db, &mut signatures, decl),
             Decl::Signature(ref decl) => crate::make_signature(db, &mut signatures, decl),
             Decl::Class(class_decl) => {
-                declarations.insert(db.lower_class(class_decl));
+                declarations.insert(db.hir_class(class_decl));
             }
             Decl::Instance(instance_decl) => {
-                declarations.insert(db.lower_instance(instance_decl));
+                declarations.insert(db.hir_instance(instance_decl));
             }
             Decl::Trait(trait_decl) => {
-                declarations.insert(db.lower_trait(trait_decl));
+                declarations.insert(db.hir_trait(trait_decl));
             }
             Decl::Enum(enum_decl) => {
-                declarations.insert(db.lower_enum(enum_decl));
+                declarations.insert(db.hir_enum(enum_decl));
             }
         };
     }

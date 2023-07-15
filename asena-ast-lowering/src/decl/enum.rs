@@ -26,7 +26,7 @@ pub fn lower_enum(db: &dyn AstLowerrer, decl: Enum) -> HirTopLevel {
             parameters: compute_parameters(db, &decl),
             return_type: match decl.gadt_type() {
                 Typed::Infer => None,
-                Typed::Explicit(type_expr) => Some(db.lower_type(type_expr)),
+                Typed::Explicit(type_expr) => Some(db.hir_type(type_expr)),
             },
         },
         variants: lower_variants(db, &decl),
@@ -53,7 +53,7 @@ pub fn lower_variants(db: &dyn AstLowerrer, decl: &Enum) -> HashMap<Name, HirVar
             Variant::Error => HirType::error(db),
             Variant::TypeVariant(type_variant) => match type_variant.value() {
                 Typed::Infer => HirType::constructor(db, enum_name),
-                Typed::Explicit(variant_type) => db.lower_type(variant_type),
+                Typed::Explicit(variant_type) => db.hir_type(variant_type),
             },
             Variant::ConstructorVariant(variant) => {
                 let parameters = variant
@@ -66,7 +66,7 @@ pub fn lower_variants(db: &dyn AstLowerrer, decl: &Enum) -> HashMap<Name, HirVar
 
                             None
                         }
-                        Typed::Explicit(type_expr) => Some(db.lower_type(type_expr)),
+                        Typed::Explicit(type_expr) => Some(db.hir_type(type_expr)),
                     })
                     .collect_vec();
                 let enum_value_type = HirType::constructor(db, enum_name);

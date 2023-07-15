@@ -17,7 +17,7 @@ pub fn lower_pattern(db: &dyn AstLowerrer, pattern: Pat) -> HirPattern {
             let arguments = constructor
                 .arguments()
                 .iter()
-                .map(|arg| db.lower_pattern(arg.clone()))
+                .map(|arg| db.hir_pattern(arg.clone()))
                 .collect();
 
             HirPatternKind::from(HirPatternConstructor {
@@ -29,7 +29,7 @@ pub fn lower_pattern(db: &dyn AstLowerrer, pattern: Pat) -> HirPattern {
             let items = list
                 .items()
                 .iter()
-                .map(|item| db.lower_pattern(item.clone()))
+                .map(|item| db.hir_pattern(item.clone()))
                 .collect();
 
             HirPatternKind::from(HirPatternList { items })

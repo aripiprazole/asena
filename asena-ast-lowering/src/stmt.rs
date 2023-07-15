@@ -35,7 +35,7 @@ pub fn lower_block(db: &dyn AstLowerrer, block: Vec<Stmt>) -> HirValue {
     let mut last = None;
 
     for stmt in block.iter() {
-        let (stmt, value) = db.lower_stmt(stmt.clone());
+        let (stmt, value) = db.hir_stmt(stmt.clone());
         stmts.push(stmt);
         last = value;
     }
@@ -65,7 +65,7 @@ pub fn lower_block(db: &dyn AstLowerrer, block: Vec<Stmt>) -> HirValue {
 }
 
 fn make_value(db: &dyn AstLowerrer, stmt: &ExprStmt) -> Instr {
-    let value = db.lower_value(stmt.value());
+    let value = db.hir_value(stmt.value());
 
     let kind = HirStmtKind::from(HirStmtValue(value));
     let stmt = db.intern_stmt(HirStmtData {
@@ -77,22 +77,22 @@ fn make_value(db: &dyn AstLowerrer, stmt: &ExprStmt) -> Instr {
 }
 
 fn make_let(db: &dyn AstLowerrer, stmt: &LetStmt) -> HirStmtKind {
-    let pattern = db.lower_pattern(stmt.pattern());
-    let value = db.lower_value(stmt.value());
+    let pattern = db.hir_pattern(stmt.pattern());
+    let value = db.hir_value(stmt.value());
 
     HirStmtKind::from(HirStmtLet { value, pattern })
 }
 
 fn make_ask(db: &dyn AstLowerrer, stmt: &Ask) -> HirStmtKind {
-    let pattern = db.lower_pattern(stmt.pattern());
-    let value = db.lower_value(stmt.value());
+    let pattern = db.hir_pattern(stmt.pattern());
+    let value = db.hir_value(stmt.value());
 
     HirStmtKind::from(HirStmtAsk { value, pattern })
 }
 
 fn make_return(db: &dyn AstLowerrer, stmt: &Return) -> Instr {
     let value = match stmt.value() {
-        Some(value) => db.lower_value(value),
+        Some(value) => db.hir_value(value),
         None => HirValue::unit(db),
     };
 
@@ -107,16 +107,16 @@ fn make_return(db: &dyn AstLowerrer, stmt: &Return) -> Instr {
 
 fn make_if(db: &dyn AstLowerrer, stmt: &IfStmt) -> HirStmtKind {
     let expr = db.intern_expr(HirExprData::from(HirExprKind::from(HirExprMatch {
-        scrutinee: db.lower_value(stmt.cond()),
+        scrutinee: db.hir_value(stmt.cond()),
         cases: hashset![
             HirMatchCase {
                 pattern: HirPattern::new_true(db),
-                value: db.lower_branch(stmt.then_branch()),
+                value: db.hir_branch(stmt.then_branch()),
             },
             HirMatchCase {
                 pattern: HirPattern::new_false(db),
                 value: match stmt.else_branch() {
-                    Some(else_branch) => db.lower_branch(else_branch),
+                    Some(else_branch) => db.hir_branch(else_branch),
                     None => HirBranch::Expr(HirValue::unit(db)),
                 },
             }

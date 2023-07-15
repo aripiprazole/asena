@@ -52,7 +52,7 @@ fn compute_abstract_fields(db: &dyn AstLowerrer, fields: Vec<Field>) -> Methods 
 
         let return_type = match field.field_type() {
             Typed::Infer => None,
-            Typed::Explicit(type_expr) => Some(db.lower_type(type_expr)),
+            Typed::Explicit(type_expr) => Some(db.hir_type(type_expr)),
         };
 
         let method = HirBindingGroup {
@@ -85,7 +85,7 @@ fn defaults(db: &dyn AstLowerrer, mut methods: Methods, defaults: Vec<DefaultMet
 
         group.declarations.insert(HirDeclaration {
             patterns: build_patterns(db, parameters),
-            value: db.lower_block(method.body()),
+            value: db.hir_block(method.body()),
         });
     }
 
