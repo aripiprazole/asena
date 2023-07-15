@@ -58,8 +58,22 @@ impl<'a> Parser<'a> {
 
     pub fn terminal(&mut self, kind: TreeKind) -> MarkClosed {
         let mark = self.open();
+
+        // Build tree position with the initial state, and the current
+        let initial = mark.span();
+        let current = self.peek().into_owned();
+        let position = initial.on(current.span);
+
+        // Replace the state in the tree builder
         self.advance();
-        self.close(mark, kind)
+
+        // Replace the state in the tree builder
+        self.events[mark.index()] = Event::Open(Spanned::new(position, kind));
+        self.events.push(Event::Close);
+
+        mark.0.defuse();
+
+        MarkClosed::new(mark.index(), mark.span())
     }
 
     pub fn advance(&mut self) {

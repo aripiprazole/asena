@@ -1,12 +1,12 @@
 use IO
 use Nat
 
-enum Vec (a: Set) (n: Nat) {
-  Nil  : Vec a 0,
-  Cons : (head: a) -> (tail: Vec a n) -> Vec a (n + 1),
+enum Vec (a: Set) {
+  Nil  : Vec a,
+  Cons : (head: a) -> (tail: Vec a) -> Vec a,
 
-  fun show (vec: Vec) {
-    let a = match vec {
+  fun show (vec: Vec [n]) {
+    let vec = match vec {
       Test.Cons x xs => Cons x xs,
       Test.Nil => Nil
     }

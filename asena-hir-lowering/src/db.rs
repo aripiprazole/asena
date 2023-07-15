@@ -31,5 +31,5 @@ fn llir_package(db: &dyn LlirDatabase, pkg: Package) -> Result<Arc<LlirPackage>,
     //     .hir_find_fn(pkg, "main".into())
     //     .ok_or(LlirErr::MainNotFound(data.name))?;
 
-    todo!()
+    Ok(Arc::new(LlirPackage))
 }

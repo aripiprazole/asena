@@ -169,7 +169,7 @@ impl<'a> Lexer<'a> {
                 .into_iter()
                 .map(|(value, span)| {
                     let range = span.into_range();
-                    let loc = Loc::new(path.clone(), range.start, range.end - 1);
+                    let loc = Loc::new(path.clone(), range.start, range.end);
                     Spanned::new(loc, value)
                 })
                 .collect(),
