@@ -1,4 +1,4 @@
-use asena_ast::{db::ReporterDatabase, *};
+use asena_ast::*;
 use asena_ast_db::db::AstDatabase;
 use asena_hir::{
     expr::data::HirBranch,
@@ -15,7 +15,7 @@ use im::{HashMap, HashSet};
 use crate::stmt::Instr;
 
 #[salsa::query_group(AstLowerrerStorage)]
-pub trait AstLowerrer: AstDatabase + HirInterner + ReporterDatabase {
+pub trait AstLowerrer: AstDatabase + HirInterner {
     fn hir_file(&self, file: AsenaFile) -> InternalAsenaFile;
 
     #[salsa::invoke(crate::decl::r#trait::lower_trait)]

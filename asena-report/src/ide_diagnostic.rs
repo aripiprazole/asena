@@ -1,3 +1,5 @@
+use asena_leaf::ast::Located;
+
 use super::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -17,15 +19,55 @@ pub enum DiagnosticKind {
     Lint = 13,
     LoweringError = 14,
     Context = 15,
+    BuildError = 16,
 }
 
 #[derive(Debug, Clone)]
-pub struct Diagnostic<T: InternalError> {
+pub struct Diagnostic<T> {
     pub kind: DiagnosticKind,
     pub code: u16,
     pub message: Spanned<T>,
-    pub quickfixes: Vec<Quickfix>,
     pub children: Vec<Diagnostic<T>>,
+}
+
+pub trait WithError {
+    fn fail<E: InternalError>(self, error: E) -> Diagnostic<E>;
+}
+
+impl<T: Located> WithError for T {
+    fn fail<E: InternalError>(self, error: E) -> Diagnostic<E> {
+        Diagnostic::located(self, error)
+    }
+}
+
+impl<E: InternalError> Diagnostic<E> {
+    pub fn new(error: Spanned<E>) -> Self {
+        Self {
+            kind: error.kind(),
+            code: error.code(),
+            message: error,
+            children: vec![],
+        }
+    }
+
+    pub fn of(loc: Loc, error: E) -> Self {
+        Self::new(Spanned::new(loc, error))
+    }
+
+    pub fn located<T: Located>(loc: T, error: E) -> Self {
+        Self::new(Spanned::new(loc.location().into_owned(), error))
+    }
+
+    pub fn add_child(mut self, message: Spanned<E>) -> Self {
+        self.children.push(Diagnostic {
+            kind: message.kind(),
+            code: message.code(),
+            message,
+            children: vec![],
+        });
+
+        self
+    }
 }
 
 impl<T: InternalError> Eq for Diagnostic<T> {}
@@ -38,117 +80,22 @@ impl<T: InternalError> PartialEq for Diagnostic<T> {
             && self.message.value.code() == other.message.value.code()
             && self.message.value.kind() == other.message.value.kind()
             && self.message.value.to_string() == other.message.value.to_string()
-            && self.quickfixes == other.quickfixes
             && self.children == other.children
     }
 }
 
 impl<T: InternalError> Hash for Diagnostic<T> {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        let message = (
-            &self.message.span,
-            self.message.value.code(),
-            self.message.value.kind(),
-        );
+        // Build message hasher
+        let message = &self.message;
+        let code = message.value.code();
+        let kind = message.value.kind();
 
         self.kind.hash(state);
         self.code.hash(state);
-        message.hash(state);
-        self.quickfixes.hash(state);
+        message.span.hash(state);
+        code.hash(state);
+        kind.hash(state);
         self.children.hash(state);
-    }
-}
-
-impl<E: InternalError> Diagnostic<E> {
-    pub fn new(error: Spanned<E>) -> Self {
-        Self {
-            kind: error.kind(),
-            code: error.code(),
-            message: error,
-            children: vec![],
-            quickfixes: vec![],
-        }
-    }
-
-    pub fn add_fixes(mut self, fixes: Vec<Quickfix>) -> Self {
-        self.quickfixes.extend(fixes);
-        self
-    }
-
-    pub fn add_child(mut self, message: Spanned<E>) -> Self {
-        self.children.push(Diagnostic {
-            kind: message.kind(),
-            code: message.code(),
-            message,
-            children: vec![],
-            quickfixes: vec![],
-        });
-
-        self
-    }
-
-    fn as_label(&self, colors: &mut ariadne::ColorGenerator) -> ariadne::Label {
-        ariadne::Label::new(self.message.span.clone().into_ranged().unwrap_or_default())
-            .with_message(self.message.value.to_string())
-            .with_color(match self.kind {
-                DiagnosticKind::Warning | DiagnosticKind::Deprecated => Color::Yellow,
-                DiagnosticKind::Info => Color::Blue,
-                DiagnosticKind::HardError
-                | DiagnosticKind::Error
-                | DiagnosticKind::InternalError => Color::Red,
-                _ => colors.next(),
-            })
-    }
-
-    pub(crate) fn dump(&self, source: &str)
-    where
-        E: Clone,
-    {
-        use ariadne::{ColorGenerator, Report, ReportKind, Source};
-
-        let mut builder =
-            Report::<Range<usize>>::build(ReportKind::Custom("error", Color::Red), (), 0)
-                .with_code(format!("E{:03X}", self.code))
-                .with_message(self.message.value().to_string());
-        let mut colors = ColorGenerator::new();
-        let mut children = vec![];
-        children.push(self.clone());
-        children.extend(self.children.clone());
-
-        builder = builder.with_labels(
-            children
-                .iter()
-                .map(|diagnostic| diagnostic.as_label(&mut colors)),
-        );
-
-        if !self.quickfixes.is_empty() {
-            let mut fixes = vec![];
-            for fix in &self.quickfixes.clone() {
-                let loc = fix.loc.clone();
-                let message = fix
-                    .message
-                    .iter()
-                    .map(|x| x.to_string())
-                    .collect::<Vec<_>>()
-                    .join(", ");
-
-                fixes.push(format!("{message} at {loc}"));
-            }
-            builder = builder.with_help(format!("Can be fixed by: {}", fixes.join("; ")))
-        }
-
-        builder
-            .with_config(
-                Config::default()
-                    .with_tab_width(2)
-                    .with_cross_gap(false)
-                    .with_label_attach(LabelAttach::Start)
-                    .with_multiline_arrows(false)
-                    .with_char_set(ariadne::CharSet::Ascii)
-                    .with_underlines(false),
-            )
-            .finish()
-            .print(Source::from(source.clone()))
-            .unwrap();
     }
 }

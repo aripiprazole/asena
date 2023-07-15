@@ -1,6 +1,7 @@
 #![feature(trait_upcasting)]
 
 use asena_ast::*;
+use asena_ast_db::package::HasDiagnostic;
 use asena_hir::expr::data::HirBranch;
 use asena_hir::expr::{data::HirCallee, *};
 use asena_hir::top_level::data::{HirDeclaration, HirSignature};
@@ -8,6 +9,7 @@ use asena_hir::top_level::HirBindingGroup;
 use asena_hir::{literal::*, Name};
 use asena_hir::{value::*, HirLoc};
 use asena_leaf::ast::Located;
+use asena_report::WithError;
 use db::AstLowerrer;
 use decl::compute_parameters;
 use error::AstLoweringError::*;
@@ -33,8 +35,7 @@ pub(crate) fn make_signature(db: &dyn AstLowerrer, signatures: &mut Signatures, 
     let span = make_location(db, decl);
 
     if let Some((loc, _)) = signatures.get(&name) {
-        db.reporter()
-            .report(loc, DuplicatedSignatureDefinitionError);
+        loc.fail(DuplicatedSignatureDefinitionError).push(db);
     }
 
     let parameters = compute_parameters(db, decl);

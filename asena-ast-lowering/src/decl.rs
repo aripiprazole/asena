@@ -1,8 +1,10 @@
 use asena_ast::{traits::global_decl::GlobalDecl, GlobalName, Method, Parameter, Typed};
+use asena_ast_db::package::HasDiagnostic;
 use asena_hir::top_level::{
     data::{HirDeclaration, HirParameterData, HirParameterKind, HirSignature},
     HirBindingGroup,
 };
+use asena_report::WithError;
 use im::hashset;
 
 use crate::{db::AstLowerrer, error::AstLoweringError::*};
@@ -29,9 +31,9 @@ pub fn compute_parameters(db: &dyn AstLowerrer, decl: &impl GlobalDecl) -> Vec<H
                 parameters.push(HirParameterKind::This);
             }
             // a self parameter cannot be implicit
-            _ if parameter.is_self() && !parameter.explicit() => db
-                .reporter()
-                .report(&parameter, SelfParameterBayMeExplicitError),
+            _ if parameter.is_self() && !parameter.explicit() => {
+                parameter.fail(SelfParameterBayMeExplicitError).push(db)
+            }
             // This is the inverse, for explicit being the default case, if the parameter is
             // with some error and explicit is buggy, then it will be explicit.
             _ if !parameter.explicit() => {

@@ -80,13 +80,13 @@ pub fn lower_type(db: &dyn AstLowerrer, expr: Expr) -> HirType {
 }
 
 fn raise_type_literal_error(db: &dyn AstLowerrer, expr: &Expr) -> HirTypeKind {
-    db.reporter().report(expr, UnsupportedTypeLiteralsError);
+    expr.clone().fail(UnsupportedTypeLiteralsError).push(db);
 
     HirTypeKind::Error
 }
 
 fn raise_type_expr_error(db: &dyn AstLowerrer, expr: &Expr) -> HirTypeKind {
-    db.reporter().report(expr, UnsupportedTypeExprsError);
+    expr.clone().fail(UnsupportedTypeExprsError).push(db);
 
     HirTypeKind::Error
 }

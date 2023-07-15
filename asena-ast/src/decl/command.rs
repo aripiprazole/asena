@@ -1,7 +1,7 @@
-use asena_report::{DiagnosticKind, InternalError};
+use asena_report::{DiagnosticKind, InternalError, Reports};
 use thiserror::Error;
 
-use crate::{reporter::Reports, visitor::AsenaVisitor, *};
+use crate::{visitor::AsenaVisitor, *};
 
 pub type Result<T = ()> = std::result::Result<T, CommandError>;
 
@@ -34,20 +34,20 @@ impl InternalError for CommandError {
     }
 }
 
-pub trait CommandHandler: Reports + AsenaVisitor<()> {
+pub trait CommandHandler: AsenaVisitor<()> {
     fn on_command(&mut self, value: Command) -> Result {
         let _ = value;
         Ok(())
     }
 }
 
-impl<T: CommandHandler> AsenaVisitor<()> for T {
+impl<T: CommandHandler + Reports> AsenaVisitor<()> for T {
     fn visit_command(&mut self, value: Command) {
         let name = value.find_name();
 
         match self.on_command(value) {
             Ok(()) => {}
-            Err(err) => self.reports().diagnostic(name.location(), err),
+            Err(err) => todo!(),
         }
     }
 }

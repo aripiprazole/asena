@@ -6,7 +6,6 @@
 
 use std::{path::PathBuf, sync::Mutex};
 
-use asena_ast::db::ReporterStorage;
 use asena_ast_db::db::AstDatabaseStorage;
 use asena_ast_lowering::db::AstLowerrerStorage;
 use asena_grammar::Linebreak;
@@ -108,13 +107,7 @@ fn main() {
     run_cli();
 }
 
-#[salsa::database(
-    ReporterStorage,
-    PrecStorage,
-    AstDatabaseStorage,
-    AstLowerrerStorage,
-    HirStorage
-)]
+#[salsa::database(PrecStorage, AstDatabaseStorage, AstLowerrerStorage, HirStorage)]
 #[derive(Default)]
 pub struct DatabaseImpl {
     pub storage: salsa::Storage<DatabaseImpl>,
@@ -129,28 +122,17 @@ impl salsa::Database for DatabaseImpl {
 
 #[cfg(test)]
 mod tests {
-    use std::{
-        cell::RefCell,
-        rc::Rc,
-        sync::{Arc, RwLock},
-    };
+    use std::sync::Arc;
 
-    use asena_ast::db::ReporterDatabase;
     use asena_ast_db::{db::AstDatabase, package::*, vfs::*};
     use asena_ast_lowering::db::AstLowerrer;
-    use asena_grammar::parse_asena_file;
-    use asena_prec::{default_prec_table, PrecDatabase};
+    use asena_prec::PrecDatabase;
 
     use crate::DatabaseImpl;
 
     #[test]
     fn pipeline_works() {
-        let asena_file = parse_asena_file!("../Test.ase");
-
-        let mut db = DatabaseImpl::default();
-        db.set_reporter(Arc::new(asena_file.reporter));
-        db.set_prec_table(Arc::new(RwLock::new(default_prec_table())));
-        db.set_global_scope(Rc::new(RefCell::new(Default::default())));
+        let db = DatabaseImpl::default();
 
         let local_pkg = Package::new(&db, "Local", "0.0.0", Arc::new(Default::default()));
         let file = VfsFileData::new(&db, "Test", "./Test.ase".into(), local_pkg);
@@ -164,7 +146,6 @@ mod tests {
         let file = db.ordered_prec(file);
         let hir = db.hir_file(file);
 
-        db.reporter().dump();
-        println!("{hir:?}");
+        db.lookup_intern_package(local_pkg).print_diagnostics(&db);
     }
 }

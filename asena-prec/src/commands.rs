@@ -1,24 +1,34 @@
+use std::ops::{Deref, DerefMut};
+use std::sync::{Arc, RwLock};
+
 use asena_derive::*;
 
 use asena_ast::command::{CommandHandler, Result};
-use asena_ast::reporter::{Reporter, Reports};
 use asena_ast::*;
 
+use asena_report::{Diagnostic, Reports};
 use im::HashMap;
 
-pub struct InfixHandler<'a> {
-    pub prec_table: &'a mut HashMap<FunctionId, Entry>,
-    pub reporter: &'a Reporter,
+use crate::PrecDatabase;
+
+pub struct InfixHandler<'db> {
+    pub db: &'db dyn PrecDatabase,
 }
 
-impl Reports for InfixHandler<'_> {
-    fn reports(&mut self) -> &Reporter {
-        self.reporter
+impl<'db> InfixHandler<'db> {
+    pub fn new(db: &'db dyn PrecDatabase) -> Self {
+        Self { db }
+    }
+}
+
+impl<'db> Reports for InfixHandler<'db> {
+    fn errors(&self) -> Arc<RwLock<Vec<Diagnostic<asena_report::BoxInternalError>>>> {
+        todo!()
     }
 }
 
 #[ast_command(infixl, infixr)]
-impl CommandHandler for InfixHandler<'_> {
+impl<'db> CommandHandler for InfixHandler<'db> {
     fn on_command(&mut self, command: Command) -> Result {
         let name = command.at::<LiteralExpr>(0)?.literal().contents();
         let order = command
@@ -32,7 +42,9 @@ impl CommandHandler for InfixHandler<'_> {
             entry = Entry::new(FunctionId::new(&name), Assoc::Right, order);
         }
 
-        self.prec_table.insert(FunctionId::new(&name), entry);
+        let prec_table = self.db.prec_table();
+        let mut prec_table = prec_table.write().unwrap();
+        prec_table.insert(FunctionId::new(&name), entry);
 
         Ok(())
     }
@@ -92,13 +104,13 @@ pub fn default_prec_table() -> HashMap<FunctionId, Entry> {
     table
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Assoc {
     Right,
     Left,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Entry {
     pub fn_id: FunctionId,
     pub assoc: Assoc,
@@ -112,5 +124,36 @@ impl Entry {
             assoc,
             order,
         }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct PrecTable(Arc<RwLock<HashMap<FunctionId, Entry>>>);
+
+impl PartialEq for PrecTable {
+    fn eq(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.0, &other.0)
+    }
+}
+
+impl Eq for PrecTable {}
+
+impl Default for PrecTable {
+    fn default() -> Self {
+        Self(Arc::new(RwLock::new(default_prec_table())))
+    }
+}
+
+impl DerefMut for PrecTable {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl Deref for PrecTable {
+    type Target = Arc<RwLock<HashMap<FunctionId, Entry>>>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }

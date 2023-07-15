@@ -1,4 +1,5 @@
 use asena_ast::{Enum, GlobalName, Typed, Variant};
+use asena_ast_db::package::HasDiagnostic;
 use asena_hir::hir_type::HirType;
 use asena_hir::top_level::{
     data::{HirSignature, HirVariant},
@@ -6,6 +7,7 @@ use asena_hir::top_level::{
 };
 use asena_hir::top_level::{HirTopLevel, HirTopLevelData};
 use asena_hir::Name;
+use asena_report::WithError;
 use im::HashMap;
 use itertools::Itertools;
 
@@ -60,8 +62,7 @@ pub fn lower_variants(db: &dyn AstLowerrer, decl: &Enum) -> HashMap<Name, HirVar
                     .cloned()
                     .filter_map(|parameter| match parameter {
                         Typed::Infer => {
-                            db.reporter()
-                                .report(&parameter, VariantParameterCanNotBeInferError);
+                            parameter.fail(VariantParameterCanNotBeInferError).push(db);
 
                             None
                         }

@@ -152,10 +152,8 @@ impl MarkClosed {
 }
 
 impl RedTree {
-    pub fn unwrap(mut self) -> Spanned<Tree> {
+    pub fn unwrap(self) -> Spanned<Tree> {
         if self.has_errors() {
-            self.report.dump();
-
             panic!("Called `RedTree::unwrap` on a failed-to-parse tree");
         }
 

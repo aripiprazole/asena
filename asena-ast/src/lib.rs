@@ -56,7 +56,6 @@ pub use traits::function::*;
 pub use visitor::*;
 
 pub mod body;
-pub mod db;
 pub mod decl;
 pub mod declaration_site;
 pub mod expr;

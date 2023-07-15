@@ -1,5 +1,6 @@
 use asena_ast_db::db::AstDatabase;
 use asena_leaf::ast::Located;
+use asena_span::Spanned;
 
 use crate::{scopes::*, *};
 
@@ -8,10 +9,9 @@ mod enum_decl;
 mod instance_decl;
 mod trait_decl;
 
-pub struct AstResolver<'db, 'a> {
+pub struct AstResolver<'db> {
     pub db: &'db dyn AstDatabase,
     pub file: VfsFile,
-    pub reporter: &'a mut Reporter,
     pub binding_groups: im::HashMap<FunctionId, Vec<Arc<Decl>>>,
     pub enum_declarations: im::HashMap<FunctionId, Enum>,
     pub class_declarations: im::HashMap<FunctionId, Class>,
@@ -19,12 +19,11 @@ pub struct AstResolver<'db, 'a> {
     pub instance_declarations: Vec<Instance>, // TODO: change to hashset
 }
 
-impl<'db, 'a> AstResolver<'db, 'a> {
-    pub fn new(db: &'db dyn AstDatabase, file: VfsFile, reporter: &'a mut Reporter) -> Self {
+impl<'db> AstResolver<'db> {
+    pub fn new(db: &'db dyn AstDatabase, file: VfsFile) -> Self {
         AstResolver {
             db,
             file,
-            reporter,
             binding_groups: Default::default(),
             enum_declarations: Default::default(),
             class_declarations: Default::default(),
@@ -70,9 +69,10 @@ impl<'db, 'a> AstResolver<'db, 'a> {
     }
 }
 
-impl<'ctx, 'a> AsenaVisitor<()> for AstResolver<'ctx, 'a> {
+impl<'ctx> AsenaVisitor<()> for AstResolver<'ctx> {
     fn visit_use(&mut self, value: asena_ast::Use) {
-        let module_ref = self.db.module_ref(value.to_fn_id());
+        let fn_id = Spanned::new(value.location().into_owned(), value.to_fn_id());
+        let module_ref = self.db.module_ref(fn_id);
 
         self.db.add_path_dep(self.file, module_ref);
     }

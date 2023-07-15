@@ -4,7 +4,7 @@ use asena_leaf::ast::Located;
 
 use super::AstResolver;
 
-impl AstResolver<'_, '_> {
+impl AstResolver<'_> {
     pub fn resolve_class_decl(&mut self, class: Class) {
         self.class_declarations
             .insert(class.name().to_fn_id(), class.clone());

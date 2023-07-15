@@ -1,4 +1,4 @@
-use std::{fmt::Debug, ops::Deref, sync::Arc};
+use std::{fmt::Debug, sync::Arc};
 
 use asena_ast::{Decl, FunctionId};
 use im::HashMap;
@@ -14,49 +14,13 @@ pub enum ModuleRef {
     Found(VfsFile),
 }
 
-#[derive(Debug, Clone, Hash, Eq, PartialEq, PartialOrd, Ord)]
-pub enum Interned<T> {
-    Nothing,
-    Just(Arc<T>),
-}
-
-impl<T> Default for Interned<T> {
-    fn default() -> Self {
-        Self::Nothing
-    }
-}
-
-impl<T> From<Option<Arc<T>>> for Interned<T> {
-    fn from(value: Option<Arc<T>>) -> Self {
-        match value {
-            None => Self::Nothing,
-            Some(value) => Self::Just(value),
-        }
-    }
-}
-
-impl<T> From<Interned<T>> for Option<Arc<T>> {
-    fn from(value: Interned<T>) -> Self {
-        match value {
-            Interned::Nothing => Self::None,
-            Interned::Just(value) => Self::Some(value),
-        }
-    }
-}
-
-impl<T> Deref for Interned<T> {
-    type Target = Arc<T>;
-
-    fn deref(&self) -> &Self::Target {
-        match self {
-            Interned::Nothing => panic!("Attempted to dereference an empty Interned value"),
-            Interned::Just(value) => value,
-        }
-    }
-}
-
+pub mod build_system;
 pub mod db;
+pub mod def;
+pub mod error;
 pub mod package;
+pub mod report;
 pub mod scope;
 pub mod vfs;
-pub mod def;
+
+pub use error::BuildError::*;

@@ -1,6 +1,6 @@
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 
-use asena_ast::{reporter::Reporter, *};
+use asena_ast::*;
 
 use asena_ast_db::scope::{ScopeData, VariantResolution};
 use asena_ast_db::vfs::*;
@@ -9,8 +9,8 @@ use asena_leaf::ast::Lexeme;
 use asena_leaf::ast_key;
 use asena_report::InternalError;
 
-use thiserror::Error;
 use asena_ast_db::def::DefWithId;
+use thiserror::Error;
 
 use crate::error::ResolutionError::*;
 

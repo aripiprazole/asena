@@ -110,12 +110,13 @@ dependencies = [
 name = "asena-ast-db"
 version = "0.1.0"
 dependencies = [
+ "ariadne",
  "asena-ast",
  "asena-grammar",
  "asena-leaf",
  "asena-lexer",
  "asena-parser",
- "asena-prec",
+ "asena-report",
  "asena-span",
  "fxhash",
  "if_chain",
@@ -123,6 +124,7 @@ dependencies = [
  "itertools",
  "salsa",
  "salsa-macros",
+ "thiserror",
 ]
 
 [[package]]
@@ -377,6 +379,7 @@ name = "asena-prec"
 version = "0.1.0"
 dependencies = [
  "asena-ast",
+ "asena-ast-db",
  "asena-derive",
  "asena-grammar",
  "asena-leaf",
@@ -409,6 +412,7 @@ dependencies = [
  "ariadne",
  "asena-leaf",
  "asena-span",
+ "salsa",
 ]
 
 [[package]]

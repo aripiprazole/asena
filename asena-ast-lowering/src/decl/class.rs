@@ -1,9 +1,11 @@
 use asena_ast::{Class, Field, GlobalName, Typed};
+use asena_ast_db::package::HasDiagnostic;
 use asena_hir::{
     hir_type::HirType,
     top_level::{data::HirSignature, HirTopLevel, HirTopLevelData, HirTopLevelStruct},
     Name,
 };
+use asena_report::WithError;
 use im::HashMap;
 
 use crate::{db::AstLowerrer, error::AstLoweringError::*, make_location};
@@ -37,7 +39,7 @@ pub fn lower_fields(db: &dyn AstLowerrer, fields: Vec<Field>) -> HashMap<Name, H
         let name = db.intern_name(field.name().to_fn_id().to_string());
         match field.field_type() {
             // a field cannot be infer
-            Typed::Infer => db.reporter().report(&field, FieldTypeCanNotBeInferError),
+            Typed::Infer => field.fail(FieldTypeCanNotBeInferError).push(db),
             Typed::Explicit(type_expr) => {
                 let type_id = db.lower_type(type_expr);
                 map.insert(name, type_id);

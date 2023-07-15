@@ -1,9 +1,11 @@
 use asena_ast::{DefaultMethod, Field, GlobalName, Trait, Typed};
+use asena_ast_db::package::HasDiagnostic;
 use asena_hir::top_level::{
     data::{HirDeclaration, HirSignature},
     HirBindingGroup, HirTopLevel, HirTopLevelData, HirTopLevelTrait,
 };
 use asena_hir::Name;
+use asena_report::WithError;
 use im::{hashset, HashMap};
 
 use crate::make_location;
@@ -42,8 +44,10 @@ fn compute_abstract_fields(db: &dyn AstLowerrer, fields: Vec<Field>) -> Methods 
     for field in fields {
         let name = db.intern_name(field.name().to_fn_id().to_string());
         if methods.get(&name).is_some() {
-            db.reporter()
-                .report(&field, DuplicatedAbstractFieldDefinitionError)
+            field
+                .clone()
+                .fail(DuplicatedAbstractFieldDefinitionError)
+                .push(db);
         }
 
         let return_type = match field.field_type() {

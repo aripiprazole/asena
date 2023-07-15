@@ -1,9 +1,11 @@
 use asena_ast::{Ann, App, Array, Dsl, If, Lam, Let, LocalExpr, Match};
+use asena_ast_db::package::HasDiagnostic;
 use asena_hir::{
     expr::data::{HirDsl, HirMatchCase, HirMatchKind},
     pattern::HirPattern,
     stmt::HirStmt,
 };
+use asena_report::WithError;
 
 use crate::{db::AstLowerrer, literal::make_literal};
 
@@ -52,9 +54,9 @@ impl<'a> ExprLowering<'a> {
 
             // dependent types unsupported syntax
             ref expr @ Expr::Qual(_) | ref expr @ Expr::Pi(_) | ref expr @ Expr::Sigma(_) => {
-                self.db
-                    .reporter()
-                    .report(expr, UnsupportedDependentTypesError);
+                expr.clone()
+                    .fail(UnsupportedDependentTypesError)
+                    .push(self.db);
 
                 HirExprKind::Error
             }

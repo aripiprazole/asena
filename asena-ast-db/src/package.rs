@@ -1,5 +1,7 @@
 use std::hash::Hash;
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
+
+use asena_report::{BoxInternalError, Diagnostic, InternalError, Reports};
 
 use crate::db::AstDatabase;
 use crate::vfs::FileSystem;
@@ -21,8 +23,47 @@ impl salsa::InternKey for Package {
 pub struct PackageData {
     pub name: String,
     pub version: String,
+    pub errors: Arc<RwLock<Vec<Diagnostic<BoxInternalError>>>>,
     pub vfs: Arc<FileSystem>,
     pub dependencies: Vec<Arc<PackageData>>,
+}
+
+impl Package {
+    pub fn new(db: &dyn AstDatabase, name: &str, version: &str, vfs: Arc<FileSystem>) -> Self {
+        db.build_system()
+            .add_package(db.intern_package(PackageData {
+                name: name.to_string(),
+                version: version.to_string(),
+                vfs,
+                errors: Arc::new(RwLock::new(Default::default())),
+                dependencies: Vec::new(),
+            }))
+    }
+
+    pub fn diagnostic<E>(&self, db: &dyn AstDatabase, diagnostic: Diagnostic<E>)
+    where
+        E: Clone + InternalError + 'static,
+    {
+        db.lookup_intern_package(*self).diagnostic(diagnostic);
+    }
+}
+
+pub trait HasDiagnostic {
+    fn push(self, db: &dyn AstDatabase);
+}
+
+impl<E: Clone + InternalError + 'static> HasDiagnostic for Diagnostic<E> {
+    fn push(self, db: &dyn AstDatabase) {
+        let package = db.package_of(self.message.span.clone());
+        let data = db.lookup_intern_package(package);
+        data.diagnostic(self);
+    }
+}
+
+impl Reports for PackageData {
+    fn errors(&self) -> Arc<RwLock<Vec<Diagnostic<BoxInternalError>>>> {
+        self.errors.clone()
+    }
 }
 
 impl Hash for PackageData {
@@ -37,17 +78,5 @@ impl Eq for PackageData {}
 impl PartialEq for PackageData {
     fn eq(&self, other: &Self) -> bool {
         self.name == other.name
-    }
-}
-
-impl Package {
-    #[allow(clippy::new_ret_no_self)]
-    pub fn new(db: &dyn AstDatabase, name: &str, version: &str, vfs: Arc<FileSystem>) -> Self {
-        db.intern_package(PackageData {
-            name: name.to_string(),
-            version: version.to_string(),
-            vfs,
-            dependencies: Vec::new(),
-        })
     }
 }

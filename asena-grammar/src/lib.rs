@@ -9,10 +9,6 @@ use asena_parser::Parser;
 
 pub mod macros;
 
-use asena_report::quickfix;
-use asena_report::Fragment::Insert;
-use asena_report::Quickfix;
-
 pub use macros::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -1285,9 +1281,7 @@ fn _semi(p: &mut Parser, mode: Semi) -> bool {
         }
         Semi::Required => {
             if !p.eat(Semi) {
-                p.fixable(MissingSemiError, |token| {
-                    quickfix!(before, token.span, [Insert(";".into())])
-                });
+                p.report(MissingSemiError);
             }
 
             while !p.eof() && p.eat(Semi) {

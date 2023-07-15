@@ -8,3 +8,4 @@ version = "0.1.0"
 ariadne = "0.2"
 asena-leaf = {path = "../asena-leaf"}
 asena-span = {path = "../asena-span"}
+salsa = "0.17.0-pre.2"

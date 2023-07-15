@@ -171,18 +171,3 @@ mod semantic;
 
 pub use highlight::*;
 pub use semantic::*;
-
-#[cfg(test)]
-mod tests {
-    use asena_grammar::parse_asena_file;
-
-    #[test]
-    fn it_works() {
-        let tree = parse_asena_file!("./simple.ase");
-        let annotator = crate::Annotator::new(crate::VirtualFile {
-            contents: tree.data,
-        });
-
-        println!("{}", annotator.run_highlight());
-    }
-}

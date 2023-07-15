@@ -1,21 +1,22 @@
 use crate::{decl::AstResolver, *};
-use asena_ast_db::def::Def;
+use asena_ast_db::{def::Def, package::HasDiagnostic};
 use asena_leaf::ast::Located;
+use asena_report::WithError;
 
 pub enum Level {
     Type,
     Value,
 }
 
-pub struct ScopeResolver<'db, 'ctx, 'a> {
+pub struct ScopeResolver<'db, 'ctx> {
     pub local_scope: Rc<RefCell<ScopeData>>,
     pub frames: Vec<Rc<RefCell<ScopeData>>>,
     pub level: Level,
-    pub owner: &'ctx mut AstResolver<'db, 'a>,
+    pub owner: &'ctx mut AstResolver<'db>,
 }
 
-impl<'db, 'ctx, 'a> ScopeResolver<'db, 'ctx, 'a> {
-    pub fn new(name: BindingId, level: Level, resolver: &'ctx mut AstResolver<'db, 'a>) -> Self {
+impl<'db, 'ctx> ScopeResolver<'db, 'ctx> {
+    pub fn new(name: BindingId, level: Level, resolver: &'ctx mut AstResolver<'db>) -> Self {
         let global_scope = resolver.db.global_scope();
         let local_scope = {
             let named_scope = global_scope.borrow().fork();
@@ -32,7 +33,7 @@ impl<'db, 'ctx, 'a> ScopeResolver<'db, 'ctx, 'a> {
         }
     }
 
-    pub fn empty(level: Level, resolver: &'ctx mut AstResolver<'db, 'a>) -> Self {
+    pub fn empty(level: Level, resolver: &'ctx mut AstResolver<'db>) -> Self {
         let global_scope = resolver.db.global_scope();
         let local_scope = global_scope.borrow().fork();
 
@@ -52,7 +53,7 @@ impl<'db, 'ctx, 'a> ScopeResolver<'db, 'ctx, 'a> {
     }
 }
 
-impl AsenaListener for ScopeResolver<'_, '_, '_> {
+impl AsenaListener for ScopeResolver<'_, '_> {
     // >>> Enter/Exit scope abstractions
     fn enter_pi(&mut self, pi: asena_ast::Pi) {
         let scope = self.last_scope().borrow().fork();
@@ -108,11 +109,7 @@ impl AsenaListener for ScopeResolver<'_, '_, '_> {
         let scope = self.last_scope();
         let mut scope = scope.borrow_mut();
 
-        let def = DefWithId::new(
-            self.owner.db,
-            value.name(),
-            value.location().into_owned(),
-        );
+        let def = DefWithId::new(self.owner.db, value.name(), value.location().into_owned());
 
         scope.functions.insert(value.name().to_fn_id(), def);
     }
@@ -128,9 +125,10 @@ impl AsenaListener for ScopeResolver<'_, '_, '_> {
                     value.dynamic(TypeResolutionKey, resolution);
                 }
                 Def::Unresolved => {
-                    self.owner
-                        .reporter
-                        .report(&value.segments(), UnresolvedTypeNameError(value.to_fn_id()));
+                    value
+                        .segments()
+                        .fail(UnresolvedTypeNameError(value.to_fn_id()))
+                        .push(self.owner.db);
                 }
             },
             Level::Value => match scope.functions.get(&value.to_fn_id()).cloned() {
@@ -138,9 +136,10 @@ impl AsenaListener for ScopeResolver<'_, '_, '_> {
                     value.dynamic(ExprResolutionKey, ExprResolution::Resolved(resolved));
                 }
                 None => {
-                    self.owner
-                        .reporter
-                        .report(&value.segments(), UnresolvedNameError(value.to_fn_id()));
+                    value
+                        .segments()
+                        .fail(UnresolvedNameError(value.to_fn_id()))
+                        .push(self.owner.db);
                 }
             },
         }
@@ -168,9 +167,8 @@ impl AsenaListener for ScopeResolver<'_, '_, '_> {
             }
             VariantResolution::None => {
                 let fn_id = name.to_fn_id();
-                self.owner
-                    .reporter
-                    .report(&name, UnresolvedNameError(fn_id));
+
+                name.fail(UnresolvedNameError(fn_id)).push(self.owner.db);
             }
         }
     }
@@ -181,10 +179,9 @@ impl AsenaListener for ScopeResolver<'_, '_, '_> {
 
         match self.owner.db.constructor_data(value.name(), file) {
             VariantResolution::Binding(name) => {
-                let fn_id = name.to_fn_id();
-                self.owner
-                    .reporter
-                    .report(&*name, UnresolvedNameError(fn_id));
+                name.clone()
+                    .fail(UnresolvedNameError(name.to_fn_id()))
+                    .push(self.owner.db);
 
                 value.dynamic(PatResolutionKey, PatResolution::LocalBinding(name));
             }
@@ -192,10 +189,9 @@ impl AsenaListener for ScopeResolver<'_, '_, '_> {
                 value.dynamic(PatResolutionKey, PatResolution::Variant(variant));
             }
             VariantResolution::None => {
-                let fn_id = name.to_fn_id();
-                self.owner
-                    .reporter
-                    .report(&name, UnresolvedNameError(fn_id));
+                name.clone()
+                    .fail(UnresolvedNameError(name.to_fn_id()))
+                    .push(self.owner.db);
             }
         }
     }
