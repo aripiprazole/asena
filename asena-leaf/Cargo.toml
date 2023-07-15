@@ -5,5 +5,4 @@ name = "asena-leaf"
 version = "0.1.0"
 
 [dependencies]
-asena-interner = {path = "../asena-interner"}
 asena-span = {path = "../asena-span"}

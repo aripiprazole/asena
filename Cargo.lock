@@ -185,18 +185,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "asena-coverage"
-version = "0.1.0"
-dependencies = [
- "asena-ast",
- "asena-leaf",
- "asena-span",
- "fxhash",
- "im",
- "itertools",
-]
-
-[[package]]
 name = "asena-derive"
 version = "0.1.0"
 dependencies = [
@@ -335,22 +323,9 @@ dependencies = [
 ]
 
 [[package]]
-name = "asena-interner"
-version = "0.1.0"
-dependencies = [
- "asena-span",
- "colored",
- "fxhash",
- "im",
- "itertools",
- "once_cell",
-]
-
-[[package]]
 name = "asena-leaf"
 version = "0.1.0"
 dependencies = [
- "asena-interner",
  "asena-span",
 ]
 
@@ -393,18 +368,6 @@ dependencies = [
  "im",
  "itertools",
  "salsa",
-]
-
-[[package]]
-name = "asena-query"
-version = "0.1.0"
-dependencies = [
- "asena-ast",
- "asena-leaf",
- "asena-span",
- "fxhash",
- "im",
- "itertools",
 ]
 
 [[package]]
