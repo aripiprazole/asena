@@ -1,4 +1,4 @@
-use asena_ast_db::db::AstDatabase;
+use asena_ast_db::{commands::CommandHandlerEval, db::AstDatabase};
 
 use super::*;
 
@@ -19,5 +19,7 @@ fn ordered_prec(db: &dyn PrecDatabase, file: AsenaFile) -> AsenaFile {
 }
 
 fn infix_commands(db: &dyn PrecDatabase, file: AsenaFile) -> AsenaFile {
-    file.walks(InfixHandler::new(db))
+    let mut handler = InfixHandler::new(db);
+    let eval = CommandHandlerEval::new(db, &mut handler);
+    file.walks(eval)
 }

@@ -144,7 +144,7 @@ mod tests {
         let file = db.ast(file);
         let file = db.infix_commands(file);
         let file = db.ordered_prec(file);
-        let hir = db.hir_file(file);
+        let _hir = db.hir_file(file);
 
         db.lookup_intern_package(local_pkg).print_diagnostics(&db);
     }

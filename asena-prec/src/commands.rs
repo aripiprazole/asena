@@ -1,9 +1,10 @@
 use std::ops::{Deref, DerefMut};
 use std::sync::{Arc, RwLock};
 
+use asena_ast_db::commands::CommandHandler;
 use asena_derive::*;
 
-use asena_ast::command::{CommandHandler, Result};
+use asena_ast::command::Result;
 use asena_ast::*;
 
 use asena_report::{Diagnostic, Reports};

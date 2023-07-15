@@ -1,3 +1,5 @@
+#![feature(trait_upcasting)]
+
 use asena_ast::*;
 
 pub mod commands;

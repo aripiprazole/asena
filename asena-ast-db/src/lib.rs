@@ -15,6 +15,7 @@ pub enum ModuleRef {
 }
 
 pub mod build_system;
+pub mod commands;
 pub mod db;
 pub mod def;
 pub mod error;

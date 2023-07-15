@@ -1,11 +1,11 @@
-use asena_report::{DiagnosticKind, InternalError, Reports};
+use asena_report::{DiagnosticKind, InternalError};
 use thiserror::Error;
 
-use crate::{visitor::AsenaVisitor, *};
+use crate::*;
 
 pub type Result<T = ()> = std::result::Result<T, CommandError>;
 
-#[derive(Debug, Error)]
+#[derive(Debug, Error, Clone)]
 pub enum CommandError {
     #[error("invalid argument type: expected {expected_node_type}")]
     InvalidArgument { expected_node_type: &'static str },
@@ -31,23 +31,5 @@ impl Command {
 impl InternalError for CommandError {
     fn kind(&self) -> DiagnosticKind {
         DiagnosticKind::Meta
-    }
-}
-
-pub trait CommandHandler: AsenaVisitor<()> {
-    fn on_command(&mut self, value: Command) -> Result {
-        let _ = value;
-        Ok(())
-    }
-}
-
-impl<T: CommandHandler + Reports> AsenaVisitor<()> for T {
-    fn visit_command(&mut self, value: Command) {
-        let name = value.find_name();
-
-        match self.on_command(value) {
-            Ok(()) => {}
-            Err(err) => todo!(),
-        }
     }
 }
