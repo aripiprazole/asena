@@ -1,3 +1,4 @@
+#![feature(panic_info_message)]
 #![feature(box_patterns)]
 #![feature(concat_idents)]
 #![feature(try_trait_v2)]
@@ -12,6 +13,7 @@ use asena_lexer::Lexer;
 use clap::{Args, Parser, Subcommand};
 
 pub mod imp;
+pub mod panik;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -102,6 +104,8 @@ pub fn run_cli() {
 }
 
 fn main() {
+    panik::install_asena_panic_hook();
+
     run_cli();
 }
 
@@ -115,6 +119,8 @@ mod tests {
 
     #[test]
     fn pipeline_works() {
+        crate::panik::install_asena_panic_hook();
+
         let db = crate::imp::DatabaseImpl::default();
 
         let local_pkg = Package::new(&db, "Local", "0.0.0", Arc::new(Default::default()));
