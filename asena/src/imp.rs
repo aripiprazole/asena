@@ -2,10 +2,12 @@ use asena_ast_db::{
     db::{AstDatabase, AstDatabaseStorage},
     vfs::VfsFile,
 };
-use asena_ast_lowering::db::{AstLowerrer, AstLowerrerStorage};
+use asena_ast_lowering::db::AstLowerrerStorage;
 use asena_ast_resolver::db::{AstResolverDatabase, AstResolverStorage};
 use asena_hir::interner::HirStorage;
-use asena_hir_db::db::{HirDatabase, HirDatabaseStorage};
+use asena_hir_db::db::HirDatabaseStorage;
+use asena_hir_lowering::db::{LlirDatabase, LlirStorage};
+use asena_leaf::ast::Located;
 use asena_prec::{db::PrecStorage, PrecDatabase};
 use std::{
     panic::{resume_unwind, AssertUnwindSafe},
@@ -18,7 +20,8 @@ use std::{
     HirDatabaseStorage,
     AstLowerrerStorage,
     AstResolverStorage,
-    HirStorage
+    HirStorage,
+    LlirStorage
 )]
 #[derive(Default)]
 pub struct DatabaseImpl {
@@ -27,18 +30,16 @@ pub struct DatabaseImpl {
 }
 
 impl DatabaseImpl {
-    pub fn run_pipeline_catching(&self, file: VfsFile) {
+    pub fn run_pipeline_catching(&self, vfs_file: VfsFile) {
         let db = AssertUnwindSafe(self);
         let result = std::panic::catch_unwind(|| {
-            let file = db.ast(file);
+            let file = db.ast(vfs_file);
             let file = db.infix_commands(file.into());
             let file = db.ordered_prec(file.into());
             let file = db.ast_resolved_file(file.into());
-            let fhir = db.hir_file(file.into());
-            let file = db.vfs_file(fhir.path);
-            let file = db.hir_mbind(file);
-            let file = db.hir_rc(file);
-            db.hir_loceval(file);
+            let pkg = db.package_of(file.location().into_owned());
+
+            db.llir_package(pkg).unwrap(); // TODO: handle
         });
 
         match result {

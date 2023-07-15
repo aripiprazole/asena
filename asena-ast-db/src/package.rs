@@ -2,9 +2,10 @@ use std::hash::Hash;
 use std::sync::{Arc, RwLock};
 
 use asena_report::{BoxInternalError, Diagnostic, InternalError, Reports};
+use im::{HashSet, Vector};
 
 use crate::db::AstDatabase;
-use crate::vfs::FileSystem;
+use crate::vfs::{FileSystem, VfsFile};
 
 #[derive(Debug, Clone, Copy, Hash, Eq, PartialEq, PartialOrd, Ord)]
 pub struct Package(salsa::InternId);
@@ -25,7 +26,8 @@ pub struct PackageData {
     pub version: String,
     pub errors: Arc<RwLock<Vec<Diagnostic<BoxInternalError>>>>,
     pub vfs: Arc<FileSystem>,
-    pub dependencies: Vec<Arc<PackageData>>,
+    pub files: Arc<RwLock<HashSet<VfsFile>>>,
+    pub dependencies: im::Vector<Package>,
 }
 
 impl Package {
@@ -35,9 +37,14 @@ impl Package {
                 name: name.to_string(),
                 version: version.to_string(),
                 vfs,
+                files: Arc::new(RwLock::new(Default::default())),
                 errors: Arc::new(RwLock::new(Default::default())),
-                dependencies: Vec::new(),
+                dependencies: Vector::new(),
             }))
+    }
+
+    pub fn files(&self, db: &dyn AstDatabase) -> Arc<RwLock<HashSet<VfsFile>>> {
+        db.lookup_intern_package(*self).files
     }
 
     pub fn diagnostic<E>(&self, db: &dyn AstDatabase, diagnostic: Diagnostic<E>)

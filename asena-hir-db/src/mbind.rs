@@ -1,10 +1,8 @@
-use asena_ast_db::vfs::VfsFile;
+use asena_hir::value::HirValue;
+use asena_leaf::ast::AstParam;
 
 use crate::db::HirDatabase;
 
-pub fn mbind(db: &dyn HirDatabase, file: VfsFile) -> VfsFile {
-    let ast = db.ast(file);
-    let _hir = db.hir_file(ast.into());
-
-    file
+pub fn mbind(_db: &dyn HirDatabase, file: AstParam<HirValue>) -> HirValue {
+    file.data
 }

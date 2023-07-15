@@ -88,8 +88,6 @@ fn hir_file(db: &dyn AstLowerrer, file: AstParam<AsenaFile>) -> InternalAsenaFil
         declarations.insert(top_level);
     }
 
-    panic!("claudio");
-
     let module = db.location_file(file.location().into_owned());
     let file = db.vfs_file(module.clone());
 

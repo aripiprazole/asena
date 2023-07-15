@@ -6,8 +6,22 @@ version = "0.1.0"
 
 [dependencies]
 asena-ast = {path = "../asena-ast"}
+asena-ast-db = {path = "../asena-ast-db"}
+asena-ast-lowering = {path = "../asena-ast-lowering"}
+asena-ast-resolver = {path = "../asena-ast-resolver"}
+asena-grammar = {path = "../asena-grammar"}
+asena-hir = {path = "../asena-hir"}
+asena-hir-db = {path = "../asena-hir-db"}
 asena-leaf = {path = "../asena-leaf"}
+asena-lexer = {path = "../asena-lexer"}
+asena-parser = {path = "../asena-parser"}
+asena-report = {path = "../asena-report"}
 asena-span = {path = "../asena-span"}
+eyre = "0.6.8"
 fxhash = "0.2.1"
+if_chain = "1.0.2"
 im = "15.1.0"
+inkwell = {git = "https://github.com/TheDan64/inkwell", branch = "master", features = ["llvm16-0"]}
 itertools = "0.10.5"
+salsa = "0.17.0-pre.2"
+thiserror = "1.0.40"

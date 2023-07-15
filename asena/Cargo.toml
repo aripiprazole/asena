@@ -13,6 +13,7 @@ asena-grammar = {path = "../asena-grammar"}
 asena-highlight = {path = "../asena-highlight"}
 asena-hir = {path = "../asena-hir"}
 asena-hir-db = {path = "../asena-hir-db"}
+asena-hir-lowering = {path = "../asena-hir-lowering"}
 asena-leaf = {path = "../asena-leaf"}
 asena-lexer = {path = "../asena-lexer"}
 asena-parser = {path = "../asena-parser"}

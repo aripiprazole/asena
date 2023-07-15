@@ -205,6 +205,9 @@ fn mk_vfs_file(db: &dyn AstDatabase, vfs_file: VfsFileData) -> VfsFile {
     global_scope.paths.insert(path, module);
     global_scope.import(db, id, Some(name));
 
+    let pkg_data = db.lookup_intern_package(pkg);
+    pkg_data.files.write().unwrap().insert(id);
+
     id
 }
 
