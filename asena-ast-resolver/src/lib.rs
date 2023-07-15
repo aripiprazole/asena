@@ -1,3 +1,5 @@
+#![feature(trait_upcasting)]
+
 use std::sync::Arc;
 
 use asena_ast::*;
@@ -14,6 +16,7 @@ use thiserror::Error;
 
 use crate::error::ResolutionError::*;
 
+pub mod db;
 pub mod decl;
 pub mod error;
 pub mod scopes;

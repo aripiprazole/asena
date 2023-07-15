@@ -115,6 +115,7 @@ mod tests {
 
     use asena_ast_db::{db::AstDatabase, package::*, vfs::*};
     use asena_ast_lowering::db::AstLowerrer;
+    use asena_ast_resolver::db::AstResolverDatabase;
     use asena_prec::PrecDatabase;
 
     #[test]
@@ -133,6 +134,7 @@ mod tests {
         let file = db.ast(file);
         let file = db.infix_commands(file);
         let file = db.ordered_prec(file);
+        let file = db.ast_resolved_file(file);
         let _hir = db.hir_file(file);
 
         db.lookup_intern_package(local_pkg).print_diagnostics(&db);

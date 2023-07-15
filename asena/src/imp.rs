@@ -1,5 +1,6 @@
 use asena_ast_db::db::AstDatabaseStorage;
 use asena_ast_lowering::db::AstLowerrerStorage;
+use asena_ast_resolver::db::AstResolverStorage;
 use asena_hir::interner::HirStorage;
 use asena_hir_db::db::HirDatabaseStorage;
 use asena_prec::db::PrecStorage;
@@ -10,6 +11,7 @@ use std::sync::Mutex;
     AstDatabaseStorage,
     HirDatabaseStorage,
     AstLowerrerStorage,
+    AstResolverStorage,
     HirStorage
 )]
 #[derive(Default)]
