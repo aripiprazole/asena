@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use asena_ast::{AsenaFile, BindingId, GlobalName, QualifiedPath, Variant};
-use asena_leaf::ast::{GreenTree, Located, Node};
+use asena_leaf::ast::{AstParam, GreenTree, Located, Node};
 use asena_lexer::Lexer;
 use asena_parser::Parser;
 use asena_report::Diagnostic;
@@ -35,7 +35,7 @@ pub trait AstDatabase {
     fn location_file(&self, loc: Loc) -> ModuleRef;
 
     fn add_path_dep(&self, vfs_file: VfsFile, module: ModuleRef) -> ();
-    fn mk_global_name(&self, module: FunctionId, decl: Decl) -> DefWithId;
+    fn mk_global_name(&self, module: FunctionId, decl: AstParam<Decl>) -> DefWithId;
     fn mk_vfs_file(&self, vfs_file: VfsFileData) -> VfsFile;
 
     fn global_scope(&self) -> ScopeRef;
@@ -175,7 +175,7 @@ fn add_path_dep(db: &dyn AstDatabase, vfs_file: VfsFile, module: ModuleRef) {
     scope_data.import(db, db.vfs_file(module), None);
 }
 
-fn mk_global_name(db: &dyn AstDatabase, module: FunctionId, decl: Decl) -> DefWithId {
+fn mk_global_name(db: &dyn AstDatabase, module: FunctionId, decl: AstParam<Decl>) -> DefWithId {
     let global_scope = db.global_scope();
     let mut global_scope = global_scope.write().unwrap();
 

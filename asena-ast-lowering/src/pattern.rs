@@ -6,8 +6,8 @@ use crate::{db::AstLowerrer, literal::make_literal};
 
 use super::*;
 
-pub fn lower_pattern(db: &dyn AstLowerrer, pattern: Pat) -> HirPattern {
-    let kind = match pattern {
+pub fn lower_pattern(db: &dyn AstLowerrer, pattern: AstParam<Pat>) -> HirPattern {
+    let kind = match pattern.data {
         Pat::Error => HirPatternKind::Error,
         Pat::WildcardPat(_) => HirPatternKind::Wildcard,
         Pat::SpreadPat(_) => HirPatternKind::Spread,
@@ -17,7 +17,7 @@ pub fn lower_pattern(db: &dyn AstLowerrer, pattern: Pat) -> HirPattern {
             let arguments = constructor
                 .arguments()
                 .iter()
-                .map(|arg| db.hir_pattern(arg.clone()))
+                .map(|arg| db.hir_pattern(arg.clone().into()))
                 .collect();
 
             HirPatternKind::from(HirPatternConstructor {
@@ -29,7 +29,7 @@ pub fn lower_pattern(db: &dyn AstLowerrer, pattern: Pat) -> HirPattern {
             let items = list
                 .items()
                 .iter()
-                .map(|item| db.hir_pattern(item.clone()))
+                .map(|item| db.hir_pattern(item.clone().into()))
                 .collect();
 
             HirPatternKind::from(HirPatternList { items })

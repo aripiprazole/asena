@@ -84,6 +84,54 @@ impl<T, U: FromVirtual<T>> IntoVirtual<U> for T {
     }
 }
 
+/// Represents a type that can be a node of the AST. And it's disable the [`Debug`] trait, for
+/// better debugging experience.
+#[repr(transparent)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct AstParam<T> {
+    pub data: T,
+}
+
+impl<T: Located> Located for AstParam<T> {
+    fn location(&self) -> Cow<'_, Loc> {
+        self.data.location()
+    }
+}
+
+impl<T> From<T> for AstParam<T> {
+    fn from(value: T) -> Self {
+        Self { data: value }
+    }
+}
+
+impl<T: 'static> Display for AstParam<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct(std::any::type_name::<T>())
+            .finish_non_exhaustive()
+    }
+}
+
+impl<T: 'static> Debug for AstParam<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct(std::any::type_name::<T>())
+            .finish_non_exhaustive()
+    }
+}
+
+impl<T> DerefMut for AstParam<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.data
+    }
+}
+
+impl<T> Deref for AstParam<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        &self.data
+    }
+}
+
 /// Represents a green tree used on the [Leaf] enum variants.
 pub trait Ast: Node + Deref<Target = GreenTree> + DerefMut + Clone + Debug {}
 

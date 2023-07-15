@@ -5,8 +5,8 @@ use crate::db::AstLowerrer;
 
 use super::*;
 
-pub fn lower_type(db: &dyn AstLowerrer, expr: Expr) -> HirType {
-    let kind = match expr {
+pub fn lower_type(db: &dyn AstLowerrer, expr: AstParam<Expr>) -> HirType {
+    let kind = match expr.data {
         Expr::SelfExpr(_) => HirTypeKind::This,
         Expr::Unit(_) => HirTypeKind::Unit,
         Expr::Error => HirTypeKind::Error,
@@ -26,10 +26,10 @@ pub fn lower_type(db: &dyn AstLowerrer, expr: Expr) -> HirType {
         Expr::LiteralExpr(_) => raise_type_literal_error(db, &expr),
 
         //
-        Expr::Group(ref group) => return db.hir_type(group.value()),
+        Expr::Group(ref group) => return db.hir_type(group.value().into()),
         Expr::Pi(ref pi) => {
-            let lhs = db.hir_type(pi.parameter_type());
-            let rhs = db.hir_type(pi.return_type());
+            let lhs = db.hir_type(pi.parameter_type().into());
+            let rhs = db.hir_type(pi.return_type().into());
             let parameter = match pi.parameter_name() {
                 Some(name) => {
                     let name = db.intern_name(name.to_fn_id().to_string());
@@ -45,8 +45,8 @@ pub fn lower_type(db: &dyn AstLowerrer, expr: Expr) -> HirType {
             })
         }
         Expr::App(ref app) => {
-            let callee = db.hir_type(app.callee());
-            let argument = db.hir_type(app.argument());
+            let callee = db.hir_type(app.callee().into());
+            let argument = db.hir_type(app.argument().into());
 
             HirTypeKind::from(HirTypeApp {
                 callee: HirTypeFunction::Type(callee),

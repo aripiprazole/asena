@@ -8,7 +8,7 @@ use asena_hir::top_level::data::{HirDeclaration, HirSignature};
 use asena_hir::top_level::HirBindingGroup;
 use asena_hir::{literal::*, Name};
 use asena_hir::{value::*, HirLoc};
-use asena_leaf::ast::Located;
+use asena_leaf::ast::{AstParam, Located};
 use asena_report::WithError;
 use db::AstLowerrer;
 use decl::compute_parameters;
@@ -47,14 +47,14 @@ pub(crate) fn make_signature(db: &dyn AstLowerrer, signatures: &mut Signatures, 
 
             hashset![HirDeclaration {
                 patterns,
-                value: db.hir_block(body),
+                value: db.hir_block(body.into()),
             }]
         }
         None => hashset![],
     };
     let return_type = match decl.return_type() {
         Typed::Infer => None,
-        Typed::Explicit(type_expr) => Some(db.hir_type(type_expr)),
+        Typed::Explicit(type_expr) => Some(db.hir_type(type_expr.into())),
     };
 
     let group = HirBindingGroup {
@@ -77,7 +77,7 @@ pub(crate) fn make_assign(db: &dyn AstLowerrer, signatures: &mut Signatures, dec
         .patterns()
         .iter()
         .cloned()
-        .map(|next| db.hir_pattern(next))
+        .map(|next| db.hir_pattern(next.into()))
         .collect_vec();
 
     let (_, group) = signatures
@@ -86,7 +86,7 @@ pub(crate) fn make_assign(db: &dyn AstLowerrer, signatures: &mut Signatures, dec
 
     group.declarations.insert(HirDeclaration {
         patterns,
-        value: db.hir_value(decl.body()),
+        value: db.hir_value(decl.body().into()),
     });
 }
 
@@ -114,13 +114,13 @@ pub fn make_location(db: &dyn AstLowerrer, node: &impl Located) -> HirLoc {
     }
 }
 
-pub fn lower_value(db: &dyn AstLowerrer, value: Expr) -> HirValue {
+pub fn lower_value(db: &dyn AstLowerrer, value: AstParam<Expr>) -> HirValue {
     let span = make_location(db, &value);
     let mut lowering = ExprLowering::new(db);
     let value = HirValueBlock {
         value: {
             let span = make_location(db, &value);
-            let id = lowering.make(value);
+            let id = lowering.make(value.data);
             let kind = HirValueExpr(id);
 
             db.intern_value(HirValueData {
@@ -137,14 +137,14 @@ pub fn lower_value(db: &dyn AstLowerrer, value: Expr) -> HirValue {
     })
 }
 
-pub fn lower_branch(db: &dyn AstLowerrer, branch: Branch) -> HirBranch {
-    match branch {
+pub fn lower_branch(db: &dyn AstLowerrer, branch: AstParam<Branch>) -> HirBranch {
+    match branch.data {
         Branch::Error => HirBranch::Error,
         Branch::ExprBranch(ref branch) => {
-            let value = db.hir_value(branch.value());
+            let value = db.hir_value(branch.value().into());
 
             HirBranch::Expr(value)
         }
-        Branch::BlockBranch(ref branch) => HirBranch::Block(db.hir_block(branch.stmts())),
+        Branch::BlockBranch(ref branch) => HirBranch::Block(db.hir_block(branch.stmts().into())),
     }
 }

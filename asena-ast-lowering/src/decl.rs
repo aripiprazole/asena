@@ -22,7 +22,7 @@ pub fn compute_parameters(db: &dyn AstLowerrer, decl: &impl GlobalDecl) -> Vec<H
             name,
             parameter_type: match parameter.parameter_type() {
                 Typed::Infer => None,
-                Typed::Explicit(expr) => Some(db.hir_type(expr)),
+                Typed::Explicit(expr) => Some(db.hir_type(expr.into())),
             },
         };
 
@@ -54,7 +54,7 @@ pub fn compute_methods(db: &dyn AstLowerrer, methods: Vec<Method>) -> im::HashSe
         let parameters = compute_parameters(db, &method);
         let return_type = match method.return_type() {
             Typed::Infer => None,
-            Typed::Explicit(expr) => Some(db.hir_type(expr)),
+            Typed::Explicit(expr) => Some(db.hir_type(expr.into())),
         };
 
         let group = HirBindingGroup {
@@ -65,7 +65,7 @@ pub fn compute_methods(db: &dyn AstLowerrer, methods: Vec<Method>) -> im::HashSe
             },
             declarations: hashset![HirDeclaration {
                 patterns: vec![],
-                value: db.hir_block(method.body()),
+                value: db.hir_block(method.body().into()),
             }],
         };
         groups.insert(group);

@@ -7,7 +7,10 @@ use asena_ast_resolver::db::{AstResolverDatabase, AstResolverStorage};
 use asena_hir::interner::HirStorage;
 use asena_hir_db::db::{HirDatabase, HirDatabaseStorage};
 use asena_prec::{db::PrecStorage, PrecDatabase};
-use std::{panic::AssertUnwindSafe, sync::Mutex};
+use std::{
+    panic::{resume_unwind, AssertUnwindSafe},
+    sync::Mutex,
+};
 
 #[salsa::database(
     PrecStorage,
@@ -28,10 +31,10 @@ impl DatabaseImpl {
         let db = AssertUnwindSafe(self);
         let result = std::panic::catch_unwind(|| {
             let file = db.ast(file);
-            let file = db.infix_commands(file);
-            let file = db.ordered_prec(file);
-            let file = db.ast_resolved_file(file);
-            let fhir = db.hir_file(file);
+            let file = db.infix_commands(file.into());
+            let file = db.ordered_prec(file.into());
+            let file = db.ast_resolved_file(file.into());
+            let fhir = db.hir_file(file.into());
             let file = db.vfs_file(fhir.path);
             let file = db.hir_mbind(file);
             let file = db.hir_rc(file);
@@ -41,10 +44,9 @@ impl DatabaseImpl {
         match result {
             Ok(value) => value,
             Err(err) => {
-                eprintln!("compiler panicked during pipeline");
-                eprintln!();
-                self.dump_and_write_logs();
-                std::panic::resume_unwind(err);
+                eprintln!("pipeline of the compiler during lowering:");
+                db.dump_and_write_logs();
+                resume_unwind(err);
             }
         }
     }
@@ -65,7 +67,7 @@ impl DatabaseImpl {
                     log::debug!("will block on {:?} (runtime id: {:?})", key, runtime_id);
                 }
                 WillExecute { database_key } => {
-                    log::info!("will execute {:?}", database_key.debug(self));
+                    println!("  -> {:?}", database_key.debug(self));
                 }
                 WillCheckCancellation => {
                     log::debug!("will check cancellation");

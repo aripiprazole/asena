@@ -27,10 +27,10 @@ impl<'a> ExprLowering<'a> {
     pub fn make(&mut self, expr: Expr) -> HirExpr {
         let kind = match expr {
             Expr::Group(ref group) => HirExprKind::from(HirExprGroup {
-                value: self.db.hir_value(group.value()),
+                value: self.db.hir_value(group.value().into()),
             }),
             Expr::Help(ref expr) => HirExprKind::from(HirExprHelp {
-                value: self.db.hir_value(expr.value()),
+                value: self.db.hir_value(expr.value().into()),
             }),
             Expr::LiteralExpr(ref expr) => {
                 let literal = make_literal(expr.literal().data().clone());
@@ -80,7 +80,7 @@ impl<'a> ExprLowering<'a> {
             },
             _ => HirExprCall {
                 // TODO: handle Do, etc
-                callee: HirCallee::Value(self.db.hir_value(expr.callee())),
+                callee: HirCallee::Value(self.db.hir_value(expr.callee().into())),
                 arguments: vec![],
                 as_dsl: None,
             },
@@ -88,7 +88,7 @@ impl<'a> ExprLowering<'a> {
 
         hir_call.as_dsl = Some(HirDsl {
             parameters: vec![], // TODO
-            value: self.db.hir_block(expr.block()),
+            value: self.db.hir_block(expr.block().into()),
         });
 
         HirExprKind::from(hir_call)
@@ -101,8 +101,8 @@ impl<'a> ExprLowering<'a> {
     }
 
     fn make_ann(&self, expr: &Ann) -> HirExprKind {
-        let value = self.db.hir_value(expr.value());
-        let against = self.db.hir_type(expr.against());
+        let value = self.db.hir_value(expr.value().into());
+        let against = self.db.hir_type(expr.against().into());
 
         HirExprKind::from(HirExprAnn { value, against })
     }
@@ -111,15 +111,15 @@ impl<'a> ExprLowering<'a> {
         let items = array
             .items()
             .into_iter()
-            .map(|e| self.db.hir_value(e))
+            .map(|e| self.db.hir_value(e.into()))
             .collect();
 
         HirExprKind::from(HirExprArray { items })
     }
 
     fn make_app(&self, app: &App) -> HirExprKind {
-        let callee = self.db.hir_value(app.callee());
-        let argument = self.db.hir_value(app.argument());
+        let callee = self.db.hir_value(app.callee().into());
+        let argument = self.db.hir_value(app.argument().into());
 
         HirExprKind::from(HirExprCall {
             callee: HirCallee::Value(callee),
@@ -129,8 +129,8 @@ impl<'a> ExprLowering<'a> {
     }
 
     fn make_infix(&self, infix: &Infix) -> HirExprKind {
-        let lhs = self.db.hir_value(infix.lhs());
-        let rhs = self.db.hir_value(infix.rhs());
+        let lhs = self.db.hir_value(infix.lhs().into());
+        let rhs = self.db.hir_value(infix.rhs().into());
 
         let callee = match infix.fn_id().as_str() {
             "+" => HirCallee::Add,
@@ -149,15 +149,15 @@ impl<'a> ExprLowering<'a> {
 
     fn make_if(&self, expr: &If) -> HirExprKind {
         HirExprKind::from(HirExprMatch {
-            scrutinee: self.db.hir_value(expr.cond()),
+            scrutinee: self.db.hir_value(expr.cond().into()),
             cases: hashset![
                 HirMatchCase {
                     pattern: HirPattern::new_true(self.db),
-                    value: self.db.hir_branch(expr.then_branch()),
+                    value: self.db.hir_branch(expr.then_branch().into()),
                 },
                 HirMatchCase {
                     pattern: HirPattern::new_false(self.db),
-                    value: self.db.hir_branch(expr.else_branch()),
+                    value: self.db.hir_branch(expr.else_branch().into()),
                 }
             ],
             kind: HirMatchKind::If,
@@ -165,7 +165,7 @@ impl<'a> ExprLowering<'a> {
     }
 
     fn make_match(&self, expr: &Match) -> HirExprKind {
-        let scrutinee = self.db.hir_value(expr.scrutinee());
+        let scrutinee = self.db.hir_value(expr.scrutinee().into());
         let cases = expr
             .cases()
             .into_iter()
@@ -180,7 +180,7 @@ impl<'a> ExprLowering<'a> {
     }
 
     fn make_lam(&self, expr: &Lam) -> HirExprKind {
-        let value = self.db.hir_value(expr.value());
+        let value = self.db.hir_value(expr.value().into());
         let parameters = expr
             .parameters()
             .iter()
@@ -208,8 +208,8 @@ impl<'a> ExprLowering<'a> {
     }
 
     fn lower_case(&self, case: asena_ast::Case) -> HirMatchCase {
-        let pattern = self.db.hir_pattern(case.pat());
-        let value = self.db.hir_branch(case.value());
+        let pattern = self.db.hir_pattern(case.pat().into());
+        let value = self.db.hir_branch(case.value().into());
 
         HirMatchCase { pattern, value }
     }

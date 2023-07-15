@@ -7,6 +7,7 @@ use asena_hir::top_level::{
 };
 use asena_hir::top_level::{HirTopLevel, HirTopLevelData};
 use asena_hir::Name;
+use asena_leaf::ast::AstParam;
 use asena_report::WithError;
 use im::HashMap;
 use itertools::Itertools;
@@ -17,16 +18,16 @@ use crate::make_location;
 
 use super::{compute_methods, compute_parameters};
 
-pub fn lower_enum(db: &dyn AstLowerrer, decl: Enum) -> HirTopLevel {
+pub fn lower_enum(db: &dyn AstLowerrer, decl: AstParam<Enum>) -> HirTopLevel {
     let span = make_location(db, &decl);
     let name = db.intern_name(decl.name().to_fn_id().to_string());
     let kind = HirTopLevelEnum {
         signature: HirSignature {
             name,
-            parameters: compute_parameters(db, &decl),
+            parameters: compute_parameters(db, &decl.data),
             return_type: match decl.gadt_type() {
                 Typed::Infer => None,
-                Typed::Explicit(type_expr) => Some(db.hir_type(type_expr)),
+                Typed::Explicit(type_expr) => Some(db.hir_type(type_expr.into())),
             },
         },
         variants: lower_variants(db, &decl),
@@ -53,7 +54,7 @@ pub fn lower_variants(db: &dyn AstLowerrer, decl: &Enum) -> HashMap<Name, HirVar
             Variant::Error => HirType::error(db),
             Variant::TypeVariant(type_variant) => match type_variant.value() {
                 Typed::Infer => HirType::constructor(db, enum_name),
-                Typed::Explicit(variant_type) => db.hir_type(variant_type),
+                Typed::Explicit(variant_type) => db.hir_type(variant_type.into()),
             },
             Variant::ConstructorVariant(variant) => {
                 let parameters = variant
@@ -66,7 +67,7 @@ pub fn lower_variants(db: &dyn AstLowerrer, decl: &Enum) -> HashMap<Name, HirVar
 
                             None
                         }
-                        Typed::Explicit(type_expr) => Some(db.hir_type(type_expr)),
+                        Typed::Explicit(type_expr) => Some(db.hir_type(type_expr.into())),
                     })
                     .collect_vec();
                 let enum_value_type = HirType::constructor(db, enum_name);

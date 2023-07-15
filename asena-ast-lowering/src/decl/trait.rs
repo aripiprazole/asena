@@ -5,6 +5,7 @@ use asena_hir::top_level::{
     HirBindingGroup, HirTopLevel, HirTopLevelData, HirTopLevelTrait,
 };
 use asena_hir::Name;
+use asena_leaf::ast::AstParam;
 use asena_report::WithError;
 use im::{hashset, HashMap};
 
@@ -16,7 +17,7 @@ use super::compute_parameters;
 
 type Methods = HashMap<Name, HirBindingGroup>;
 
-pub fn lower_trait(db: &dyn AstLowerrer, decl: Trait) -> HirTopLevel {
+pub fn lower_trait(db: &dyn AstLowerrer, decl: AstParam<Trait>) -> HirTopLevel {
     let span = make_location(db, &decl);
     let name = db.intern_name(decl.name().to_fn_id().to_string());
 
@@ -24,7 +25,7 @@ pub fn lower_trait(db: &dyn AstLowerrer, decl: Trait) -> HirTopLevel {
     let kind = HirTopLevelTrait {
         signature: HirSignature {
             name,
-            parameters: compute_parameters(db, &decl),
+            parameters: compute_parameters(db, &decl.data),
             return_type: None,
         },
         groups: defaults(db, methods, decl.default_methods()),
@@ -52,7 +53,7 @@ fn compute_abstract_fields(db: &dyn AstLowerrer, fields: Vec<Field>) -> Methods 
 
         let return_type = match field.field_type() {
             Typed::Infer => None,
-            Typed::Explicit(type_expr) => Some(db.hir_type(type_expr)),
+            Typed::Explicit(type_expr) => Some(db.hir_type(type_expr.into())),
         };
 
         let method = HirBindingGroup {
@@ -85,7 +86,7 @@ fn defaults(db: &dyn AstLowerrer, mut methods: Methods, defaults: Vec<DefaultMet
 
         group.declarations.insert(HirDeclaration {
             patterns: build_patterns(db, parameters),
-            value: db.hir_block(method.body()),
+            value: db.hir_block(method.body().into()),
         });
     }
 

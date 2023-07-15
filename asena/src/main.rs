@@ -117,7 +117,12 @@ mod tests {
 
     #[test]
     fn pipeline_works() {
-        env_logger::builder().is_test(true).try_init().unwrap();
+        env_logger::builder()
+            .is_test(true)
+            .filter_level(log::LevelFilter::Error)
+            .try_init()
+            .unwrap();
+
         crate::panik::install_asena_panic_hook();
 
         let db = crate::imp::DatabaseImpl::default();

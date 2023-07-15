@@ -5,6 +5,7 @@ use asena_hir::{
     top_level::{data::HirSignature, HirTopLevel, HirTopLevelData, HirTopLevelStruct},
     Name,
 };
+use asena_leaf::ast::AstParam;
 use asena_report::WithError;
 use im::HashMap;
 
@@ -12,13 +13,13 @@ use crate::{db::AstLowerrer, error::AstLoweringError::*, make_location};
 
 use super::{compute_methods, compute_parameters};
 
-pub fn lower_class(db: &dyn AstLowerrer, decl: Class) -> HirTopLevel {
+pub fn lower_class(db: &dyn AstLowerrer, decl: AstParam<Class>) -> HirTopLevel {
     let span = make_location(db, &decl);
     let name = db.intern_name(decl.name().to_fn_id().to_string());
     let kind = HirTopLevelStruct {
         signature: HirSignature {
             name,
-            parameters: compute_parameters(db, &decl),
+            parameters: compute_parameters(db, &decl.data),
             return_type: None, // class can not be gadt
         },
         fields: lower_fields(db, decl.fields()),
@@ -41,7 +42,7 @@ pub fn lower_fields(db: &dyn AstLowerrer, fields: Vec<Field>) -> HashMap<Name, H
             // a field cannot be infer
             Typed::Infer => field.fail(FieldTypeCanNotBeInferError).push(db),
             Typed::Explicit(type_expr) => {
-                let type_id = db.hir_type(type_expr);
+                let type_id = db.hir_type(type_expr.into());
                 map.insert(name, type_id);
             }
         };
