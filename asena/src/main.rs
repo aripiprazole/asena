@@ -104,6 +104,7 @@ pub fn run_cli() {
 }
 
 fn main() {
+    env_logger::init();
     panik::install_asena_panic_hook();
 
     run_cli();
@@ -111,15 +112,12 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::Arc;
-
     use asena_ast_db::{db::AstDatabase, package::*, vfs::*};
-    use asena_ast_lowering::db::AstLowerrer;
-    use asena_ast_resolver::db::AstResolverDatabase;
-    use asena_prec::PrecDatabase;
+    use std::sync::Arc;
 
     #[test]
     fn pipeline_works() {
+        env_logger::builder().is_test(true).try_init().unwrap();
         crate::panik::install_asena_panic_hook();
 
         let db = crate::imp::DatabaseImpl::default();
@@ -130,13 +128,7 @@ mod tests {
         VfsFileData::new(&db, "IO", "./IO.ase".into(), local_pkg);
 
         db.global_scope().write().unwrap().import(&db, file, None);
-
-        let file = db.ast(file);
-        let file = db.infix_commands(file);
-        let file = db.ordered_prec(file);
-        let file = db.ast_resolved_file(file);
-        let _hir = db.hir_file(file);
-
+        db.run_pipeline_catching(file);
         db.lookup_intern_package(local_pkg).print_diagnostics(&db);
     }
 }
