@@ -83,6 +83,7 @@ dependencies = [
  "asena-grammar",
  "asena-highlight",
  "asena-hir",
+ "asena-hir-db",
  "asena-leaf",
  "asena-lexer",
  "asena-parser",
@@ -302,6 +303,7 @@ dependencies = [
  "if_chain",
  "im",
  "itertools",
+ "salsa",
  "thiserror",
 ]
 

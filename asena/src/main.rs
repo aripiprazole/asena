@@ -4,16 +4,14 @@
 #![feature(lazy_cell)]
 #![feature(downcast_unchecked)]
 
-use std::{path::PathBuf, sync::Mutex};
+use std::path::PathBuf;
 
-use asena_ast_db::db::AstDatabaseStorage;
-use asena_ast_lowering::db::AstLowerrerStorage;
 use asena_grammar::Linebreak;
 use asena_highlight::{Annotator, VirtualFile};
-use asena_hir::interner::HirStorage;
 use asena_lexer::Lexer;
-use asena_prec::db::PrecStorage;
 use clap::{Args, Parser, Subcommand};
+
+pub mod imp;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -107,19 +105,6 @@ fn main() {
     run_cli();
 }
 
-#[salsa::database(PrecStorage, AstDatabaseStorage, AstLowerrerStorage, HirStorage)]
-#[derive(Default)]
-pub struct DatabaseImpl {
-    pub storage: salsa::Storage<DatabaseImpl>,
-    pub logs: Mutex<Vec<salsa::Event>>,
-}
-
-impl salsa::Database for DatabaseImpl {
-    fn salsa_event(&self, event_fn: salsa::Event) {
-        self.logs.lock().unwrap().push(event_fn);
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use std::sync::Arc;
@@ -128,11 +113,9 @@ mod tests {
     use asena_ast_lowering::db::AstLowerrer;
     use asena_prec::PrecDatabase;
 
-    use crate::DatabaseImpl;
-
     #[test]
     fn pipeline_works() {
-        let db = DatabaseImpl::default();
+        let db = crate::imp::DatabaseImpl::default();
 
         let local_pkg = Package::new(&db, "Local", "0.0.0", Arc::new(Default::default()));
         let file = VfsFileData::new(&db, "Test", "./Test.ase".into(), local_pkg);
