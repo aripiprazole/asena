@@ -7,7 +7,6 @@
 #![feature(auto_traits)]
 #![feature(associated_type_bounds)]
 
-use asena_leaf::ast::Located;
 use salsa::InternKey;
 
 pub mod attr;
@@ -16,20 +15,13 @@ pub mod file;
 pub mod hir_type;
 pub mod interner;
 pub mod literal;
+pub mod loc;
 pub mod pattern;
 pub mod stmt;
 pub mod top_level;
 pub mod value;
 
-#[derive(Default, Hash, Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub struct HirLoc;
-impl Located for HirLoc {
-    fn location(&self) -> std::borrow::Cow<'_, asena_span::Loc> {
-        todo!()
-    }
-}
-#[derive(Hash, Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub struct ScopeId(usize);
+pub use loc::*;
 
 #[derive(Hash, Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Name(salsa::InternId);

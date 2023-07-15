@@ -35,7 +35,9 @@ pub(crate) fn make_signature(db: &dyn AstLowerrer, signatures: &mut Signatures, 
     let span = make_location(db, decl);
 
     if let Some((loc, _)) = signatures.get(&name) {
-        loc.fail(DuplicatedSignatureDefinitionError).push(db);
+        loc.clone()
+            .fail(DuplicatedSignatureDefinitionError)
+            .push(db);
     }
 
     let parameters = compute_parameters(db, decl);
@@ -99,11 +101,17 @@ pub(crate) fn new_default_group(name: Name) -> HirBindingGroup {
     }
 }
 
-pub fn make_location(_db: &dyn AstLowerrer, node: &impl Located) -> HirLoc {
-    let _span = node.location().into_owned();
-    // let file = self.file.clone();
+pub fn make_location(db: &dyn AstLowerrer, node: &impl Located) -> HirLoc {
+    let span = node.location().into_owned();
+    let file = span.file.clone();
 
-    HirLoc
+    let module = db.path_module(file.unwrap_or_default());
+    let file = db.vfs_file(module);
+
+    HirLoc {
+        original: span,
+        file: Some(file),
+    }
 }
 
 pub fn lower_value(db: &dyn AstLowerrer, value: Expr) -> HirValue {

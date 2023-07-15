@@ -196,7 +196,7 @@ impl<'a> ExprLowering<'a> {
 
         let expr = self.db.intern_expr(HirExprData {
             kind: HirExprKind::from(HirExprReference { name }),
-            span,
+            span: span.clone(),
         });
 
         let value = self.db.intern_value(HirValueData {
