@@ -6,8 +6,10 @@ version = "0.1.0"
 
 [dependencies]
 asena-span = {path = "../asena-span"}
+
 colored = "2"
-fxhash = "0.2.1"
-im = "15.1.0"
-itertools = "0.10.5"
 once_cell = "1.18.0"
+
+fxhash = {workspace = true}
+im = {workspace = true}
+itertools = {workspace = true}

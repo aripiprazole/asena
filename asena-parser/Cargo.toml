@@ -5,10 +5,12 @@ name = "asena-parser"
 version = "0.1.0"
 
 [dependencies]
-ariadne = "0.2"
 asena-drop-bomb = {path = "../asena-drop-bomb"}
 asena-leaf = {path = "../asena-leaf"}
 asena-lexer = {path = "../asena-lexer"}
 asena-report = {path = "../asena-report"}
 asena-span = {path = "../asena-span"}
-thiserror = "1.0.40"
+
+ariadne = "0.2"
+
+thiserror = {workspace = true}
