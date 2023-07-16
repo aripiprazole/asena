@@ -23,3 +23,21 @@ members = [
   "asena-runtime",
   "asena-span",
 ]
+resolver = "2"
+
+[workspace.dependencies]
+dashmap = "5.1.0"
+fxhash = "0.2.1"
+if_chain = "1.0.2"
+im = "15.1.0"
+im-rc = "15.0.0"
+itertools = "0.10.5"
+log = "0.4.14"
+salsa = "0.17.0-pre.2"
+thiserror = "1.0.40"
+
+[workspace.package]
+authors = ["Gabrielle Guimarães"]
+description = "Resilient compiler for the Asena programming language"
+documentation = "https://github.com/aripiprazole/asena"
+version = "0.0.1"

@@ -114,10 +114,17 @@ dependencies = [
  "asena-parser",
  "asena-prec",
  "clap",
+ "dashmap",
  "env_logger",
  "eyre",
+ "fxhash",
+ "if_chain",
+ "im",
+ "im-rc",
+ "itertools",
  "log",
  "salsa",
+ "thiserror",
 ]
 
 [[package]]
@@ -128,8 +135,13 @@ dependencies = [
  "asena-leaf",
  "asena-report",
  "asena-span",
+ "dashmap",
+ "fxhash",
  "if_chain",
  "im",
+ "im-rc",
+ "itertools",
+ "log",
  "salsa",
  "thiserror",
 ]
@@ -146,12 +158,14 @@ dependencies = [
  "asena-parser",
  "asena-report",
  "asena-span",
+ "dashmap",
  "fxhash",
  "if_chain",
  "im",
+ "im-rc",
  "itertools",
+ "log",
  "salsa",
- "salsa-macros",
  "thiserror",
 ]
 
@@ -162,9 +176,15 @@ dependencies = [
  "asena-ast",
  "asena-leaf",
  "asena-span",
+ "dashmap",
  "fxhash",
+ "if_chain",
  "im",
+ "im-rc",
  "itertools",
+ "log",
+ "salsa",
+ "thiserror",
 ]
 
 [[package]]
@@ -182,12 +202,14 @@ dependencies = [
  "asena-prec",
  "asena-report",
  "asena-span",
+ "dashmap",
  "fxhash",
  "if_chain",
  "im",
+ "im-rc",
  "itertools",
+ "log",
  "salsa",
- "salsa-macros",
  "thiserror",
 ]
 
@@ -204,10 +226,13 @@ dependencies = [
  "asena-prec",
  "asena-report",
  "asena-span",
+ "dashmap",
  "fxhash",
  "if_chain",
  "im",
+ "im-rc",
  "itertools",
+ "log",
  "salsa",
  "thiserror",
 ]
@@ -245,10 +270,13 @@ dependencies = [
  "asena-parser",
  "asena-report",
  "asena-span",
- "colored",
+ "dashmap",
  "fxhash",
+ "if_chain",
  "im",
  "itertools",
+ "log",
+ "thiserror",
 ]
 
 [[package]]
@@ -279,6 +307,7 @@ dependencies = [
  "fxhash",
  "im",
  "itertools",
+ "salsa",
 ]
 
 [[package]]
@@ -290,13 +319,14 @@ dependencies = [
  "asena-hir-derive",
  "asena-leaf",
  "asena-span",
- "derive-new",
- "enum_dispatch",
+ "dashmap",
  "fxhash",
+ "if_chain",
  "im",
  "itertools",
- "paste",
+ "log",
  "salsa",
+ "thiserror",
 ]
 
 [[package]]
@@ -315,10 +345,13 @@ dependencies = [
  "asena-prec",
  "asena-report",
  "asena-span",
+ "dashmap",
  "fxhash",
  "if_chain",
  "im",
+ "im-rc",
  "itertools",
+ "log",
  "salsa",
  "thiserror",
 ]
@@ -327,12 +360,6 @@ dependencies = [
 name = "asena-hir-derive"
 version = "0.1.0"
 dependencies = [
- "asena-ast",
- "asena-leaf",
- "asena-span",
- "fxhash",
- "im",
- "itertools",
  "proc-macro2",
  "quote",
  "syn 2.0.15",
@@ -354,12 +381,15 @@ dependencies = [
  "asena-parser",
  "asena-report",
  "asena-span",
+ "dashmap",
  "eyre",
  "fxhash",
  "if_chain",
  "im",
+ "im-rc",
  "inkwell",
  "itertools",
+ "log",
  "salsa",
  "thiserror",
 ]
@@ -406,20 +436,30 @@ dependencies = [
  "asena-parser",
  "asena-report",
  "asena-span",
+ "dashmap",
  "fxhash",
+ "if_chain",
  "im",
+ "im-rc",
  "itertools",
+ "log",
  "salsa",
+ "thiserror",
 ]
 
 [[package]]
 name = "asena-report"
 version = "0.1.0"
 dependencies = [
- "ariadne",
  "asena-leaf",
  "asena-span",
+ "fxhash",
+ "if_chain",
+ "im",
+ "itertools",
+ "log",
  "salsa",
+ "thiserror",
 ]
 
 [[package]]
@@ -443,13 +483,16 @@ dependencies = [
  "dashmap",
  "env_logger",
  "fxhash",
+ "if_chain",
  "im",
  "im-rc",
  "itertools",
  "log",
  "ropey",
+ "salsa",
  "serde",
  "serde_json",
+ "thiserror",
  "tokio",
  "tower-lsp",
 ]
@@ -644,33 +687,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "derive-new"
-version = "0.5.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3418329ca0ad70234b9735dc4ceed10af4df60eff9c8e7b06cb5e520d92c3535"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 1.0.109",
-]
-
-[[package]]
 name = "either"
 version = "1.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7fcaabb2fef8c910e7f4c7ce9f67a1283a1715879a7c230ca9d6d1ae31f16d91"
-
-[[package]]
-name = "enum_dispatch"
-version = "0.3.12"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8f33313078bb8d4d05a2733a94ac4c2d8a0df9a2b84424ebf4f33bfc224a890e"
-dependencies = [
- "once_cell",
- "proc-macro2",
- "quote",
- "syn 2.0.15",
-]
 
 [[package]]
 name = "env_logger"
@@ -1174,12 +1194,6 @@ dependencies = [
  "smallvec",
  "windows-targets",
 ]
-
-[[package]]
-name = "paste"
-version = "1.0.13"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b4b27ab7be369122c218afc2079489cdcb4b517c0a3fc386ff11e1fedfcc2b35"
 
 [[package]]
 name = "percent-encoding"

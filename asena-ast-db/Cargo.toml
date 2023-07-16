@@ -13,10 +13,13 @@ asena-lexer = {path = "../asena-lexer"}
 asena-parser = {path = "../asena-parser"}
 asena-report = {path = "../asena-report"}
 asena-span = {path = "../asena-span"}
-fxhash = "0.2.1"
-if_chain = "1.0.2"
-im = "15.1.0"
-itertools = "0.10.5"
-salsa = "0.17.0-pre.2"
-salsa-macros = "0.17.0-pre.2"
-thiserror = "1.0.40"
+
+dashmap = {workspace = true}
+fxhash = {workspace = true}
+if_chain = {workspace = true}
+im = {workspace = true}
+im-rc = {workspace = true}
+itertools = {workspace = true}
+log = {workspace = true}
+salsa = {workspace = true}
+thiserror = {workspace = true}
