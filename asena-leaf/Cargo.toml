@@ -6,3 +6,6 @@ version = "0.1.0"
 
 [dependencies]
 asena-span = {path = "../asena-span"}
+
+dashmap = {workspace = true}
+im = {workspace = true}

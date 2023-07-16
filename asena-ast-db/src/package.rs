@@ -2,7 +2,8 @@ use std::hash::Hash;
 use std::sync::{Arc, RwLock};
 
 use asena_report::{BoxInternalError, Diagnostic, InternalError, Reports};
-use im::{HashSet, Vector};
+use dashmap::DashSet;
+use im::Vector;
 
 use crate::db::AstDatabase;
 use crate::vfs::{FileSystem, VfsFile};
@@ -26,7 +27,7 @@ pub struct PackageData {
     pub version: String,
     pub errors: Arc<RwLock<Vec<Diagnostic<BoxInternalError>>>>,
     pub vfs: Arc<FileSystem>,
-    pub files: Arc<RwLock<HashSet<VfsFile>>>,
+    pub files: Arc<DashSet<VfsFile>>,
     pub dependencies: im::Vector<Package>,
 }
 
@@ -37,13 +38,13 @@ impl Package {
                 name: name.to_string(),
                 version: version.to_string(),
                 vfs,
-                files: Arc::new(RwLock::new(Default::default())),
+                files: Default::default(),
                 errors: Arc::new(RwLock::new(Default::default())),
                 dependencies: Vector::new(),
             }))
     }
 
-    pub fn files(&self, db: &dyn AstDatabase) -> Arc<RwLock<HashSet<VfsFile>>> {
+    pub fn files(&self, db: &dyn AstDatabase) -> Arc<DashSet<VfsFile>> {
         db.lookup_intern_package(*self).files
     }
 
