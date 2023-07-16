@@ -17,7 +17,7 @@ pub trait LlirDatabase: HirDatabase {
 fn llir_package(
     db: &dyn LlirDatabase,
     pkg: Package,
-    config: LlirConfig,
+    _config: LlirConfig,
 ) -> Result<Arc<LlirPackage>, LlirErr> {
     // Discovery step
     let mut defs = db.hir_defs(pkg);
