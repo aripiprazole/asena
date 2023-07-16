@@ -21,6 +21,10 @@ impl BuildSystem {
         self.modules.get(module).map(|dref| *dref)
     }
 
+    pub fn file_module(&self, file: &PathBuf) -> Option<ModuleRef> {
+        self.files.get(file).map(|dref| dref.clone())
+    }
+
     pub fn file_package(&self, file: &PathBuf) -> Option<Package> {
         self.files
             .get(file)

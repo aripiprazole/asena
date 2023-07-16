@@ -20,7 +20,8 @@ export async function activate(_ctx: ExtensionContext) {
       env: {
         ...process.env,
         // eslint-disable-next-line @typescript-eslint/naming-convention
-        RUST_LOG: 'debug',
+        RUST_LOG: 'error',
+        RUST_BACKTRACE: '1',
       },
     },
   };

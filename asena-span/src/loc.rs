@@ -62,6 +62,20 @@ impl TextRange {
     pub fn new(start: usize, end: usize) -> Self {
         Self::Actual(start..end)
     }
+
+    pub fn start(&self) -> usize {
+        match self {
+            Self::Virtual => 0,
+            Self::Actual(range) => range.start,
+        }
+    }
+
+    pub fn end(&self) -> usize {
+        match self {
+            Self::Virtual => 0,
+            Self::Actual(range) => range.end,
+        }
+    }
 }
 
 impl Display for TextRange {
