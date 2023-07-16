@@ -9,7 +9,6 @@ name = "asena-language-server"
 path = "src/main.rs"
 
 [dependencies]
-asena = {path = "../asena"}
 asena-ast = {path = "../asena-ast"}
 asena-ast-db = {path = "../asena-ast-db"}
 asena-ast-lowering = {path = "../asena-ast-lowering"}
