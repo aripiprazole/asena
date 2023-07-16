@@ -17,6 +17,7 @@ members = [
   "asena-leaf",
   "asena-lexer",
   "asena-parser",
+  "asena-server",
   "asena-prec",
   "asena-report",
   "asena-runtime",
