@@ -1,3 +1,13 @@
 /target
 
 .idea
+
+out
+node_modules
+
+yarn.log
+
+*.vsix
+*.ast
+
+dist
