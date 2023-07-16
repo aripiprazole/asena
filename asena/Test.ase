@@ -5,7 +5,7 @@ enum Vec (a: Set) {
   Nil  : Vec a,
   Cons : (head: a) -> (tail: Vec a) -> Vec a,
 
-  fun show (vec: Vec [n]) {
+  fun show (vec: Vec a) {
     let vec = match vec {
       Test.Cons x xs => Cons x xs,
       Test.Nil => Nil

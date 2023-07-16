@@ -4,17 +4,21 @@ use asena_ast_db::package::Package;
 use asena_hir_db::db::HirDatabase;
 use inkwell::context::Context;
 
-use crate::{cg::CgLowering, LlirErr};
+use crate::{cg::CgLowering, LlirConfig, LlirErr};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct LlirPackage;
 
 #[salsa::query_group(LlirStorage)]
 pub trait LlirDatabase: HirDatabase {
-    fn llir_package(&self, pkg: Package) -> eyre::Result<Arc<LlirPackage>, LlirErr>;
+    fn llir_package(&self, pkg: Package, config: LlirConfig) -> Result<Arc<LlirPackage>, LlirErr>;
 }
 
-fn llir_package(db: &dyn LlirDatabase, pkg: Package) -> Result<Arc<LlirPackage>, LlirErr> {
+fn llir_package(
+    db: &dyn LlirDatabase,
+    pkg: Package,
+    config: LlirConfig,
+) -> Result<Arc<LlirPackage>, LlirErr> {
     // Discovery step
     let mut defs = db.hir_defs(pkg);
 

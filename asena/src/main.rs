@@ -113,6 +113,7 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use asena_ast_db::{db::AstDatabase, package::*, vfs::*};
+    use asena_hir_lowering::LlirConfig;
     use std::sync::Arc;
 
     #[test]
@@ -133,7 +134,7 @@ mod tests {
         VfsFileData::new(&db, "IO", "./IO.ase".into(), local_pkg);
 
         db.global_scope().write().unwrap().import(&db, file, None);
-        db.run_pipeline_catching(file);
+        db.run_pipeline_catching(file, LlirConfig::default());
         db.lookup_intern_package(local_pkg).print_diagnostics(&db);
     }
 }

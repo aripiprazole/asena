@@ -6,7 +6,10 @@ use asena_ast_lowering::db::AstLowerrerStorage;
 use asena_ast_resolver::db::{AstResolverDatabase, AstResolverStorage};
 use asena_hir::interner::HirStorage;
 use asena_hir_db::db::HirDatabaseStorage;
-use asena_hir_lowering::db::{LlirDatabase, LlirStorage};
+use asena_hir_lowering::{
+    db::{LlirDatabase, LlirStorage},
+    LlirConfig,
+};
 use asena_leaf::ast::Located;
 use asena_prec::{db::PrecStorage, PrecDatabase};
 use std::{
@@ -30,7 +33,7 @@ pub struct DatabaseImpl {
 }
 
 impl DatabaseImpl {
-    pub fn run_pipeline_catching(&self, vfs_file: VfsFile) {
+    pub fn run_pipeline_catching(&self, vfs_file: VfsFile, config: LlirConfig) {
         let db = AssertUnwindSafe(self);
         let result = std::panic::catch_unwind(|| {
             let file = db.ast(vfs_file);
@@ -39,7 +42,7 @@ impl DatabaseImpl {
             let file = db.ast_resolved_file(file.into());
             let pkg = db.package_of(file.location().into_owned());
 
-            db.llir_package(pkg).unwrap(); // TODO: handle
+            db.llir_package(pkg, config).unwrap(); // TODO: handle
         });
 
         match result {

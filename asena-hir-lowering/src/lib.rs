@@ -11,3 +11,9 @@ pub enum LlirErr {
     #[error("main function not found at package: '{0}'")]
     MainNotFound(String),
 }
+
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct LlirConfig {
+    pub optimize: bool,
+    pub debug: bool,
+}
