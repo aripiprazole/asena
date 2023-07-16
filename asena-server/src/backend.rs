@@ -1,9 +1,10 @@
 use tower_lsp::{
     jsonrpc::Result,
     lsp_types::{
-        CompletionOptions, ExecuteCommandOptions, InitializeParams, InitializeResult, OneOf,
-        ServerCapabilities, TextDocumentSyncCapability, TextDocumentSyncKind,
-        WorkspaceFoldersServerCapabilities, WorkspaceServerCapabilities,
+        CompletionItem, CompletionOptions, CompletionParams, CompletionResponse,
+        ExecuteCommandOptions, InitializeParams, InitializeResult, OneOf, ServerCapabilities,
+        TextDocumentSyncCapability, TextDocumentSyncKind, WorkspaceFoldersServerCapabilities,
+        WorkspaceServerCapabilities,
     },
     Client, LanguageServer,
 };
@@ -49,6 +50,12 @@ impl LanguageServer for Backend {
                 ..ServerCapabilities::default()
             },
         })
+    }
+
+    async fn completion(&self, _: CompletionParams) -> Result<Option<CompletionResponse>> {
+        Ok(Some(CompletionResponse::Array(vec![
+            CompletionItem::new_simple("Hello".into(), "World".into()),
+        ])))
     }
 
     async fn shutdown(&self) -> Result<()> {

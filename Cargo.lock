@@ -426,7 +426,6 @@ dependencies = [
 name = "asena-server"
 version = "0.1.0"
 dependencies = [
- "asena",
  "asena-ast",
  "asena-ast-db",
  "asena-ast-lowering",
