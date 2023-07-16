@@ -61,7 +61,7 @@ fn hir_file_defs(db: &dyn HirDatabase, file: VfsFile) -> HashSet<HirTopLevel> {
 fn hir_defs(db: &dyn HirDatabase, pkg: Package) -> HashSet<HirTopLevel> {
     let mut defs = HashSet::default();
 
-    for file in pkg.files(db).read().unwrap().iter() {
+    for file in pkg.files(db).iter() {
         let file = db.hir_loceval(*file);
         let groups = db.hir_file_defs(file);
 

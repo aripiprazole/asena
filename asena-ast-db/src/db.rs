@@ -188,8 +188,8 @@ fn mk_global_name(db: &dyn AstDatabase, module: FunctionId, decl: AstParam<Decl>
 }
 
 fn mk_vfs_file(db: &dyn AstDatabase, vfs_file: VfsFileData) -> VfsFile {
-    let global_scope = db.global_scope();
-    let mut global_scope = global_scope.write().unwrap();
+    let scope = db.global_scope();
+    let mut scope = scope.write().unwrap();
 
     let path = vfs_file.id.path.clone();
     let name = FunctionId::new(&vfs_file.name);
@@ -199,14 +199,13 @@ fn mk_vfs_file(db: &dyn AstDatabase, vfs_file: VfsFileData) -> VfsFile {
 
     db.build_system().add_file(path.clone(), module.clone());
     db.build_system().add_module(module.clone(), pkg);
-    global_scope
-        .modules
-        .insert(name.to_string(), module.clone());
-    global_scope.paths.insert(path, module);
-    global_scope.import(db, id, Some(name));
+
+    scope.modules.insert(name.to_string(), module.clone());
+    scope.paths.insert(path, module);
+    scope.import(db, id, Some(name));
 
     let pkg_data = db.lookup_intern_package(pkg);
-    pkg_data.files.write().unwrap().insert(id);
+    pkg_data.files.insert(id);
 
     id
 }

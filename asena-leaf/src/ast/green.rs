@@ -1,8 +1,9 @@
 use std::hash::Hash;
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 use std::{any::Any, borrow::Cow, collections::HashMap};
 
 use asena_span::Spanned;
+use dashmap::DashMap;
 
 use crate::node::{Child, Named, Tree, TreeKind};
 use crate::token::token_set::HasTokens;
@@ -56,8 +57,8 @@ impl GreenTree {
 
         Self::new_raw(GreenTreeKind::Leaf(AstLeaf {
             children: compute_named_children(&data),
-            names: AstLeaf::new_ref(HashMap::new()),
-            keys: AstLeaf::new_ref(HashMap::new()),
+            names: Arc::new(DashMap::new()),
+            keys: Arc::new(DashMap::new()),
             synthetic: false,
             data,
         }))
@@ -71,8 +72,8 @@ impl GreenTree {
 
         Self::new_raw(GreenTreeKind::Leaf(AstLeaf {
             children: HashMap::default(),
-            names: AstLeaf::new_ref(HashMap::new()),
-            keys: AstLeaf::new_ref(HashMap::new()),
+            names: Arc::new(DashMap::new()),
+            keys: Arc::new(DashMap::new()),
             data: Arc::new(data),
             synthetic: true,
         }))
@@ -144,14 +145,15 @@ impl From<GreenTreeKind> for GreenTree {
 
 impl GreenTreeKind {
     /// Returns a cursor to the named child, if it's not an error node.
-    pub fn named_at<A: Leaf + Node + 'static>(&self, name: LeafKey) -> Cursor<A> {
+    pub fn named_at<A: Leaf + Node + Send + Sync + 'static>(&self, name: LeafKey) -> Cursor<A> {
         let Self::Leaf(leaf) = self else {
             return Cursor::empty();
         };
 
-        let names = leaf.names();
-        let cursor = names.get(name);
-        let cursor = cursor.and_then(|value| value.downcast_ref::<Cursor<A>>());
+        let cursor = leaf
+            .names
+            .get(name)
+            .and_then(|value| value.clone().downcast::<Cursor<A>>().ok());
         let Some(child) = cursor else {
             let Some(child) = leaf.children.get(name) else {
                 return Cursor::empty();
@@ -165,7 +167,7 @@ impl GreenTreeKind {
             }
         };
 
-        child.clone()
+        (*child).clone()
     }
 
     /// Returns a cursor to the named terminal, if it's not an error node.
@@ -177,9 +179,10 @@ impl GreenTreeKind {
             return Cursor::empty();
         };
 
-        let names = leaf.names();
-        let cursor = names.get(name);
-        let cursor = cursor.and_then(|value| value.downcast_ref::<Cursor<Lexeme<A>>>());
+        let cursor = leaf
+            .names
+            .get(name)
+            .and_then(|value| value.clone().downcast::<Cursor<Lexeme<A>>>().ok());
         let Some(child) = cursor else {
             let Some(child) = leaf.children.get(name) else {
                 return Cursor::empty();
@@ -193,7 +196,7 @@ impl GreenTreeKind {
             }
         };
 
-        child.clone()
+        (*child).clone()
     }
 
     /// Creates a new node from the current node, if it's a leaf node, it will reset the names, and
@@ -208,8 +211,8 @@ impl GreenTreeKind {
                 data: leaf.data.clone(),
                 synthetic: leaf.synthetic,
                 children: compute_named_children(&leaf.data),
-                names: AstLeaf::new_ref(HashMap::new()),
-                keys: AstLeaf::new_ref(HashMap::new()),
+                names: Arc::new(DashMap::new()),
+                keys: Arc::new(DashMap::new()),
             }),
             _ => self.clone(),
         }
@@ -223,7 +226,7 @@ impl GreenTreeKind {
         };
 
         let rc = Arc::new(value);
-        leaf.keys_mut().insert(key.name(), rc.clone());
+        leaf.keys.insert(key.name(), rc.clone());
         rc as Arc<T::Value>
     }
 
@@ -234,12 +237,12 @@ impl GreenTreeKind {
             return Arc::new(value);
         };
 
-        if let Some(value) = leaf.keys().get(key.name()) {
+        if let Some(value) = leaf.keys.get(key.name()) {
             return value.clone().downcast::<T::Value>().unwrap();
         }
 
         let rc = Arc::new(value);
-        leaf.keys_mut().insert(key.name(), rc.clone());
+        leaf.keys.insert(key.name(), rc.clone());
         rc as Arc<T::Value>
     }
 
@@ -248,7 +251,7 @@ impl GreenTreeKind {
         T: Node + Leaf,
     {
         if let Self::Leaf(leaf) = self {
-            leaf.names_mut().insert(name, Arc::new(Cursor::of(value)));
+            leaf.names.insert(name, Arc::new(Cursor::of(value)));
         }
     }
 
@@ -266,12 +269,12 @@ impl GreenTreeKind {
             return Cursor::empty();
         };
 
-        if let Some(x) = leaf.names().get(name) {
+        if let Some(x) = leaf.names.get(name) {
             return x.downcast_ref::<Cursor<T>>().unwrap().clone();
         }
 
         let cursor = f(tree);
-        leaf.names_mut().insert(name, Arc::new(cursor.clone()));
+        leaf.names.insert(name, Arc::new(cursor.clone()));
         cursor
     }
 }
@@ -282,8 +285,8 @@ impl Default for GreenTree {
             data: Default::default(),
             children: HashMap::new(),
             synthetic: false,
-            keys: AstLeaf::new_ref(HashMap::new()),
-            names: AstLeaf::new_ref(HashMap::new()),
+            keys: Arc::new(DashMap::new()),
+            names: Arc::new(DashMap::new()),
         }))
     }
 }
