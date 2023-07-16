@@ -4,8 +4,9 @@ use asena_ast::{AsenaFile, BindingId, GlobalName, QualifiedPath, Variant};
 use asena_leaf::ast::{AstParam, GreenTree, Located, Node};
 use asena_lexer::Lexer;
 use asena_parser::Parser;
-use asena_report::Diagnostic;
+use asena_report::{BoxInternalError, Diagnostic};
 use asena_span::{Loc, Spanned};
+use itertools::Itertools;
 
 use crate::build_system::BuildSystem;
 use crate::def::{Def, DefData, DefWithId};
@@ -28,6 +29,7 @@ pub trait AstDatabase {
     fn cst(&self, vfs_file: VfsFile) -> GreenTree;
     fn package_of(&self, module: Loc) -> Package;
     fn vfs_file(&self, module: ModuleRef) -> VfsFile;
+    fn diagnostics(&self, vfs_file: VfsFile) -> Vec<Diagnostic<BoxInternalError>>;
 
     fn module_ref(&self, module: Spanned<FunctionId>) -> ModuleRef;
     fn function_data(&self, name: QualifiedPath, vfs_file: VfsFile) -> Def;
@@ -48,6 +50,26 @@ pub trait AstDatabase {
 
     #[salsa::interned]
     fn intern_def(&self, data: DefData) -> DefWithId;
+}
+
+fn diagnostics(db: &dyn AstDatabase, vfs_file: VfsFile) -> Vec<Diagnostic<BoxInternalError>> {
+    let vfs_file = db.lookup_intern_vfs_file(vfs_file);
+    let package = db.lookup_intern_package(vfs_file.pkg);
+
+    let errors = package.errors.read().unwrap();
+    let errors = errors
+        .iter()
+        .group_by(|diagnostic| diagnostic.message.span.file.clone().unwrap_or_default());
+
+    let mut all_diagnostics = Vec::new();
+
+    for (file, diagnostics) in &errors {
+        if file == vfs_file.id.path {
+            all_diagnostics.extend(diagnostics.cloned().collect_vec())
+        }
+    }
+
+    all_diagnostics
 }
 
 fn path_module(db: &dyn AstDatabase, path: PathBuf) -> ModuleRef {

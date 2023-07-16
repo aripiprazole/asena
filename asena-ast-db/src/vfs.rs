@@ -8,7 +8,9 @@ use std::{
 use crate::{db::AstDatabase, package::Package, scope::ScopeData};
 
 #[derive(Debug, Default)]
-pub struct FileSystem {}
+pub struct FileSystem {
+    pub base_dir: Option<PathBuf>,
+}
 
 #[derive(Debug, Clone, Copy, Hash, Eq, PartialEq, PartialOrd, Ord)]
 pub struct VfsFile(salsa::InternId);
@@ -64,7 +66,14 @@ pub struct VfsPath {
 
 impl FileSystem {
     pub fn read_file(&self, path: &str) -> Option<String> {
-        std::fs::read_to_string(format!("{path}.ase"))
+        let result = match self.base_dir {
+            Some(ref base_dir) => {
+                std::fs::read_to_string(base_dir.join(path).with_extension("ase"))
+            }
+            None => std::fs::read_to_string(format!("{path}.ase")),
+        };
+
+        result
             .unwrap_or_else(|_| {
                 panic!("Failed to read file: {}", path);
             })

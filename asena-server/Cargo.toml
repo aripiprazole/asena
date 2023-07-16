@@ -17,18 +17,18 @@ asena-grammar = {path = "../asena-grammar"}
 asena-highlight = {path = "../asena-highlight"}
 asena-hir = {path = "../asena-hir"}
 asena-hir-db = {path = "../asena-hir-db"}
-asena-hir-lowering = {path = "../asena-hir-lowering"}
 asena-leaf = {path = "../asena-leaf"}
 asena-lexer = {path = "../asena-lexer"}
 asena-parser = {path = "../asena-parser"}
 asena-prec = {path = "../asena-prec"}
+asena-report = {path = "../asena-report"}
 
 colored = "2"
 env_logger = "0.9.0"
 ropey = "1.5.0"
 serde = {version = "1.0", features = ["derive"]}
 serde_json = "1.0.78"
-tokio = {version = "1.17.0", features = ["full"]}
+tokio = {version = "1.17.0", features = ["macros", "fs", "rt-multi-thread", "io-std"]}
 tower-lsp = {version = "0.19.0", features = ["proposed"]}
 
 dashmap = {workspace = true}
